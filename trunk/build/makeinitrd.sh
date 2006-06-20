@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FILE_DIR=/opt/meshnode/boot/initrd
+FILE_DIR=/opt/meshserver/boot/initrd
 INITRD_SRC=/opt/mcg-mesh/boot/initrd/blank.ext3
 INITRD_DST=/opt/mcg-mesh/boot/initrd/initrd
 INITRD_MP=/mnt/initrd
