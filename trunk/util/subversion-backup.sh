@@ -1,7 +1,6 @@
 #!/bin/bash
 
-BACKUPDIR=${1:-/backup/subversion}
-BACKUPFILE="pg_dumpall.dump"
+BACKUPDIR=${1:-/mnt/backup/subversion}
 
 if [ ! -d $BACKUPDIR ]; then mkdir -p $BACKUPDIR; fi
 
