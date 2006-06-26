@@ -33,16 +33,22 @@ usage() {
 # The action
 #
 case "$1" in
-
-	start)		for script in $AUTOSTART; do
-				ebegin Starting $script
+	start)
+		for script in $AUTOSTART; do
+			ebegin Starting $script
 				start-stop-daemon --start --make-pidfile --pidfile $PIDDIR/2db_$script.pid --background --startas $SCRIPTDIR/2db_$script.py -- $OPTS
-				eend $?
-			done;;
-	stop)		for script in $AUTOSTART; do
-				ebegin Stopping $script
+			eend $?
+		done
+		;;
+
+	stop)
+		for script in $AUTOSTART; do
+			ebegin Stopping $script
 				start-stop-daemon --stop --pidfile $PIDDIR/2db_$script.pid
- 				eend $?
-			done;;
-	*)		usage $EXIT_ERROR;;
+ 			eend $?
+		done
+		;;
+		
+	*)
+		usage $EXIT_ERROR;;
 esac

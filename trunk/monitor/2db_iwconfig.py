@@ -44,12 +44,12 @@ class Database(object):
 	# connect to database
 	def connect(self):
 		try:
-			dbcon = PgSQL.connect(user = self.db_user, host = self.db_host,
-								  database = self.db_name)
-			dbcon.autocommit = True
+			self.dbcon = PgSQL.connect(user = self.db_user, host = self.db_host,
+								  	   database = self.db_name)
+			self.dbcon.autocommit = True
 			self.con_error = 0
 			
-			return dbcon
+			return self.dbcon
 
 		except PgSQL.DatabaseError:
 			if self.con_error <= self.max_con_error:
