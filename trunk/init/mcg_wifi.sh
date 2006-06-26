@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ "$RC_GOT_FUNCTIONS" != "yes" ] && source /opt/meshnode/bin/functions.sh
+[ "$RC_GOT_FUNCTIONS" != "yes" ] && source /usr/local/bin/functions.sh
 
 SCRIPTNAME=$(basename $0)
 

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-[ "$RC_GOT_FUNCTIONS" != "yes" ] && source /opt/meshnode/bin/functions.sh
+[ "$RC_GOT_FUNCTIONS" != "yes" ] && source /usr/local/bin/functions.sh
 
 SCRIPTNAME=$(basename $0)
-SCRIPTDIR="/opt/meshnode/bin"
+SCRIPTDIR="/usr/local/bin"
 
 # which scripts should be started
 AUTOSTART="ifconfig iwconfig ipmonitor"
