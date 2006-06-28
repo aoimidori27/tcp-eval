@@ -33,9 +33,9 @@ def cmd(cmd="echo"):
 
 def xen(action="check"):
 	output = {
-		'startup'	: xen_startup,
-		'check'		: xen_check,
-		'info'		: lambda : "\n".join(["Running domUs %s on %s" % (xen_dom0_domus(dom0),dom0) for dom0 in nodeinfo['domnulls']])
+		'startup'	: lambda: xen_check(True),
+		'check'		: lambda: xen_check(False),
+		'info'		: lambda :"dom0->domU map: "+xen_domu_dict()
 	}[action]()
 	print output
 

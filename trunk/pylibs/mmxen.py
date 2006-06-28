@@ -1,4 +1,4 @@
-import mmbasic, sre, string, sys
+import mmbasic, sre, string, sys, operator, time
 from mmbasic import *
 
 
@@ -15,56 +15,65 @@ xen_domU_restart = xen_domU_startup + " && sleep 3 && " + xen_domU_destroy
 def xen_dom0_detect():
 	if 'domnulls' in nodeinfo.keys(): return
 
-	nodeinfo['domnulls'] = [node for node in xen_dom0_candidates if call(["ping","-c","2",node],stdout=PIPE,stderr=PIPE)==0]
-	info("Detect dom0s %s" % nodeinfo['domnulls']);
+	nodeinfo['domnulls'] = [dom0 for dom0 in xen_dom0_candidates if host_check_online(dom0)]
 
-def xen_dom0_domus(dom0):
-	matches = sre.compile("^gen([0-9]*)\s",sre.MULTILINE).finditer(runonhost(dom0,"xm list"))
-#	for match in matches:
-#		print "found a match: %s" % match.group(0)
-#	return []
-	return [string.atoi(match.group(1)) for match in matches]
+	info("Detected dom0s %s" % nodeinfo['domnulls']);
 
-def xen_check():
+def xen_domu_dict():
+	xen_dom0_detect()
+	return dict([(dom0,
+			[string.atoi(match.group(1)) for match in 
+				sre.compile(
+					"^gen([0-9]*)\s",sre.MULTILINE
+					).finditer(host_exec(dom0,"xm list"))
+				]) for dom0 in nodeinfo['domnulls']])
+
+
+def xen_check(dostart):
+	xen_dom0_detect()
+	
+	domu_dict = xen_domu_dict()
+	
+	info("dom0 to domU map: %s" % domu_dict)
+	
 	running = node_check_online(nodeinfo['host'])
-	for dom0 in nodeinfo['domnulls']:
-		domus = xen_dom0_domus(dom0)
-		info("On %s: %s" %(dom0,domus))
-		hanging = [domu for domu in domus if domu not in running]
+	
+	# created and not running
+	hanging = [domu for domu in reduce(operator.concat, domu_dict.values()) if domu not in running]
+	
+	info("Nodes %s are hanging" % hanging)
+	
+	# not running and not created
+	missing = [node for node in nodeinfo['host'] if node not in (running+hanging)]
+	
+	info("Nodes %s are missing" % missing)
+	
+	if dostart and (missing or hanging):
 		for hanger in hanging:
-			info("Node %d hangs, restart" % hanger);
-			runonhost(dom0,xen_domU_restart % (hanger,hanger))
+			info("Recreating hanging node %d" % hanger)
+			
+			host_exec(dom0,xen_domU_restart % (hanger,hanger))
+		
+		dom0_usage_order = []
+		for dom0 in nodeinfo['domnulls']:
+			dom0_usage_order += [dom0]*(4-len(domu_dict[dom0]))
+		
+		for domu in missing:
+			if len(dom0_usage_order)==0:
+				raise "xen error","Not enough dom0s"
 
-def xen_startup():
-#	running = node_check_online(nodeinfo['host'])
-
-	running = []
-
-	dom0_domU_map = {}
-
-	dom0_order = []
-
-	for dom0 in nodeinfo['domnulls']:
-		domus = xen_dom0_domus(dom0)
-		running += domus
-		dom0_domU_map[dom0]=domus
-		dom0_order += [dom0]*(4-len(domus))
-
-	info("Already running domUs: %s" % running)
-
-	#dom0_domU_map = dict([(dom0, xen_dom0_domus(dom0)) for dom0 in nodeinfo['domnulls']])
-
-	print [node for node in nodeinfo['host'] if node not in running]
-
-	for domu in [node for node in nodeinfo['host'] if node not in running]:
-		#for domuset in 
-		if len(dom0_order)==0:
-			error("Not enough dom0s, aborting")
-			sys.exit(1)
-
-		dom0 = dom0_order.pop()
-		info("Firing up %s on %s" % (domu,dom0))
-		runonhost(dom0,xen_domU_startup % domu)
-
-
-xen_dom0_detect()
+			dom0 = dom0_usage_order.pop()
+			
+			info("Firing up %s on %s" % (domu,dom0))
+			
+			host_exec(dom0,xen_domU_startup % domu)
+		
+		# sleep 50 + invokations per dom0 * 20, i.e. min 70, max 115
+		if missing: time.sleep(55 + (4-min(map(len,domu_dict.values())))*15)
+		
+		running = node_check_online(nodeinfo['host'])
+		
+		if len(running)<len(nodeinfo['host']):
+			raise "xen error","Starting all nodes failed, running are %s" % running
+	
+	return running

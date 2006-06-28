@@ -18,6 +18,33 @@ parser.add_option("-c", "--continue", dest="continued")
 parser.add_option("-r", "--retry", dest="retry")
 options, args = parser.parse_args()
 
+
+def check_level1():
+	nodes_on = node_check_online(nodeinfo['host'])
+	
+	def matchlen(a,b):
+		#print "a %s b %s" % (a,b)
+		return len(a)==len(b)
+	
+	return (matchlen(nodes_on,nodeinfo['host']) 
+		and matchlen(dbttcp_check(False),nodeinfo['sender']) 
+		and matchlen(dymo_check(False),nodeinfo['host']))
+
+def check_level2():
+	if nodeinfo['hostprefix']=='xenmachine': xen_check(True)
+	else:
+		nodes_on = node_check_online(nodeinfo['host'])
+		if len(nodes_on)<len(nodeinfo['host']):
+			time.sleep(300)
+			
+		nodes_on = node_check_online(nodeinfo['host'])
+		if len(nodes_on)<len(nodeinfo['host']):
+			raise "check failed", "after 300 secs only mrouters %s on" % nodes_on
+
+	dymo_check(True)
+	dbttcp_check(True)
+	return True
+
 #
 # Recovery
 #
@@ -25,53 +52,20 @@ options, args = parser.parse_args()
 def recovery(msrmt,retries):
 	info("Entering Recovery");
 
+#	cursor.execute("""
+#		UPDATE msrmt SET started=NULL WHERE msrmt_id=%d;
+#		UPDATE dbttcp SET phase=0 WHERE msrmt_id=%d;
+#		""" % (msrmt.msrmt_id,msrmt.msrmt_id))
+
+	msrmt_cancel(msrmt)
+
 	if retries>3:
 		error("Retried this measurement %d times, aborting" % retries);
 		sys.exit(1)
 
-	check_routing = retries==2
+	if (retries>0 and retries%2==0) or (not check_level1()):
+		return check_level2()
 
-	cursor.execute("""
-		UPDATE msrmt SET started=NULL WHERE msrmt_id=%d;
-		UPDATE dbttcp SET phase=0 WHERE msrmt_id=%d;
-		""" % (msrmt.msrmt_id,msrmt.msrmt_id))
-	info("Measurement %d reset" % msrmt.msrmt_id);
-
-	nodes_on = node_check_online(senders+gws)
-
-	if len(nodes_on)<len(senders+gws):
-		nodes_off = [node for node in senders+gws if node not in nodes_on]
-		if nodeinfo['hostprefix']=="mrouter": waitsecs = 300
-		else: waitsecs = 100
-
-		info("Doing xen check");
-		xen_check()
-
-		info("Nodes %s are offline, waiting for %d secs" % (nodes_off,waitsecs));
-		time.sleep(waitsecs);
-
-		nodes_on = node_check_online(senders+gws)
-
-		if len(nodes_on)!=len(senders+gws):
-			nodes_off = [node for node in senders+gws if node not in nodes_on]
-			error("Nodes %s are still off, aborting" % nodes_off);
-			sys.exit(1);
-
-		info("Nodes are back on. Continueing");
-
-		check_routing = True
-	
-	nodes_dbttcpcd = node_check_cmd(senders,"ps -C dbttcpcd")
-
-	if len(nodes_dbttcpcd)<senders:
-		node_exec([sender for sender in senders if sender not in nodes_dbttcpcd],"cat /dev/null | dbttcpcd -b &>/dev/null");
-
-	if check_routing: 
-		nodeinfo['routing'](senders,gws,'restart')
-		nodes_routing = nodeinfo['routing'](senders,gws,'check')
-		if len(nodes_routing)<len(senders+gws):
-			error("Routing protocol restart failed, only running on nodes %s, aborting" % nodes_routing)
-			sys.exit(1)
 
 #
 # Fetch measurement
@@ -108,7 +102,7 @@ def msrmt_cancel(msrmt):
 	cursor.execute("""
 		UPDATE dbttcp SET phase=-1 WHERE msrmt_id=%d;
 		UPDATE msrmt SET started=NULL WHERE msrmt_id=%d""" % (msrmt.msrmt_id,msrmt.msrmt_id))
-	time.sleep(15)
+	time.sleep(10)
 	cursor.execute("UPDATE dbttcp SET phase=0 WHERE msrmt_id=%d;" % (msrmt.msrmt_id))
 	info("Measurement %d canceled" % msrmt.msrmt_id)
 
@@ -116,7 +110,7 @@ def msrmt_cancel(msrmt):
 # Main
 #
 
-checkperiod = 80
+checkperiod = 1200
 
 info("Welcome")
 
@@ -132,6 +126,8 @@ try:
 
 	retries = 0
 
+	if not check_level1(): check_level2()
+	
 	msrmt = fetchmsrmt()
 
 	while True:
@@ -165,24 +161,12 @@ try:
 			if waited>0 and waited%checkperiod==0:
 				info("Waited %d seconds, checking nodes..." % waited);
 
-				nodes_on = node_check_online(senders+gws)
-
-				if len(nodes_on)<msrmt.senders+msrmt.gws:
-					warn("Only nodes %s are on, canceling measurement" % nodes_on);
-					msrmt_cancel(msrmt);
+				if not check_level1():
+					info("Not all ok, canceling measurement")
+					msrmt_cancel(msrmt)
 					break
-
-				info("All online");
-
-				ok_senders = node_check_cmd(senders,"ps -C dbttcpcd && ps -C dymod")
-				ok_gws = node_check_cmd(gws,"ps -C dymod")
-
-				if (len(ok_senders+ok_gws)<msrmt.gws+msrmt.senders):
-					warn("Only nodes %s are running neccessary processes, canceling measurement" % (ok_senders+ok_gws));
-					msrmt_cancel(msrmt);
-					break
-
-				info("All processes running");
+				
+				info("All ok");
 
 			time.sleep(10)
 			waited = waited + 10
