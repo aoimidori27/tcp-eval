@@ -6,7 +6,7 @@ SCRIPTNAME=$(basename $0)
 SCRIPTDIR="/usr/local/bin"
 
 # which scripts should be started
-AUTOSTART="boot ifconfig iwconfig ipmonitor"
+AUTOSTART="ifconfig iwconfig ipmonitor"
 OPTS="-v --syslog"
 
 
@@ -15,10 +15,6 @@ PIDDIR="/var/run"
 EXIT_SUCCESS=0
 EXIT_FAILURE=1
 EXIT_ERROR=2
-
-export PGDATABASE="mcg-mesh"
-export PGUSER="meshnode"
-export PGHOST="meshserver"
 
 #
 # Functions
