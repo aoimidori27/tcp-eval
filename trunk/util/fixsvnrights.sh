@@ -28,7 +28,7 @@ else
  NGROUP=$2;
 fi;
 
-for i in `find $1 -name 2>/dev/null .svn`; do
+for i in `find $1 -type d -name 2>/dev/null .svn`; do
   chgrp -R $NGROUP $i
   chmod -R g+w $i
 done
