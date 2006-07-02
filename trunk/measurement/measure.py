@@ -35,11 +35,13 @@ def check_level2():
 	else:
 		nodes_on = node_check_online(nodeinfo['host'])
 		if len(nodes_on)<len(nodeinfo['host']):
+			info("Nodes %s online, waiting 300 secs..." % nodes_on);
+
 			time.sleep(300)
 			
-		nodes_on = node_check_online(nodeinfo['host'])
-		if len(nodes_on)<len(nodeinfo['host']):
-			raise "check failed", "after 300 secs only mrouters %s on" % nodes_on
+			nodes_on = node_check_online(nodeinfo['host'])
+			if len(nodes_on)<len(nodeinfo['host']):
+				raise "check failed", "after 300 secs only mrouters %s on" % nodes_on
 
 	dymo_check(True)
 	dbttcp_check(True)
