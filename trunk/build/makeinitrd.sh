@@ -2,8 +2,10 @@
 
 FILE_DIR=/opt/meshserver/boot/initrd
 INITRD_SRC=/opt/mcg-mesh/boot/initrd/blank.ext3
-INITRD_DST=/opt/mcg-mesh/boot/initrd/initrd
+INITRD_DST=/opt/mcg-mesh/boot/initrd/initrd-ubuntu
 INITRD_MP=/mnt/initrd
+
+echo "Generating $INITRD_DST"
 
 # Copy initrd
 cp $INITRD_SRC $INITRD_DST
@@ -23,3 +25,5 @@ cat $INITRD_DST | gzip > $INITRD_DST.gz && \
 
 # Clean up
 rm $INITRD_DST
+
+echo "Done."
