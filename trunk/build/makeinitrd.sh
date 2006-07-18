@@ -24,7 +24,8 @@ INITRD_MP=/mnt/initrd
 FILE_DIR=/opt/meshserver/boot/initrd
 
 # Directorys to create
-DIRS="/usr/sbin,/mnt/homes,/mnt/srv,/proc,/sbin,/dev,/var/lib/dhcp,/var/lib/dhcp3,/var/log,/var/run,/etc"
+DIRS="/usr/sbin,/mnt/homes,/mnt/srv,/proc,/sbin,/dev/net,/var/lib/dhcp"
+DIRS="$DIRS,/var/lib/dhcp3,/var/log,/var/run,/etc"
 DIRS="$DIRS,/bin,/lib,/etc,/lib/dhcp3-client"
 
 # Files which belong to /bin
@@ -55,6 +56,25 @@ LIBS_GENTOO="ld-2.3.6.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.3.6.
 ####################################################
 ################ End of Configuration ##############
 ####################################################
+
+
+function makedev() {
+   # loop devices
+   for i in 0 1 2 3 4 5 6 7; do
+	   mknod $INITRD_MP/dev/loop$i b 7 $i
+   done;
+  
+   # console, null, random, urandom, tty12
+   mknod $INITRD_MP/dev/console c 5 1
+   mknod $INITRD_MP/dev/null    c 1 3
+   mknod $INITRD_MP/dev/random  c 1 8
+   mknod $INITRD_MP/dev/urandom c 1 9
+   mknod $INITRD_MP/dev/tty12   c 4 12
+   
+   # net tun
+   mknod $INITRD_MP/dev/net/tun c 10 200
+   
+}
 
 function usage ()
 {
@@ -202,8 +222,10 @@ fi;
 # chmod u+s ${INITRD_MP}/bin/ip
 # chmod u+s ${INITRD_MP}/bin/hostname
 
+# make /dev nodes
+makedev;
+
 cp -a /opt/meshserver/boot/initrd/etc $INITRD_MP/
-cp -a /opt/meshserver/boot/initrd/dev $INITRD_MP/
 cp -a /opt/meshserver/boot/initrd/*rc $INITRD_MP/
 cp -a /opt/meshserver/boot/initrd/initrd $INITRD_MP/
 
