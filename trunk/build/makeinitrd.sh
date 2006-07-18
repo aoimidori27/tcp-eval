@@ -11,6 +11,14 @@
 IMAGEDIR_UBUNTU="/opt/mcg-mesh/images/ubuntu/meshrouter"
 IMAGEDIR_GENTOO="/opt/mcg-mesh/images/gentoo/meshrouter"
 
+# Empty ext3 filesystem
+INITRD_SRC=/opt/mcg-mesh/boot/initrd/blank.ext3
+
+# Destination -$IMAGE will be appended to this
+INITRD_DST=/opt/mcg-mesh/boot/initrd/initrd     
+
+# Mountpoint for loopback mounting initrd
+INITRD_MP=/mnt/initrd
 
 # path of configuration files etc, to copy in
 FILE_DIR=/opt/meshserver/boot/initrd
@@ -19,21 +27,28 @@ FILE_DIR=/opt/meshserver/boot/initrd
 DIRS="/usr/sbin,/mnt/homes,/mnt/srv,/proc,/sbin,/dev,/var/lib/dhcp,/var/lib/dhcp3,/var/log,/var/run,/etc"
 DIRS="$DIRS,/bin,/lib,/etc,/lib/dhcp3-client"
 
+# Files which belong to /bin
 BINFILES="bash,cat,chmod,echo,expr,grep,hostname,"
 BINFILES="$BINFILES,kill,logger,ls,mknod,mount,ping,rm,sed"
 BINFILES="$BINFILES,sh,sleep,umount,uname"
 
+# Files which belong to /sbin
 SBINFILES="brctl,dhclient3,dhclient,hwclock,ifconfig,insmod,ip,losetup"
 SBINFILES="$SBINFILES,modprobe,ntpdate,pivot_root,portmap,route"
 SBINFILES="$SBINFILES,openvpn,ethtool,syslog-ng,strace"
 
+# Some static files, which are copied only for ubuntu
 STATIC="/bin/ip,/lib/dhcp3-client/call-dhclient-script"
 
+# Where to search for executables and librarys
 LIB_SEARCHPATH="/lib,/usr/lib,/usr/lib/i586"
 BIN_SEARCHPATH="/bin,/usr/bin,/sbin,/usr/sbin"
 
+
+# Librarys which are copied for ubuntu initrd
 LIBS_UBUNTU="ld-2.3.6.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.3.6.so,libcap.so.1,libcap.so.1.10,libcrypto.so.0.9.8,libc.so.6,libdl-2.3.6.so,libdl.so.2,liblzo.so.1,liblzo.so.1.0.0,libncurses.so.5,libncurses.so.5.5,libnsl.so.1,libnss_dns.so.2,libnss_dns-2.3.6.so,libnss_files.so.2,libnss_files-2.3.6.so,libproc-3.2.6.so,libpthread-0.10.so,libpthread.so.0,libresolv-2.3.6.so,libresolv.so.2,librt-2.3.6.so,librt.so.1,libssl.so.0.9.8,libutil-2.3.6.so,libutil.so.1,libuuid.so.1,libuuid.so.1.2,libwrap.so.0,libwrap.so.0.7.6,libz.so.1,libz.so.1.2.3,libacl.so.1,libacl.so.1.1.0,libselinux.so.1,libattr.so.1,libattr.so.1.1.0,libsepol.so.1,libnsl.so.1,libnsl-2.3.6.so,libnss_compat.so.2,libnss_compat-2.3.6.so"
 
+# Librarys which are copied for gentoo initrd
 LIBS_GENTOO="ld-2.3.6.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.3.6.so,libcap.so.1,libcap.so.1.10,libcrypto.so.0,libcrypto.so.0.9.7,libc.so.6,libdl-2.3.6.so,libdl.so.2,libncurses.so,libncurses.so.5,libncurses.so.5.5,libnsl.so.1,libnss_dns.so.2,libnss_dns-2.3.6.so,libnss_files.so.2,libnss_files-2.3.6.so,libproc-3.2.6.so,libpthread-0.10.so,libpthread.so.0,libresolv-2.3.6.so,libresolv.so.2,librt-2.3.6.so,librt.so.1,libssl.a,libssl.so,libssl.so.0,libssl.so.0.9.7,libutil-2.3.6.so,libutil.so.1,libuuid.so.1,libuuid.so.1.2,libwrap.so,libwrap.so.0,libwrap.so.0.7.6,libz.so,libz.so.1,libz.so.1.2.3,libnsl.so.1,libnsl-2.3.6.so,libnss_compat.so.2,libnss_compat-2.3.6.so,liblzo2.so,liblzo2.so.2,liblzo2.so.2.0.0"
 
 
@@ -112,9 +127,9 @@ case $IMAGE in
 	*) echo "Unknown image type: $IMAGE"; usage; exit 2; ;;
 esac
 
-INITRD_SRC=/opt/mcg-mesh/boot/initrd/blank.ext3
-INITRD_DST=/opt/mcg-mesh/boot/initrd/initrd-test-$IMAGE
-INITRD_MP=/mnt/initrd
+
+INITRD_DST="$INITRD_DST-$IMAGE";
+
 
 
 echo "Generating $INITRD_DST..."
