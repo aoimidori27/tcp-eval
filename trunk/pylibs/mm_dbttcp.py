@@ -1,4 +1,4 @@
-from mmbasic import *
+from mm_basic import *
 
 dbttcpd_check = "ps -C dbttcpd"
 dbttcpd_start = "killall dbttcpd ; dbttcpd &>dbttcpd.log &"

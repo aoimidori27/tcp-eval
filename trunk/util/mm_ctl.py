@@ -7,7 +7,7 @@
 import logging,sys,os,time, optparse, subprocess, time
 from logging import info, debug, warn, error
 from pyPgSQL import PgSQL
-from mmbasic import *
+from mm_basic import *
 from subprocess import *
 
 #

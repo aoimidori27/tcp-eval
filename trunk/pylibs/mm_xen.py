@@ -1,5 +1,5 @@
-import mmbasic, sre, string, sys, operator, time
-from mmbasic import *
+import mm_basic, sre, string, sys, operator, time
+from mm_basic import *
 
 
 xen_dom0_candidates = ["hiwil1","hiwil2","hiwil3","hiwir2","hiwir3"]

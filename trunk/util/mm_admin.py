@@ -7,7 +7,7 @@
 import logging,sys,os,time, optparse, subprocess, time
 from logging import info, debug, warn, error
 from pyPgSQL import PgSQL
-from mmbasic import *
+from mm_basic import *
 from subprocess import *
 
 #
@@ -24,12 +24,27 @@ args = sys.argv[1:]
 #
 
 def chroot_exec(cmd):
+	# common mounts for all chroots
+	mounts = { '/dev'  : '/dev',
+			   '/proc' : '/proc' }
+
+	# join with mounts of nodes
+	mounts.update(imageinfo['mounts'])
+
+	# mount
+	for src,dst in mounts.iteritems():
+		os.system("mount -o bind %s %s/%s" % (src,imagepath,dst))
+
+	# exec command
 	# TODO: error handling, mount only once (in case of multiple shells)
-	os.system("mount -o bind /usr/portage "+nodeinfo['imagepath']+"/usr/portage");
-	os.system("mount -o bind /dev "+nodeinfo['imagepath']+"/dev");
-	os.system(" ".join(["chroot",nodeinfo['imagepath'],"/bin/bash -c 'HOSTNAME=%s && source /etc/profile && %s'" % (nodeinfo['hostprefix'],cmd)]))
-	os.system("umount "+nodeinfo['imagepath']+"/usr/portage");
-	os.system("umount "+nodeinfo['imagepath']+"/dev");
+	os_cmd = " ".join(["chroot",imagepath,"/bin/bash -c 'export HOSTNAME=%s && source /etc/profile && %s'" % (nodeinfo['hostprefix'],cmd)])
+	print os_cmd
+	os.system(os_cmd)
+
+	# umount
+	for dst in mounts.itervalues():
+		os.system("umount %s/%s" % (imagepath,dst))
+				  
 
 def chroot():
 	chroot_exec("bash")

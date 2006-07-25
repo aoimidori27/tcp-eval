@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-import mmbasic
-from mmbasic import *
+import mm_basic
+from mm_basic import *
 
 #
 # DYMO cmds

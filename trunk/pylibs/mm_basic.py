@@ -1,6 +1,6 @@
 import os,sys,logging, types, subprocess
 from logging import info, debug, warn, error
-from mmcfg import *
+from mm_cfg import *
 from subprocess import *
 
 #
@@ -15,18 +15,22 @@ logging.basicConfig(
 #
 # Check Environment Variable
 #
-	
-if not os.environ.has_key('MESH'):
-	error("please set environment variable MESH to mrouter or xen")
+
+
+if not os.environ.has_key('MESH') or not nodeinfos.has_key(os.environ['MESH']):
+	error("please set environment variable MESH to one of %s" % nodeinfos.keys())
 	sys.exit(1)
 
 nodetype = os.environ['MESH']
+nodeinfo = nodeinfos[nodetype]
 
-if not (nodetype=='mrouter' or nodetype=='xen'):
-	error("couldnt determine node type")
+if not os.environ.has_key('MESH_IMAGE') or not imageinfos.has_key(os.environ['MESH_IMAGE']):
+	error("please set environment variable MESH_IMAGE to one of %s" % imageinfos.keys())
 	sys.exit(1)
 
-nodeinfo = nodeinfos[nodetype]
+imagetype = os.environ['MESH_IMAGE']
+imageinfo = imageinfos[imagetype]
+imagepath = "%s/%s/%s" % (imageprefix,imagetype,nodetype)
 
 
 #
@@ -72,10 +76,10 @@ def node_check_online(nodes):
 	return [node for node in nodes if host_check_online(nodename(node))]
 
 
-if nodetype=='xen':
-	import mmxen
-	from mmxen import *
+if nodetype=='vmeshnode':
+	import mm_xen
+	from mm_xen import *
 
 
-from mmdymo import *
-from mmdbttcp import *
+from mm_dymo import *
+from mm_dbttcp import *
