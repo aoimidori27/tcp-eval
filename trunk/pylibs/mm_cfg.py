@@ -1,12 +1,27 @@
 # global configuration
 imageprefix = "/opt/mcg-mesh/images"
+svnprefix = "/opt/meshnode"
+# group id of "mcg-mesh" group
+meshgid = 30012;
 
-
+#
+# Information about the subversion repository
+#
+svninfos = dict (
+	svnrepos  = "svn://goldfinger.informatik.rwth-aachen.de/mcg-mesh",
+	svnmappings = { '/config/meshnode/trunk' : '/config',
+					'/drivers/madwifi-ng/trunk' : '/drivers/madwifi-ng',
+					#'/boot/linux/trunk' : '/linux',
+					'/routing/olsr/trunk' : '/routing/olsr',
+					'/scripts/trunk' : '/scripts',
+					'/tools/trunk' : '/tools' }		   
+					
+)
+	
 
 #
 # MCG Mesh Node Information
 #
-
 nodeinfos = dict(
 	vmeshnode = dict(
 		hostprefix = 'xenmachine',
@@ -38,8 +53,7 @@ imageinfos = dict(
 #
 # Fill up nodeinfo
 #
-
-for nodetype,data in nodeinfos.items():
+for data in nodeinfos.itervalues():
 	data['host'] 		= data['sender']+data['gw']
 	data['gwc'] 		= len(data['gw'])
 	data['senderc'] 	= len(data['sender'])

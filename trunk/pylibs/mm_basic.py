@@ -13,25 +13,37 @@ logging.basicConfig(
 	datefmt = '%b %d %H:%M:%S')
 
 #
-# Check Environment Variable
+# Check Environment Variables
 #
+if os.environ.has_key('MESH') and nodeinfos.has_key(os.environ['MESH']):
+	nodetype = os.environ['MESH']
+	nodeinfo = nodeinfos[nodetype]
+
+if os.environ.has_key('MESH_IMAGE') and imageinfos.has_key(os.environ['MESH_IMAGE']):
+	imagetype = os.environ['MESH_IMAGE']
+	imageinfo = imageinfos[imagetype]
+	if globals().has_key('nodetype'):
+		imagepath = "%s/%s/%s" % (imageprefix,imagetype,nodetype)
 
 
-if not os.environ.has_key('MESH') or not nodeinfos.has_key(os.environ['MESH']):
-	error("please set environment variable MESH to one of %s" % nodeinfos.keys())
-	sys.exit(1)
+def requirenodetype():
+	global nodetype,nodeinfo
+	if not globals().has_key('nodetype'):
+		error("please set environment variable MESH to one of %s" % nodeinfos.keys())
+		sys.exit(1)
+	
 
-nodetype = os.environ['MESH']
-nodeinfo = nodeinfos[nodetype]
+def requireimagetype():
+	global imagetype,imageinfo,imagepath
+	if not globals().has_key('imagetype'):
+		error("please set environment variable MESH_IMAGE to one of %s" % imageinfos.keys())
+		sys.exit(1)
 
-if not os.environ.has_key('MESH_IMAGE') or not imageinfos.has_key(os.environ['MESH_IMAGE']):
-	error("please set environment variable MESH_IMAGE to one of %s" % imageinfos.keys())
-	sys.exit(1)
-
-imagetype = os.environ['MESH_IMAGE']
-imageinfo = imageinfos[imagetype]
-imagepath = "%s/%s/%s" % (imageprefix,imagetype,nodetype)
-
+def requireroot():
+	if not os.getuid()==0:
+		error("you must be root to do this")
+		sys.exit(1)
+	
 
 #
 # Basic Functions
@@ -76,7 +88,7 @@ def node_check_online(nodes):
 	return [node for node in nodes if host_check_online(nodename(node))]
 
 
-if nodetype=='vmeshnode':
+if globals().has_key('nodetype') and nodetype=='vmeshnode':
 	import mm_xen
 	from mm_xen import *
 
