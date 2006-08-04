@@ -4,6 +4,17 @@ svnprefix = "/opt/meshnode"
 # group id of "mcg-mesh" group
 meshgid = 30012;
 
+
+#
+# Information about kernel
+#
+kernelinfos = dict (
+	mirror = "http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/",
+	version = "2.6.16.27",
+	srcpath = "/usr/src"
+	)
+
+
 #
 # Information about the subversion repository
 #
