@@ -14,7 +14,7 @@ svninfos = dict (
 					#'/boot/linux/trunk' : '/linux',
 					'/routing/olsr/trunk' : '/routing/olsr',
 					'/scripts/trunk' : '/scripts',
-					'/tools/trunk' : '/tools' }		   
+					'/tools/dbttcp/trunk' : '/tools/dbttcp' }		   
 					
 )
 	
