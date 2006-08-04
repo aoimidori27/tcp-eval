@@ -81,8 +81,14 @@ def svnupdate():
 				sts = os.waitpid(prog.pid, 0)
 
 # update kernel
-def kernelupdate():
-	pass
+def kernelupdate_internal():
+	kernel='linux-%s' % kernelinfos['version']
+	dst= kernelinfos['srcpath']+'/'+kernel
+	if not os.path.exists(dst):
+		info("Directory %s not found, getting fresh image..." % dst)
+		cmd='wget %s/v2.6/linux-%s.tar.bz2 -O - | tar xj -C %s' \
+			 % (kernelinfos['mirror'],kernelinfos)
+		info(cmd)
  
 			
 
