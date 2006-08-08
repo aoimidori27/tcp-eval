@@ -24,8 +24,11 @@ svninfos = dict (
 					'/drivers/madwifi-ng/trunk' : '/drivers/madwifi-ng',
 					#'/boot/linux/trunk' : '/linux',
 					'/routing/olsr/trunk' : '/routing/olsr',
+					'/routing/aodv/trunk' : '/routing/aodv',
+					'/routing/dymo/trunk' : '/routing/dymo',
 					'/scripts/trunk' : '/scripts',
-					'/tools/dbttcp/trunk' : '/tools/dbttcp' }		   
+					'/tools/dbttcp/trunk' : '/tools/dbttcp'
+					}		   
 					
 )
 	
@@ -48,6 +51,7 @@ nodeinfos = dict(
 		gw		    = [i+3 for i in range(3)],
 		instbal	    = "instbal.sh",
 		dymoinst	= "/usr/local/sbin",
+		kernelsrc  = "http://sunsite.informatik.rwth-aachen.de/pub/Linux/kernel/v2.6/linux-2.6.16.27.tar.bz2",
 		wlandev	    = "ath0"
 	)
 )
