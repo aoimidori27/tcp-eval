@@ -11,7 +11,9 @@ meshgid = 30012;
 kernelinfos = dict (
 	mirror = "http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/",
 	version = "2.6.16.27",
-	srcpath = "/usr/src"
+	srcpath = "/usr/src",
+	modifiedfiles = ('include/net/ip_fib.h','include/net/route.h',
+					 'net/ipv4/fib_semantics.c','net/ipv4/route.c')
 	)
 
 
@@ -22,7 +24,7 @@ svninfos = dict (
 	svnrepos  = "svn://goldfinger.informatik.rwth-aachen.de/mcg-mesh",
 	svnmappings = { '/config/meshnode/trunk' : '/config',
 					'/drivers/madwifi-ng/trunk' : '/drivers/madwifi-ng',
-					#'/boot/linux/trunk' : '/linux',
+					'/boot/linux/branches/upstream' : '/linux',
 					'/routing/olsr/trunk' : '/routing/olsr',
 					'/routing/aodv/trunk' : '/routing/aodv',
 					'/routing/dymo/trunk' : '/routing/dymo',
