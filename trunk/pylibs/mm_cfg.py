@@ -6,7 +6,7 @@ meshgid = 30012;
 
 
 #
-# Information about kernel
+# Information about the kernel
 #
 kernelinfos = dict (
 	mirror = "http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/",
@@ -14,7 +14,7 @@ kernelinfos = dict (
 	srcpath = "/usr/src",
 	modifiedfiles = ('include/net/ip_fib.h','include/net/route.h',
 					 'net/ipv4/fib_semantics.c','net/ipv4/route.c')
-	)
+)
 
 
 #
@@ -58,6 +58,9 @@ nodeinfos = dict(
 	)
 )
 
+#
+# Informations about the different images
+#
 imageinfos = dict(
 	gentoo = dict(
 	    mounts = { '/usr/portage' : '/usr/portage' }
