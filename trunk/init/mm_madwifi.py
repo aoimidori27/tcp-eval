@@ -1,89 +1,99 @@
 #!/usr/bin/python
 
-#
-# Imports
-#
+# imports
 import os, logging, logging.handlers, sre, socket, sys, optparse, time
 from logging import info, debug, warn, error
 from subprocess import Popen, PIPE
 
 
-#
+# class for the database
+class Madwifi(object):
+	# global variables
+	address	= 'mcg-mesh'
+	channel      = 'node.iwconfig'
+	device       = 'meshserver'
+	essid       = 'meshnode'
+	mode     = 5
+	hwdevice     = 2
+	txpower      = 0
+
+		
+	def __init__(self, hwdevice, device, address, channel, essid, mode, address, txpower):
+		self.hwdevice = hwdevice
+		self.address = device
+		self.channel = address
+		self.device
+		self.hwdevice
+		self.
+		
+
 # Load module
-#
-#def loadmod():
+def loadmod(options):
 #	cmd = 'lsmod'
 #	prog = Popen(cmd, stdout = PIPE, shell = False)
 #	sts = os.wait(prog.pid, 0)
-#	
-#	if sts:
-#		warn('Madwifi is already loaded.')
-#	else
-#		info('Loading madwifi...')
+	
+	if sts:
+		warn('Madwifi is already loaded.')
+	else:
+		info('Loading madwifi...')
 #		command = 'modprobe'
 #		args = 'ath-pci autocreate=none'
 #		prog = Popen(command + arguments, stdout = PIPE, shell = False)
-#		sts = os.wait(program.pid, 0)
-#		
-#		
+#		sts = os.wait(program.pid, 0)	
 #	command = 'lsmod | grep ath_pci &> /dev/null'
-#
-#
-##
-## Load unmodule
-##
-#def unloadmod():
-#	info('Unloading madwifi...')
+
+
+# Load unmodule
+def unloadmod(options):
+	info('Unloading madwifi...')
 #	command = 'rmmod ath-pci wlan-scan-sta ath-rate-sample wlan ath-hal'
 #	os.system(command)
-#
-#
-##
-## Create WLANDev
-##
-#def createdev():
-#	info('Unloading madwifi...')
+
+
+# Create WLANDev
+def createdev(options):
+	info('Creating VAP in %s mode' %(options.mode))
 #	command = [wlanconfig ath create wlandev $HW_WIFIDEV wlanmode, '$WLANMODE']
 #	output = Popen(["mycmd", "myarg"], stdout=PIPE).communicate()[0]
 #	
 #	WIFIDEV = `wlanconfig ath create wlandev $HW_WIFIDEV wlanmode $WLANMODE` &>/dev/null
-#
-#
-#
-#
-#def killdev():
-#	      if ip link show $WIFIDEV &>/dev/null; then
-#                ebegin Destroying $WIFIDEV
-#                wlanconfig $WIFIDEV destroy &>/dev/null
-#                eend $?
-#
-#
-#
-#def ifup():
-#        ebegin Bringing $WIFIDEV up
-#        ip link set $WIFIDEV up &>/dev/null && \
-#        ip addr flush dev $WIFIDEV &>/dev/null && \
-#        ip addr add $IPADDR dev $WIFIDEV &>/dev/null && \
-#        eend $?
-#
-#
-#def setessid():
+
+
+def killdev(options):
+	print 'killdev'
+#   if ip link show $WIFIDEV &>/dev/null; then
+#		ebegin Destroying $WIFIDEV
+#       wlanconfig $WIFIDEV destroy &>/dev/null
+
+
+def ifup(options):
+	print 'ifup'
+#   ebegin Bringing $WIFIDEV up
+#   ip link set $WIFIDEV up &>/dev/null && \
+#   ip addr flush dev $WIFIDEV &>/dev/null && \
+#   ip addr add $IPADDR dev $WIFIDEV &>/dev/null && \
+
+
+def setessid(options):
+	print 'setessid'
 #	ebegin iwconfig $WIFIDEV essid $SSID
 #	iwconfig $WIFIDEV essid $SSID &>/dev/null
-#	eend $?
-#
-#
-#def setchannel()
-#        ebegin Setting channel on $WIFIDEV to $CHANNEL
-#        iwconfig $WIFIDEV channel $CHANNEL &>/dev/null
-#        eend $?
-#
-#
-#def settxpower()
-#        ebegin Setting txpower on $WIFIDEV to $TXPOWER dBm
-#        iwconfig $WIFIDEV txpower $TXPOWER &>/dev/null
-#        eend $?
-#
+
+
+
+def setchannel(options):
+	print 'setchannel'
+#   ebegin Setting channel on $WIFIDEV to $CHANNEL
+#   iwconfig $WIFIDEV channel $CHANNEL &>/dev/null
+
+
+
+def settxpower(options):
+	print 'settxpower'
+#   ebegin Setting txpower on $WIFIDEV to $TXPOWER dBm
+#   iwconfig $WIFIDEV txpower $TXPOWER &>/dev/null
+
 
 
 # main function
@@ -103,26 +113,26 @@ def main():
 	parser.add_option('-v', '--verbose',
 					  action = 'store_true', dest = 'verbose',
 					  help = 'being more verbose')	
-	parser.add_option('-a', '--addr', metavar="IP",
+	parser.add_option('-a', '--addr', metavar = "IP",
 					  action = 'store', dest = 'addr',
 					  help = 'define the IP address [default: %default]')				  
-	parser.add_option('-c', '--chan', metavar="NUM",
+	parser.add_option('-c', '--chan', metavar = "NUM",
 					  action = 'store', dest = 'channel',
 					  help = 'define the wireless channel [default: %default]')
-	parser.add_option('-d', '--dev',  metavar="DEV",
+	parser.add_option('-d', '--dev',  metavar = "DEV",
 					  action = 'store', dest = 'device',
 					  help = 'define the device [default: %default]')	
-	parser.add_option('-e', '--essid', metavar="ID",
+	parser.add_option('-e', '--essid', metavar = "ID",
 					  action = 'store', dest = 'essid',
 					  help = "define the essid [default: %default]")
 	parser.add_option('-m', '--mode',
 					  action = 'store', dest = 'mode',
 					  help = "define the mode [sta|adhoc|ap|monitor|wds|"\
 					         "ahdemo] \n [default: %default]")
-	parser.add_option('-w', '--hwdev', metavar="HW",
+	parser.add_option('-w', '--hwdev', metavar = "HW",
 					  action = 'store', dest = 'hwdev',
 					  help = 'define the device [default: %default]')
-	parser.add_option('-t', '--txpower', metavar="TX",
+	parser.add_option('-t', '--txpower', metavar = "TX",
 					  action = 'store', dest = 'txpower',
 					  help = 'define the TX-Power [default: %default]')
 	(options, args) = parser.parse_args()
@@ -161,9 +171,10 @@ def main():
 		logging.basicConfig(level = log_level, format = log_format,
 							datefmt = log_datefmt)
 
-	# call appropriate function
-	eval
+	print options.mode
 
+	# call appropriate function
+	eval('%s(%s)' %(args[0], options))
 
 
 if __name__ == '__main__':
