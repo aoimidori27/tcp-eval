@@ -6,7 +6,6 @@ import subprocess
 from logging import info, debug, warn, error
 
 # mcg-mesh imports
-#from mm_basic import *
 from mm_application import Application
 
 
@@ -61,13 +60,7 @@ class Madwifi(Application):
 		self.parser.add_option("-t", "--txpower", metavar = "TX",
 						  action = "store", dest = "txpower",
 						  help = "define the TX-Power [default: %default]")
-		
-		# parse options
-		self.parse_option()
-		
-		# set options
-		self.set_option()
-		
+				
 		# execute object
 		self.main()
 
@@ -100,6 +93,11 @@ class Madwifi(Application):
 
 	def loadmod(self):
 		"Loading madwifi-ng driver"
+
+		p1 = Popen(["lsmod"], stdout=PIPE)
+		p2 = Popen(["grep", "ath_pci"], stdin = p1.stdout, stdout = PIPE)
+		output = p2.communicate()[0]
+		print output
 	
 #		if lsmod | grep ath_pci &>/dev/null; then
 #			warnig("Madwifi-ng is already loaded")
@@ -178,6 +176,12 @@ class Madwifi(Application):
 
 	def main(self):
 		"Main method of the madwifi object"
+
+		# parse options
+		self.parse_option()
+		
+		# set options
+		self.set_option()
 	
 		# call the corresponding method
 		eval("self.%s()" %(self.action)) 
