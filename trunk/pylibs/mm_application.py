@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# imports
+# python imports
 import optparse, logging, logging.handlers
 from logging import info, debug, warning, error
 
@@ -25,12 +25,16 @@ class Application(object):
 							   help = "being more verbose")
 
 
-	def init(self):
-		"Initialization of the object"
+	def parse_option(self):
+		"parse options"
 	
 		# parse options
 		(self.options, self.args) = self.parser.parse_args()
 
+
+	def set_option(self):
+		"set options"
+		
 		# being verbose?
 		if self.options.verbose:
 			log_level = logging.INFO

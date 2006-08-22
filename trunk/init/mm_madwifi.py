@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys, os, optparse
+import subprocess
 from logging import info, debug, warn, error
-from subprocess import Popen, PIPE
 
 # mcg-mesh imports
-from mm_basic import *
+#from mm_basic import *
 from mm_application import Application
 
 
@@ -19,9 +18,9 @@ class Madwifi(Application):
 		"Constructor of the object"
 	
 		# call the super constructor
-		Application.__init__(self)
+		super(Madwifi, self).__init__()
 	
-		# object variables (set the default for the option parser)
+		# object variables (set the defaults for the option parser)
 		self.hwdevice = "wifi0"
 		self.device   = "ath0"
 		self.address  = "169.254.9.1"
@@ -62,13 +61,26 @@ class Madwifi(Application):
 		self.parser.add_option("-t", "--txpower", metavar = "TX",
 						  action = "store", dest = "txpower",
 						  help = "define the TX-Power [default: %default]")
-
-
-	def init(self):
-		"Initialization of the object"
 		
-		# call the super constructor
-		Application.init(self)
+		# parse options
+		self.parse_option()
+		
+		# set options
+		self.set_option()
+		
+		# execute object
+		self.main()
+
+
+	def set_option(self):
+		"set options"
+		
+		# call the super set_option method
+		super(Madwifi, self).set_option()
+		
+		# correct numbers of arguments?
+		if len(self.args) != 1:
+			self.parser.error("incorrect number of arguments")
 
 		self.hwdevice = self.options.hwdevice
 		self.device   = self.options.device
@@ -77,16 +89,13 @@ class Madwifi(Application):
 		self.essid    = self.options.essid
 		self.wlanmode = self.options.wlanmode
 		self.txpower  = self.options.txpower
+		self.action   = self.args[0]
 
-		# correct numbers of arguments?
-		if len(self.args) != 1:
-			self.parser.error("incorrect number of arguments")
-			
 		# does the command exists?
-		if not self.args[0] in ("loadmod", "unloadmod", "createdev", "killdev" \
-						   		"ifup", "ifdown", "setessid", "setchannel", \
-						   		"settxpower"):
-			parser.error("unkown COMMAND %s" %(self.args[0]))
+		if not self.action in ("loadmod", "unloadmod", "createdev", "killdev" \
+						   	   "ifup", "ifdown", "setessid", "setchannel", \
+						   	   "settxpower"):
+			self.parser.error("unkown COMMAND %s" %(self.action))
 	
 
 	def loadmod(self):
@@ -104,6 +113,11 @@ class Madwifi(Application):
 		"Loading madwifi-ng driver"
 		
 		info("Unloading madwifi-ng")
+		command = "ls"
+		arguments = "-l"
+		retcode = subprocess.call([command, arguments])
+#		output = program.communicate()[0]
+#		print retcode
 #		rmmod ath-pci wlan-scan-sta ath-rate-sample wlan ath-hal
 
 		
@@ -162,20 +176,13 @@ class Madwifi(Application):
 #		iwconfig $WIFIDEV txpower $TXPOWER &>/dev/null
 
 
-	def run(self):
+	def main(self):
 		"Main method of the madwifi object"
 	
-		eval("self.%s()" %(self.args[0])) 
+		# call the corresponding method
+		eval("self.%s()" %(self.action)) 
 
 
 
-# main function
-def main():
-	madwifi = Madwifi()
-	madwifi.init()
-	madwifi.run()
-	
-
-	
 if __name__ == "__main__":
- 	main()
+	madwifi = Madwifi()
