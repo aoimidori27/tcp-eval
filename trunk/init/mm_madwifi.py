@@ -4,6 +4,7 @@
 # python imports
 import os, subprocess
 from logging import info, debug, warn, error
+ 
 
 # mcg-mesh imports
 from mm_application import Application
@@ -252,4 +253,4 @@ class Madwifi(Application):
 
 
 if __name__ == "__main__":
-	madwifi = Madwifi()
+	Madwifi()
