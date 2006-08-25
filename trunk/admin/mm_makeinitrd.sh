@@ -34,7 +34,7 @@ BINFILES="$BINFILES,kill,logger,ls,mknod,mount,ping,rm,sed"
 BINFILES="$BINFILES,sh,sleep,umount,uname"
 
 # Files which belong to /sbin
-SBINFILES="brctl,dhclient3,dhclient,hwclock,ifconfig,insmod,ip,losetup"
+SBINFILES="brctl,dhclient3,dhclient,hwclock,ifconfig,insmod,ip,losetup,route"
 SBINFILES="$SBINFILES,modprobe,ntpdate,pivot_root,portmap,route"
 SBINFILES="$SBINFILES,openvpn,ethtool,syslog-ng,strace"
 
