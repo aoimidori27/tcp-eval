@@ -101,7 +101,8 @@ class Madwifi(Application):
 	
 		if stdout == "":
 			info("Loading madwifi-ng driver...")
-			retcode = subprocess.call(["modprobe", "ath-pci" , "autocreate=none"], shell = True)
+			retcode = subprocess.call(["modprobe", "ath-pci", \
+									   "autocreate=none"], shell = True)
 			if retcode < 0:
 				error("Loading madwifi-ng driver was unsuccessful")
 		else:
@@ -118,7 +119,9 @@ class Madwifi(Application):
 
 		if not stdout == "":
 			info("Unloading madwifi-ng")
-			retcode = subprocess.call(["rmmod", "ath-pci wlan-scan-sta ath-rate-sample wlan ath-hal"], shell = True)
+			retcode = subprocess.call(["rmmod", "ath-pci wlan-scan-sta " \
+									   "ath-rate-sample wlan ath-hal"], \
+									  shell = True)
 			if retcode < 0:
 				error("Unloading madwifi-ng driver was unsuccessful")
 		else:
@@ -129,7 +132,9 @@ class Madwifi(Application):
 		"Creating VAP in the desired mode"
 	
 		info("Creating VAP in %s mode" %(self.wlanmode))
-		retcode = subprocess.call(["wlanconfig", self.device, "create wlandev", self.hwdevice, "wlanmode", self.wlanmode], shell = True)
+		retcode = subprocess.call(["wlanconfig", self.device, "create wlandev", \
+								   self.hwdevice, "wlanmode", self.wlanmode], \
+								  shell = True)
 		if retcode < 0:
 			error("Unloading madwifi-ng driver was unsuccessful")
 
@@ -137,12 +142,14 @@ class Madwifi(Application):
 	def killdev(self):
 		"Destroying VAP"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], stdout = subprocess.PIPE)
+		prog = subprocess.Popen(["ip", "link show", self.device], \
+								stdout = subprocess.PIPE)
 		(stdout, stderr) = prog.communicate()
 
 		if not stdout == "":
 			info("Destroying VAP %s" %(self.device))
-			retcode = subprocess.call(["wlanconfig", self.device, "destroy"], shell = True)
+			retcode = subprocess.call(["wlanconfig", self.device, "destroy"], \
+									  shell = True)
 			if retcode < 0:
 				error("Destroying VAP %s was unsuccessful" %(self.device))
 		else:
@@ -152,14 +159,18 @@ class Madwifi(Application):
 	def ifup(self):
 		"Bring the network interface up"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], stdout = subprocess.PIPE)
+		prog = subprocess.Popen(["ip", "link show", self.device], \
+								stdout = subprocess.PIPE)
 		(stdout, stderr) = prog.communicate()
 
 		if not stdout == "":
 			info("Bring VAP %s up" %(self.device))
-			retcode1 = subprocess.call(["ip", "link set", self.device, "up"], shell = True)
-			retcode2 = subprocess.call(["ip", "addr flush dev", self.device], shell = True)
-			retcode3 = subprocess.call(["ip", "addr add", self.address, "dev", "self.device"], shell = True)
+			retcode1 = subprocess.call(["ip", "link set", self.device, "up"], \
+									   shell = True)
+			retcode2 = subprocess.call(["ip", "addr flush dev", self.device],
+									   shell = True)
+			retcode3 = subprocess.call(["ip", "addr add", self.address, "dev",
+										"self.device"], shell = True)
 			if retcode1 < 0 and retcode2 < 0 and retcode3 < 0:
 				error("Bring VAP %s up was unsuccessful" %(self.device))
 		else:
@@ -175,14 +186,17 @@ class Madwifi(Application):
 	def setessid(self):
 		"Set the ESSID of desired device"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], stdout = subprocess.PIPE)
+		prog = subprocess.Popen(["ip", "link show", self.device], \
+								stdout = subprocess.PIPE)
 		(stdout, stderr) = prog.communicate()
 
 		if not stdout == "":
 			info("Setting essid on %s to %s" %(self.device, self.essid))
-			retcode = subprocess.call(["iwconfig", self.device, "essid", self.essid], shell = True)
+			retcode = subprocess.call(["iwconfig", self.device, "essid", \
+									  self.essid], shell = True)
 			if retcode < 0:
-				error("Setting essid on %s to %s was unsuccessful" %(self.device, self.essid))
+				error("Setting essid on %s to %s was unsuccessful" \
+					  %(self.device, self.essid))
 		else:
 			warn("VAP %s does not exist" %(self.device))
 	
@@ -190,14 +204,17 @@ class Madwifi(Application):
 	def setchannel(self):
 		"Set the WLAN channel of desired device"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], stdout = subprocess.PIPE)
+		prog = subprocess.Popen(["ip", "link show", self.device], \
+								stdout = subprocess.PIPE)
 		(stdout, stderr) = prog.communicate()
 
 		if not stdout == "":
 			info("Setting channel on %s to %s" %(self.device, self.channel))
-			retcode = subprocess.call(["iwconfig", self.device, "channel", self.channel], shell = True)
+			retcode = subprocess.call(["iwconfig", self.device, "channel", \
+									  self.channel], shell = True)
 			if retcode < 0:
-				error("Setting channel on %s to %s was unsuccessful" %(self.device, self.channel))
+				error("Setting channel on %s to %s was unsuccessful" \
+					  %(self.device, self.channel))
 		else:
 			warn("VAP %s does not exist" %(self.device))
 		
@@ -205,14 +222,17 @@ class Madwifi(Application):
 	def settxpower(self):
 		"Set the TX-Power of desired device"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], stdout = subprocess.PIPE)
+		prog = subprocess.Popen(["ip", "link show", self.device], \
+								stdout = subprocess.PIPE)
 		(stdout, stderr) = prog.communicate()
 
 		if not stdout == "":
 			info("Setting txpower on %s to %s dBm" %(self.device, self.txpower))
-			retcode = subprocess.call(["iwconfig", self.device, "txpower", self.txpower], shell = True)
+			retcode = subprocess.call(["iwconfig", self.device, "txpower", \
+									  self.txpower], shell = True)
 			if retcode < 0:
-				error("Setting txpower on %s to %s dBm was unsuccessful" %(self.device, self.txpower))
+				error("Setting txpower on %s to %s dBm was unsuccessful"
+					  %(self.device, self.txpower))
 		else:
 			warn("VAP %s does not exist" %(self.device))
 
