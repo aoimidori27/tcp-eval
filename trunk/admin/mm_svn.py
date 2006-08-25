@@ -1,14 +1,13 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-#
-# Imports
-#
-
-import logging,sys,os,time, subprocess, time, optparse
-from mm_application import Application
+# python imports
+import os, subprocess
 from logging import info, debug, warn, error
+
+# mcg-mesh imports
+from mm_application import Application
 from mm_basic import *
-from subprocess import Popen, PIPE
 
 
 class Subversion(Application):
@@ -22,15 +21,36 @@ class Subversion(Application):
 		self.parser.set_usage(usage)
 		self.parser.add_option('-b','--bla');
 
-	def commit():
-		pass
+		self.main()
 
-	def init(self,options,args):
-		pass
 
-	def run(self,options,args):
-		if args[0] == 'update':
-			self.update()
+	def set_option(self):
+		# super method
+		Application.__init__(self);
+		
+		# correct numbers of arguments?
+		if len(self.args) != 1:
+			self.parser.error("incorrect number of arguments")
+
+		
+		# does the command exists?
+		if not self.args[0] in ('update', 'status'):
+			self.parser.error('unkown COMMAND %s' %(args[0]))
+		else:
+			self.action = self.args[0]
+
+	
+	def main(self):
+		"main method of Subversion object"
+		
+		# parse options
+		self.parse_option()
+		
+		# set options
+		self.set_option()
+		
+		# call the corresponding method
+		eval("self.%s()" %(self.action)) 
 
 	# svn update
 	def update(self):
@@ -47,17 +67,23 @@ class Subversion(Application):
 						cmd=('svn','checkout',src,dst)
 					else:
 						cmd=('svn','update',dst)
-					print cmd
+					info(cmd)
 					prog = subprocess.call(cmd,shell=False)
 
-def main():
-	myClass = Subversion()
-	myClass.start()
-	
-#	(options,args) = myObject.parse()
+
+	# svn status
+	def status(self):
+		for image in imageinfos.iterkeys():
+			for node in nodeinfos.iterkeys():
+				for src,dst in svninfos['svnmappings'].iteritems():	
+					dst= imageprefix +"/"+ image +"/"+ node + svnprefix + dst
+					cmd=('svn','status',dst)
+					info(cmd)
+					prog = subprocess.call(cmd,shell=False)
+
 	
 if __name__ == '__main__':
- 	main()
+	Subversion()
 
 
 
