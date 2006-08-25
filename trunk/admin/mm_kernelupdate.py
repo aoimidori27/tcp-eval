@@ -9,6 +9,7 @@ from logging import info, debug, warn, error
 # mcg-mesh imports
 from mm_application import Application
 from mm_basic import *
+from mm_util import execute
 
 
 class KernelUpdate(Application):
@@ -21,6 +22,9 @@ class KernelUpdate(Application):
 		Application.__init__(self)
 
 		# no custom options yet
+
+		# defaults
+		self.parser.set_defaults(verbose=True)
 
 		# execute object
 		self.main()
@@ -56,13 +60,13 @@ class KernelUpdate(Application):
 		info("Check out kernel upstream");
 		cmd=('svn','checkout',svninfos["svnrepos"]+'/boot/linux/branches/upstream',dst)
 		info(cmd)
-		prog = subprocess.call(cmd,shell=False)
+		execute(cmd,shell=False)
 	
 		# download kernel image and extract
 		cmd='wget %s/v2.6/%s.tar.gz -O - | tar xz -C %s' \
 			 % (kernelinfos['mirror'],kernel,tmp)
 		info(cmd)
-		prog = subprocess.call(cmd,shell=True)
+		execute(cmd,shell=True)
 	
 		# get revision
 		cmd=("svn info %s | grep Revision | awk '{print $2;}'" % dst)
@@ -75,23 +79,23 @@ class KernelUpdate(Application):
 		# commit new versions of files to upstream repository
 		cmd=('svn','commit',dst,'-m "updated kernel to %s"' % kernel)
 		info(cmd)
-		prog = subprocess.call(cmd,shell=False)
+		execute(cmd,shell=False)
 	
 		# switch repository to trunk
 		cmd=('svn','switch',svninfos["svnrepos"]+'/boot/linux/trunk',dst)
 		info(cmd)
-		prog = subprocess.call(cmd,shell=False)
+		execute(cmd,shell=False)
 		
 		# merge upstream with trunk
 		cmd=('svn','merge','-r','%s:HEAD' % local_revision,svninfos["svnrepos"]+'/boot/linux/branches/upstream',dst)
 		info(cmd)
-		prog = subprocess.call(cmd,shell=False)
+		execute(cmd,shell=False)
 
 
 		# remove modified files and svn infos
 		cmd='rm -rf `find %s -name .svn`' % dst
 		info(cmd)
-		prog = subprocess.call(cmd,shell=True)
+		execute(cmd,shell=True)
 		for i in kernelinfos['modifiedfiles']:
 			os.system("rm -v %s/%s" % (dst,i) )
 		
@@ -101,7 +105,7 @@ class KernelUpdate(Application):
 			os.system("mkdir -vp %s" % imgdst)
 			cmd='cp -r %s/* %s' % (dst,imgdst)
 			info(cmd)
-			prog = subprocess.call(cmd,shell=True)
+			execute(cmd,shell=True)
 				
 		
 		info("Cleaning up %s ..." % tmp)
