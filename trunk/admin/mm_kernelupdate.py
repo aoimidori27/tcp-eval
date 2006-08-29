@@ -66,7 +66,7 @@ class KernelUpdate(Application):
 		sts = os.waitpid(prog.pid, 0)
 
 		# commit new versions of files to upstream repository
-		cmd = "svn", "commit", dst, "-m \"updated kernel to %s\"" %(kernel)
+		cmd = "svn", "commit", dst, "-m", "\"updated kernel to %s\"" %(kernel)
 		info(cmd)
 		execute(cmd, shell = False)
 	
@@ -77,8 +77,8 @@ class KernelUpdate(Application):
 		execute(cmd, shell = False)
 		
 		# merge upstream with trunk
-		cmd = "svn", "merge", "-r", "%s:HEAD" %(local_revision), \
-			  "%s/boot/linux/branches/upstream" %(svninfos["svnrepos"]), dst
+		cmd = ("svn", "merge", "-r", %s:HEAD" %(local_revision), \
+			  "%s/boot/linux/branches/upstream" %(svninfos["svnrepos"]), dst)
 		info(cmd)
 		execute(cmd, shell = False)
 

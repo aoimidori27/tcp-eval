@@ -65,7 +65,7 @@ class Chroot(Application):
 		# mount
 		for (src, dst) in mounts.iteritems():
 			cmd = "mount -o bind %s %s/%s" % (src, imagepath, dst)
-			execute(cmd, shell = False)
+			execute(cmd, shell = True)
 			
 		# exec command
 		# TODO: error handling, mount only once (in case of multiple shells)
