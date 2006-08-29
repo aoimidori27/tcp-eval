@@ -7,7 +7,7 @@ from logging import info, debug, warning, error
 
 
 class Application(object):
-	"Framework for mcg-mesh applications"
+	"Framework for MCG-Mesh applications"
 	
 
 	def __init__(self):
@@ -16,24 +16,26 @@ class Application(object):
 		# object variables
 		self.parser = optparse.OptionParser()	
 	
-		# standard options valid vor all scripts
+		# initialization of the option parser
+		usage = "usage: %prog [options]"
+		self.parser.set_usage(usage)
 		self.parser.add_option("-s", "--syslog",
 							   action = "store_true", dest = "syslog",
-							   help = "log to syslog instead of stdout")
+							   help = "log to syslog [default: %default]")
 		self.parser.add_option("-v", "--verbose",
 							   action = "store_true", dest = "verbose",
-							   help = "being more verbose")
+							   help = "being more verbose [default: %default]")
 
 
 	def parse_option(self):
-		"parse options"
+		"Parse options"
 	
 		# parse options
 		(self.options, self.args) = self.parser.parse_args()
 
 
 	def set_option(self):
-		"set options"
+		"Set options"
 		
 		# being verbose?
 		if self.options.verbose:

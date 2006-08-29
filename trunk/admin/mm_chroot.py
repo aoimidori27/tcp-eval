@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*
 
 # python imports
-import os, subprocess
 from logging import info, debug, warn, error
-
 
 # mcg-mesh imports
 from mm_application import Application
 from mm_basic import *
-
+from mm_util import execute
 
 
 class Chroot(Application):
@@ -19,25 +17,26 @@ class Chroot(Application):
 		"Constructor of the object"
 
 		# call the super constructor
-		Application.__init__(self)
+		super(Chroot, self).__init__()
 
-		# default command to execute
+		# object variables (set the defaults for the option parser)
 		self.command = 'bash'
 		
+		# initialization of the option parser
 		usage = "usage: %prog [options] [command] \n" \
-				"       where  command is a command to execute within chroot"
-		
+				"where  command is a command to execute within chroot"
 		self.parser.set_usage(usage)
 		self.parser.set_defaults(verbose = True)
 		
 		# execute object
 		self.main()
 
+
 	def set_option(self):
-		"set options"
+		"Set options"
 		
 		# call the super set_option method
-		Application.set_option(self)
+		super(Chroot, self).set_option()
 
 		if len(self.args) > 0:
 			self.command = self.args[0]
@@ -45,29 +44,16 @@ class Chroot(Application):
 				self.command = self.command . arg
 
 
-	def main(self):
-		"Main method of the madwifi object"
-
-		# parse options
-		self.parse_option()
-		
-		# set options
-		self.set_option()
-		
-		# call the corresponding method
-		self.chroot_exec(self.command)	
-
-	
-	# Chroot and execute a command	
 	def chroot_exec(self,cmd):
+		"Chroot and execute a command"
 		
 		# must be root
-		requireroot();
+		requireroot()
 		
 		# for chroot, imagetype and nodetype are required
-		requirenodetype();
-		requireimagetype();
-		info("Imagetype: "+imagetype);
+		requirenodetype()
+		requireimagetype()
+		info("Imagetype: %s" %(imagetype))
 		
 		# common mounts for all chroots
 		mounts = { '/dev'  : '/dev',
@@ -77,19 +63,37 @@ class Chroot(Application):
 		mounts.update(imageinfo['mounts'])
 		
 		# mount
-		for src,dst in mounts.iteritems():
-			os.system("mount -o bind %s %s/%s" % (src,imagepath,dst))
+		for (src, dst) in mounts.iteritems():
+			cmd = "mount -o bind %s %s/%s" % (src, imagepath, dst)
+			execute(cmd, shell = False)
 			
 		# exec command
 		# TODO: error handling, mount only once (in case of multiple shells)
-		os_cmd = " ".join(["chroot",imagepath,"/bin/bash -c 'export HOSTNAME=%s && source /etc/profile && %s'" % (nodeinfo['hostprefix'],cmd)])
-		info(os_cmd)
-		os.system(os_cmd)
+		cmd = "chroot", imagepath, "/bin/bash -c 'export " \
+			  "HOSTNAME=%s && source /etc/profile && %s'" \
+			  %(nodeinfo['hostprefix'], cmd)
+		info(cmd)
+		execute(cmd, shell = False)
 
 		# umount
 		for dst in mounts.itervalues():
-			os.system("umount %s/%s" % (imagepath,dst))
+			cmd = "umount %s/%s" %(imagepath,dst)
+			execute(cmd, shell = False)
+
+
+	def main(self):
+		"Main method of the chroot object"
+
+		# parse options
+		self.parse_option()
+		
+		# set options
+		self.set_option()
+		
+		# call the corresponding method
+		self.chroot_exec(self.command)	
 				  
+
 
 if __name__ == "__main__":
 	Chroot()

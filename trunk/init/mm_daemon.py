@@ -21,10 +21,10 @@ class Daemon(Application):
 	
 		# object variables (set the defaults for the option parser)
 		self.daemon_opts = "-v -s"
-		self.piddir      = "/usr/local/bin"
+		self.piddir      = "/var/run"
 
 		# initialization of the option parser
-		usage = "usage: %prog [options] COMMAND \n" \
+		usage = "usage: %prog [options] PROGRAM COMMAND \n" \
 				"where  COMMAND := { start | stop | restart  }"
 		self.parser.set_usage(usage)
 		self.parser.set_defaults(daemon_opts = self.daemon_opts, \
@@ -41,18 +41,19 @@ class Daemon(Application):
 
 
 	def set_option(self):
-		"set options"
+		"Set options"
 		
 		# call the super set_option method
-		super(Madwifi, self).set_option()
+		super(Daemon, self).set_option()
 		
 		# correct numbers of arguments?
-		if len(self.args) != 1:
+		if len(self.args) != 2:
 			self.parser.error("incorrect number of arguments")
 
 		self.piddir      = self.options.piddir
 		self.daemon_opts = self.options.daemon_opts
-		self.action      = self.args[0]
+		self.program     = self.args[0]
+		self.action      = self.args[1]
 
 		# does the command exists?
 		if not self.action in ("start", "stop", "restart"):
@@ -60,59 +61,36 @@ class Daemon(Application):
 
 
 	def start(self):
-		"Set the ESSID of desired device"
+		"Starting the program as a daemon"
 
-#		for program in $AUTOSTART:
-			info("Starting %s " %(program))
-			pidfile = "%s/%s.pid" %(self.piddir, program)
-			retcode = subprocess.call(["start-stop-daemon", \
-									   "--start --make-pidfile --pidfile ", \
-									   pidfile, "--background --startas ", \
-									   program, "--", self.daemon_opts], \
+		info("Starting %s " %(self.program))
+		pidfile = "%s/%s.pid" %(self.piddir, self.program)
+		retcode = subprocess.call(["start-stop-daemon", \
+								   "--start --make-pidfile --pidfile ", \
+								   pidfile, "--background --startas ", \
+								   self.program, "--", self.daemon_opts], \
 								  shell = True)
 		if retcode < 0:
-			error("Unloading madwifi-ng driver was unsuccessful")
+			error("Starting %s as a daemon was unsuccessful" %(self.program))
 
-#		for script in $AUTOSTART; do
-#			ebegin Starting $script
-#				start-stop-daemon --start --make-pidfile --pidfile $PIDDIR/2db_$script.pid --background --startas $SCRIPTDIR/2db_$script.py -- $OPTS
-#			eend $?
-#		done
-	
 		
 	def stop(self):
-		"Set the WLAN channel of desired device"
+		"Stopping the daemon"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], stdout = subprocess.PIPE)
-		(stdout, stderr) = prog.communicate()
-
-		if not stdout == "":
-			info("Setting channel on %s to %s" %(self.device, self.channel))
-			retcode = subprocess.call(["iwconfig", self.device, "channel", self.channel], shell = True)
-			if retcode < 0:
-				error("Setting channel on %s to %s was unsuccessful" %(self.device, self.channel))
-		else:
-			warn("VAP %s does not exist" %(self.device))
-
-#		for script in $AUTOSTART; do
-#			ebegin Stopping $script
-#				start-stop-daemon --stop --pidfile $PIDDIR/2db_$script.pid
-# 			eend $?
-#		done		
+		info("Stopping %s " %(self.program))
+		pidfile = "%s/%s.pid" %(self.piddir, self.program)
+		retcode = subprocess.call(["start-stop-daemon", \
+								   "--stop --pidfile ", pidfile], \
+								  shell = True)
+		if retcode < 0:
+			error("Stopping the daemon %s was unsuccessful" %(self.program))
+		
 
 	def restart(self):
-		"Set the TX-Power of desired device"
+		"Restarting the daemon"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], stdout = subprocess.PIPE)
-		(stdout, stderr) = prog.communicate()
-
-		if not stdout == "":
-			info("Setting txpower on %s to %s dBm" %(self.device, self.txpower))
-			retcode = subprocess.call(["iwconfig", self.device, "txpower", self.txpower], shell = True)
-			if retcode < 0:
-				error("Setting txpower on %s to %s dBm was unsuccessful" %(self.device, self.txpower))
-		else:
-			warn("VAP %s does not exist" %(self.device))
+		self.stop()
+		self.start()
 
 
 	def main(self):
@@ -130,11 +108,4 @@ class Daemon(Application):
 
 
 if __name__ == "__main__":
-	madwifi = Daemon()
-
-
-
-
-# which scripts should be started
-AUTOSTART="ifconfig iwconfig ipmonitor"
-OPTS="-v --syslog"
+	Daemon()

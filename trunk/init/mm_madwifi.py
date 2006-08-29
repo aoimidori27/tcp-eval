@@ -5,7 +5,6 @@
 import os, subprocess
 from logging import info, debug, warn, error
  
-
 # mcg-mesh imports
 from mm_application import Application
 
@@ -67,7 +66,7 @@ class Madwifi(Application):
 
 
 	def set_option(self):
-		"set options"
+		"Set options"
 		
 		# call the super set_option method
 		super(Madwifi, self).set_option()
@@ -172,7 +171,7 @@ class Madwifi(Application):
 									   shell = True)
 			retcode3 = subprocess.call(["ip", "addr add", self.address, "dev",
 										"self.device"], shell = True)
-			if retcode1 < 0 and retcode2 < 0 and retcode3 < 0:
+			if retcode1 < 0 or retcode2 < 0 or retcode3 < 0:
 				error("Bring VAP %s up was unsuccessful" %(self.device))
 		else:
 			warn("VAP %s does not exist" %(self.device))

@@ -100,7 +100,7 @@ class Database(object):
 		if not added_ifaces.empty():
 			for iface in added_ifaces.list.itervalues():
 				if iface.iw_cell == 'Not-Associated':
-					iw_cell = 'NULL';
+					iw_cell = 'NULL'
 				else:
 					iw_cell = "'%s'" %(iface.iw_cell)
 				
@@ -123,7 +123,7 @@ class Database(object):
 		if not changed_ifaces.empty():
 			for iface in changed_ifaces.list.itervalues():
 				if iface.iw_cell == 'Not-Associated':
-					update_cell = 'iw_cell IS NULL';
+					update_cell = 'iw_cell IS NULL'
 				else:
 					update_cell = "iw_cell='%s'" %(iface.iw_cell)
 				
