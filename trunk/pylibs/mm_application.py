@@ -28,6 +28,9 @@ class Application(object):
 		self.parser.add_option("-q", "--quiet",
 							   action = "store_false", dest = "verbose",
 							   help = "being more quiet")
+		self.parser.add_option("--debug",
+							   action = "store_true", dest = "debug",
+							   help = "being even more verbose [default: %default]")
 
 
 	def parse_option(self):
@@ -41,7 +44,9 @@ class Application(object):
 		"Set options"
 		
 		# being verbose?
-		if self.options.verbose:
+		if self.options.debug:
+			log_level = logging.DEBUG
+		elif self.options.verbose:
 			log_level = logging.INFO
 		else:
 			log_level = logging.WARNING
