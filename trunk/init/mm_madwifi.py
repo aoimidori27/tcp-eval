@@ -7,7 +7,7 @@ from logging import info, debug, warn, error
  
 # mcg-mesh imports
 from mm_application import Application
-
+from mm_util import *
 
 class Madwifi(Application):
 	"Class to handle madwifi-ng"
@@ -23,43 +23,55 @@ class Madwifi(Application):
 		self.hwdevice = "wifi0"
 		self.device   = "ath0"
 		self.address  = "169.254.9.1"
-		self.channel  = 0
+		self.channel  = 1
 		self.essid    = "mcg-mesh"
 		self.wlanmode = "ahdemo"
-		self.txpower  = 17
+		self.txpower  = 16
+		self.antenna  = 2
 
 		# initialization of the option parser
 		usage = "usage: %prog [options] COMMAND \n" \
 				"where  COMMAND := { loadmod | unloadmod | createdev | " \
 				"killdev | ifup |\n" \
-				"                    ifdown | setessid | setchannel | settxpower }"
+				"                    ifdown | setessid | setchannel | settxpower | setantenna}"
 		self.parser.set_usage(usage)
-		self.parser.set_defaults(addr = self.hwdevice, channel = self.channel,
-								 dev = self.device, essid = self.essid,
-								 mode = self.wlanmode, hwdev = self.hwdevice,
-								 txpower = self.txpower)
+		self.parser.set_defaults(address  = self.hwdevice,
+								 channel  = self.channel,
+								 device   = self.device,
+								 essid    = self.essid,
+								 wlanmode = self.wlanmode,
+								 hwdevice = self.hwdevice,
+								 txpower  = self.txpower,
+								 antenna  = self.antenna)
+		
+		
 		self.parser.add_option("-a", "--addr", metavar = "IP",
-						  action = "store", dest = "address",
-						  help = "define the IP address [default: %default]")				  
+							   action = "store", dest = "address",
+							   help = "define the IP address [default: %default]")				  
 		self.parser.add_option("-c", "--chan", metavar = "NUM",
-						  action = "store", dest = "channel",
-						  help = "define the wireless channel [default: %default]")
+							   action = "store", dest = "channel",
+							   help = "define the wireless channel [default: %default]")
 		self.parser.add_option("-d", "--dev",  metavar = "DEV",
-						  action = "store", dest = "device",
-						  help = "define the device [default: %default]")	
+							   action = "store", dest = "device",
+							   help = "define the device [default: %default]")	
 		self.parser.add_option("-e", "--essid", metavar = "ID",
-						  action = "store", dest = "essid",
-						  help = "define the essid [default: %default]")
+							   action = "store", dest = "essid",
+							   help = "define the essid [default: %default]")
 		self.parser.add_option("-m", "--mode", metavar = "MODE",
-						  action = "store", dest = "wlanmode",
-						  help = "define the mode [sta|adhoc|ap|monitor|wds|"\
-						  		 "ahdemo] \n [default: %default]")
+							   action = "store", dest = "wlanmode",
+							   help = "define the mode [sta|adhoc|ap|monitor|wds|"\
+							   "ahdemo] \n [default: %default]")
 		self.parser.add_option("-w", "--hwdev", metavar = "HW",
-						  action = "store", dest = "hwdevice",
-						  help = "define the device [default: %default]")
+							   action = "store", dest = "hwdevice",
+							   help = "define the device [default: %default]")
 		self.parser.add_option("-t", "--txpower", metavar = "TX",
-						  action = "store", dest = "txpower",
-						  help = "define the TX-Power [default: %default]")
+							   action = "store", dest = "txpower",
+							   help = "define the TX-Power [default: %default]")
+		self.parser.add_option("-z", "--ant", metavar = "ANT",
+							   action = "store", dest = "antenna", type = int,
+							   help = "define antenna for transmit and receive"\
+							   "\n [default: %default]")
+							   
 		
 		# execute object
 		self.main()
@@ -85,10 +97,10 @@ class Madwifi(Application):
 		self.action   = self.args[0]
 
 		# does the command exists?
-		if not self.action in ("loadmod", "unloadmod", "createdev", "killdev" \
-						   	   "ifup", "ifdown", "setessid", "setchannel", \
-						   	   "settxpower"):
-			self.parser.error("unkown COMMAND %s" %(self.action))
+		if not self.action in ("loadmod", "unloadmod", "createdev", "killdev",
+						   	   "ifup", "ifdown", "setessid", "setchannel", 
+						   	   "settxpower","setantenna"):
+			self.parser.error("unknown COMMAND %s" %(self.action))
 	
 
 	def loadmod(self):
@@ -132,25 +144,24 @@ class Madwifi(Application):
 		"Creating VAP in the desired mode"
 	
 		info("Creating VAP in %s mode" %(self.wlanmode))
-		retcode = subprocess.call(["wlanconfig", self.device, "create wlandev", \
-								   self.hwdevice, "wlanmode", self.wlanmode], \
-								  shell = True)
-		if retcode < 0:
-			error("Unloading madwifi-ng driver was unsuccessful")
+		cmd = ("wlanconfig", self.device, "create", "wlandev", \
+			   self.hwdevice, "wlanmode", self.wlanmode)
+		info(cmd)
+		try:
+			stderr = execute(cmd, shell = False)[1]
+		except CommandFailed:
+			error("Creating %s was unsuccessful" % self.device)
 
 
 	def killdev(self):
 		"Destroying VAP"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], \
-								stdout = subprocess.PIPE)
-		(stdout, stderr) = prog.communicate()
-
-		if not stdout == "":
+		if deviceexists():
 			info("Destroying VAP %s" %(self.device))
-			retcode = subprocess.call(["wlanconfig", self.device, "destroy"], \
-									  shell = True)
-			if retcode < 0:
+			try:
+				call(["wlanconfig", self.device, "destroy"], \
+					 shell = False)
+			except CommandFailed:
 				error("Destroying VAP %s was unsuccessful" %(self.device))
 		else:
 			warn("VAP %s does not exist" %(self.device))
@@ -159,19 +170,16 @@ class Madwifi(Application):
 	def ifup(self):
 		"Bring the network interface up"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], \
-								stdout = subprocess.PIPE)
-		(stdout, stderr) = prog.communicate()
-
-		if not stdout == "":
+		if self.deviceexists():
 			info("Bring VAP %s up" %(self.device))
-			retcode1 = subprocess.call(["ip", "link set", self.device, "up"], \
-									   shell = True)
-			retcode2 = subprocess.call(["ip", "addr flush dev", self.device],
-									   shell = True)
-			retcode3 = subprocess.call(["ip", "addr add", self.address, "dev",
-										"self.device"], shell = True)
-			if retcode1 < 0 or retcode2 < 0 or retcode3 < 0:
+			try:
+				call(["ip", "link","set", self.device, "up"], \
+					 shell = False)
+				call(["ip", "addr","flush","dev", self.device],
+					 shell = False)
+				call(["ip", "addr","add", self.address, "dev", self.device],
+					 shell = False)
+			except CommandFailed:
 				error("Bring VAP %s up was unsuccessful" %(self.device))
 		else:
 			warn("VAP %s does not exist" %(self.device))
@@ -179,22 +187,29 @@ class Madwifi(Application):
 
 	def ifdown(self):
 		"Take a network interface down"
-		
-		info("Take %s down" %(self.device))
 
+		if self.deviceexists():
+			info("Take VAP %s down" %(self.device))
+			try:
+				call(["ip", "link","set", self.device, "down"], 
+					 shell = False)
+				call(["ip", "addr","flush","dev", self.device],
+					 shell = False)
+			except CommandFailed:
+				error("Take VAP %s down was unsuccessful" %(self.device))
+		else:
+			warn("VAP %s does not exist" %(self.device))
+		
 	
 	def setessid(self):
 		"Set the ESSID of desired device"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], \
-								stdout = subprocess.PIPE)
-		(stdout, stderr) = prog.communicate()
-
-		if not stdout == "":
+		if self.deviceexists():
 			info("Setting essid on %s to %s" %(self.device, self.essid))
-			retcode = subprocess.call(["iwconfig", self.device, "essid", \
-									  self.essid], shell = True)
-			if retcode < 0:
+			try:
+				call(["iwconfig", self.device, "essid", 
+					  self.essid], shell = False)
+			except CommandFailed:
 				error("Setting essid on %s to %s was unsuccessful" \
 					  %(self.device, self.essid))
 		else:
@@ -204,15 +219,12 @@ class Madwifi(Application):
 	def setchannel(self):
 		"Set the WLAN channel of desired device"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], \
-								stdout = subprocess.PIPE)
-		(stdout, stderr) = prog.communicate()
-
-		if not stdout == "":
+		if self.deviceexists():
 			info("Setting channel on %s to %s" %(self.device, self.channel))
-			retcode = subprocess.call(["iwconfig", self.device, "channel", \
-									  self.channel], shell = True)
-			if retcode < 0:
+			try:
+				call(("iwconfig", self.device, "channel", 
+					  self.channel), shell = False)
+			except CommandFailed:
 				error("Setting channel on %s to %s was unsuccessful" \
 					  %(self.device, self.channel))
 		else:
@@ -222,19 +234,38 @@ class Madwifi(Application):
 	def settxpower(self):
 		"Set the TX-Power of desired device"
 
-		prog = subprocess.Popen(["ip", "link show", self.device], \
-								stdout = subprocess.PIPE)
-		(stdout, stderr) = prog.communicate()
-
-		if not stdout == "":
+		if self.deviceexists():
 			info("Setting txpower on %s to %s dBm" %(self.device, self.txpower))
-			retcode = subprocess.call(["iwconfig", self.device, "txpower", \
-									  self.txpower], shell = True)
-			if retcode < 0:
+			try:
+				call(["iwconfig", self.device, "txpower",
+					  self.txpower.__str__()], shell = False)
+			except CommandFailed:
 				error("Setting txpower on %s to %s dBm was unsuccessful"
 					  %(self.device, self.txpower))
 		else:
 			warn("VAP %s does not exist" %(self.device))
+
+
+	def setantenna(self):
+		"Set the antenna of desired device"
+
+		try:
+			info("Setting tx/rx-antenna to %d" % self.antenna)
+			call("echo 0 > /proc/sys/dev/%s/diversity" % (self.hwdevice),
+				 shell = True)
+			call("echo %d > /proc/sys/dev/%s/txantenna" % (self.antenna,self.hwdevice),
+				 shell = True)
+			call("echo %d > /proc/sys/dev/%s/rxantenna" % (self.antenna,self.hwdevice),
+				 shell = True)
+		except CommandFailed:
+			error("Setting tx/rx-antenna to %d was unsuccessful" % self.antenna)
+	
+
+
+	def deviceexists(self):
+		cmd = ("ip","link","show",self.device)
+		(stdout, stderr) = execute(cmd,shell=False,raiseError=False)
+		return stdout != ""		
 
 		
 	def main(self):
