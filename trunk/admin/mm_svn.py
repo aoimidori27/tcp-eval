@@ -21,6 +21,8 @@ class Subversion(Application):
 				"COMMAND:= { status | update }\n"
 		self.parser.set_usage(usage)
 
+		self.parser.set_defaults(syslog=False,verbose=True)
+
 		self.main()
 
 	def set_option(self):

@@ -25,7 +25,7 @@ class Chroot(Application):
 		usage = "usage: %prog [options] [command] \n" \
 				"where  command is a command to execute within chroot"
 		self.parser.set_usage(usage)
-		self.parser.set_defaults(verbose = True)
+		self.parser.set_defaults(verbose = True, syslog=False)
 		
 		# execute object
 		self.main()
