@@ -6,8 +6,7 @@ from logging import info, debug, warn, error
  
 # mcg-mesh imports
 from mm_application import Application
-from mm_basic import *
-from mm_util import execute
+from mm_util import *
 
 
 class KernelUpdate(Application):
@@ -35,6 +34,8 @@ class KernelUpdate(Application):
 
 	def kernelupdate(self):
 		"Update Kernel source"
+
+		nodetype = getnodetype()[0]
 	
 		# for kernelupdate only works for meshnodes
 		if nodetype == "meshnode":
@@ -42,33 +43,35 @@ class KernelUpdate(Application):
 			tmp = "/tmp/kernelupdate"
 			dst = "%s/%s" %(tmp, kernel)
 			cmd = "mkdir -p %s" %(dst)
-			execute(cmd, shell = False)
+			execute(cmd, shell = True)
+		else:
+			raise NotImplementedError()
+
 	
 		# check out upstream files
 		info("Check out kernel upstream")
-		cmd = "svn",  "checkout", "%s/boot/linux/branches/upstream %s" \
-			  %(svninfos["svnrepos"]), dst
+		cmd = ("svn",  "checkout", "%s/boot/linux/branches/upstream" \
+			  %(svninfos["svnrepos"]), dst)
 		info(cmd)
-		execute(cmd, shell = False)
-	
+		call(cmd, shell = False)
+		
 		# download kernel image and extract
-		cmd = "wget", "%s/v2.6/%s.tar.gz -O - | tar xz -C %s" \
+		cmd = "wget %s/v2.6/%s.tar.gz -O - | tar xz -C %s" \
 			  % (kernelinfos["mirror"], kernel, tmp)
 		info(cmd)
-		execute(cmd, shell = True)
+		call(cmd, shell = True)
 	
 		# get revision
-		cmd = "svn", "info %s | grep Revision | awk \"{print $2;}\"" %(dst)
+		cmd = "svn info %s | grep Revision | awk '{print $2;}'" %(dst)
 		info(cmd)
-		prog = subprocess.Popen(cmd,stdout=subprocess.PIPE,shell=True)
-		local_revision = prog.stdout.readline().splitlines()[0]
+		(stdout,stderr) = execute(cmd,shell=True)
+		local_revision = stdout.splitlines()[0]
 		info(local_revision)
-		sts = os.waitpid(prog.pid, 0)
 
 		# commit new versions of files to upstream repository
-		cmd = "svn", "commit", dst, "-m", "\"updated kernel to %s\"" %(kernel)
+		cmd = ("svn", "commit", dst, "-m","updated kernel to %s" %(kernel))
 		info(cmd)
-		execute(cmd, shell = False)
+		call(cmd, shell = False)
 	
 		# switch repository to trunk
 		cmd = "svn", "switch", "%s/boot/linux/trunk" %(svninfos["svnrepos"]), \
@@ -77,28 +80,28 @@ class KernelUpdate(Application):
 		execute(cmd, shell = False)
 		
 		# merge upstream with trunk
-		cmd = ("svn", "merge", "-r", %s:HEAD" %(local_revision), \
+		cmd = ("svn", "merge", "-r", "%s:HEAD" %(local_revision), \
 			  "%s/boot/linux/branches/upstream" %(svninfos["svnrepos"]), dst)
 		info(cmd)
-		execute(cmd, shell = False)
+		call(cmd, shell = False)
 
 
 		# remove modified files and svn infos
 		cmd = "rm -rf `find %s -name .svn`" %(dst)
 		info(cmd)
-		execute(cmd, shell = True)
+		call(cmd, shell = True)
 		for i in kernelinfos["modifiedfiles"]:
 			cmd = "rm -v %s/%s" % (dst,i)
-			execute(cmd, shell = False)
+			call(cmd, shell = True)
 		
 		# copy other files to images
 		for img in imageinfos.iterkeys():
 			imgdst = "%s/%s/meshnode/opt/meshnode/linux" %(imageprefix, img)
 			cmd = "mkdir -vp %s" %(imgdst)
-			execute(cmd, shell = False)
+			call(cmd, shell = True)
 			cmd = "cp -r %s/* %s" %(dst, imgdst)
 			info(cmd)
-			execute(cmd, shell = True)
+			call(cmd, shell = True)
 		
 		# clean up		
 		info("Cleaning up %s ..." % tmp)
