@@ -7,7 +7,7 @@ from logging import info, debug, warn, error
 
 # mcg-mesh imports
 from mm_application import Application
-from mm_basic import *
+from mm_util import *
 
 
 class Subversion(Application):
@@ -15,18 +15,17 @@ class Subversion(Application):
 
 
 	def __init__(self):
-		Application.__init__(self);
+		super(Subversion, self).__init__();
+
 		usage = "usage: %prog [options] COMMAND \n\n" \
 				"COMMAND:= { status | update }\n"
 		self.parser.set_usage(usage)
-		self.parser.add_option('-b','--bla');
 
 		self.main()
 
-
 	def set_option(self):
 		# super method
-		Application.__init__(self);
+		super(Subversion, self).set_option();
 		
 		# correct numbers of arguments?
 		if len(self.args) != 1:
@@ -68,7 +67,7 @@ class Subversion(Application):
 					else:
 						cmd=('svn','update',dst)
 					info(cmd)
-					prog = subprocess.call(cmd,shell=False)
+					prog = call(cmd,shell=False)
 
 
 	# svn status
@@ -79,11 +78,12 @@ class Subversion(Application):
 					dst= imageprefix +"/"+ image +"/"+ node + svnprefix + dst
 					cmd=('svn','status',dst)
 					info(cmd)
-					prog = subprocess.call(cmd,shell=False)
+					prog = call(cmd,shell=False)
 
 	
 if __name__ == '__main__':
 	Subversion()
+
 
 
 
