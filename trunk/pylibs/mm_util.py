@@ -15,9 +15,10 @@ class CommandFailed(Exception):
 	"Framework for MCG-Mesh applications"
 	
 	
-	def __init__(self, cmd, rc):
+	def __init__(self, cmd, rc, stderr = None):
 		self.cmd = cmd
 		self.rc  = rc
+		self.stderr = stderr
 	
 		
 	def __str__(self):
@@ -28,16 +29,18 @@ class CommandFailed(Exception):
 def execute(cmd, shell, raiseError=True):
 	"Convenience function to handle returncodes"
 
+	debug("Executing: %s" % cmd.__str__())
 	prog = subprocess.Popen(cmd,shell = shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	(stdout, stderr) = prog.communicate()
 	rc = prog.returncode
 	if raiseError and rc != 0:
-		raise CommandFailed(cmd, rc)
+		raise CommandFailed(cmd, rc, stderr)
 	return (stdout, stderr)
 
 def call(cmd, shell, raiseError=True):
 	"Convenience function to handle returncodes"
 
+	debug("Executing: %s" % cmd.__str__())
 	rc = subprocess.call(cmd,shell = shell)
 	if raiseError and rc != 0:
 		raise CommandFailed(cmd, rc)
