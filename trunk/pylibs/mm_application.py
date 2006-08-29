@@ -25,6 +25,9 @@ class Application(object):
 		self.parser.add_option("-v", "--verbose",
 							   action = "store_true", dest = "verbose",
 							   help = "being more verbose [default: %default]")
+		self.parser.add_option("-q", "--quiet",
+							   action = "store_false", dest = "verbose",
+							   help = "being more quiet")
 
 
 	def parse_option(self):
