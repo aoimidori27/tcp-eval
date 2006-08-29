@@ -6,8 +6,7 @@ from logging import info, debug, warn, error
 
 # mcg-mesh imports
 from mm_application import Application
-from mm_basic import *
-from mm_util import execute
+from mm_util import *
 
 
 class Chroot(Application):
@@ -41,19 +40,22 @@ class Chroot(Application):
 		if len(self.args) > 0:
 			self.command = self.args[0]
 			for arg in self.args[1:]:
-				self.command = self.command . arg
+				self.command = self.command + arg
 
 
-	def chroot_exec(self,cmd):
+	def chroot_exec(self,command):
 		"Chroot and execute a command"
 		
 		# must be root
 		requireroot()
 		
 		# for chroot, imagetype and nodetype are required
-		requirenodetype()
-		requireimagetype()
+		(nodetype,nodeinfo) = getnodetype()
+		(imagetype,imageinfo) = getimagetype()
+		imagepath = getimagepath()
+		
 		info("Imagetype: %s" %(imagetype))
+		info("Nodetype:  %s" %(nodetype))
 		
 		# common mounts for all chroots
 		mounts = { '/dev'  : '/dev',
@@ -64,21 +66,23 @@ class Chroot(Application):
 		
 		# mount
 		for (src, dst) in mounts.iteritems():
-			cmd = "mount -o bind %s %s/%s" % (src, imagepath, dst)
-			execute(cmd, shell = True)
-			
-		# exec command
-		# TODO: error handling, mount only once (in case of multiple shells)
-		cmd = "chroot", imagepath, "/bin/bash -c 'export " \
-			  "HOSTNAME=%s && source /etc/profile && %s'" \
-			  %(nodeinfo['hostprefix'], cmd)
-		info(cmd)
-		execute(cmd, shell = False)
+			# check if directory is already mounted
+			cmd= ('grep','%s%s'  % (imagepath,dst), '/etc/mtab')
+			rc = subprocess.call(cmd)
+			if rc != 0:
+				cmd = "mount -o bind %s %s%s" % (src, imagepath, dst)
+				execute(cmd, shell = True)
+				
+		# exec command	
+		cmd = "/usr/sbin/chroot %s /bin/bash -c " \
+			  "'export HOSTNAME=%s && source /etc/profile && %s'" \
+			  % (imagepath,nodeinfo['hostprefix'], command)
+		call(cmd, shell = True)
 
 		# umount
 		for dst in mounts.itervalues():
 			cmd = "umount %s/%s" %(imagepath,dst)
-			execute(cmd, shell = False)
+			call(cmd, shell = True, raiseError = True)
 
 
 	def main(self):
