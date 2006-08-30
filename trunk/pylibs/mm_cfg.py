@@ -47,7 +47,7 @@ svninfos = dict (
 					'/routing/dymo/trunk' : '/routing/dymo',
 					'/scripts/trunk' : '/scripts',
 					'/tools/dbttcp/trunk' : '/tools/dbttcp',
-					'/tools/nutccp/trunk' : '/tools/nuttcp'
+					'/tools/nuttcp/trunk' : '/tools/nuttcp'
 					}		   
 					
 )
