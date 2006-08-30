@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os, subprocess
+import os, subprocess, re
 from logging import info, debug, warn, error
  
 # mcg-mesh imports
 from mm_application import Application
 from mm_util import *
+from mm_cfg  import *
 
 class Madwifi(Application):
 	"Class to handle madwifi-ng"
@@ -26,14 +27,15 @@ class Madwifi(Application):
 		self.channel  = 1
 		self.essid    = "mcg-mesh"
 		self.wlanmode = "ahdemo"
-		self.txpower  = 16
+		self.txpower  = 20
 		self.antenna  = 2
 
 		# initialization of the option parser
 		usage = "usage: %prog [options] COMMAND \n" \
 				"where  COMMAND := { loadmod | unloadmod | createdev | " \
 				"killdev | ifup |\n" \
-				"                    ifdown | setessid | setchannel | settxpower | setantenna}"
+				"                    ifdown | setessid | setchannel | " \
+				"settxpower | setantenna | autocreate }"
 		self.parser.set_usage(usage)
 		self.parser.set_defaults(address  = self.hwdevice,
 								 channel  = self.channel,
@@ -99,7 +101,7 @@ class Madwifi(Application):
 		# does the command exists?
 		if not self.action in ("loadmod", "unloadmod", "createdev", "killdev",
 						   	   "ifup", "ifdown", "setessid", "setchannel", 
-						   	   "settxpower","setantenna"):
+						   	   "settxpower","setantenna","autocreate"):
 			self.parser.error("unknown COMMAND %s" %(self.action))
 	
 
@@ -107,15 +109,16 @@ class Madwifi(Application):
 		"Loading madwifi-ng driver"
 
 		prog1 = subprocess.Popen(["lsmod"], stdout = subprocess.PIPE)
-		prog2 = subprocess.Popen(["grep", "ath-pci"],
+		prog2 = subprocess.Popen(["grep", "ath_pci"],
 								 stdin = prog1.stdout, stdout = subprocess.PIPE)
 		(stdout, stderr) = prog2.communicate()
 	
 		if stdout == "":
 			info("Loading madwifi-ng driver...")
-			retcode = subprocess.call(["modprobe", "ath-pci", \
-									   "autocreate=none"], shell = True)
-			if retcode < 0:
+			try:
+				call(["modprobe", "ath-pci","autocreate=none"],
+					 shell = False)
+			except CommandFailed:
 				error("Loading madwifi-ng driver was unsuccessful")
 		else:
 			warn("Madwifi-ng is already loaded")
@@ -139,12 +142,12 @@ class Madwifi(Application):
 		else:
 			warn("Madwifi-ng is not loaded")
 
-		
+
 	def createdev(self):
 		"Creating VAP in the desired mode"
 	
 		info("Creating VAP in %s mode" %(self.wlanmode))
-		cmd = ("wlanconfig", self.device, "create", "wlandev", \
+		cmd = ("wlanconfig",self.device, "create", "wlandev", \
 			   self.hwdevice, "wlanmode", self.wlanmode)
 		info(cmd)
 		try:
@@ -156,7 +159,7 @@ class Madwifi(Application):
 	def killdev(self):
 		"Destroying VAP"
 
-		if deviceexists():
+		if self.deviceexists():
 			info("Destroying VAP %s" %(self.device))
 			try:
 				call(["wlanconfig", self.device, "destroy"], \
@@ -265,7 +268,29 @@ class Madwifi(Application):
 	def deviceexists(self):
 		cmd = ("ip","link","show",self.device)
 		(stdout, stderr) = execute(cmd,shell=False,raiseError=False)
-		return stdout != ""		
+		return stdout != ""
+
+
+	def autocreate(self):
+		self.loadmod()
+		for hwdevice,i in wlaninfos.iteritems():
+			self.hwdevice = hwdevice
+			self.device   = i["device"]
+			self.channel  = i["channel"]
+			self.address  = re.sub("\$NODENR",
+								   getnodenr().__str__(),
+								   i["address"])
+			self.wlanmode = i["wlanmode"]
+			self.antenna  = i["antenna"]
+			self.txpower  = i["txpower"]
+			self.essid    = i["essid"]
+			self.createdev()
+			self.setchannel()
+			self.setessid()
+			self.setantenna()
+			self.ifup()
+			self.settxpower()
+		
 
 		
 	def main(self):
