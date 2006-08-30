@@ -2,7 +2,23 @@
 imageprefix = "/opt/mcg-mesh/images"
 svnprefix = "/opt/meshnode"
 # group id of "mcg-mesh" group
-meshgid = 30012;
+# meshgid = 30012
+
+
+
+#
+# common Wireless configuration
+#
+wlaninfos =	dict (
+	wifi0 = dict (  essid    = "mcg-mesh",
+					device   = "ath0",
+					channel  = "1",
+					antenna  = 2,
+					address  = "169.254.9.$NODENR/16",
+					wlanmode = "ahdemo",
+					txpower   = "20"					
+				  )
+)
 
 
 #
@@ -30,7 +46,8 @@ svninfos = dict (
 					'/routing/aodv/trunk' : '/routing/aodv',
 					'/routing/dymo/trunk' : '/routing/dymo',
 					'/scripts/trunk' : '/scripts',
-					'/tools/dbttcp/trunk' : '/tools/dbttcp'
+					'/tools/dbttcp/trunk' : '/tools/dbttcp',
+					'/tools/nutccp/trunk' : '/tools/nuttcp'
 					}		   
 					
 )
