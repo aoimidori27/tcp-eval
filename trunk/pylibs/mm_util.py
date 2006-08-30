@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import subprocess,types,os,sys
+import subprocess,types,os,sys,re
 from logging import info, debug, warn, error
+from socket import gethostname
 
 # mcg-mesh imports
 from mm_cfg import *
@@ -108,3 +109,9 @@ def nodename(nr):
 	
 	if type(nr) is types.StringType: return nr
 	return "%s%d" % (nodeinfo['hostprefix'],nr)
+
+# get node number
+def getnodenr():
+	hostname = gethostname()
+	nr = re.sub("^mrouter","",hostname)
+	return nr
