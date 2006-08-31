@@ -16,7 +16,7 @@ class Chroot(Application):
 		"Constructor of the object"
 
 		# call the super constructor
-		super(Chroot, self).__init__()
+		Application.__init__(self)
 
 		# object variables (set the defaults for the option parser)
 		self.command = 'bash'
@@ -35,7 +35,7 @@ class Chroot(Application):
 		"Set options"
 		
 		# call the super set_option method
-		super(Chroot, self).set_option()
+		Application.set_option(self)
 
 		if len(self.args) > 0:
 			self.command = self.args[0]

@@ -16,7 +16,7 @@ class KernelUpdate(Application):
 		"Constructor of the object"
 
 		# call the super constructor
-		super(KernelUpdate, self).__init__()
+		Application.__init__(self)
 
 		# initialization of the option parser
 		self.parser.set_defaults(verbose = True)
@@ -29,7 +29,7 @@ class KernelUpdate(Application):
 		"Set options"
 		
 		# call the super set_option method
-		super(KernelUpdate, self).set_option()
+		Application.set_option(self)
 
 
 	def kernelupdate(self):

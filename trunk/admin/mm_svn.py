@@ -15,7 +15,7 @@ class Subversion(Application):
 
 
 	def __init__(self):
-		super(Subversion, self).__init__();
+		Application.__init__(self);
 
 		usage = "usage: %prog [options] COMMAND \n\n" \
 				"COMMAND:= { status | update }\n"
@@ -27,7 +27,7 @@ class Subversion(Application):
 
 	def set_option(self):
 		# super method
-		super(Subversion, self).set_option();
+		Application.set_option(self);
 		
 		# correct numbers of arguments?
 		if len(self.args) != 1:

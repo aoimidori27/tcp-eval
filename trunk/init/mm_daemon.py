@@ -17,7 +17,9 @@ class Daemon(Application):
 		"Constructor of the object"
 	
 		# call the super constructor
-		super(Daemon, self).__init__()
+		Application.__init__(self)
+
+
 	
 		# object variables (set the defaults for the option parser)
 		self.daemon_opts = "-v -s"
@@ -44,7 +46,7 @@ class Daemon(Application):
 		"Set options"
 		
 		# call the super set_option method
-		super(Daemon, self).set_option()
+		Application.set_option(self)
 		
 		# correct numbers of arguments?
 		if len(self.args) != 2:
@@ -104,8 +106,6 @@ class Daemon(Application):
 		
 		# call the corresponding method
 		eval("self.%s()" %(self.action)) 
-
-
 
 if __name__ == "__main__":
 	Daemon()

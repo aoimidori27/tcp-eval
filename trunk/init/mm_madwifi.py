@@ -18,7 +18,7 @@ class Madwifi(Application):
 		"Constructor of the object"
 	
 		# call the super constructor
-		super(Madwifi, self).__init__()
+		Application.__init__(self)
 	
 		# object variables (set the defaults for the option parser)
 		self.hwdevice = "wifi0"
@@ -83,7 +83,7 @@ class Madwifi(Application):
 		"Set options"
 		
 		# call the super set_option method
-		super(Madwifi, self).set_option()
+		Application.set_option(self)
 		
 		# correct numbers of arguments?
 		if len(self.args) != 1:
