@@ -102,7 +102,7 @@ class Daemon(Application):
 
 
 	def main(self):
-		"Main method of the madwifi object"
+		"Main method of the daemon object"
 
 		# parse options
 		self.parse_option()
@@ -111,7 +111,10 @@ class Daemon(Application):
 		self.set_option()
 		
 		# call the corresponding method
-		eval("self.%s()" %(self.action)) 
+		eval("self.%s()" %(self.action))
+
+		# exit
+		sys.exit(0)
 
 if __name__ == "__main__":
 	Daemon()
