@@ -118,7 +118,7 @@ def execpy(script, arguments = []):
 	except SystemExitException:
 		rc = sys.exc_info()[1]
 
-	if rc != 0:
+	if rc != "0":
 		warn("Returncode: %s" % rc)
 
 	# restore environment
