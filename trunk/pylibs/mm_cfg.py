@@ -11,7 +11,7 @@ svnprefix = "/opt/meshnode"
 # the keys in this dictionaries are allowed to be mrouter*, mclient*,
 # meshrouter and meshclient
 startupinfos = dict (
-	meshrouter = ['execpy("mm_madwifi",["--debug","autocreate"])']
+	meshrouter = ['execpy("/usr/local/bin/mm_madwifi.py",["--debug","autocreate"])']
 )
 
 
