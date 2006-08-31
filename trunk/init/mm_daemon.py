@@ -6,6 +6,7 @@ import os, subprocess
 from logging import info, debug, warn, error
 
 # mcg-mesh imports
+import mm_util
 from mm_application import Application
 
 
@@ -65,26 +66,31 @@ class Daemon(Application):
 	def start(self):
 		"Starting the program as a daemon"
 
-		info("Starting %s " %(self.program))
-		pidfile = "%s/%s.pid" %(self.piddir, self.program)
-		retcode = subprocess.call(["start-stop-daemon", \
-								   "--start --make-pidfile --pidfile ", \
-								   pidfile, "--background --startas ", \
-								   self.program, "--", self.daemon_opts], \
-								  shell = True)
-		if retcode < 0:
+		progname = os.path.basename(self.program)
+
+		info("Starting %s " %(progname))
+		pidfile = "%s/%s.pid" %(self.piddir, progname)
+		try:
+			mm_util.call(["start-stop-daemon",
+						  "--start", "--make-pidfile", "--pidfile",
+						  pidfile, "--background", "--startas",
+						  self.program, "--", self.daemon_opts], 
+						 shell = False)
+		except mm_util.CommandFailed:	
 			error("Starting %s as a daemon was unsuccessful" %(self.program))
 
 		
 	def stop(self):
 		"Stopping the daemon"
+		progname = os.path.basename(self.program)
 
-		info("Stopping %s " %(self.program))
-		pidfile = "%s/%s.pid" %(self.piddir, self.program)
-		retcode = subprocess.call(["start-stop-daemon", \
-								   "--stop --pidfile ", pidfile], \
-								  shell = True)
-		if retcode < 0:
+		info("Stopping %s " % progname)
+		pidfile = "%s/%s.pid" %(self.piddir, progname)
+		try:
+			mm_util.call(["start-stop-daemon", 
+						  "--stop", "--pidfile", pidfile], 
+						 shell = False)
+		except mm_util.CommandFailed:	
 			error("Stopping the daemon %s was unsuccessful" %(self.program))
 		
 
