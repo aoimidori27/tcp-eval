@@ -153,7 +153,7 @@ def execpy(script, arguments = []):
 	# override sys.exit()
 	sys.exit = raiseException
 
-	rc = 0
+	rc = "0"
 
 	try:
 		info ("Now running %s " % script)
@@ -161,7 +161,7 @@ def execpy(script, arguments = []):
 	except SystemExitException:
 		rc = sys.exc_info()[1]
 
-	if rc != 0:
+	if rc != "0":
 		warn("Returncode: %s" % rc)
 
 	# restore environment
@@ -170,3 +170,16 @@ def execpy(script, arguments = []):
 	
 	return rc
 	
+def startdaemon(name):
+	if daemoninfos.has_key(name):
+		daemoninfo = daemoninfos[name]
+		# build arguments
+		args = []
+		args.append(daemoninfo["path"])
+		args.append("start")
+		args.extend(daemoninfo["args"])
+		return execpy('/usr/local/bin/mm_daemon.py',
+					  args)
+
+def stopdaemon(name):
+	pass
