@@ -46,15 +46,15 @@ class Init(Application):
 	def init(self):
 		hostname = gethostname()
 		
-		if re.match("mrouter",hostname):
+		if re.match("mrouter", hostname):
 			nodetype = "meshrouter"
-		elif re.match("mclient",hostname):
+		elif re.match("mclient", hostname):
 			nodetype = "meshclient"
 		else:
 			(nodetype, nodeinfo) = mm_util.getnodetype()
 			
-		info ("Hostname: %s" % hostname)
-		info ("Nodetype: %s" % nodetype)
+		info("Hostname: %s" % hostname)
+		info("Nodetype: %s" % nodetype)
 			
 		if startupinfos.has_key(nodetype):
 			for line in startupinfos[nodetype]:
