@@ -69,6 +69,8 @@ class Init(Application):
 				except Exception, inst:
 					error("Error while executing %s" % line)
 					error(inst)
+
+		print ("Done.")
 					
 	def main(self):
 		"Main method of the Init object"
@@ -90,8 +92,8 @@ class Init(Application):
 class SystemExitException(Exception):
 	"Private exception for execpy"
 
-	def __init__(self, args):
-		self.args = args
+	def __init__(self, status):
+		self.status = status
 
 def raiseException(status):
 	"Just to raise the exception with status"
@@ -119,16 +121,18 @@ def execpy(script, arguments = []):
 	# override sys.exit()
 	sys.exit = raiseException
 
-	rc = "0"
+	rc = 0
 
 	try:
 		info ("Now running %s " % script)
 		execfile(script,globals())
-	except SystemExitException:
-		rc = sys.exc_info()[1]
+	except SystemExitException, inst:
+		info ("Script %s exited with sys.exit(%d)"
+			  % (script,inst.status))
+		rc = inst.status
 
-	if rc != "0":
-		warn("Returncode: %s" % rc)
+	if rc != 0:
+		warn("Returncode: %d." % rc)
 
 	# restore environment
 	sys.exit = save_exit
