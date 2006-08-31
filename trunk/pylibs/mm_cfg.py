@@ -5,6 +5,15 @@ svnprefix = "/opt/meshnode"
 # meshgid = 30012
 
 
+#
+# Startup configuration
+#
+# the keys in this dictionaries are allowed to be mrouter*, mclient*,
+# meshrouter and meshclient
+startupinfos = dict (
+	meshrouter = ['execpy("mm_madwifi",["--debug","autocreate"])']
+)
+
 
 #
 # common Wireless configuration
