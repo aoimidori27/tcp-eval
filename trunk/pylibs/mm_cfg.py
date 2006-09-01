@@ -1,11 +1,8 @@
-# global configuration
+# Global configuration
 imageprefix = "/opt/mcg-mesh/images"
 svnprefix = "/opt/meshnode"
-# group id of "mcg-mesh" group
-# meshgid = 30012
 
 
-#
 # Startup configuration
 #
 # the keys in this dictionaries are allowed to be mrouter*, mclient*,
@@ -18,15 +15,13 @@ startupinfos = dict (
 
 daemoninfos = dict (
 	watchdog = dict (
-	                  path = "/usr/local/bin/mcg_watchdog.sh",
+	                  path = "/usr/local/bin/mm_watchdog.sh",
 					  args = []
 	)
 )
 
 
-#
-# common Wireless configuration
-#
+# Common Wireless configuration
 wlaninfos =	dict (
 	wifi0 = dict (  essid    = "mcg-mesh",
 					device   = "ath0",
@@ -39,9 +34,7 @@ wlaninfos =	dict (
 )
 
 
-#
 # Information about the kernel
-#
 kernelinfos = dict (
 	mirror = "http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/",
 	version = "2.6.16.27",
@@ -51,9 +44,7 @@ kernelinfos = dict (
 )
 
 
-#
 # Information about the subversion repository
-#
 svninfos = dict (
 	svnrepos  = "svn://goldfinger.informatik.rwth-aachen.de/mcg-mesh",
 	svnmappings = { '/config/meshnode/trunk' : '/config',
@@ -71,32 +62,19 @@ svninfos = dict (
 )
 	
 
-#
 # MCG Mesh Node Information
-#
 nodeinfos = dict(
 	vmeshnode = dict(
-		hostprefix = 'xenmachine',
-		sender 	   = [11,22,23,24,25,26],
-		gw	       = [ 12+i for i in range(10)],
-		instbal	   = "/opt/vmesh/bin/instbal.sh",
-		dymoinst   = "/opt/vmesh/dymo",
-		wlandev	   = "tap1"
+		hostprefix = 'xenmachine'
 	),
 	meshnode = dict(
 	    hostprefix 	= 'mrouter',
-		sender 	    = [i+1 for i in range(2)],
-		gw		    = [i+3 for i in range(3)],
-		instbal	    = "instbal.sh",
-		dymoinst	= "/usr/local/sbin",
 		kernelsrc  = "http://sunsite.informatik.rwth-aachen.de/pub/Linux/kernel/v2.6/linux-2.6.16.27.tar.bz2",
 		wlandev	    = "ath0"
 	)
 )
 
-#
 # Informations about the different images
-#
 imageinfos = dict(
 	gentoo = dict(
 	    mounts = { '/usr/portage' : '/usr/portage' }
@@ -105,12 +83,3 @@ imageinfos = dict(
 	    mounts = {}
 	)
 )
-
-#
-# Fill up nodeinfo
-#
-for data in nodeinfos.itervalues():
-	data['host'] 		= data['sender']+data['gw']
-	data['gwc'] 		= len(data['gw'])
-	data['senderc'] 	= len(data['sender'])
-	data['hostc'] 		= len(data['host'])
