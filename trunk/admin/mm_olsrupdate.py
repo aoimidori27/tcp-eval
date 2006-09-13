@@ -52,21 +52,30 @@ class OlsrUpdate(Application):
 
 		remote_repos   = olsrinfos["remote_repos"]
 		remote_module  = olsrinfos["remote_module"]
-		local_repos    = olsrinfos["local_repos"]
+		local_repos    = svninfos["svnrepos"]
 		local_upstream = olsrinfos["local_upstream"]
 		local_trunk    = olsrinfos["local_trunk"]
 
+
+		dst = tmp+"/upstream"
 		# check out upstream files
 		info("Checking out olsr local upstream...")
 		cmd = ("svn","co","-q",
 			   local_repos+local_upstream,
-			   tmp+"/upstream")
+			   dst)
 		call(cmd, shell = False)
+
+		# get revision
+
+		cmd = "svn info %s | grep Revision | awk '{print $2;}'" %(dst)	
+		(stdout, stderr) = execute(cmd, shell = True)
+		local_revision = stdout.splitlines()[0]
+		info("Revision of checkout is: %s" %(local_revision))
 
 		# clean up upstream
 		info("Cleaning up upstream checkouts...")
 		cmd = "find %s ! -path '*.svn*' -type f | xargs rm -f" \
-			  %(tmp+"/upstream")
+			  %(dst)
 		call(cmd, shell = True)
 
 		# check out trunk from remote repos
@@ -81,14 +90,14 @@ class OlsrUpdate(Application):
 
 		# clean up trunk from remote repos
 		info("Removing CVS folders...")
-		cmd = "find %s -name CVS | xargs rm -rf" %(tmp+"/upstream")
+		cmd = "find %s -name CVS | xargs rm -rf" %(dst)
 		call(cmd, shell = True)
 
 		
 		info("Searching updated files...")	
 		# add new files 
 		cmd = "svn st %s | grep '?' | awk '{ print $2; }'" \
-			  %(tmp+"/upstream")
+			  %(dst)
 		(stdout,stderr) = execute(cmd, shell = True)
 		debug("Stdout: %s" %stdout)
 		if (stdout != ""):
@@ -108,14 +117,35 @@ class OlsrUpdate(Application):
 
 
 		# commit changes
-		info("Commiting Changes...")
- 		cmd = ("svn","ci",tmp+"/upstream",
+		info("Commiting changes...")
+ 		cmd = ("svn","ci",dst,
  			   "-m","new olsr version")
  		call(cmd, shell = False)
 
-		# merging changes to local trunk
+
+		# switch upstream to trunk
+		info("Switching local checkout to trunk...")
+		cmd = ("svn", "switch", "%s/%s" %(local_repos,
+										  local_trunk),
+			   dst)
+		call(cmd, shell = False)
+		# just for completeness rename it
+		cmd = "mv %s %s/trunk" %(dst,tmp)
+		call(cmd, shell = True)
+		
+
+		# merging changes from upstream local trunk
 		info("Merging changes with local trunk...")
-#		cmd = ("svn","merge","-r",
+		cmd = ("svn","merge","-r","%s:HEAD" %(local_revision),
+			   "%s/%s" %(local_repos, local_trunk),
+			   tmp+"/trunk")
+		call(cmd, shell = False)
+
+		# commiting changes to local trunk
+		info("Commiting these changes to repository...")
+		cmd = ("svn","commit", tmp+"/trunk",
+			   "-m","new olsr version")
+		call(cmd, shell = False)	 
 
         # cleanup
 		info("Cleaning up %s..." %(tmp))
