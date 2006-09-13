@@ -10,22 +10,17 @@ from mm_util import *
 
 
 class OlsrUpdate(Application):
-	"Class to handle chroot into the images"
+	"Class to handle update of olsr files in the local svn repos"
 
 	def __init__(self):
 		"Constructor of the object"
 
 		# call the super constructor
 		Application.__init__(self)
-
-		# object variables (set the defaults for the option parser)
-		self.command = 'bash'
-		
+	
 		# initialization of the option parser
-		usage = "usage: %prog [options] [command] \n" \
-				"where  command is a command to execute within chroot"
-		self.parser.set_usage(usage)
-		self.parser.set_defaults(verbose = True, syslog=False)
+		self.parser.set_defaults(verbose = True, syslog=False,
+								 debug = False)
 		
 		# execute object
 		self.main()
@@ -137,7 +132,7 @@ class OlsrUpdate(Application):
 		# merging changes from upstream local trunk
 		info("Merging changes with local trunk...")
 		cmd = ("svn","merge","-r","%s:HEAD" %(local_revision),
-			   "%s/%s" %(local_repos, local_trunk),
+			   "%s/%s" %(local_repos, local_upstream),
 			   tmp+"/trunk")
 		call(cmd, shell = False)
 
@@ -157,7 +152,7 @@ class OlsrUpdate(Application):
 
 
 	def main(self):
-		"Main method of the chroot object"
+		"Main method of the OlsrUpdate object"
 
 		# parse options
 		self.parse_option()
