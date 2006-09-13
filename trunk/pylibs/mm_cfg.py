@@ -43,6 +43,15 @@ kernelinfos = dict (
 					 'net/ipv4/fib_semantics.c','net/ipv4/route.c')
 )
 
+# Information about olsr
+olsrinfos = dict (
+	remote_repos    = ":pserver:anonymous@olsrd.cvs.sourceforge.net:/cvsroot/olsrd",
+	remote_module   = "olsrd-current",
+	local_upstream  = "/routing/olsr/branches/upstream",
+	local_trunk     = "/routing/olsr/trunk"
+)
+	
+
 
 # Information about the subversion repository
 svninfos = dict (
