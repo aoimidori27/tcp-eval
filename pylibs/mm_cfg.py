@@ -50,6 +50,14 @@ olsrinfos = dict (
 	local_upstream  = "/routing/olsr/branches/upstream",
 	local_trunk     = "/routing/olsr/trunk"
 )
+
+# Information about madwifi
+madwifiinfos = dict (
+	remote_repos    = "http://svn.madwifi.org",
+	remote_module   = "/trunk",
+	local_upstream  = "/drivers/madwifi-ng/branches/upstream",
+	local_trunk     = "/drivers/madwifi-ng/trunk"
+)
 	
 
 
