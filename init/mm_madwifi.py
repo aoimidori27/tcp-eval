@@ -10,6 +10,7 @@ from mm_application import Application
 from mm_util import *
 from mm_cfg  import *
 
+
 class Madwifi(Application):
 	"Class to handle madwifi-ng"
 
