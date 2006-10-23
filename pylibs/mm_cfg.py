@@ -37,7 +37,7 @@ wlaninfos =	dict (
 # Information about the kernel
 kernelinfos = dict (
 	mirror = "http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/",
-	version = "2.6.16.27",
+	version = "2.6.16.29",
 	srcpath = "/usr/src",
 	modifiedfiles = ('include/net/ip_fib.h','include/net/route.h',
 					 'net/ipv4/fib_semantics.c','net/ipv4/route.c')
