@@ -75,7 +75,7 @@ class Chroot(Application):
 				
 		# exec command	
 		cmd = "/usr/sbin/chroot %s /bin/bash -c " \
-			  "'export HOSTNAME=%s && source /etc/profile && %s'" \
+			  "'export HOSTNAME=%s && export CHROOT=true && export HOME=/root && source /etc/profile && %s'" \
 			  % (imagepath,nodeinfo['hostprefix'], command)
 		call(cmd, shell = True)
 
