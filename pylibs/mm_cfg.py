@@ -79,7 +79,7 @@ svninfos = dict (
 )
 	
 
-# MCG Mesh Node Information
+# MCG-Mesh Node Information
 nodeinfos = dict(
 	vmeshnode = dict(
 		hostprefix = 'xenmachine'
