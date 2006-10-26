@@ -65,17 +65,21 @@ madwifiinfos = dict (
 svninfos = dict (
 	svnrepos  = "svn://goldfinger.informatik.rwth-aachen.de/mcg-mesh",
 	svnmappings = { '/config/meshnode/trunk' : '/config',
-					'/drivers/madwifi-ng/trunk' : '/drivers/madwifi-ng',
-					'/boot/linux/branches/upstream' : '/linux',
-					'/routing/olsr/branches/modified-0.4.10' : '/routing/olsr4',
-					'/routing/olsr/trunk' : '/routing/olsr5',
+					'/drivers/madwifi-ng/branches/mcg-version' : '/drivers/madwifi-ng',
+					'/routing/olsr/branches/olsr4-mcg' : '/routing/olsr4',
+					'/routing/olsr/branches/olsr5-mcg' : '/routing/olsr5',
 					'/routing/aodv/trunk' : '/routing/aodv',
 					'/routing/dymo/trunk' : '/routing/dymo',
 					'/scripts' : '/scripts',
 					'/tools/dbttcp/trunk' : '/tools/dbttcp',
 					'/tools/nuttcp/trunk' : '/tools/nuttcp'
-					}		   
-					
+					},
+	svnmappings_meshnode = {
+					'/linux/vanilla/trunk' : '/linux/trunk'
+	},
+	svnmappings_vmeshnode = {
+					'/linux/xen/trunk' : '/linux/trunk'
+	}
 )
 	
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os, subprocess, dircache, re
+import os, subprocess, dircache, re, copy
 from logging import info, debug, warn, error
 
 # mcg-mesh imports
@@ -71,9 +71,12 @@ class Subversion(Application):
 		os.umask(0007)
 		for image in imageinfos.iterkeys():
 			for node in nodeinfos.iterkeys():
+				svnmappings = copy.copy(svninfos['svnmappings'])
+				# join with node specific mappings
+				svnmappings.update(svninfos['svnmappings_'+node])
 
 				# iterate through svn mappings
-				for src,dst in svninfos['svnmappings'].iteritems():	
+				for src,dst in svnmappings.iteritems():	
 					dst= imageprefix +"/"+ image +"/"+ node + svnprefix + dst
 					src= svninfos["svnrepos"] + src
 					if not os.path.exists(dst):
@@ -89,8 +92,7 @@ class Subversion(Application):
 				if self.updatelinks:
 					# scripts in this folders are copied to /usr/local/bin
 					folders = ("/opt/meshnode/scripts/init",
-							   "/opt/meshnode/scripts/monitor",
-							   "/opt/meshnode/scripts/measurement")
+							   "/opt/meshnode/scripts/monitor")
 					info("Updating symlinks in /usr/local/bin...")
 					dst = imageprefix + "/" + image + "/" +node +\
 						  "/usr/local/bin"
