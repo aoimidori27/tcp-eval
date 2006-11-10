@@ -77,7 +77,7 @@ class Subversion(Application):
 
 				# iterate through svn mappings
 				for src,dst in svnmappings.iteritems():	
-					dst= imageprefix +"/"+ image +"/"+ node + svnprefix + dst
+					dst= imageprefix +"/"+ image +"/"+ node + svnprefix + "/" + node + dst
 					src= svninfos["svnrepos"] + src
 					if not os.path.exists(dst):
 						warn("%s got lost! doing a new checkout" % dst)
