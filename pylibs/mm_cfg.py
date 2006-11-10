@@ -1,6 +1,6 @@
 # Global configuration
 imageprefix = "/opt/mcg-mesh/images"
-svnprefix = "/opt/meshnode"
+svnprefix = "/opt"
 
 
 # Startup configuration
@@ -65,7 +65,6 @@ madwifiinfos = dict (
 svninfos = dict (
 	svnrepos  = "svn://goldfinger.informatik.rwth-aachen.de/mcg-mesh",
 	svnmappings = { '/config/meshnode/trunk' : '/config',
-					'/drivers/madwifi-ng/branches/mcg-version' : '/drivers/madwifi-ng',
 					'/routing/olsr/branches/olsr4-mcg' : '/routing/olsr4',
 					'/routing/olsr/branches/olsr5-mcg' : '/routing/olsr5',
 					'/routing/aodv/trunk' : '/routing/aodv',
@@ -75,10 +74,14 @@ svninfos = dict (
 					'/tools/nuttcp/trunk' : '/tools/nuttcp'
 					},
 	svnmappings_meshnode = {
-					'/linux/vanilla/trunk' : '/linux/trunk'
+					'/linux/vanilla/trunk' : '/linux-trunk',
+					'/drivers/madwifi-ng/branches/mcg-version' : '/drivers/madwifi-ng'
 	},
 	svnmappings_vmeshnode = {
-					'/linux/xen/trunk' : '/linux/trunk'
+					'/linux/xen/trunk' : '/linux-trunk'
+	},
+	svnmappings_vmeshhost = {
+					'/linux/xen/trunk' : '/linux-trunk'
 	}
 )
 	
@@ -99,9 +102,9 @@ nodeinfos = dict(
 
 # Informations about the different images
 imageinfos = dict(
-	gentoo = dict(
-	    mounts = { '/usr/portage' : '/usr/portage' }
-	),
+#	gentoo = dict(
+#	    mounts = { '/usr/portage' : '/usr/portage' }
+#	),
 	ubuntu = dict(
 	    mounts = {}
 	)
