@@ -8,7 +8,7 @@
 ####################################################
 
 # Image path 
-IMAGEDIR_UBUNTU="/opt/mcg-mesh/images/ubuntu/meshrouter"
+IMAGEDIR_UBUNTU="/opt/mcg-mesh/images/meshrouter"
 IMAGEDIR_GENTOO="/opt/mcg-mesh/images/gentoo/meshrouter"
 
 # Empty ext3 filesystem
