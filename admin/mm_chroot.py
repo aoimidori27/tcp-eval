@@ -51,10 +51,8 @@ class Chroot(Application):
 		
 		# for chroot, imagetype and nodetype are required
 		(nodetype,nodeinfo) = getnodetype()
-		(imagetype,imageinfo) = getimagetype()
 		imagepath = getimagepath()
 		
-		info("Imagetype: %s" %(imagetype))
 		info("Nodetype:  %s" %(nodetype))
 		
 		# common mounts for all chroots
@@ -62,7 +60,7 @@ class Chroot(Application):
 				   '/proc' : '/proc' }
 		
 		# join with mounts of nodes
-		mounts.update(imageinfo['mounts'])
+		#mounts.update(imageinfo['mounts'])
 		
 		# mount
 		for (src, dst) in mounts.iteritems():

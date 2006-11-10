@@ -89,8 +89,9 @@ def getimagepath():
 	
 	if not globals().has_key('imagepath'):
 		(nodetype,nodeinfo) = getnodetype();
-		(imagetype,imageinfo) = getimagetype();
-		imagepath = "%s/%s/%s" % (imageprefix,imagetype,nodetype)
+	#	(imagetype,imageinfo) = getimagetype();
+	#	imagepath = "%s/%s/%s" % (imageprefix,imagetype,nodetype)
+	imagepath = "%s/%s" % (imageprefix,nodetype)
 
 	return imagepath
 
