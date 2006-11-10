@@ -86,12 +86,14 @@ svninfos = dict (
 # MCG-Mesh Node Information
 nodeinfos = dict(
 	vmeshnode = dict(
-		hostprefix = 'xenmachine'
+		hostprefix = 'vmeshnode'
 	),
 	meshnode = dict(
-	    hostprefix 	= 'mrouter',
-		kernelsrc  = "http://sunsite.informatik.rwth-aachen.de/pub/Linux/kernel/v2.6/linux-2.6.16.27.tar.bz2",
+	    hostprefix 	= 'meshrouter',
 		wlandev	    = "ath0"
+	),
+	vmeshhost = dict(
+		hostprefix = 'vmeshhost'
 	)
 )
 
