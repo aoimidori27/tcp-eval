@@ -50,7 +50,7 @@ BIN_SEARCHPATH="/bin,/usr/bin,/sbin,/usr/sbin"
 LIBS_DAPPER="ld-2.3.6.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.3.6.so,libcap.so.1,libcap.so.1.10,libcrypto.so.0.9.8,libc.so.6,libdl-2.3.6.so,libdl.so.2,liblzo.so.1,liblzo.so.1.0.0,libncurses.so.5,libncurses.so.5.5,libnsl.so.1,libnss_dns.so.2,libnss_dns-2.3.6.so,libnss_files.so.2,libnss_files-2.3.6.so,libproc-3.2.6.so,libpthread-0.10.so,libpthread.so.0,libresolv-2.3.6.so,libresolv.so.2,librt-2.3.6.so,librt.so.1,libssl.so.0.9.8,libutil-2.3.6.so,libutil.so.1,libuuid.so.1,libuuid.so.1.2,libwrap.so.0,libwrap.so.0.7.6,libz.so.1,libz.so.1.2.3,libacl.so.1,libacl.so.1.1.0,libselinux.so.1,libattr.so.1,libattr.so.1.1.0,libsepol.so.1,libnsl.so.1,libnsl-2.3.6.so,libnss_compat.so.2,libnss_compat-2.3.6.so"
 
 # Librarys which are copied for ubuntu edgy initrd
-LIBS_EDGY="ld-2.4.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.4.so,libcap.so.1,libcap.so.1.10,libcrypto.so.0.9.8,libc.so.6,libdl-2.4.so,libdl.so.2,liblzo.so.1,liblzo.so.1.0.0,libncurses.so.5,libncurses.so.5.5,libnsl.so.1,libnss_dns.so.2,libnss_dns-2.4.so,libnss_files.so.2,libnss_files-2.4.so,libproc-3.2.7.so,libpthread-2.4.so,libpthread.so.0,libresolv-2.4.so,libresolv.so.2,librt-2.4.so,librt.so.1,libssl.so.0.9.8,libutil-2.4.so,libutil.so.1,libuuid.so.1,libuuid.so.1.2,libwrap.so.0,libwrap.so.0.7.6,libz.so.1,libz.so.1.2.3,libacl.so.1,libacl.so.1.1.0,libselinux.so.1,libattr.so.1,libattr.so.1.1.0,libsepol.so.1,libnsl.so.1,libnsl-2.4.so,libnss_compat.so.2,libnss_compat-2.4.so,libsysfs.so.2"
+LIBS_EDGY="ld-2.4.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.4.so,libcap.so.1,libcap.so.1.10,libcrypto.so.0.9.8,libc.so.6,libdl-2.4.so,libdl.so.2,liblzo.so.1,liblzo.so.1.0.0,libncurses.so.5,libncurses.so.5.5,libnsl.so.1,libnss_dns.so.2,libnss_dns-2.4.so,libnss_files.so.2,libnss_files-2.4.so,libproc-3.2.7.so,libpthread-2.4.so,libpthread.so.0,libresolv-2.4.so,libresolv.so.2,librt-2.4.so,librt.so.1,libssl.so.0.9.8,libutil-2.4.so,libutil.so.1,libuuid.so.1,libuuid.so.1.2,libwrap.so.0,libwrap.so.0.7.6,libz.so.1,libz.so.1.2.3,libacl.so.1,libacl.so.1.1.0,libselinux.so.1,libattr.so.1,libattr.so.1.1.0,libsepol.so.1,libnsl.so.1,libnsl-2.4.so,libnss_compat.so.2,libnss_compat-2.4.so,libsysfs.so.2,libsysfs.so.2.0.0"
 
 ####################################################
 ################ End of Configuration ##############
@@ -191,25 +191,14 @@ filecopy "$SBINFILES" "$BIN_SEARCHPATH" "$INITRD_MP/sbin/"
 # copy libs
 filecopy "$LIBS" "$LIB_SEARCHPATH" "$INITRD_MP/lib/"
 
-#for file in ${LIBS//,/ }; do
-#  FOUND=n
-#  for dir in ${LIB_SEARCHPATH//,/ }; do
-#    if [ -e $dir/$file ]; then
-#      cp $CPOPTS $dir/$file $INITRD_MP/lib;
-#     FOUND=y
-#      break;
-#    fi;
-#  done;
-#  if [ $FOUND = n ]; then
-#     echo "Warning: failed to locate $file!"
-#  fi
-#done;
+# copy static files
+for file in ${STATIC//,/ }; do
+	cp $CPOPTS ${IMAGEDIR}$file ${INITRD_MP}${file}
+done;
 
-# copy static files only for ubuntu dapper drake
-if [ $IMAGE = dapper ]; then
-	for file in ${STATIC//,/ }; do
-		cp $CPOPTS ${IMAGEDIR}$file ${INITRD_MP}${file}
-	done;
+# create dhclient link for ubuntu edgy eft
+if [ $IMAGE = edgy ]; then
+ 	ln -vs /initrd/etc/dhcp/dhclient-script $INITRD_MP/sbin/dhclient-script
 fi;
 
 # make /dev nodes
