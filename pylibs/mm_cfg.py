@@ -1,5 +1,5 @@
 # Global configuration
-imageprefix = "/opt/mcg-mesh/images"
+imageprefix = "/opt/umic-mesh/images"
 svnprefix = "/opt"
 
 
