@@ -8,14 +8,14 @@
 ####################################################
 
 # Image path 
-IMAGEDIR_DAPPER="/opt/mcg-mesh/images/meshrouter"
-IMAGEDIR_EDGY="/opt/mcg-mesh/images/vmeshnode"
+IMAGEDIR_DAPPER="/opt/umic-mesh/images/meshrouter"
+IMAGEDIR_EDGY="/opt/umic-mesh/images/vmeshnode"
 
 # Empty ext3 filesystem
-INITRD_SRC=/opt/mcg-mesh/boot/initrd/blank.ext3
+INITRD_SRC=/opt/umic-mesh/boot/initrd/blank.ext3
 
 # Destination -$IMAGE will be appended to this
-INITRD_DST=/opt/mcg-mesh/boot/initrd/initrd     
+INITRD_DST=/opt/umic-mesh/boot/initrd/initrd     
 
 # Mountpoint for loopback mounting initrd
 INITRD_MP=/mnt/initrd
