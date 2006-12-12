@@ -35,6 +35,7 @@ class KernelUpdate(Application):
 	def kernelupdate(self):
 		"Update Kernel source"
 
+		# get nodetype
 		nodetype = getnodetype()[0]
 	
 		# for kernelupdate only works for meshnodes
@@ -57,14 +58,14 @@ class KernelUpdate(Application):
 		
 		# download kernel image and extract
 		cmd = "wget %s/v2.6/%s.tar.gz -O - | tar xz -C %s" \
-			  % (kernelinfos["mirror"], kernel, tmp)
+			  %(kernelinfos["mirror"], kernel, tmp)
 		info(cmd)
 		call(cmd, shell = True)
 	
 		# get revision
 		cmd = "svn info %s | grep Revision | awk '{print $2;}'" %(dst)
 		info(cmd)
-		(stdout,stderr) = execute(cmd,shell=True)
+		(stdout, stderr) = execute(cmd, shell = True)
 		local_revision = stdout.splitlines()[0]
 		info(local_revision)
 
@@ -74,24 +75,23 @@ class KernelUpdate(Application):
 		call(cmd, shell = False)
 	
 		# switch repository to trunk
-		cmd = "svn", "switch", "%s/boot/linux/trunk" %(svninfos["svnrepos"]), \
-			  dst
-		info(cmd)
-		execute(cmd, shell = False)
-		
-		# merge upstream with trunk
-		cmd = ("svn", "merge", "-r", "%s:HEAD" %(local_revision), \
-			  "%s/boot/linux/branches/upstream" %(svninfos["svnrepos"]), dst)
+		cmd = ("svn", "switch", "%s/boot/linux/trunk" %(svninfos["svnrepos"]),
+			   dst)
 		info(cmd)
 		call(cmd, shell = False)
-
+		
+		# merge upstream with trunk
+		cmd = ("svn", "merge", "-r", "%s:HEAD" %(local_revision),
+			   "%s/boot/linux/branches/upstream" %(svninfos["svnrepos"]), dst)
+		info(cmd)
+		call(cmd, shell = False)
 
 		# remove modified files and svn infos
 		cmd = "rm -rf `find %s -name .svn`" %(dst)
 		info(cmd)
 		call(cmd, shell = True)
 		for i in kernelinfos["modifiedfiles"]:
-			cmd = "rm -v %s/%s" % (dst,i)
+			cmd = "rm -v %s/%s" %(dst,i)
 			call(cmd, shell = True)
 		
 		# copy other files to images
@@ -104,7 +104,7 @@ class KernelUpdate(Application):
 			call(cmd, shell = True)
 		
 		# clean up		
-		info("Cleaning up %s ..." % tmp)
+		info("Cleaning up %s ..." %(tmp))
 		cmd = "rm -rf %s" %(tmp)
 		execute(cmd, shell = True)
 		info("done.")
