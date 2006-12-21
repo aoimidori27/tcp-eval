@@ -1,8 +1,7 @@
 #!/bin/bash
 
-BACKUPDIR=${1:-/mnt/backup/postgresql}
-BACKUPFILE="pg_dumpall.dump"
+BACKUP_DIR=${1:-/backup/postgresql}
+BACKUP_FILE="pg_dumpall"
 
-if [ ! -d $BACKUPDIR ]; then mkdir -p $BACKUPDIR; fi
-
-su postgres pg_dumpall | gzip > $BACKUPDIR/$BACKUPFILE.gz
+if [ ! -d $BACKUP_DIR ]; then mkdir -p $BACKUP_DIR; fi
+su postgres pg_dumpall | gzip > $BACKUP_DIR/$BACKUP_FILE.gz

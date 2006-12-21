@@ -1,10 +1,9 @@
 #!/bin/bash
 
-BACKUPDIR=${1:-/mnt/backup/subversion}
+BACKUP_DIR=${1:-/backup/subversion}
 
-if [ ! -d $BACKUPDIR ]; then mkdir -p $BACKUPDIR; fi
-
+if [ ! -d $BACKUP_DIR ]; then mkdir -p $BACKUP_DIR; fi
 for i in /srv/svn/*; do
-	BACKUPFILE=`basename "$i"`
-	svnadmin dump "$i" -q | gzip > $BACKUPDIR/$BACKUPFILE.gz
+	BACKUP_FILE=`basename "$i"`
+	svnadmin dump "$i" -q | gzip > $BACKUP_DIR/$BACKUP_FILE.gz
 done
