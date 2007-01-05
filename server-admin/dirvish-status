@@ -3,7 +3,7 @@ VAULT=/mnt/backup
 MAILTO=root
 CONFIG=/etc/dirvish/master.conf
 
-YESTERDAY=`date -d "yesterday" +%Y%m%d`
+YESTERDAY=`date -d "yesterday" +%Y-%m-%d`
 
 cd $VAULT || (echo "$0: ERROR: Please set the VAULT variable"; exit 1)
 
@@ -18,7 +18,7 @@ do
 
   # Check for a summary or log file (at least one should be
   # present if a backup occurred
-  if [ ! -f $YESTERDAY/log -o ! -f $YESTERDAY/summary ]
+  if [ ! -f $YESTERDAY/log -a ! -f $YESTERDAY/summary ]
   then
     # If no backup last night, then warn.
     # Also, try to guess the last night a backup occurred.
