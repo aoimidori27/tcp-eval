@@ -6,21 +6,21 @@ svnprefix = "/opt"
 # Startup configuration
 # The keys in this dicts are allowed to be mrouter*, mclient*, meshrouter and meshclient
 startupinfos = dict (
-	meshrouter = ['execpy("/usr/local/bin/mm_madwifi.py",["--debug","autocreate"])',
+	meshrouter = ['execpy("/usr/local/bin/um_madwifi.py",["--debug","autocreate"])',
 				  'startdaemon("watchdog")'],
 	goldfinger = ['startdaemon("watchdog")']
 )
 
 daemoninfos = dict (
 	watchdog = dict (
-	                  path = "/usr/local/bin/mm_watchdog.sh",
+	                  path = "/usr/local/bin/um_watchdog.sh",
 					  args = []
 	)
 )
 
 # Common Wireless configuration
 wlaninfos =	dict (
-	wifi0 = dict (  essid    = "mcg-mesh",
+	wifi0 = dict (  essid    = "umic-mesh",
 					device   = "ath0",
 					channel  = "1",
 					antenna  = 2,
