@@ -4,9 +4,7 @@ svnprefix = "/opt"
 
 
 # Startup configuration
-#
-# the keys in this dictionaries are allowed to be mrouter*, mclient*,
-# meshrouter and meshclient
+# The keys in this dicts are allowed to be mrouter*, mclient*, meshrouter and meshclient
 startupinfos = dict (
 	meshrouter = ['execpy("/usr/local/bin/mm_madwifi.py",["--debug","autocreate"])',
 				  'startdaemon("watchdog")'],
@@ -20,7 +18,6 @@ daemoninfos = dict (
 	)
 )
 
-
 # Common Wireless configuration
 wlaninfos =	dict (
 	wifi0 = dict (  essid    = "mcg-mesh",
@@ -32,7 +29,6 @@ wlaninfos =	dict (
 					txpower   = "20"					
 				  )
 )
-
 
 # Information about the kernel
 kernelinfos = dict (
@@ -58,8 +54,6 @@ madwifiinfos = dict (
 	local_upstream  = "/drivers/madwifi-ng/branches/upstream",
 	local_trunk     = "/drivers/madwifi-ng/trunk"
 )
-	
-
 
 # Information about the subversion repository
 svninfos = dict (
@@ -86,9 +80,8 @@ svninfos = dict (
 					'/linux/xen/trunk' : '/linux-trunk'
 	}
 )
-	
 
-# MCG-Mesh Node Information
+# UMIC-Mesh Node Information
 nodeinfos = dict(
 	vmeshnode = dict(
 		hostprefix = 'vmeshnode'
@@ -104,9 +97,6 @@ nodeinfos = dict(
 
 # Informations about the different images
 imageinfos = dict(
-#	gentoo = dict(
-#	    mounts = { '/usr/portage' : '/usr/portage' }
-#	),
 	ubuntu = dict(
 	    mounts = {}
 	)

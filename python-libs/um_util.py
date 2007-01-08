@@ -6,14 +6,14 @@ import subprocess,types,os,sys,re,copy
 from logging import info, debug, warn, error
 from socket import gethostname
 
-# mcg-mesh imports
-from mm_cfg import *
+# umic-mesh imports
+from um_config import *
 
 
 # Generic helper functions + classes
 
 class CommandFailed(Exception):
-	"Framework for MCG-Mesh applications"
+	"Framework for UMIC-Mesh applications"
 	
 	
 	def __init__(self, cmd, rc, stderr = None):
@@ -38,6 +38,7 @@ def execute(cmd, shell, raiseError=True):
 		raise CommandFailed(cmd, rc, stderr)
 	return (stdout, stderr)
 
+
 def call(cmd, shell, raiseError=True):
 	"Convenience function to handle returncodes"
 
@@ -49,7 +50,6 @@ def call(cmd, shell, raiseError=True):
 
 
 # Mesh specific helper functions + classes
-
 
 # check environment variable MESH and return nodetype
 def getnodetype():
@@ -65,6 +65,7 @@ def getnodetype():
 			sys.exit(1)
 
 	return (nodetype,nodeinfo)
+
 
 # check environment variable MESH_IMAGE and return nodetype
 def getimagetype():
@@ -83,6 +84,7 @@ def getimagetype():
 
 	return (imagetype,imageinfo)
 
+
 # get imagepath
 def getimagepath():
 	global imagepath
@@ -94,7 +96,6 @@ def getimagepath():
 	imagepath = "%s/%s" % (imageprefix,nodetype)
 
 	return imagepath
-
 
 
 # check if user is root
@@ -111,6 +112,8 @@ def nodename(nr):
 	if type(nr) is types.StringType: return nr
 	return "%s%d" % (nodeinfo['hostprefix'],nr)
 
+
+# get nodenumber
 def getnodenr():
 	"Get node number from hostname"
 	

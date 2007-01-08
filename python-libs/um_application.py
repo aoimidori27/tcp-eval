@@ -7,7 +7,7 @@ from logging import info, debug, warning, error
 
 
 class Application(object):
-	"Framework for MCG-Mesh applications"
+	"Framework for UMIC-Mesh applications"
 	
 
 	def __init__(self):
