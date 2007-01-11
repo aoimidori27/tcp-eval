@@ -4,9 +4,9 @@
 # python imports
 from logging import info, debug, warn, error
 
-# mcg-mesh imports
-from mm_application import Application
-from mm_util import *
+# umic-mesh imports
+from um_application import Application
+from um_util import *
 
 
 class OlsrUpdate(Application):
@@ -19,7 +19,8 @@ class OlsrUpdate(Application):
 		Application.__init__(self)
 	
 		# initialization of the option parser
-		self.parser.set_defaults(verbose = True, syslog=False,
+		self.parser.set_defaults(verbose = True,
+								 syslog = False,
 								 debug = False)
 		
 		# execute object
@@ -38,10 +39,12 @@ class OlsrUpdate(Application):
 				self.command = self.command + arg
 
 
-
 	def olsrupdate(self):
+		"Update OLSR source"
+
 		# create temporary directory
 		tmp = "/tmp/olsrupdate"
+		dst = tmp + "/upstream"
 		cmd = "mkdir -p %s" %(tmp)
 		call(cmd, shell = True)
 
@@ -51,8 +54,6 @@ class OlsrUpdate(Application):
 		local_upstream = olsrinfos["local_upstream"]
 		local_trunk    = olsrinfos["local_trunk"]
 
-
-		dst = tmp+"/upstream"
 		# check out upstream files
 		info("Checking out olsr local upstream...")
 		cmd = ("svn","co","-q",
@@ -61,7 +62,6 @@ class OlsrUpdate(Application):
 		call(cmd, shell = False)
 
 		# get revision
-
 		cmd = "svn info %s | grep Revision | awk '{print $2;}'" %(dst)	
 		(stdout, stderr) = execute(cmd, shell = True)
 		local_revision = stdout.splitlines()[0]
@@ -88,11 +88,10 @@ class OlsrUpdate(Application):
 		cmd = "find %s -name CVS | xargs rm -rf" %(dst)
 		call(cmd, shell = True)
 
-		
-		info("Searching updated files...")	
+		info("Searching updated files...")
+
 		# add new files 
-		cmd = "svn st %s | grep '?' | awk '{ print $2; }'" \
-			  %(dst)
+		cmd = "svn st %s | grep '?' | awk '{ print $2; }'" %(dst)
 		(stdout,stderr) = execute(cmd, shell = True)
 		debug("Stdout: %s" %stdout)
 		if (stdout != ""):
@@ -110,13 +109,11 @@ class OlsrUpdate(Application):
 			cmd = "svn rm %s" %(stdout)
 			call(cmd, shell = True)
 
-
 		# commit changes
 		info("Commiting changes...")
  		cmd = ("svn","ci",dst,
  			   "-m","new olsr version")
  		call(cmd, shell = False)
-
 
 		# switch upstream to trunk
 		info("Switching local checkout to trunk...")
@@ -124,11 +121,11 @@ class OlsrUpdate(Application):
 										  local_trunk),
 			   dst)
 		call(cmd, shell = False)
+
 		# just for completeness rename it
 		cmd = "mv %s %s/trunk" %(dst,tmp)
 		call(cmd, shell = True)
 		
-
 		# merging changes from upstream local trunk
 		info("Merging changes with local trunk...")
 		cmd = ("svn","merge","-r","%s:HEAD" %(local_revision),
@@ -148,7 +145,6 @@ class OlsrUpdate(Application):
 		call(cmd, shell = True)
 
 		info("Done.")
-		
 
 
 	def main(self):

@@ -19,13 +19,23 @@ class Chroot(Application):
 		Application.__init__(self)
 
 		# object variables (set the defaults for the option parser)
-		self.command = 'bash'
-		
+		self.command = "/bin/bash"
+		if os.environ.has_key('SUDO_USER'):
+			self.user = os.environ['SUDO_USER']
+		else:
+			self.user = os.environ['USER']	
+
 		# initialization of the option parser
 		usage = "usage: %prog [options] [command] \n" \
 				"where  command is a command to execute within chroot"
 		self.parser.set_usage(usage)
-		self.parser.set_defaults(verbose = True, syslog=False)
+		self.parser.set_defaults(user = self.user,
+								 verbose = True,
+								 syslog = False)
+
+		self.parser.add_option("-u", "--user",
+							   action = "store", dest = "user",
+							   help = "set the user to be in the chroot [default: %default]")	
 		
 		# execute object
 		self.main()
@@ -37,50 +47,54 @@ class Chroot(Application):
 		# call the super set_option method
 		Application.set_option(self)
 
+		# get options
+		self.user = self.options.user
+
 		if len(self.args) > 0:
 			self.command = self.args[0]
 			for arg in self.args[1:]:
 				self.command = self.command + arg
 
 
-	def chroot_exec(self,command):
+	def chroot_exec(self):
 		"Chroot and execute a command"
 		
 		# must be root
 		requireroot()
 		
 		# for chroot, imagetype and nodetype are required
-		(nodetype,nodeinfo) = getnodetype()
+		(nodetype, nodeinfo) = getnodetype()
+		imageinfo = getimageinfo()
 		imagepath = getimagepath()
 		
-		info("Nodetype:  %s" %(nodetype))
+		info("Nodetype: %s" %(nodetype))
 		
 		# common mounts for all chroots
 		mounts = { '/dev'  : '/dev',
 				   '/proc' : '/proc' }
 		
 		# join with mounts of nodes
-		#mounts.update(imageinfo['mounts'])
+		mounts.update(imageinfo['mounts'])
 		
 		# mount
 		for (src, dst) in mounts.iteritems():
 			# check if directory is already mounted
-			cmd= ('grep','%s%s'  % (imagepath,dst), '/etc/mtab')
+			cmd = ('grep','%s%s'  % (imagepath, dst), '/etc/mtab')
 			rc = subprocess.call(cmd)
 			if rc != 0:
 				cmd = "mount -o bind %s %s%s" % (src, imagepath, dst)
+				print cmd
 				execute(cmd, shell = True)
-				
-		# exec command	
-		cmd = "/usr/sbin/chroot %s /bin/bash -c " \
-			  "'export debian_chroot=%s && " \
-			  "export HOME=/root && source /etc/profile && %s'" \
-			  % (imagepath, nodeinfo['hostprefix'], command)
+
+		# exec command
+		cmd = "/usr/sbin/chroot %s su %s -c " \
+			  "'export debian_chroot=%s && %s'" \
+			  % (imagepath, self.user, nodeinfo['hostprefix'], self.command)
 		call(cmd, shell = True)
 
 		# umount
 		for dst in mounts.itervalues():
-			cmd = "umount %s/%s" %(imagepath,dst)
+			cmd = "umount %s%s" %(imagepath, dst)
 			call(cmd, shell = True, raiseError = True)
 
 
@@ -94,7 +108,7 @@ class Chroot(Application):
 		self.set_option()
 		
 		# call the corresponding method
-		self.chroot_exec(self.command)	
+		self.chroot_exec()	
 				  
 
 

@@ -4,9 +4,9 @@
 # python imports
 from logging import info, debug, warn, error
 
-# mcg-mesh imports
-from mm_application import Application
-from mm_util import *
+# umic-mesh imports
+from um_application import Application
+from um_util import *
 
 
 class MadwifiUpdate(Application):
@@ -18,9 +18,9 @@ class MadwifiUpdate(Application):
 		# call the super constructor
 		Application.__init__(self)
 
-	
 		# initialization of the option parser
-		self.parser.set_defaults(verbose = True, syslog=False,
+		self.parser.set_defaults(verbose = True,
+								 syslog = False,
 								 debug = False)
 		
 		# execute object
@@ -39,10 +39,12 @@ class MadwifiUpdate(Application):
 				self.command = self.command + arg
 
 
-
 	def madwifiupdate(self):
+		"Update Madwifi-ng source"
+		
 		# create temporary directory
 		tmp = "/tmp/madwifiupdate"
+		dst = tmp + "/upstream"
 		cmd = "mkdir -p %s" %(tmp)
 		call(cmd, shell = True)
 
@@ -52,8 +54,6 @@ class MadwifiUpdate(Application):
 		local_upstream = madwifiinfos["local_upstream"]
 		local_trunk    = madwifiinfos["local_trunk"]
 
-
-		dst = tmp+"/upstream"
 		# check out upstream files
 		info("Checking out madwifi local upstream...")
 		cmd = ("svn","co","-q",
@@ -83,6 +83,7 @@ class MadwifiUpdate(Application):
 		os.chdir(save_path)
 	
 		info("Searching updated files...")	
+		
 		# add new files 
 		cmd = "svn st %s | grep '?' | awk '{ print $2; }'" \
 			  %(dst)
@@ -103,13 +104,11 @@ class MadwifiUpdate(Application):
 			cmd = "svn rm %s" %(stdout)
 			call(cmd, shell = True)
 
-
 		# commit changes
 		info("Commiting changes...")
  		cmd = ("svn","ci",dst,
  			   "-m","new madwifi version")
  		call(cmd, shell = False)
-
 
 		# switch upstream to trunk
 		info("Switching local checkout to trunk...")
@@ -117,11 +116,11 @@ class MadwifiUpdate(Application):
 										  local_trunk),
 			   dst)
 		call(cmd, shell = False)
+		
 		# just for completeness rename it
 		cmd = "mv %s %s/trunk" %(dst,tmp)
 		call(cmd, shell = True)
 		
-
 		# merging changes from upstream local trunk
 		info("Merging changes with local trunk...")
 		cmd = ("svn","merge","-r","%s:HEAD" %(local_revision),
@@ -141,7 +140,6 @@ class MadwifiUpdate(Application):
 		call(cmd, shell = True)
 
 		info("Done.")
-		
 
 
 	def main(self):
@@ -155,7 +153,7 @@ class MadwifiUpdate(Application):
 		
 		# call the corresponding method
 		self.madwifiupdate()	
-				  
+		  
 
 
 if __name__ == "__main__":
