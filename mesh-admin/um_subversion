@@ -31,7 +31,7 @@ class Subversion(Application):
 
         self.parser.add_option("-n", "--nolinks", 
                                action = "store_false", dest = "updatelinks",
-                               help = "don't update symlinks in /usr/local/bin")    
+                               help = "don't update symlinks in /usr/local/sbin")    
 
         # execute object
         self.main()
@@ -60,14 +60,14 @@ class Subversion(Application):
         "Subversion update"
 
         # allow group mates to write and exec files
-        os.umask(0007)
+        os.umask(0002)
         for image,imageinfo in imageinfos.iteritems():
             svnmappings = imageinfo['svnmappings']
             imagepath = "%s/%s" %(imageprefix, image)
 
             # iterate through svn mappings
             for src,dst in svnmappings.iteritems(): 
-                dst = "%s%s/%s%s" %(imagepath, svnprefix, dst)
+                dst = "%s%s%s" %(imagepath, svnprefix, dst)
                 src = "%s%s" %(svnrepos, src)
                 if not os.path.exists(dst):
                     warn("%s got lost! doing a new checkout" % dst)
@@ -81,8 +81,8 @@ class Subversion(Application):
             # update links
             if self.updatelinks:
                   
-                info("Updating symlinks in /usr/local/bin")
-                dst = "%s/usr/local/bin" % (imagepath)
+                info("Updating symlinks in /usr/local/sbin")
+                dst = "%s/usr/local/sbin" % (imagepath)
 
                 # just remove every link with um_ in it
                 cmd = "rm -v `find %s -type l -name 'um_*'`" %(dst)
@@ -92,8 +92,10 @@ class Subversion(Application):
                     warn("Removing of links in %s failed" %(dst))
                     # recreate those links
 
-                for d in imageinfos[image][scriptfolders]:
-                    src = "%s/%s" %(imagepath, d)
+                for d in imageinfo['scriptfolders']:
+                    src = "%s%s/%s" %(imagepath, svnprefix, d)
+                    info(src);
+                    d = "%s%s" %(svnprefix,d)
                     for f in dircache.listdir(src):
                         if re.match("um_",f):
                             cmd = "ln -vsf %s/%s %s/%s" %(d, f, dst, f)
