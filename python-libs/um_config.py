@@ -70,10 +70,9 @@ imageinfos = dict(
         mounts = {},
         svnmappings = { '/config/vmeshhost/trunk' : '/config',
                         '/linux/xen/trunk' : '/linux/default',
-                        '/scripts/python-libs' : '/scripts/python-libs',
-                        '/scripts/mesh-util' : '/scripts/mesh-util'},
+                        '/scripts/python-libs' : '/scripts/python-libs' },
         # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ '/scripts/mesh-util' ]        
+        scriptfolders = [ ]        
     ),
     vmeshnode = dict(
         mounts = {},
@@ -82,12 +81,11 @@ imageinfos = dict(
                         '/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
                         '/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
                         '/scripts/mesh-init' : '/scripts/mesh-init',
-                        '/scripts/mesh-util' : '/scripts/mesh-util',
                         '/scripts/mesh-stat' : '/scripts/mesh-stat',
                         '/scripts/python-libs' : '/scripts/python-libs',
-                        '/tools/nuttcp/trunk' : '/tools/nuttcp'},
+                        '/tools/nuttcp/trunk' : '/tools/nuttcp' },
         # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ '/scripts/mesh-util', '/scripts/mesh-init' ]
+        scriptfolders = [ '/scripts/mesh-init', '/scripts/mesh-stat' ]
     ),
     meshnode = dict(
         mounts = {},
@@ -98,11 +96,10 @@ imageinfos = dict(
                         '/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
                         '/scripts/mesh-init' : '/scripts/mesh-init',
                         '/scripts/mesh-stat' : '/scripts/mesh-stat',
-                        '/scripts/mesh-util' : '/scripts/mesh-util',
                         '/scripts/python-libs' : '/scripts/python-libs',
-                        '/tools/nuttcp/trunk' : '/tools/nuttcp'},
+                        '/tools/nuttcp/trunk' : '/tools/nuttcp' },
         # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ '/scripts/mesh-util' ]
+        scriptfolders = [ '/scripts/mesh-init', '/scripts/mesh-stat' ]
     )
 )
 
