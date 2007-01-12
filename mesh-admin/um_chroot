@@ -63,7 +63,7 @@ class Chroot(Application):
 		requireroot()
 		
 		# for chroot, imagetype and nodetype are required
-		(nodetype, nodeinfo) = getnodetype()
+		nodetype  = getnodetype()
 		imageinfo = getimageinfo()
 		imagepath = getimagepath()
 		
@@ -89,13 +89,13 @@ class Chroot(Application):
 		# exec command
 		cmd = "/usr/sbin/chroot %s su %s -c " \
 			  "'export debian_chroot=%s && %s'" \
-			  % (imagepath, self.user, nodeinfo['hostprefix'], self.command)
+			  % (imagepath, self.user, nodetype, self.command)
 		call(cmd, shell = True)
 
 		# umount
 		for dst in mounts.itervalues():
 			cmd = "umount %s%s" %(imagepath, dst)
-			call(cmd, shell = True, raiseError = True)
+			call(cmd, shell = True, raiseError = False)
 
 
 	def main(self):
