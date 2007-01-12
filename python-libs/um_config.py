@@ -1,59 +1,59 @@
 # global informations
-svnrepos    = "svn://mesh.umic.rwth-aachen.de/umic-mesh"
-imageprefix = "/opt/umic-mesh/images"
-svnprefix 	= "/opt/checkout"
+svnrepos    = 'svn://mesh.umic.rwth-aachen.de/umic-mesh'
+imageprefix = '/opt/umic-mesh/images'
+svnprefix 	= '/opt/checkout'
 
 # informations about the kernel
 kernelinfos = dict(
-	mirror = "http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/",
-	version = "2.6.16.29",
-	srcpath = "/usr/src",
+	mirror = 'http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/',
+	version = '2.6.16.29',
+	srcpath = '/usr/src',
 	modifiedfiles = ['include/net/ip_fib.h','include/net/route.h',
 					 'net/ipv4/fib_semantics.c','net/ipv4/route.c']
 )
 
 # informations about olsr
 olsrinfos = dict(
-	remote_repos    = ":pserver:anonymous@olsrd.cvs.sourceforge.net:/cvsroot/olsrd",
-	remote_module   = "olsrd-current",
-	local_upstream  = "/routing/olsr/branches/upstream",
-	local_trunk     = "/routing/olsr/trunk"
+	remote_repos    = ':pserver:anonymous@olsrd.cvs.sourceforge.net:/cvsroot/olsrd',
+	remote_module   = 'olsrd-current',
+	local_upstream  = '/routing/olsr/branches/upstream',
+	local_trunk     = '/routing/olsr/trunk'
 )
 
 # informations about madwifi
 madwifiinfos = dict(
-	remote_repos    = "http://svn.madwifi.org",
-	remote_module   = "/trunk",
-	local_upstream  = "/drivers/madwifi-ng/branches/upstream",
-	local_trunk     = "/drivers/madwifi-ng/trunk"
+	remote_repos    = 'http://svn.madwifi.org',
+	remote_module   = '/trunk',
+	local_upstream  = '/drivers/madwifi-ng/branches/upstream',
+	local_trunk     = '/drivers/madwifi-ng/trunk'
 )
 
 # informations about the wlan devices
 wlaninfos = dict(
     ath0 = dict(
-        wlandev  = "wifi0",
-        essid    = "umic-mesh",
-        channel  = "1",
-        antenna  = "2",
-        address  = "169.254.9.$NODENR/16",
-        wlanmode = "ahdemo",
-        txpower  = "20"
+        wlandev  = 'wifi0',
+        essid    = 'umic-mesh',
+        channel  = '1',
+        antenna  = '2',
+        address  = '169.254.9.$NODENR/16',
+        wlanmode = 'ahdemo',
+        txpower  = '18'
     ),
     ath1 = dict(
-        wlandev  = "wifi1",
-        essid    = "umic-mesh",
-        channel  = "11",
-        antenna  = "2",
-        address  = "169.254.10.$NODENR/16",
-        wlanmode = "sta",
-        txpower  = "20"
+        wlandev  = 'wifi1',
+        essid    = 'umic-mesh',
+        channel  = '11',
+        antenna  = '2',
+        address  = '169.254.10.$NODENR/16',
+        wlanmode = 'sta',
+        txpower  = '18'
     )
 )
 
 # informations about the daemons
 daemoninfos = dict(
     watchdog = dict(
-        path = "/usr/local/bin/um_watchdog",
+        path = '/usr/local/bin/um_watchdog',
         args = []
     )
 )
@@ -62,20 +62,20 @@ daemoninfos = dict(
 nodeinfos = dict(
 	vmeshhost = dict(
 		hostprefix  = 'vmeshhost',
-		wlandev     = [],
+		wlandevices = [],
 		startup     = [],
 		daemons		= []
 	),
 	vmeshnode = dict(
 		hostprefix  = 'vmeshnode',
-		wlandev     = [],
+		wlandevices = [],
 		startup     = [],
         daemons     = []
 	),
 	meshnode = dict(
 	    hostprefix 	= 'meshrouter',
-		wlandev	    = ['ath0', 'ath1'],
-		startup     = ['execpy("/usr/local/bin/um_madwifi",["--debug","autocreate"])'],
+		wlandevices = ['ath0', 'ath1'],
+		startup     = ['execpy('/usr/local/bin/um_madwifi',['--debug','autocreate'])'],
         daemons     = []
 	)
 )
@@ -83,7 +83,7 @@ nodeinfos = dict(
 # informations about the different images
 imageinfos = dict(
     vmeshhost = dict(
-		default  = 'um_edgy',
+		default_image = 'um_edgy',
 		versions = ['um_edgy'],
 		mounts = {},
 		svnmappings = { '/config/vmeshhost/trunk' : '/config',
@@ -91,7 +91,7 @@ imageinfos = dict(
 						'/scripts/python-libs' : '/scripts/python-libs'}
 	),
 	vmeshnode = dict(
-        default  = 'um_edgy',
+        default_image = 'um_edgy',
         versions = ['um_edgy'],
 		mounts = {},
 		svnmappings = { '/config/vmeshnode/trunk' : '/config',
@@ -104,7 +104,7 @@ imageinfos = dict(
 						'/tools/nuttcp/trunk' : '/tools/nuttcp'}
 	),
 	meshnode = dict(
-        default  = 'um_edgy',
+        default_image = 'um_edgy',
         versions = ['um_dapper', 'um_edgy'],
 		mounts = {},
         svnmappings = { '/config/vmeshnode/trunk' : '/config',

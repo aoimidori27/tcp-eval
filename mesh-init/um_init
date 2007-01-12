@@ -6,16 +6,14 @@ import os, subprocess, sys, re
 from logging import info, debug, warn, error
 from socket import gethostname
 
-# mcg-mesh imports
-import mm_util
-from mm_application import Application
-from mm_cfg import *
+# umic-mesh imports
+from um_application import Application
+from um_config import *
+from um_util import *
 
-
-# class to start MCG-Mesh programms
 
 class Init(Application):
-	"Class to start MCG-Mesh programms as daemons"
+	"Class to start UMIC-Mesh programms"
 
 	
 	def __init__(self):
@@ -24,11 +22,10 @@ class Init(Application):
 		# call the super constructor
 		Application.__init__(self)
 
-		# object variables (set the defaults for the option parser)
-
+		# initialization of the option parser
 		self.parser.set_defaults(verbose = True,
-								 syslog  = False,
-								 debug   = False)
+								 syslog = False,
+								 debug = False)
 		
 		# execute object
 		self.main()
@@ -49,7 +46,7 @@ class Init(Application):
 		elif re.match("mclient", hostname):
 			nodetype = "meshclient"
 		else:
-			(nodetype, nodeinfo) = mm_util.getnodetype()
+			(nodetype, nodeinfo) = getnodetype()
 			
 		info("Hostname: %s" % hostname)
 		info("Nodetype: %s" % nodetype)
@@ -71,7 +68,8 @@ class Init(Application):
 					error(inst)
 
 		print ("Done.")
-					
+
+			
 	def main(self):
 		"Main method of the Init object"
 

@@ -5,13 +5,13 @@
 import os, subprocess
 from logging import info, debug, warn, error
 
-# mcg-mesh imports
-import mm_util
-from mm_application import Application
+# umic-mesh imports
+from um_application import Application
+from um_util import *
 
 
 class Daemon(Application):
-	"Class to start MCG-Mesh programms as daemons"
+	"Class to start UMIC-Mesh programms as daemons"
 
 
 	def __init__(self):
@@ -20,8 +20,6 @@ class Daemon(Application):
 		# call the super constructor
 		Application.__init__(self)
 
-
-	
 		# object variables (set the defaults for the option parser)
 		self.daemon_opts = "-v -s"
 		self.piddir      = "/var/run"
