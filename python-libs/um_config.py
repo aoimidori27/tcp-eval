@@ -70,7 +70,9 @@ imageinfos = dict(
         mounts = {},
         svnmappings = { '/config/vmeshhost/trunk' : '/config',
                         '/linux/xen/trunk' : '/linux/default',
-                        '/scripts/python-libs' : '/scripts/python-libs'}
+                        '/scripts/python-libs' : '/scripts/python-libs'},
+        # folders which content is mapped to /usr/local/bin
+        scriptfolders = [ '/scripts/mesh-util' ]        
     ),
     vmeshnode = dict(
         mounts = {},
@@ -81,7 +83,9 @@ imageinfos = dict(
                         '/scripts/mesh-init' : '/scripts/mesh-init',
                         '/scripts/mesh-stat' : '/scripts/mesh-stat',
                         '/scripts/python-libs' : '/scripts/python-libs',
-                        '/tools/nuttcp/trunk' : '/tools/nuttcp'}
+                        '/tools/nuttcp/trunk' : '/tools/nuttcp'},
+        # folders which content is mapped to /usr/local/bin
+        scriptfolders = [ '/scripts/mesh-util' ]
     ),
     meshnode = dict(
         mounts = {},
@@ -93,7 +97,9 @@ imageinfos = dict(
                         '/scripts/mesh-init' : '/scripts/mesh-init',
                         '/scripts/mesh-stat' : '/scripts/mesh-stat',
                         '/scripts/python-libs' : '/scripts/python-libs',
-                        '/tools/nuttcp/trunk' : '/tools/nuttcp'}
+                        '/tools/nuttcp/trunk' : '/tools/nuttcp'},
+        # folders which content is mapped to /usr/local/bin
+        scriptfolders = [ '/scripts/mesh-util' ]
     )
 )
 
