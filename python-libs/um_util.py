@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import subprocess, os, sys
+import subprocess, os, os.path, sys, sre
 from logging import info, debug, warn, error
+from socket import gethostname
 
 # umic-mesh imports
 from um_config import *
@@ -46,24 +47,48 @@ def call(cmd, shell, raiseError=True):
 		raise CommandFailed(cmd, rc)
 
 
+def requireroot():
+	"Check if user is root"
+
+	if not os.getuid()==0:		
+		error("You must be root. Operation not permitted.")
+		sys.exit(1)
+
+
 #
 # mesh specific helper functions and classes
 #
 
 def getnodetype():
-	"Check environment variable UM_NODE_TYPE and return nodetype and nodeinfo"
+	"Check environment variable UM_NODE_TYPE and return nodetype"
 
-	global nodetype, nodeinfo
+	global nodetype
 
 	if not globals().has_key('nodetype'):
 		if os.environ.has_key('UM_NODE_TYPE') and nodeinfos.has_key(os.environ['UM_NODE_TYPE']):
 			nodetype = os.environ['UM_NODE_TYPE']
+		else:
+			error("Please set environment variable UM_NODE_TYPE to one of %s." % nodeinfos.keys())
+			sys.exit(1)
+
+	return nodetype
+
+
+def getnodeinfo():
+	"Check environment variable UM_NODE_TYPE and return nodeinfo"
+
+	global nodeinfo
+
+	if not globals().has_key('nodeinfo'):
+		nodetype = getnodetype()
+
+		if nodeinfos.has_key(nodetype):
 			nodeinfo = nodeinfos[nodetype]
 		else:
 			error("Please set environment variable UM_NODE_TYPE to one of %s." % nodeinfos.keys())
 			sys.exit(1)
 
-	return (nodetype, nodeinfo)
+	return nodeinfo
 
 
 def getimageinfo():
@@ -72,34 +97,15 @@ def getimageinfo():
 	global imageinfo
 
 	if not globals().has_key('imageinfo'):
-		(nodetype, nodeinfo) = getnodetype()
+		nodeinfo = getnodeinfo()
 
-		if imageinfos.has_key(nodetype):
-			imageinfo = imageinfos[nodetype]
+		if imageinfos.has_key(nodeinfo['imagetype']):
+			imageinfo = imageinfos[nodeinfo['imagetype']]
 		else:
-			error("No image defined for UM_NODE_TYPE=%s. Please set environment variable " \
-				  "UM_NODE_TYPE to one of %s." %(nodetype, imageinfos.keys()))
+			error("Error in \"um_config\". No defined image infos for UM_NODE_TYPE=%s" %nodetype)
 			sys.exit(1)
 
 	return imageinfo
-
-
-def getimageversion():
-	"Check environment variable UM_IMAGE_VERSION and return imageversion"
-
-	global imageversion
-
-	if not globals().has_key('imageversion'):
-		imageinfo = getimageinfo()
-
-		if os.environ.has_key('UM_IMAGE_VERSION') and os.environ['UM_IMAGE_VERSION'] in imageinfo['versions']:
-			imageversion = os.environ['UM_IMAGE_VERSION']
-		else:
-			error("No image version defined for UM_NODE_TYPE=%s. Please set environment variable " \
-				  "UM_IMAGE_VERSION to one of %s." %(nodetype, imageinfo['versions']))
-			sys.exit(1)
-
-	return imageversion
 
 
 def getimagepath():
@@ -108,16 +114,28 @@ def getimagepath():
 	global imagepath
 	
 	if not globals().has_key('imagepath'):
-		imageversion = getimageversion()
-		imagepath = "%s/%s.img/%s" % (imageprefix, nodetype, imageversion)
+		nodeinfo = getnodeinfo()
+		imagepath = "%s/%s.img/%s" % (imageprefix, nodeinfo['imagetype'], nodeinfo['imageversion'])
 	
+		if not os.path.exists(imagepath):
+			error("Error in \"um_config\". No valid image path for UM_NODE_TYPE=%s" %nodetype)
+			sys.exit(1)
+
 	return imagepath
 
 
-def requireroot():
-	"Check if user is root"
+def getnodenr():
+	"Get node number from hostname"
+	
+	hostname = gethostname()
 
-	if not os.getuid()==0:		
-		error("You must be root to do this!")
-		sys.exit(1)
+	if sre.match("mrouter", hostname):
+		nr = sre.sub("^mrouter","",hostname)
+	elif sre.match("mclient", hostname):
+		nr = sre.sub("^mclient","",hostname)
+	elif sre.match("vmrouter", hostname):
+		nr = sre.sub("^vmrouter","",hostname)
+	elif sre.match("vmclient", hostname):
+		nr = sre.sub("^vmclient","",hostname)
 
+	return nr

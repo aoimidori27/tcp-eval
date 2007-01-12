@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+#
+# Common umic-mesh configs
+#
+
 # global informations
 svnrepos    = 'svn://mesh.umic.rwth-aachen.de/umic-mesh'
 imageprefix = '/opt/umic-mesh/images'
@@ -28,20 +35,79 @@ madwifiinfos = dict(
 	local_trunk     = '/drivers/madwifi-ng/trunk'
 )
 
+# informations about the umic-mesh nodes
+nodeinfos = dict(
+	vmeshhost = dict(
+		imagetype	 = 'vmeshhost',
+		imageversion = 'um_edgy',
+		wlandevs	 = {},
+		startup		 = [],
+		daemons		 = []
+	),
+	vmeshnode = dict(
+		imagetype	 = 'vmeshnode',
+		imageversion = 'um_edgy',
+		wlandevs	 = {},
+		startup		 = [],
+        daemons		 = []
+	),
+	meshrouter = dict(
+	    imagetype	 = 'meshnode',
+		imageversion = 'um_edgy',
+		wlandevs	 = {'ath0' : 'config0',
+						'ath1' : 'config1'},
+		startup		 = ['execpy("/usr/local/bin/um_madwifi",["--debug","autocreate"])'],
+        daemons		 = []
+	)
+)
+
+# informations about the different images
+imageinfos = dict(
+    vmeshhost = dict(
+		mounts = {},
+		svnmappings = { '/config/vmeshhost/trunk' : '/config',
+						'/linux/xen/trunk' : '/linux/default',
+						'/scripts/python-libs' : '/scripts/python-libs'}
+	),
+	vmeshnode = dict(
+		mounts = {},
+		svnmappings = { '/config/vmeshnode/trunk' : '/config',
+						'/linux/xen/trunk' : '/linux/default',
+						'/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
+						'/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
+						'/scripts/mesh-init' : '/scripts/mesh-init',
+						'/scripts/mesh-stat' : '/scripts/mesh-stat',
+						'/scripts/python-libs' : '/scripts/python-libs',
+						'/tools/nuttcp/trunk' : '/tools/nuttcp'}
+	),
+	meshnode = dict(
+		mounts = {},
+        svnmappings = { '/config/vmeshnode/trunk' : '/config',
+                        '/drivers/madwifi-ng/branches/um-version' : '/drivers/madwifi-ng',
+                        '/linux/vanilla/trunk' : '/linux/default',
+                        '/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
+                        '/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
+                        '/scripts/mesh-init' : '/scripts/mesh-init',
+                        '/scripts/mesh-stat' : '/scripts/mesh-stat',
+                        '/scripts/python-libs' : '/scripts/python-libs',
+                        '/tools/nuttcp/trunk' : '/tools/nuttcp'}
+    )
+)
+
 # informations about the wlan devices
 wlaninfos = dict(
-    ath0 = dict(
-        wlandev  = 'wifi0',
-        essid    = 'umic-mesh',
+    config0 = dict(
+        wlandev  = '',
+        essid    = 'umic-mesh-ah',
         channel  = '1',
         antenna  = '2',
         address  = '169.254.9.$NODENR/16',
         wlanmode = 'ahdemo',
         txpower  = '18'
     ),
-    ath1 = dict(
-        wlandev  = 'wifi1',
-        essid    = 'umic-mesh',
+    config1 = dict(
+        wlandev  = '',
+        essid    = 'umic-mesh-sta',
         channel  = '11',
         antenna  = '2',
         address  = '169.254.10.$NODENR/16',
@@ -58,71 +124,14 @@ daemoninfos = dict(
     )
 )
 
-# informations about the umic-mesh nodes
-nodeinfos = dict(
-	vmeshhost = dict(
-		hostprefix  = 'vmeshhost',
-		wlandevices = [],
-		startup     = [],
-		daemons		= []
-	),
-	vmeshnode = dict(
-		hostprefix  = 'vmeshnode',
-		wlandevices = [],
-		startup     = [],
-        daemons     = []
-	),
-	meshnode = dict(
-	    hostprefix 	= 'meshrouter',
-		wlandevices = ['ath0', 'ath1'],
-		startup     = ['execpy('/usr/local/bin/um_madwifi',['--debug','autocreate'])'],
-        daemons     = []
-	)
-)
 
-# informations about the different images
-imageinfos = dict(
-    vmeshhost = dict(
-		default_image = 'um_edgy',
-		versions = ['um_edgy'],
-		mounts = {},
-		svnmappings = { '/config/vmeshhost/trunk' : '/config',
-						'/linux/xen/trunk' : '/linux/default',
-						'/scripts/python-libs' : '/scripts/python-libs'}
-	),
-	vmeshnode = dict(
-        default_image = 'um_edgy',
-        versions = ['um_edgy'],
-		mounts = {},
-		svnmappings = { '/config/vmeshnode/trunk' : '/config',
-						'/linux/xen/trunk' : '/linux/default',
-						'routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
-						'/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
-						'/scripts/mesh-init' : '/scripts/mesh-init',
-						'/scripts/mesh-stat' : '/scripts/mesh-stat',
-						'/scripts/python-libs' : '/scripts/python-libs',
-						'/tools/nuttcp/trunk' : '/tools/nuttcp'}
-	),
-	meshnode = dict(
-        default_image = 'um_edgy',
-        versions = ['um_dapper', 'um_edgy'],
-		mounts = {},
-        svnmappings = { '/config/vmeshnode/trunk' : '/config',
-                        '/drivers/madwifi-ng/branches/um-version' : '/drivers/madwifi-ng',
-                        '/linux/vanilla/trunk' : '/linux/default',
-                        '/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
-                        '/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
-                        '/scripts/mesh-init' : '/scripts/mesh-init',
-                        '/scripts/mesh-stat' : '/scripts/mesh-stat',
-                        '/scripts/python-libs' : '/scripts/python-libs',
-                        '/tools/nuttcp/trunk' : '/tools/nuttcp'}
+#
+# Specific project configs
+#
+
+# informations about elcn-project
+elcninfos = dict(
+    imageinfos = dict(
+        svnmappings = { '/linux/branches/elcn-linux-2.6.16.29-xen' : '/linux/elcn'}
     )
 )
-
-# informations about the different projects
-projectinfos = dict(
-        elcn = dict(
-            svnmappings = { '/linux/xen/trunk' : '/linux/elcn'}
-        )
-)
-
