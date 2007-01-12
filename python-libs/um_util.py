@@ -75,41 +75,31 @@ def getnodetype():
 
 
 def getnodeinfo():
-    "Check environment variable UM_NODE_TYPE and return nodeinfo"
+    "Get the node infos for the desired note type"
 
     global nodeinfo
 
     if not globals().has_key('nodeinfo'):
         nodetype = getnodetype()
-
-        if nodeinfos.has_key(nodetype):
-            nodeinfo = nodeinfos[nodetype]
-        else:
-            error("Please set environment variable UM_NODE_TYPE to one of %s." % nodeinfos.keys())
-            sys.exit(1)
+        nodeinfo = nodeinfos[nodetype]
 
     return nodeinfo
 
 
 def getimageinfo():
-    "Check environment variable UM_NODE_TYPE and return imageinfo"
+    "Get the image infos for the desired note type"
 
     global imageinfo
 
     if not globals().has_key('imageinfo'):
-        nodeinfo = getnodeinfo()
-
-        if imageinfos.has_key(nodeinfo['imagetype']):
-            imageinfo = imageinfos[nodeinfo['imagetype']]
-        else:
-            error("Error in \"um_config\". No defined image infos for UM_NODE_TYPE=%s" %nodetype)
-            sys.exit(1)
+        nodeinfo  = getnodeinfo()
+        imageinfo = imageinfos[nodeinfo['imagetype']]
 
     return imageinfo
 
 
 def getimagepath():
-    "Derivate image path form environment variables UM_NODE_TYPE and UM_IMAGE_VERSION"
+    "Get the image path for the desired note type"
 
     global imagepath
     
@@ -117,10 +107,6 @@ def getimagepath():
         nodeinfo = getnodeinfo()
         imagepath = "%s/%s.img/%s" % (imageprefix, nodeinfo['imagetype'], nodeinfo['imageversion'])
     
-        if not os.path.exists(imagepath):
-            error("Error in \"um_config\". No valid image path for UM_NODE_TYPE=%s" %nodetype)
-            sys.exit(1)
-
     return imagepath
 
 
@@ -131,7 +117,5 @@ def getnodenr():
 
     for nodeinfo in nodeinfos.itervalues():
         if sre.match(nodeinfo['hostnameprefix'], hostname):
+            print sre.sub(nodeinfo['hostnameprefix'],"",hostname)
             return sre.sub(nodeinfo['hostnameprefix'],"",hostname)
-    
-    error("Error in \"um_config\". No valid image pathdjifjws for UM_NODE_TYPE=%s" %nodetype)
-    sys.exit(1)

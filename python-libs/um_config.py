@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Common umic-mesh configs
+# common umic-mesh configs
 #
 
 # global informations
@@ -109,22 +109,22 @@ imageinfos = dict(
 # informations about the wlan devices
 wlaninfos = dict(
     config0 = dict(
-        wlandev  = '',
+        hwdevice = 'wifi0',
         essid    = 'umic-mesh-ah',
         channel  = '1',
         antenna  = '2',
         address  = '169.254.9.$NODENR$/16',
         wlanmode = 'ahdemo',
-        txpower  = '18'
+        txpower  = '17'
     ),
     config1 = dict(
-        wlandev  = '',
+        hwdevice = 'wifi1',
         essid    = 'umic-mesh-sta',
         channel  = '11',
         antenna  = '2',
         address  = '169.254.10.$NODENR$/16',
         wlanmode = 'sta',
-        txpower  = '18'
+        txpower  = '17'
     )
 )
 
@@ -138,7 +138,7 @@ daemoninfos = dict(
 
 
 #
-# Specific project configs
+# specific project configs
 #
 
 # informations about elcn-project
