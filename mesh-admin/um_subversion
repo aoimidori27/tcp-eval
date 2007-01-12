@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os, subprocess, dircache, re, copy
+import os, subprocess, dircache, sre, copy
 from logging import info, debug, warn, error
 
 # umic-mesh imports
@@ -15,6 +15,9 @@ class Subversion(Application):
 
 
     def __init__(self):
+        "Constructor of the object"
+
+        # call the super constructor
         Application.__init__(self);
 
         # object variables (set the defaults for the option parser)
@@ -22,7 +25,7 @@ class Subversion(Application):
 
         # initialization of the option parser
         usage = "usage: %prog [options] COMMAND \n" \
-                "where COMMAND := { status | update }\n"
+                "where  COMMAND := { status | update }\n"
         self.parser.set_usage(usage)
 
         self.parser.set_defaults(syslog = False,
@@ -61,28 +64,28 @@ class Subversion(Application):
 
         # allow group mates to write and exec files
         os.umask(0002)
-        for image,imageinfo in imageinfos.iteritems():
+        for image, imageinfo in imageinfos.iteritems():
             svnmappings = imageinfo['svnmappings']
             imagepath = "%s/%s" %(imageprefix, image)
 
             # iterate through svn mappings
-            for src,dst in svnmappings.iteritems(): 
+            for src, dst in svnmappings.iteritems(): 
                 dst = "%s%s%s" %(imagepath, svnprefix, dst)
                 src = "%s%s" %(svnrepos, src)
                 if not os.path.exists(dst):
-                    warn("%s got lost! doing a new checkout" % dst)
+                    warn("%s got lost! doing a new checkout" %(dst))
                     call("mkdir -p %s" % dst, shell = True)
-                    cmd = ('svn','checkout',src,dst)
+                    cmd = ('svn', 'checkout', src, dst)
                 else:
-                    cmd = ('svn','update',dst)
+                    cmd = ('svn', 'update', dst)
                 info(cmd)
-                prog = call(cmd,shell=False)
+                prog = call(cmd, shell=False)
                 
             # update links
             if self.updatelinks:
                   
                 info("Updating symlinks in /usr/local/sbin")
-                dst = "%s/usr/local/sbin" % (imagepath)
+                dst = "%s/usr/local/sbin" %(imagepath)
 
                 # just remove every link with um_ in it
                 cmd = "rm -v `find %s -type l -name 'um_*'`" %(dst)
@@ -97,12 +100,10 @@ class Subversion(Application):
                     info(src);
                     d = "%s%s" %(svnprefix,d)
                     for f in dircache.listdir(src):
-                        if re.match("um_",f):
+                        if sre.match("um_", f):
                             cmd = "ln -vsf %s/%s %s/%s" %(d, f, dst, f)
-                            # use os.system() here because call()
-                            # is too slow
+                            # use os.system() since call() is too slow
                             os.system(cmd) 
-                     
     
 
     def status(self):
@@ -113,7 +114,7 @@ class Subversion(Application):
     
             for src,dst in imageinfo['svnmappings'].iteritems():
                 dst = "%s%s%s" %(imagepath, svnprefix, dst)
-                cmd = ('svn','status', dst)
+                cmd = ('svn', 'status', dst)
                 info(cmd)
                 prog = call(cmd, shell = False)
 
