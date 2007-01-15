@@ -15,8 +15,6 @@ kernelinfos = dict(
     mirror = 'http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/',
     version = '2.6.16.29',
     srcpath = '/usr/src',
-    modifiedfiles = ['include/net/ip_fib.h','include/net/route.h',
-                     'net/ipv4/fib_semantics.c','net/ipv4/route.c']
 )
 
 # informations about olsr
@@ -54,7 +52,7 @@ nodeinfos = dict(
         daemons        = []
     ),
     meshrouter = dict(
-        hostnameprefix = 'bootserver',
+        hostnameprefix = 'mrouter',
         imagetype      = 'meshnode',
         imageversion   = 'um_edgy',
         wlandevs       = {'ath0' : 'config0',
@@ -122,14 +120,6 @@ wlaninfos = dict(
         address  = '169.254.10.$NODENR$/16',
         wlanmode = 'sta',
         txpower  = '17'
-    )
-)
-
-# informations about the daemons
-daemoninfos = dict(
-    watchdog = dict(
-        path = '/usr/local/bin/um_watchdog',
-        args = []
     )
 )
 
