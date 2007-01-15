@@ -13,74 +13,62 @@ from um_util import *
 
 
 class Init(Application):
-	"Class to start UMIC-Mesh programms"
+    "Class to start UMIC-Mesh programms"
 
-	
-	def __init__(self):
-		"Constructor of the object"
-	
-		# call the super constructor
-		Application.__init__(self)
+    
+    def __init__(self):
+        "Constructor of the object"
+    
+        # call the super constructor
+        Application.__init__(self)
 
-		# initialization of the option parser
-		self.parser.set_defaults(verbose = True,
-								 syslog = False,
-								 debug = False)
-		
-		# execute object
-		self.main()
+        # initialization of the option parser
+        self.parser.set_defaults(verbose = True,
+                                 syslog = False,
+                                 debug = False)
+        
+        # execute object
+        self.main()
 
 
-	def set_option(self):
-		"Set options"
-		
-		# call the super set_option method
-		Application.set_option(self)
-		
+    def set_option(self):
+        "Set options"
+        
+        # call the super set_option method
+        Application.set_option(self)
+        
 
-	def init(self):
-		hostname = gethostname()
-		
-		if re.match("mrouter", hostname):
-			nodetype = "meshrouter"
-		elif re.match("mclient", hostname):
-			nodetype = "meshclient"
-		else:
-			(nodetype, nodeinfo) = getnodetype()
-			
-		info("Hostname: %s" % hostname)
-		info("Nodetype: %s" % nodetype)
-			
-		if startupinfos.has_key(nodetype):
-			for line in startupinfos[nodetype]:
-				try:
-					eval(line)
-				except Exception, inst:
-					error("Error while executing %s" % line)
-					error(inst)
-				
-		if startupinfos.has_key(hostname):
-			for line in startupinfos[hostname]:
-				try:
-					eval(line)
-				except Exception, inst:
-					error("Error while executing %s" % line)
-					error(inst)
+    def init(self):
+        hostname  = gethostname()
+        nodetype  = getnodetype()
+        nodeinfo  = getnodeinfo()
+        imagepath = getimagepath()
+                
+        info("Hostname:  %s" % hostname)
+        info("Nodetype:  %s" % nodetype)
+        info("Imagepath: %s" % imagepath)
+            
+        for line in nodeinfo['startup'] 
+            try:
+                eval(line)
+            except Exception, inst:
+                error("Error while executing %s" % line)
+                error(inst)
 
-		print ("Done.")
+            print ("Done.")
 
-			
-	def main(self):
-		"Main method of the Init object"
+    
+    def main(self):
+        "Main method of the Init object"
 
-		# parse options
-		self.parse_option()
-		
-		# set options
-		self.set_option()
-		
-		# call the corresponding method
-		self.init()
+        # parse options
+        self.parse_option()
+        
+        # set options
+        self.set_option()
+        
+        # call the corresponding method
+        self.init()
 
 
 
@@ -88,77 +76,77 @@ class Init(Application):
 
 
 class SystemExitException(Exception):
-	"Private exception for execpy"
+    "Private exception for execpy"
 
-	def __init__(self, status):
-		self.status = status
+    def __init__(self, status):
+        self.status = status
 
 def raiseException(status):
-	"Just to raise the exception with status"
-	
-	raise SystemExitException(status)
-	
+    "Just to raise the exception with status"
+    
+    raise SystemExitException(status)
+    
 
 def execpy(script, arguments = []):
-	"Function to execute a python script with arguments"
-	
-	# save argument list
-	save_argv = sys.argv
+    "Function to execute a python script with arguments"
+    
+    # save argument list
+    save_argv = sys.argv
 
-	# save function pointer for sys.exit()
-	save_exit = sys.exit
-	
-	# flush argument list
-	sys.argv = []
-	
-	# build new argv[0] out of script name
-	sys.argv.append(script)
-	# add argument list
-	sys.argv.extend(arguments)
+    # save function pointer for sys.exit()
+    save_exit = sys.exit
+    
+    # flush argument list
+    sys.argv = []
+    
+    # build new argv[0] out of script name
+    sys.argv.append(script)
+    # add argument list
+    sys.argv.extend(arguments)
 
-	# override sys.exit()
-	sys.exit = raiseException
+    # override sys.exit()
+    sys.exit = raiseException
 
-	rc = 0
+    rc = 0
 
-	try:
-		info ("Now running %s " % script)
-		execfile(script,globals())
-	except SystemExitException, inst:
-		info ("Script %s exited with sys.exit(%d)"
-			  % (script,inst.status))
-		rc = inst.status
+    try:
+        info ("Now running %s " % script)
+        execfile(script, globals())
+    except SystemExitException, inst:
+        info ("Script %s exited with sys.exit(%d)"
+              % (script, inst.status))
+        rc = inst.status
 
-	if rc != 0:
-		warn("Returncode: %d." % rc)
+    if rc != 0:
+        warn("Returncode: %d." % rc)
 
-	# restore environment
-	sys.exit = save_exit
-	sys.argv = save_argv
-	
-	return rc
-	
+    # restore environment
+    sys.exit = save_exit
+    sys.argv = save_argv
+    
+    return rc
+    
 def startdaemon(name):
-	if daemoninfos.has_key(name):
-		daemoninfo = daemoninfos[name]
-		# build arguments
-		args = []
-		args.append(daemoninfo["path"])
-		args.append("start")
-		args.extend(daemoninfo["args"])
-		return execpy('/usr/local/bin/mm_daemon.py',
-					  args)
+    if daemoninfos.has_key(name):
+        daemoninfo = daemoninfos[name]
+        # build arguments
+        args = []
+        args.append(daemoninfo["path"])
+        args.append("start")
+        args.extend(daemoninfo["args"])
+        return execpy('/usr/local/bin/mm_daemon.py',
+                      args)
 
 def stopdaemon(name):
-	if daemoninfos.has_key(name):
-		daemoninfo = daemoninfos[name]
-		# build arguments
-		args = []
-		args.append(daemoninfo["path"])
-		args.append("stop")
-		return execpy('/usr/local/bin/mm_daemon.py',
-					  args)
+    if daemoninfos.has_key(name):
+        daemoninfo = daemoninfos[name]
+        # build arguments
+        args = []
+        args.append(daemoninfo["path"])
+        args.append("stop")
+        return execpy('/usr/local/bin/mm_daemon.py',
+                      args)
 
 
 if __name__ == "__main__":
-	Init()
+    Init()
