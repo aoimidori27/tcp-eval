@@ -88,7 +88,7 @@ class Chroot(Application):
                 execute(cmd, shell = True)
 
         # exec command
-        cmd = "/usr/sbin/chroot %s su %s -c " \
+        cmd = "/usr/bin/linux32 /usr/sbin/chroot %s su %s -c " \
               "'export debian_chroot=%s && %s'" \
               % (imagepath, self.user, nodetype, self.command)
         call(cmd, shell = True)
