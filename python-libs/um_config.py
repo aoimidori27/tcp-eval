@@ -22,15 +22,15 @@ olsrinfos = dict(
     remote_repos    = ':pserver:anonymous@olsrd.cvs.sourceforge.net:/cvsroot/olsrd',
     remote_module   = 'olsrd-current',
     local_upstream  = '/routing/olsr/branches/upstream',
-    local_trunk     = '/routing/olsr/trunk'
+    local_trunk     = '/routing/olsr/branches'
 )
 
 # informations about madwifi
 madwifiinfos = dict(
     remote_repos    = 'http://svn.madwifi.org',
     remote_module   = '/trunk',
-    local_upstream  = '/drivers/madwifi-ng/branches/upstream',
-    local_trunk     = '/drivers/madwifi-ng/trunk'
+    local_upstream  = '/drivers/madwifi-ng/trunk',
+    local_trunk     = '/drivers/madwifi-ng/branches/um-version'
 )
 
 # informations about the umic-mesh nodes
