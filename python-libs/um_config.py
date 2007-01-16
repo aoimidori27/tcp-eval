@@ -65,16 +65,16 @@ nodeinfos = dict(
 # informations about the different images
 imageinfos = dict(
     vmeshhost = dict(
-        mounts = {},
+        mounts = [],
         svnmappings = { '/config/vmeshhost/trunk' : '/config',
                         '/linux/xen/trunk' : '/linux/default',
                         '/tools/nuttcp/trunk' : '/tools/nuttcp',
                         '/scripts/python-libs' : '/scripts/python-libs' },
         # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ ]        
+        scriptfolders = []        
     ),
     vmeshnode = dict(
-        mounts = {},
+        mounts = [],
         svnmappings = { '/config/vmeshnode/trunk' : '/config',
                         '/linux/xen/trunk' : '/linux/default',
                         '/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
@@ -87,7 +87,7 @@ imageinfos = dict(
         scriptfolders = [ '/scripts/mesh-init', '/scripts/mesh-stat' ]
     ),
     meshnode = dict(
-        mounts = {},
+        mounts = [],
         svnmappings = { '/config/vmeshnode/trunk' : '/config',
                         '/drivers/madwifi-ng/branches/um-version' : '/drivers/madwifi-ng',
                         '/linux/vanilla/trunk' : '/linux/default',
