@@ -50,7 +50,7 @@ class OlsrUpdate(Application):
 
 		remote_repos   = olsrinfos["remote_repos"]
 		remote_module  = olsrinfos["remote_module"]
-		local_repos    = svninfos["svnrepos"]
+		local_repos    = svnrepos
 		local_upstream = olsrinfos["local_upstream"]
 		local_trunk    = olsrinfos["local_trunk"]
 
@@ -91,20 +91,20 @@ class OlsrUpdate(Application):
 		info("Searching updated files...")
 
 		# add new files 
-		cmd = "svn st %s | grep '?' | awk '{ print $2; }'" %(dst)
+		cmd = "echo `svn st %s | grep '?' | awk '{ print $2; }'`" %(dst)
 		(stdout,stderr) = execute(cmd, shell = True)
 		debug("Stdout: %s" %stdout)
-		if (stdout != ""):
+		if (stdout != "\n"):
 			info("Found new files. Adding them...")						
 			cmd = "svn add %s" %(stdout)
 			call(cmd, shell = True)
 
 		# remove files, which were removed in upstream
-		cmd = "svn st %s | grep '!' | awk '{ print $2; }'" \
+		cmd = "echo `svn st %s | grep '!' | awk '{ print $2; }'`" \
 			  %(tmp+"/upstream")
 		(stdout,stderr) = execute(cmd, shell = True)
 		debug("Stdout: %s" %stdout)
-		if (stdout != ""):
+		if (stdout != "\n"):
 			info("Found removed files. Deleting them...")						
 			cmd = "svn rm %s" %(stdout)
 			call(cmd, shell = True)
