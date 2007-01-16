@@ -21,8 +21,8 @@ kernelinfos = dict(
 olsrinfos = dict(
     remote_repos    = ':pserver:anonymous@olsrd.cvs.sourceforge.net:/cvsroot/olsrd',
     remote_module   = 'olsrd-current',
-    local_upstream  = '/routing/olsr/branches/upstream',
-    local_trunk     = '/routing/olsr/branches'
+    local_upstream  = '/routing/olsr/trunk',
+    local_trunk     = '/routing/olsr/branches/um-version-olsr5'
 )
 
 # informations about madwifi
@@ -68,6 +68,7 @@ imageinfos = dict(
         mounts = {},
         svnmappings = { '/config/vmeshhost/trunk' : '/config',
                         '/linux/xen/trunk' : '/linux/default',
+                        '/tools/nuttcp/trunk' : '/tools/nuttcp',
                         '/scripts/python-libs' : '/scripts/python-libs' },
         # folders which content is mapped to /usr/local/bin
         scriptfolders = [ ]        
