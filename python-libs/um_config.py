@@ -57,7 +57,7 @@ nodeinfos = dict(
         imageversion   = 'um_edgy',
         wlandevs       = {'ath0' : 'config0',
                           'ath1' : 'config1'},
-        startup        = ['execpy("/usr/local/bin/um_madwifi",["--debug","autocreate"])'],
+        startup        = ['execpy("/usr/local/bin/um_madwifi",["--debug","autocreate"])']
         daemons        = []
     )
 )
@@ -107,20 +107,20 @@ wlaninfos = dict(
     config0 = dict(
         hwdevice = 'wifi0',
         essid    = 'umic-mesh-ah',
-        channel  = '1',
-        antenna  = '2',
+        channel  = 1,
+        antenna  = 2,
         address  = '169.254.9.$NODENR$/16',
         wlanmode = 'ahdemo',
-        txpower  = '17'
+        txpower  = 17
     ),
     config1 = dict(
         hwdevice = 'wifi1',
         essid    = 'umic-mesh-sta',
-        channel  = '11',
-        antenna  = '2',
+        channel  = 11,
+        antenna  = 2,
         address  = '169.254.10.$NODENR$/16',
         wlanmode = 'sta',
-        txpower  = '17'
+        txpower  = 17
     )
 )
 
