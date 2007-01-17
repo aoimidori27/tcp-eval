@@ -57,7 +57,7 @@ nodeinfos = dict(
         imageversion   = 'um_edgy',
         wlandevs       = {'ath0' : 'config0',
                           'ath1' : 'config1'},
-        startup        = ['execpy("/usr/local/bin/um_madwifi",["--debug","autocreate"])']
+        startup        = ['execpy("/usr/local/bin/um_madwifi",["--debug","autocreate"])'],
         daemons        = []
     )
 )
