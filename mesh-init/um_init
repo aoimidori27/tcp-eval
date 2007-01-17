@@ -48,7 +48,7 @@ class Init(Application):
         info("Nodetype:  %s" % nodetype)
         info("Imagepath: %s" % imagepath)
             
-        for line in nodeinfo['startup'] 
+        for line in nodeinfo['startup']:
             try:
                 eval(line)
             except Exception, inst:
@@ -73,8 +73,6 @@ class Init(Application):
 
 
 # must be in default namespace because of config file...
-
-
 class SystemExitException(Exception):
     "Private exception for execpy"
 
