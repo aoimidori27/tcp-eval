@@ -55,8 +55,7 @@ nodeinfos = dict(
         hostnameprefix = 'mrouter',
         imagetype      = 'meshnode',
         imageversion   = 'um_edgy',
-        wlandevs       = {'ath0' : 'config0',
-                          'ath1' : 'config1'},
+        wlandevs       = {'ath0' : 'config0'},
         startup        = ['execpy("/usr/local/bin/um_madwifi",["--debug","autocreate"])'],
         daemons        = []
     )
