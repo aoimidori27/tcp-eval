@@ -117,5 +117,4 @@ def getnodenr():
 
     for nodeinfo in nodeinfos.itervalues():
         if sre.match(nodeinfo['hostnameprefix'], hostname):
-            print sre.sub(nodeinfo['hostnameprefix'],"",hostname)
             return sre.sub(nodeinfo['hostnameprefix'],"",hostname)
