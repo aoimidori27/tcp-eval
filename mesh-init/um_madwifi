@@ -23,15 +23,15 @@ class Madwifi(Application):
     
         # helper variables
         nodeinfo = getnodeinfo()
-        nodenr   = getnodenr().__str__
+        nodenr   = getnodenr().__str__()
         wlandevs = nodeinfo['wlandevs']
         wlancfg  = wlaninfos[wlandevs['ath0']]
-
+        
         # object variables (set the defaults for the option parser)
         self.device   = 'ath0'
         self.hwdevice = wlancfg['hwdevice']
         self.channel  = wlancfg['channel']
-        self.address  = sre.sub("\$NODENR\$", nodenr, wlancfg['address'])
+        self.address  = sre.sub('@NODENR', nodenr,  wlancfg['address'])
         self.wlanmode = wlancfg['wlanmode']
         self.antenna  = wlancfg['antenna']
         self.txpower  = wlancfg['txpower']
@@ -57,7 +57,7 @@ class Madwifi(Application):
                                action = "store", dest = "address",
                                help = "define the IP address [default: %default]")                
         self.parser.add_option("-c", "--chan", metavar = "NUM",
-                               action = "store", dest = "channel",
+                               action = "store", dest = "channel", type = int,
                                help = "define the wireless channel [default: %default]")
         self.parser.add_option("-d", "--dev",  metavar = "DEV",
                                action = "store", dest = "device",
@@ -73,7 +73,7 @@ class Madwifi(Application):
                                action = "store", dest = "hwdevice",
                                help = "define the device [default: %default]")
         self.parser.add_option("-t", "--txpower", metavar = "TX",
-                               action = "store", dest = "txpower",
+                               action = "store", dest = "txpower", type = int,
                                help = "define the TX-Power [default: %default]")
         self.parser.add_option("-z", "--ant", metavar = "ANT",
                                action = "store", dest = "antenna", type = int,
@@ -229,12 +229,12 @@ class Madwifi(Application):
         "Set the WLAN channel of desired device"
 
         if self.deviceexists():
-            info("Setting channel on %s to %s" %(self.device, self.channel))
+            info("Setting channel on %s to %d" %(self.device, self.channel))
             try:
-                call(["iwconfig", self.device, "channel", self.channel],
+                call(["iwconfig", self.device, "channel", self.channel.__str__()],
                      shell = False)
             except CommandFailed:
-                error("Setting channel on %s to %s was unsuccessful" \
+                error("Setting channel on %s to %d was unsuccessful" \
                       %(self.device, self.channel))
         else:
             warn("VAP %s does not exist" %(self.device))
@@ -279,7 +279,7 @@ class Madwifi(Application):
     def autocreate(self):
         self.loadmod()
         nodeinfo = getnodeinfo()
-        nodenr   = getnodenr().__str__
+        nodenr   = getnodenr().__str__()
         wlandevs = nodeinfo['wlandevs']       
  
         for device, config in wlandevs.iteritems():
@@ -287,7 +287,7 @@ class Madwifi(Application):
             self.hwdevice = wlancfg['hwdevice']
             self.device   = device
             self.channel  = wlancfg['channel']
-            self.address  = sre.sub("\$NODENR\$", nodenr, wlancfg['address'])
+            self.address  = sre.sub('@NODENR', nodenr, wlancfg['address'])
             self.wlanmode = wlancfg['wlanmode']
             self.antenna  = wlancfg['antenna']
             self.txpower  = wlancfg['txpower']
