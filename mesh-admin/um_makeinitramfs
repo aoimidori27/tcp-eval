@@ -14,14 +14,14 @@ INITRD_TMP=/tmp/initrd
 FILE_DIR=/opt/checkout/boot/initrd
 
 # directorys to create
-DIRS="/usr/sbin,/mnt/homes,/mnt/srv,/proc,/sbin,/dev/net,/var/lib/dhcp"
+DIRS="/usr/sbin,/newroot,/proc,/sbin,/dev/net,/var/lib/dhcp"
 DIRS="$DIRS,/var/lib/dhcp3,/var/log,/var/run,/etc"
 DIRS="$DIRS,/bin,/lib,/etc,/lib/dhcp3-client"
 
 # files which belong to /bin
 BINFILES="bash,cat,chmod,echo,expr,grep,hostname,"
 BINFILES="$BINFILES,kill,logger,ls,mknod,mount,ping,rm,sed"
-BINFILES="$BINFILES,sh,sleep,umount,uname,run-init"
+BINFILES="$BINFILES,sh,sleep,umount,uname,run-init,chroot"
 
 # files which belong to /sbin
 SBINFILES="brctl,dhclient3,dhclient,hwclock,ifconfig,insmod,ip,losetup"
@@ -37,7 +37,7 @@ BIN_SEARCHPATH="/bin,/usr/bin,/sbin,/usr/sbin,/usr/lib/klibc/bin"
 
 
 # librarys which are copied for ubuntu edgy initramfs
-LIBS_EDGY="ld-2.4.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.4.so,libcap.so.1,libcap.so.1.10,libcrypto.so.0.9.8,libc.so.6,libdl-2.4.so,libdl.so.2,liblzo.so.1,liblzo.so.1.0.0,libncurses.so.5,libncurses.so.5.5,libnsl.so.1,libnss_dns.so.2,libnss_dns-2.4.so,libnss_files.so.2,libnss_files-2.4.so,libproc-3.2.7.so,libpthread-2.4.so,libpthread.so.0,libresolv-2.4.so,libresolv.so.2,librt-2.4.so,librt.so.1,libssl.so.0.9.8,libutil-2.4.so,libutil.so.1,libuuid.so.1,libuuid.so.1.2,libwrap.so.0,libwrap.so.0.7.6,libz.so.1,libz.so.1.2.3,libacl.so.1,libacl.so.1.1.0,libselinux.so.1,libattr.so.1,libattr.so.1.1.0,libsepol.so.1,libnsl.so.1,libnsl-2.4.so,libnss_compat.so.2,libnss_compat-2.4.so,libsysfs.so.2,libsysfs.so.2.0.0"
+LIBS_EDGY="ld-2.4.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.4.so,libcap.so.1,libcap.so.1.10,libcrypto.so.0.9.8,libc.so.6,libdl-2.4.so,libdl.so.2,liblzo.so.1,liblzo.so.1.0.0,libncurses.so.5,libncurses.so.5.5,libnsl.so.1,libnss_dns.so.2,libnss_dns-2.4.so,libnss_files.so.2,libnss_files-2.4.so,libproc-3.2.7.so,libpthread-2.4.so,libpthread.so.0,libresolv-2.4.so,libresolv.so.2,librt-2.4.so,librt.so.1,libssl.so.0.9.8,libutil-2.4.so,libutil.so.1,libuuid.so.1,libuuid.so.1.2,libwrap.so.0,libwrap.so.0.7.6,libz.so.1,libz.so.1.2.3,libacl.so.1,libacl.so.1.1.0,libselinux.so.1,libattr.so.1,libattr.so.1.1.0,libsepol.so.1,libnsl.so.1,libnsl-2.4.so,libnss_compat.so.2,libnss_compat-2.4.so,libsysfs.so.2,libsysfs.so.2.0.0,klibc-gk2XW_qpdO7ELQ5NYkvZBbv1VsI.so"
 
 
 function makedev() {
