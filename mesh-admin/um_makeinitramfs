@@ -33,7 +33,7 @@ STATIC="/bin/ip,/lib/dhcp3-client/call-dhclient-script"
 
 # where to search for executables and librarys
 LIB_SEARCHPATH="/lib,/usr/lib,/usr/lib/i586"
-BIN_SEARCHPATH="/bin,/usr/bin,/sbin,/usr/sbin,/usr/lib/klibc/bin/run-init"
+BIN_SEARCHPATH="/bin,/usr/bin,/sbin,/usr/sbin,/usr/lib/klibc/bin"
 
 
 # librarys which are copied for ubuntu edgy initramfs
