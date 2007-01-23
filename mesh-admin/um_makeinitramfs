@@ -165,14 +165,13 @@ filecopy "$SBINFILES" "$BIN_SEARCHPATH" "$INITRD_TMP/sbin/"
 # copy libs
 filecopy "$LIBS" "$LIB_SEARCHPATH" "$INITRD_TMP/lib/"
 
-# copy static files only for ubuntu
-if [ $IMAGE = ubuntu ]; then
-	for file in ${STATIC//,/ }; do
-		cp $CPOPTS ${IMAGEDIR}$file ${INITRD_TMP}${file}
-	done;
-fi;
+# copy static files 
+for file in ${STATIC//,/ }; do
+	cp $CPOPTS ${IMAGEDIR}$file ${INITRD_TMP}${file}
+done;
 
-# make a dhcp client link for gentoo
+
+# make a dhcp client link for ubuntu edgy eft
 if [ "$IMAGE" = "edgy" ]; then
     ln -vs /etc/dhcp/dhclient-script $INITRD_TMP/sbin
 fi;
@@ -189,6 +188,9 @@ cp -a $FILE_DIR/initrd $INITRD_TMP/
 
 # build initramfs
 (cd $INITRD_TMP && find . | cpio --quiet -o -H newc | gzip -9 > $INITRD_DST.gz)
+
+# celanup
+rm -rf $INITRD_TMP
 
 echo "Done."
 
