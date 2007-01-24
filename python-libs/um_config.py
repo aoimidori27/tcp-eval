@@ -96,7 +96,8 @@ imageinfos = dict(
                         '/scripts/mesh-init' : '/scripts/mesh-init',
                         '/scripts/mesh-stat' : '/scripts/mesh-stat',
                         '/scripts/python-libs' : '/scripts/python-libs',
-                        '/tools/nuttcp/trunk' : '/tools/nuttcp' },
+                        '/tools/nuttcp/trunk' : '/tools/nuttcp',
+                        '/tools/net-snmp/branches/um-version' : '/tools/net-snmp' },
         # folders which content is mapped to /usr/local/bin
         scriptfolders = [ '/scripts/mesh-init', '/scripts/mesh-stat' ]
     )
