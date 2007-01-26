@@ -1,5 +1,5 @@
 #!/bin/bash
-
+umask 027
 BACKUP_DIR=${1:-/backup/subversion}
 
 if [ ! -d $BACKUP_DIR ]; then mkdir -p $BACKUP_DIR; fi
