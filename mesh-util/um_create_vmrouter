@@ -1,0 +1,109 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# python imports
+import os, subprocess, sys, re, socket
+from logging import info, debug, warn, error
+
+# umic-mesh imports
+from um_application import Application
+from um_config import *
+from um_util import *
+
+
+class Init(Application):
+    "Class to start vmrouters."
+
+
+    def __init__(self):
+        "Constructor of the object"
+
+        # call the super constructor
+        Application.__init__(self)
+
+        # initialization of the option parser
+        self.parser.set_defaults(verbose = True,
+                                 syslog = False,
+                                 debug = False)
+
+        usage = "usage: %prog [OPTIONS] FROM TO"
+        self.parser.set_usage(usage)
+
+        self.parser.set_defaults(ramdisk = None, kernel = None, memory = None)
+        self.parser.add_option("-k", "--kernel", metavar = "KERNEL",
+                action = "store", dest = "kernel",
+                help = "Kernel to use instead of the default one.")
+        self.parser.add_option("-m", "--memory", metavar = "MEMORY",
+                action = "store", dest = "memory", type = "int",
+                help = "Amount of memory to allocate to the domain (in megabytes).")
+        self.parser.add_option("-r", "--ramdisk", metavar = "RAMDISK",
+                action = "store", dest = "ramdisk",
+                help = "Initial ramdisk to use instead of the default one.")
+
+        # execute object
+        self.main()
+
+
+    def set_option(self):
+        "Set options"
+
+        # call the super set_option method
+        Application.set_option(self)
+
+    def append(self, list, item):
+        tmp = list[:]
+        tmp.append(item)
+        return tmp
+
+    def start_xen(self):
+        cmd = ['sudo', 'xm', 'create', '/etc/xen/guests/vmeshrouter']
+
+        # These options are optional ...
+        if self.options.kernel != None:
+            cmd.append('kernel=%s' % self.options.kernel)
+        if self.options.memory != None:
+            cmd.append('memory=%s' % self.options.memory)
+        if self.options.ramdisk != None:
+            cmd.append('ramdisk=%s' % self.options.ramdisk)
+
+        for number in self.range:
+            # Test if the hostname vmrouter%s was already requested by someone else
+            try:
+                socket.getaddrinfo('vmrouter%s' % number, None)
+                continue
+            except socket.gaierror:
+                pass
+
+            # Try to start vmrouter%s
+            try:
+                info("starting vmrouter%s" % number)
+                call(self.append(cmd, 'vmid=%s' % number), shell=False, raiseError=True)
+            except CommandFailed, inst:
+                error("Error while starting vmrouter%s" % number)
+                error(inst)
+
+        print ("Done.")
+
+
+    def main(self):
+        "Main method of the Init object"
+
+        # parse options
+        self.parse_option()
+
+        # set options
+        self.set_option()
+
+        if len(self.args) == 0:
+            error("RANGE not given")
+            sys.exit(2)
+        elif len(self.args) == 1:
+            self.range = range(int(self.args[0]), int(self.args[0]))
+        else:
+            self.range = range(int(self.args[0]), int(self.args[1]))
+
+        # call the corresponding method
+        self.start_xen()
+
+if __name__ == "__main__":
+    Init()
