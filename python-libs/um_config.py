@@ -69,6 +69,8 @@ imageinfos = dict(
         svnmappings = { '/config/vmeshhost/trunk' : '/config',
                         '/linux/xen/trunk' : '/linux/default',
                         '/tools/nuttcp/trunk' : '/tools/nuttcp',
+                        '/scripts/mesh-init' : '/scripts/mesh-init',
+                        '/scripts/mesh-util' : '/scripts/mesh-util',
                         '/scripts/python-libs' : '/scripts/python-libs' },
         # folders which content is mapped to /usr/local/bin
         scriptfolders = [ '/scripts/mesh-admin', '/scripts/mesh-util' ]
