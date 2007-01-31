@@ -96,7 +96,7 @@ class Subversion(Application):
                     # recreate those links
 
                 for d in imageinfo['scriptfolders']:
-                    src = "%s%s/%s" %(imagepath, svnprefix, d)
+                    src = "%s%s%s" %(imagepath, svnprefix, d)
                     info(src);
                     d = "%s%s" %(svnprefix,d)
                     for f in dircache.listdir(src):
