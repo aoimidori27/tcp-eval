@@ -71,7 +71,7 @@ imageinfos = dict(
                         '/tools/nuttcp/trunk' : '/tools/nuttcp',
                         '/scripts/python-libs' : '/scripts/python-libs' },
         # folders which content is mapped to /usr/local/bin
-        scriptfolders = []        
+        scriptfolders = [ '/scripts/mesh-admin', '/scripts/mesh-util' ]
     ),
     vmeshnode = dict(
         mounts = [],
