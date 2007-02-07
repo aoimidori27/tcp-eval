@@ -56,7 +56,7 @@ nodeinfos = dict(
         imagetype      = 'meshnode',
         imageversion   = 'um_edgy',
         wlandevs       = {'ath0' : 'config0'},
-#        startup        = ['execpy("/usr/local/sbin/um_madwifi",["--debug","autocreate"])'], 
+        startup        = ['execpy("/usr/local/sbin/um_madwifi",["--debug","autocreate"])'], 
         startup        = [],
         daemons        = []
     )
@@ -127,14 +127,3 @@ wlaninfos = dict(
     )
 )
 
-
-#
-# specific project configs
-#
-
-# informations about elcn-project
-elcninfos = dict(
-    imageinfos = dict(
-        svnmappings = { '/linux/branches/elcn-linux-2.6.16.29-xen' : '/linux/elcn'}
-    )
-)
