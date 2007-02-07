@@ -296,8 +296,8 @@ class Madwifi(Application):
             self.setchannel()
             self.setessid()
             self.setantenna()
-            self.ifup()
-            self.settxpower()
+#            self.ifup()
+#            self.settxpower()
 
         
     def main(self):
