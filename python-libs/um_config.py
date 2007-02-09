@@ -114,7 +114,7 @@ wlaninfos = dict(
         antenna  = 2,
         address  = '169.254.9.@NODENR/16',
         wlanmode = 'ahdemo',
-        txpower  = 17
+        txpower  = 0
     ),
     config1 = dict(
         hwdevice = 'wifi1',
