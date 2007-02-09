@@ -56,7 +56,8 @@ nodeinfos = dict(
         imagetype      = 'meshnode',
         imageversion   = 'um_edgy',
         wlandevs       = {'ath0' : 'config0'},
-        startup        = ['execpy("/usr/local/sbin/um_madwifi",["--debug","autocreate"])'], 
+        startup        = ['execpy("/usr/local/sbin/um_madwifi",["--debug","autocreate"])',
+                          'call("/etc/init.d/snmpd start",shell=True)'], 
         daemons        = []
     )
 )
