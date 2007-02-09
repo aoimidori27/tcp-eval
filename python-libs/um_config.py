@@ -68,11 +68,11 @@ imageinfos = dict(
         svnmappings = { '/config/vmeshhost/trunk' : '/config',
                         '/linux/xen/trunk' : '/linux/default',
                         '/tools/nuttcp/trunk' : '/tools/nuttcp',
-                        '/scripts/mesh-admin' : '/scripts/mesh-admin',
-                        '/scripts/mesh-util' : '/scripts/mesh-util',
+                        '/scripts/vmesh' : '/scripts/vmesh',
+                        '/scripts/util' : '/scripts/util',
                         '/scripts/python-libs' : '/scripts/python-libs' },
         # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ '/scripts/mesh-admin', '/scripts/mesh-util' ]
+        scriptfolders = [ '/scripts/vmesh', '/scripts/util' ]
     ),
     vmeshnode = dict(
         mounts = [],
@@ -80,12 +80,14 @@ imageinfos = dict(
                         '/linux/xen/trunk' : '/linux/default',
                         '/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
                         '/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
-                        '/scripts/mesh-init' : '/scripts/mesh-init',
-                        '/scripts/mesh-stat' : '/scripts/mesh-stat',
+                        '/scripts/init' : '/scripts/init',
+                        '/scripts/vmesh' : '/scripts/vmesh',
+                        '/scripts/routing' : '/scripts/routing',
+                        '/scripts/util' : '/scripts/util',
                         '/scripts/python-libs' : '/scripts/python-libs',
                         '/tools/nuttcp/trunk' : '/tools/nuttcp' },
         # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ '/scripts/mesh-init', '/scripts/mesh-stat' ]
+        scriptfolders = [ '/scripts/init', '/scripts/vmesh', '/scripts/util' ]
     ),
     meshnode = dict(
         mounts = [],
@@ -94,13 +96,15 @@ imageinfos = dict(
                         '/linux/vanilla/trunk' : '/linux/default',
                         '/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
                         '/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
-                        '/scripts/mesh-init' : '/scripts/mesh-init',
-                        '/scripts/mesh-stat' : '/scripts/mesh-stat',
+                        '/scripts/init' : '/scripts/init',
+                        '/scripts/mesh' : '/scripts/mesh',
+                        '/scripts/routing' : '/scripts/routing',
                         '/scripts/python-libs' : '/scripts/python-libs',
+                        '/scripts/util' : '/scripts/util',
                         '/tools/nuttcp/trunk' : '/tools/nuttcp',
                         '/tools/net-snmp/branches/um-version' : '/tools/net-snmp' },
         # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ '/scripts/mesh-init', '/scripts/mesh-stat' ]
+        scriptfolders = [ '/scripts/init', '/scripts/mesh', '/scripts/util' ]
     )
 )
 
