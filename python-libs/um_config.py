@@ -69,10 +69,11 @@ imageinfos = dict(
                         '/linux/xen/trunk' : '/linux/default',
                         '/tools/nuttcp/trunk' : '/tools/nuttcp',
                         '/scripts/vmesh' : '/scripts/vmesh',
+                        '/scripts/image' : '/scripts/image',
                         '/scripts/util' : '/scripts/util',
                         '/scripts/python-libs' : '/scripts/python-libs' },
         # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ '/scripts/vmesh', '/scripts/util' ]
+        scriptfolders = [ '/scripts/vmesh', '/scripts/util', '/scripts/image' ]
     ),
     vmeshnode = dict(
         mounts = [],
