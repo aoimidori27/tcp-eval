@@ -98,9 +98,9 @@ class Init(Application):
             error("RANGE not given")
             sys.exit(2)
         elif len(self.args) == 1:
-            self.range = range(int(self.args[0]), int(self.args[0]))
+            self.range = range(int(self.args[0]), int(self.args[0])+1)
         else:
-            self.range = range(int(self.args[0]), int(self.args[1]))
+            self.range = range(int(self.args[0]), int(self.args[1])+1)
 
         # call the corresponding method
         self.start_xen()
