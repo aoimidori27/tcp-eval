@@ -69,9 +69,10 @@ class Init(Application):
         for number in self.range:
             # Test if the hostname vmrouter%s was already requested by someone else
             try:
-                socket.getaddrinfo('vmrouter%s' % number, None)
+                execute(["ping", "-c1", "vmrouter%s" % number], shell=False, raiseError=True)
+                warn("vmrouter%s seems to be already running." % number)
                 continue
-            except socket.gaierror:
+            except CommandFailed:
                 pass
 
             # Try to start vmrouter%s
