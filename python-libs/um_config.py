@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#
-# common umic-mesh configs
-#
-
 # global informations
 svnrepos    = 'svn://mesh.umic.rwth-aachen.de/umic-mesh'
 imageprefix = '/opt/umic-mesh/images'
@@ -128,7 +124,6 @@ wlaninfos = dict(
         antenna  = 2,
         address  = '169.254.10.@NODENR/16',
         wlanmode = 'sta',
-        txpower  = 17
+        txpower  = 0
     )
 )
-
