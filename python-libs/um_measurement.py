@@ -97,28 +97,39 @@ class um_measurement(Application):
         timeout = timeout * self.options.timeout_scale
         debug("Calling \"%s\" on mrouter%i (timeout %i seconds)" % (command, number, timeout))
         if self.options.debug:
-            os.write(self.log_file, "### command=\"%s\" (timeout %i, suppress_output = %s)\n" % (command, timeout, str(suppress_output)))
-        command =  \
-                                "function sigchld() { echo WHYAMIDONTCALLED; wait %-; EXITSTATUS=$?; }; trap sigchld SIGCHLD;" \
-                                "(" + command + ") & " \
-                                "for ((t=0;t<" + str(int(timeout*10)) + ";t+=1)) do if ! jobs %- >/dev/null 2>&1; then exit $EXITSTATUS; fi; sleep 0.1; done;" \
-                                "echo -e \"\nWARNING: Test still running after timeout. Sending SIGINT...\"; " \
-                                "kill -s SIGINT %-; " \
-                                "sleep 2; " \
-                                "echo jobs3: $(jobs -r); " \
-                                "if [ -n \"$(jobs -r)\" ]; then " \
-                                    "echo -e \"\nWARNING: Test still running after SIGINT. Sending SIGTERM...\"; " \
-                                    "kill -s SIGTERM %-; " \
-                                    "sleep 1; " \
-                                    "echo jobs4: $(jobs -r);" \
-                                    "if [ -n \"$(jobs -r)\" ]; then " \
-                                        "echo -e \"\nWARNING: Test still running after SIGTERM. Sending SIGKILL...\"; " \
-                                        "kill -KILL %-; " \
-                                        "echo JOBS: $(jobs);" \
-                                    "fi;" \
-                                "fi;" \
-                                "exit 254;" 
+            os.write(self.log_file,
+                     "### command=\"%s\" (timeout %i, suppress_output = %s)\n" % (command, timeout, str(suppress_output)))
 
+        command = """
+function sigchld() { echo WHYAMIDONTCALLED; wait %%-; EXITSTATUS=$?; };
+trap sigchld SIGCHLD;
+( %s ) &;
+for ((t=0;t<%d;t+=1)) do
+  if ! jobs %%- >/dev/null 2>&1; then
+    exit $EXITSTATUS;
+  fi;
+  sleep 0.1;
+done;
+echo -e "\\nWARNING: Test still running after timeout. Sending SIGINT...";
+kill -s SIGINT %%-
+sleep 2;
+echo jobs3: $(jobs -r);
+if [ -n "$(jobs -r)" ]; then
+  echo -e "\\nWARNING: Test still running after SIGINT. Sending SIGTERM...";
+  kill -s SIGTERM %%-;
+  sleep 1;
+  echo jobs4: $(jobs -r);
+  if [ -n "$(jobs -r)" ]; then
+    echo -e "\\nWARNING: Test still running after SIGTERM. Sending SIGKILL...";
+    kill -KILL %%-;
+    echo JOBS: $(jobs);
+  fi
+fi
+exit 254
+""" %(command,timeout*10)
+
+        debug("command: %s" %command);
+  
         ssh = [
                "ssh", "-o", "PasswordAuthentication=no", "-o", "NumberOfPasswordPrompts=0", 
                 "mrouter%i" % number,
