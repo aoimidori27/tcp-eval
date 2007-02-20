@@ -44,15 +44,18 @@ class um_nuttcp(um_measurement):
         
     def test(self, iteration, run, source, target):
         if self.options.start_server:
-            if self.ssh_mrouter(target, "pidof nuttcp", 3, False):
+            rc = self.ssh_mrouter(target, "pidof nuttcp", 3, True)
+            if (rc == 0):
                 warning("mrouter%i already runs nuttcp server albeit --start-server." % (target))
 
-            if not self.ssh_mrouter(target, "nuttcp -1", 3):
-                error("mrouter%i failed to start nuttcp server." % (target))
+            rc = self.ssh_mrouter(target, "nuttcp -1 </dev/null 2>&0 1>&0", 3)
+            if (rc != 0): 
+                error("mrouter%i failed to start nuttcp server. rc=%d" % (target,rc))
                 return False
         # Please note: we might accidently hit a non server mode nuttcp here. Since we are going to run nuttcp via inetd soon, I feel this wont be an issue...
-        if not self.ssh_mrouter(target, "pidof nuttcp", 3):
-            error("mrouter%i failed to run nuttcp server." % (target))
+        rc = self.ssh_mrouter(target, "pidof nuttcp", 3, False);
+        if (rc != 0):
+            error("mrouter%i is not running a nuttcp server. pidof rc=%d" % (target,rc))
             return False
 
         if self.options.reverse:
@@ -60,7 +63,11 @@ class um_nuttcp(um_measurement):
         else:
             reverse = "";
 
-        return self.ssh_mrouter(source, "nuttcp -T  %i %s -v -fparse 169.254.%i"  % (self.options.duration, reverse, target), self.options.duration+5)
+        rc = self.ssh_mrouter(source, "nuttcp -T  %i %s -v -fparse 169.254.9.%i"  % (self.options.duration, reverse, target), self.options.duration+5, False)
+        if (rc != 0):
+            error("nuttcp invocation on mrouter%i failed: rc=%i" % (source, rc))
+            return False
+        return True
         
 
 if __name__ == "__main__":
