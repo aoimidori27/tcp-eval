@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# python imports
+import os, subprocess, re
+from logging import info, debug, warn, error
+ 
+# umic-mesh imports
+from um_application import Application
+from um_measurement import *
+
+class um_nuttcp(um_measurement):
+
+    def __init__(self):
+    
+        um_measurement.__init__(self)
+
+        self.parser.add_option(
+                               "-d" , "--duration", 
+                               action = "store", 
+                               type = int, 
+                               metavar = "secs", 
+                               dest = "duration", 
+                               default = 10,
+                               help = "Set duration of nuttcp test [default: %default]"
+                           )
+
+        self.parser.add_option(
+                               "-r" , "--reverse", 
+                               action = "store_true", 
+                               dest = "reverse", 
+                               default = False,
+                               help = "Receive from server instead to transmit to [default: %default]"
+                           )
+
+        self.parser.add_option(
+                               "-y" , "--start-server", 
+                               action = "store_true", 
+                               dest = "start_server", 
+                               default = False,
+                               help = "Start nuttcp on target router [default: %default]"
+                           )
+        
+        
+    def test(self, iteration, run, source, target):
+        if self.options.start_server:
+            if self.ssh_mrouter(target, "pidof nuttcp", 3, False):
+                warning("mrouter%i already runs nuttcp server albeit --start-server." % (target))
+
+            if not self.ssh_mrouter(target, "nuttcp -1", 3):
+                error("mrouter%i failed to start nuttcp server." % (target))
+                return False
+        # Please note: we might accidently hit a non server mode nuttcp here. Since we are going to run nuttcp via inetd soon, I feel this wont be an issue...
+        if not self.ssh_mrouter(target, "pidof nuttcp", 3):
+            error("mrouter%i failed to run nuttcp server." % (target))
+            return False
+
+        if self.options.reverse:
+            reverse = "-r"
+        else:
+            reverse = "";
+
+        return self.ssh_mrouter(source, "nuttcp -T  %i %s -v -fparse 169.254.%i"  % (self.options.duration, reverse, target), self.options.duration+5)
+        
+
+if __name__ == "__main__":
+    um_nuttcp().main()
