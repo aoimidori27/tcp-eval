@@ -103,7 +103,7 @@ class um_measurement(Application):
         command = """
 function sigchld() { echo WHYAMIDONTCALLED; wait %%-; EXITSTATUS=$?; };
 trap sigchld SIGCHLD;
-( %s ) &;
+( %s ) &
 for ((t=0;t<%d;t+=1)) do
   if ! jobs %%- >/dev/null 2>&1; then
     exit $EXITSTATUS;
