@@ -101,11 +101,17 @@ class um_measurement(Application):
                      "### command=\"%s\" (timeout %i, suppress_output = %s)\n" % (command, timeout, str(suppress_output)))
 
         command = """
-function sigchld() { echo WHYAMIDONTCALLED; wait %%-; EXITSTATUS=$?; };
+function sigchld() { 
+  if ! ps $BGPID 2>&1 >/dev/null; then
+    wait $BGPID; EXITSTATUS=$?; 
+  fi;
+};
+set +H
 trap sigchld SIGCHLD;
-( %s ) &
+(%s) &
+BGPID=$!;
 for ((t=0;t<%d;t+=1)) do
-  if ! jobs %%- >/dev/null 2>&1; then
+  if ! ps $BGPID >/dev/null 2>&1; then
     exit $EXITSTATUS;
   fi;
   sleep 0.1;
@@ -128,14 +134,13 @@ fi
 exit 254
 """ %(command,timeout*10)
 
-        debug("command: %s" %command);
   
         ssh = [
                "ssh", "-o", "PasswordAuthentication=no", "-o", "NumberOfPasswordPrompts=0", 
                 "mrouter%i" % number,
 #                "schaffrath@goldfinger.informatik.rwth-aachen.de" , 
 #                "localhost",
-               command 
+               "bash -i -c '%s'" %command 
        ]
 
         null = open(os.devnull)
@@ -184,7 +189,7 @@ exit 254
             try:
                 os.makedirs(self.options.output_directory)
             except Exception, t:
-                error("Failed to create directory: %s"%t)
+                error("Failed to create directory: %s" % t)
                 sys.exit(1)
         
         os.chdir(self.options.output_directory)
@@ -211,11 +216,10 @@ exit 254
                             self.log_file = os.open("i%02i_s%02i_t%02i_r%03i" % (iteration, source, target, run), os.O_CREAT| os.O_APPEND|os.O_RDWR, 00664)
                             info("start: test #%i (%i): mrouter%i -> mrouter%i" % (run, iteration, source, target))
                             start_ts_run = datetime.now()
-                            returncode = self.test(iteration, run, source, target)
-                            if returncode != 0:
-                                warning("FAILED: test #%i (%i): mrouter%i -> mrouter%i (%s) (returncode = %s)" % (run, iteration, source, target, datetime.now()-start_ts_run, str(returncode)))
-                            else:
+                            if self.test(iteration, run, source, target):
                                 info("finished: test #%i (%i): mrouter%i -> mrouter%i (%s)" % (run, iteration, source, target, datetime.now()-start_ts_run))
+                            else:
+                                warning("FAILED: test #%i (%i): mrouter%i -> mrouter%i (%s)" % (run, iteration, source, target, datetime.now()-start_ts_run))
                             os.fsync(self.log_file)
                             os.close(self.log_file)
             info("Iteration %i: finished (%s)" % (iteration, datetime.now()-start_ts_iteration))
