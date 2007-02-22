@@ -1,4 +1,5 @@
 #!/bin/bash
+
 umask 027
 BACKUP_DIR=${1:-/backup/openldap}
 BACKUP_FILE="ldap_dump.ldif"
