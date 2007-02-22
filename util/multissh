@@ -1,7 +1,6 @@
 #!/bin/bash
 
-if [ "$1" = "--sendtoall" ]
-then
+if [ "$1" = "--sendtoall" ]; then
     shift; kpid=$1; shift
     while read -rep "All systems> " line; do
         for x; do
