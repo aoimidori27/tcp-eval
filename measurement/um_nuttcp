@@ -4,7 +4,7 @@
 # python imports
 import os, subprocess, re
 from logging import info, debug, warn, error
- 
+
 # umic-mesh imports
 from um_application import Application
 from um_measurement import *
@@ -12,36 +12,36 @@ from um_measurement import *
 class um_nuttcp(um_measurement):
 
     def __init__(self):
-    
+
         um_measurement.__init__(self)
 
         self.parser.add_option(
-                               "-d" , "--duration", 
-                               action = "store", 
-                               type = int, 
-                               metavar = "secs", 
-                               dest = "duration", 
+                               "-d" , "--duration",
+                               action = "store",
+                               type = int,
+                               metavar = "secs",
+                               dest = "duration",
                                default = 10,
                                help = "Set duration of nuttcp test [default: %default]"
                            )
 
         self.parser.add_option(
-                               "-r" , "--reverse", 
-                               action = "store_true", 
-                               dest = "reverse", 
+                               "-r" , "--reverse",
+                               action = "store_true",
+                               dest = "reverse",
                                default = False,
                                help = "Receive from server instead to transmit to [default: %default]"
                            )
 
         self.parser.add_option(
-                               "-y" , "--start-server", 
-                               action = "store_true", 
-                               dest = "start_server", 
+                               "-y" , "--start-server",
+                               action = "store_true",
+                               dest = "start_server",
                                default = False,
                                help = "Start nuttcp on target router [default: %default]"
                            )
-        
-        
+
+
     def test(self, iteration, run, source, target):
         if self.options.start_server:
             rc = self.ssh_mrouter(target, "pidof nuttcp", 3, True)
@@ -49,7 +49,7 @@ class um_nuttcp(um_measurement):
                 warning("mrouter%i already runs nuttcp server albeit --start-server." % (target))
 
             rc = self.ssh_mrouter(target, "nuttcp -1 </dev/null 2>&0 1>&0", 3)
-            if (rc != 0): 
+            if (rc != 0):
                 error("mrouter%i failed to start nuttcp server. rc=%d" % (target,rc))
                 return False
         # Please note: we might accidently hit a non server mode nuttcp here. Since we are going to run nuttcp via inetd soon, I feel this wont be an issue...
@@ -68,7 +68,7 @@ class um_nuttcp(um_measurement):
             error("nuttcp invocation on mrouter%i failed: rc=%i" % (source, rc))
             return False
         return True
-        
+
 
 if __name__ == "__main__":
     um_nuttcp().main()

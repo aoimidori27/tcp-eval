@@ -10,8 +10,8 @@ from um_application import Application
 from um_util import *
 
 
-class Subversion(Application):   
-    "Class to manage Subvserions repositories within those images"  
+class Subversion(Application):
+    "Class to manage Subvserions repositories within those images"
 
 
     def __init__(self):
@@ -32,9 +32,9 @@ class Subversion(Application):
                                  verbose = True,
                                  updatelinks = self.updatelinks)
 
-        self.parser.add_option("-n", "--nolinks", 
+        self.parser.add_option("-n", "--nolinks",
                                action = "store_false", dest = "updatelinks",
-                               help = "don't update symlinks in /usr/local/sbin")    
+                               help = "don't update symlinks in /usr/local/sbin")
 
         # execute object
         self.main()
@@ -45,20 +45,20 @@ class Subversion(Application):
 
         # call the super set_option method
         Application.set_option(self);
-        
+
         # correct numbers of arguments?
         if len(self.args) != 1:
             self.parser.error("incorrect number of arguments")
 
         # get options
         self.updatelinks = self.options.updatelinks
-        self.action = self.args[0]  
-    
+        self.action = self.args[0]
+
         # does the command exists?
         if not self.action in ('update', 'status'):
             self.parser.error('unkown COMMAND %s' %(args[0]))
 
-    
+
     def update(self):
         "Subversion update"
 
@@ -69,7 +69,7 @@ class Subversion(Application):
             imagepath = "%s/%s" %(imageprefix, image)
 
             # iterate through svn mappings
-            for src, dst in svnmappings.iteritems(): 
+            for src, dst in svnmappings.iteritems():
                 dst = "%s%s%s" %(imagepath, svnprefix, dst)
                 src = "%s%s" %(svnrepos, src)
                 if not os.path.exists(dst):
@@ -80,10 +80,10 @@ class Subversion(Application):
                     cmd = ('svn', 'update', dst)
                 info(cmd)
                 prog = call(cmd, shell=False)
-                
+
             # update links
             if self.updatelinks:
-                  
+
                 info("Updating symlinks in /usr/local/sbin")
                 dst = "%s/usr/local/sbin" %(imagepath)
 
@@ -103,33 +103,33 @@ class Subversion(Application):
                         if sre.match("um_", f):
                             cmd = "ln -vsf %s/%s %s/%s" %(d, f, dst, f)
                             # use os.system() since call() is too slow
-                            os.system(cmd) 
-    
+                            os.system(cmd)
+
 
     def status(self):
         "Subversion status"
-        
+
         for image,imageinfo in imageinfos.iteritems():
             imagepath = "%s/%s" %(imageprefix, image)
-    
+
             for src,dst in imageinfo['svnmappings'].iteritems():
                 dst = "%s%s%s" %(imagepath, svnprefix, dst)
                 cmd = ('svn', 'status', dst)
                 info(cmd)
                 prog = call(cmd, shell = False)
 
-    
+
     def main(self):
         "Main method of subversion object"
-        
+
         # parse options
         self.parse_option()
-        
+
         # set options
         self.set_option()
-        
+
         # call the corresponding method
-        eval("self.%s()" %(self.action)) 
+        eval("self.%s()" %(self.action))
 
 
 

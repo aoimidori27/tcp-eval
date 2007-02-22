@@ -15,10 +15,10 @@ from um_util import *
 class Init(Application):
     "Class to start UMIC-Mesh programms"
 
-    
+
     def __init__(self):
         "Constructor of the object"
-    
+
         # call the super constructor
         Application.__init__(self)
 
@@ -26,28 +26,28 @@ class Init(Application):
         self.parser.set_defaults(verbose = True,
                                  syslog = False,
                                  debug = False)
-        
+
         # execute object
         self.main()
 
 
     def set_option(self):
         "Set options"
-        
+
         # call the super set_option method
         Application.set_option(self)
-        
+
 
     def init(self):
         hostname  = gethostname()
         nodetype  = getnodetype()
         nodeinfo  = getnodeinfo()
         imagepath = getimagepath()
-                
+
         info("Hostname:  %s" % hostname)
         info("Nodetype:  %s" % nodetype)
         info("Imagepath: %s" % imagepath)
-            
+
         for line in nodeinfo['startup']:
             try:
                 eval(line)
@@ -57,16 +57,16 @@ class Init(Application):
 
             print ("Done.")
 
-    
+
     def main(self):
         "Main method of the Init object"
 
         # parse options
         self.parse_option()
-        
+
         # set options
         self.set_option()
-        
+
         # call the corresponding method
         self.init()
 
@@ -81,22 +81,22 @@ class SystemExitException(Exception):
 
 def raiseException(status):
     "Just to raise the exception with status"
-    
+
     raise SystemExitException(status)
-    
+
 
 def execpy(script, arguments = []):
     "Function to execute a python script with arguments"
-    
+
     # save argument list
     save_argv = sys.argv
 
     # save function pointer for sys.exit()
     save_exit = sys.exit
-    
+
     # flush argument list
     sys.argv = []
-    
+
     # build new argv[0] out of script name
     sys.argv.append(script)
     # add argument list
@@ -121,9 +121,9 @@ def execpy(script, arguments = []):
     # restore environment
     sys.exit = save_exit
     sys.argv = save_argv
-    
+
     return rc
-    
+
 def startdaemon(name):
     if daemoninfos.has_key(name):
         daemoninfo = daemoninfos[name]

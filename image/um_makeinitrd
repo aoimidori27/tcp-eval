@@ -48,7 +48,7 @@ LIBS_EDGY="ld-2.4.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.4.so,lib
 function makedev() {
    # loop devices
    for i in 0 1 2 3 4 5 6 7; do
-	   mknod $INITRD_MP/dev/loop$i b 7 $i
+       mknod $INITRD_MP/dev/loop$i b 7 $i
    done;
   
    # console, null, random, urandom, tty12
@@ -66,26 +66,26 @@ function makedev() {
 
 # filecopy "$files" "$searchpath" "$dstdir"
 function filecopy () {
-	for file in ${1//,/ }; do
-		FOUND=n
-		for dir in ${2//,/ }; do
-			dir="${IMAGEDIR}$dir"
-			if [ -e $dir/$file ]; then
-				cp $CPOPTS $dir/$file $3;
-				FOUND=y
-				break;
-			fi;
-		done;
-		if [ $FOUND = n ]; then
-			echo "Warning: failed to locate $file!"
-		fi
-	done;
+    for file in ${1//,/ }; do
+        FOUND=n
+        for dir in ${2//,/ }; do
+            dir="${IMAGEDIR}$dir"
+            if [ -e $dir/$file ]; then
+                cp $CPOPTS $dir/$file $3;
+                FOUND=y
+                break;
+            fi;
+        done;
+        if [ $FOUND = n ]; then
+            echo "Warning: failed to locate $file!"
+        fi
+    done;
 }
 
 
 function usage () {
     this=`basename $0`
-	cat <<!EOF!
+    cat <<!EOF!
 usage: $this [options] image
 options:
   -h        Print this help summary and exit.
@@ -98,9 +98,9 @@ image should be either dapper or edgy.
 
 # check if root
 if [ $UID -ne 0 ]; then
-	echo "Must be root!"
- 	usage;
-	exit 1;
+    echo "Must be root!"
+    usage;
+    exit 1;
 fi;
 
 # parse optional arguments
@@ -111,29 +111,29 @@ fi
 
 VERBOSE=n 
 case $FLAG in
-	"v")
-		VERBOSE=y; shift ;;
-	"h")
-		usage; exit 0;;
+    "v")
+        VERBOSE=y; shift ;;
+    "h")
+        usage; exit 0;;
 esac
 
 
 # if there is no image argument, print usage and exit
 IMAGE=$1;
 if [ -z $IMAGE ]; then
-	echo "You have to specify an image name."
-	usage; exit 1;
+    echo "You have to specify an image name."
+    usage; exit 1;
 fi
 
 case $IMAGE in
-	dapper)
-		LIBS=$LIBS_DAPPER
-		IMAGEDIR=$IMAGEDIR_DAPPER ;;
-	edgy)
-		LIBS=$LIBS_EDGY
-		IMAGEDIR=$IMAGEDIR_EDGY ;;
-	*)
-		echo "Unknown image type: $IMAGE"; usage; exit 2; ;;
+    dapper)
+        LIBS=$LIBS_DAPPER
+        IMAGEDIR=$IMAGEDIR_DAPPER ;;
+    edgy)
+        LIBS=$LIBS_EDGY
+        IMAGEDIR=$IMAGEDIR_EDGY ;;
+    *)
+        echo "Unknown image type: $IMAGE"; usage; exit 2; ;;
 esac
 
 INITRD_DST="$INITRD_DST-$IMAGE";
@@ -143,13 +143,13 @@ echo "Generating $INITRD_DST..."
 # options for invocation of "cp"
 CPOPTS="--update --no-dereference --preserve=mode,ownership,timestamps,link"
 if [ $VERBOSE = y ]; then
-	CPOPTS="--verbose $CPOPTS"
+    CPOPTS="--verbose $CPOPTS"
 fi;
 
 # options for invocation of "mkdir"
 MKOPTS="-p"
 if [ $VERBOSE = y ]; then
-	MKOPTS="-v $MKOPTS"
+    MKOPTS="-v $MKOPTS"
 fi;
 
 # copy initrd
@@ -157,20 +157,20 @@ cp $INITRD_SRC $INITRD_DST
 
 # Mount initrd
 if [ ! -d $INITRD_MP ]; then
-	mkdir $INITRD_MP;
+    mkdir $INITRD_MP;
 fi
 
 if [ "`grep $INITRD_MP /etc/mtab`" ]; then
-	echo "Opps, $INITRD_MP, seems to be mounted. Unmounting first..."
-	umount $INITRD_MP
-	if [ $? -ne 0 ]; then exit $?; fi;
+    echo "Opps, $INITRD_MP, seems to be mounted. Unmounting first..."
+    umount $INITRD_MP
+    if [ $? -ne 0 ]; then exit $?; fi;
 fi;
 
 mount $INITRD_DST $INITRD_MP -o loop
 
 # create directories
 for dir in ${DIRS//,/ }; do
-	mkdir $MKOPTS $INITRD_MP/$dir 
+    mkdir $MKOPTS $INITRD_MP/$dir 
 done
 
 # copy binfiles
@@ -184,12 +184,12 @@ filecopy "$LIBS" "$LIB_SEARCHPATH" "$INITRD_MP/lib/"
 
 # copy static files
 for file in ${STATIC//,/ }; do
-	cp $CPOPTS ${IMAGEDIR}$file ${INITRD_MP}${file}
+    cp $CPOPTS ${IMAGEDIR}$file ${INITRD_MP}${file}
 done;
 
 # create dhclient link for ubuntu edgy eft
 if [ $IMAGE = edgy ]; then
- 	ln -vs /initrd/etc/dhcp/dhclient-script $INITRD_MP/sbin/dhclient-script
+    ln -vs /initrd/etc/dhcp/dhclient-script $INITRD_MP/sbin/dhclient-script
 fi;
 
 # make /dev nodes

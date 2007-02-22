@@ -43,7 +43,7 @@ LIBS_EDGY="ld-2.4.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.4.so,lib
 function makedev() {
    # loop devices
    for i in 0 1 2 3 4 5 6 7; do
-	   mknod $INITRD_TMP/dev/loop$i b 7 $i
+       mknod $INITRD_TMP/dev/loop$i b 7 $i
    done;
   
    # console, null, random, urandom, tty12
@@ -60,27 +60,27 @@ function makedev() {
 
 # filecopy "$files" "$searchpath" "$dstdir"
 function filecopy () {
-	for file in ${1//,/ }; do
-		FOUND=n
-		for dir in ${2//,/ }; do
-			dir="${IMAGEDIR}$dir"
-			if [ -e $dir/$file ]; then
-				cp $CPOPTS $dir/$file $3;
-				FOUND=y
-				break;
-			fi;
-		done;
-		if [ $FOUND = n ]; then
-			echo "Warning: failed to locate $file!"
-		fi
-	done;
+    for file in ${1//,/ }; do
+        FOUND=n
+        for dir in ${2//,/ }; do
+            dir="${IMAGEDIR}$dir"
+            if [ -e $dir/$file ]; then
+                cp $CPOPTS $dir/$file $3;
+                FOUND=y
+                break;
+            fi;
+        done;
+        if [ $FOUND = n ]; then
+            echo "Warning: failed to locate $file!"
+        fi
+    done;
 }
 
 
 function usage ()
 {
     this=`basename $0`
-	cat <<!EOF!
+    cat <<!EOF!
 usage: $this [options] image
 options:
   -h        Print this help summary and exit.
@@ -93,9 +93,9 @@ image should be edgy.
 
 # check if root
 if [ $UID -ne 0 ]; then
-	echo "Must be root!"
-	usage;
-	exit 1;
+    echo "Must be root!"
+    usage;
+    exit 1;
 fi;
 
 # parse optional arguments
@@ -106,26 +106,26 @@ fi
 
 VERBOSE=n 
 case $FLAG in
-	"v")
-		VERBOSE=y; shift ;;
-	"h")
-		usage; exit 0;;
+    "v")
+        VERBOSE=y; shift ;;
+    "h")
+        usage; exit 0;;
 esac
 
 
 # if there is no image argument, print usage and exit
 IMAGE=$1;
 if [ -z $IMAGE ]; then
-	echo "You have to specify an image name."
-	usage; exit 1;
+    echo "You have to specify an image name."
+    usage; exit 1;
 fi
 
 case $IMAGE in
-	edgy)
-		LIBS=$LIBS_EDGY
-		IMAGEDIR=$IMAGEDIR_EDGY ;;
-	*)
-		echo "Unknown image type: $IMAGE"; usage; exit 2; ;;
+    edgy)
+        LIBS=$LIBS_EDGY
+        IMAGEDIR=$IMAGEDIR_EDGY ;;
+    *)
+        echo "Unknown image type: $IMAGE"; usage; exit 2; ;;
 esac
 
 INITRD_DST="$INITRD_DST-$IMAGE";
@@ -135,20 +135,20 @@ echo "Generating $INITRD_DST..."
 # options for invocation of "cp"
 CPOPTS="--update --no-dereference --preserve=mode,ownership,timestamps,link"
 if [ $VERBOSE = y ]; then
-	CPOPTS="--verbose $CPOPTS"
+    CPOPTS="--verbose $CPOPTS"
 fi;
 
 # Options for invocation of "mkdir"
 MKOPTS="-p"
 if [ $VERBOSE = y ]; then
-	MKOPTS="-v $MKOPTS"
+    MKOPTS="-v $MKOPTS"
 fi;
 
 # create tmp directory
 mkdir $INITRD_TMP
 if [ $? -ne 0 ]; then 
-	echo Creating $INITRD_TMP failed, please remove it manually.
-	exit 1;
+    echo Creating $INITRD_TMP failed, please remove it manually.
+    exit 1;
 fi
 
 # create directories
@@ -167,7 +167,7 @@ filecopy "$LIBS" "$LIB_SEARCHPATH" "$INITRD_TMP/lib/"
 
 # copy static files 
 for file in ${STATIC//,/ }; do
-	cp $CPOPTS ${IMAGEDIR}$file ${INITRD_TMP}${file}
+    cp $CPOPTS ${IMAGEDIR}$file ${INITRD_TMP}${file}
 done;
 
 

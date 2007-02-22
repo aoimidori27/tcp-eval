@@ -16,10 +16,10 @@ class Daemon(Application):
 
     def __init__(self):
         "Constructor of the object"
-    
+
         # call the super constructor
         Application.__init__(self)
-        
+
         # object variables (set the defaults for the option parser)
         self.daemon_opts = "-v -s"
         self.piddir      = "/var/run"
@@ -37,17 +37,17 @@ class Daemon(Application):
         self.parser.add_option("-p", "--pid", metavar = "PID",
                           action = "store", dest = "piddir",
                           help = "define the PID directory [default: %default]")
-        
+
         # execute object
         self.main()
 
 
     def set_option(self):
         "Set options"
-        
+
         # call the super set_option method
         Application.set_option(self)
-        
+
         # correct numbers of arguments?
         if len(self.args) != 2:
             self.parser.error("incorrect number of arguments")
@@ -68,18 +68,18 @@ class Daemon(Application):
 
         progname = os.path.basename(self.program)
         pidfile = "%s/%s.pid" %(self.piddir, progname)
-        
+
         info("Starting %s " %(progname))
         try:
             call(["start-stop-daemon",
                   "--start", "--make-pidfile", "--pidfile",
                   pidfile, "--background", "--startas",
-                  self.program, "--", self.daemon_opts], 
+                  self.program, "--", self.daemon_opts],
                  shell = False)
-        except CommandFailed:   
+        except CommandFailed:
             error("Starting %s as a daemon was unsuccessful" %(self.program))
 
-        
+
     def stop(self):
         "Stopping the daemon"
 
@@ -88,12 +88,12 @@ class Daemon(Application):
 
         info("Stopping %s " % progname)
         try:
-            call(["start-stop-daemon", 
-                  "--stop", "--pidfile", pidfile], 
+            call(["start-stop-daemon",
+                  "--stop", "--pidfile", pidfile],
                  shell = False)
-        except CommandFailed:   
+        except CommandFailed:
             error("Stopping the daemon %s was unsuccessful" %(self.program))
-        
+
 
     def restart(self):
         "Restarting the daemon"
@@ -107,10 +107,10 @@ class Daemon(Application):
 
         # parse options
         self.parse_option()
-        
+
         # set options
         self.set_option()
-        
+
         # call the corresponding method
         eval("self.%s()" %(self.action))
 

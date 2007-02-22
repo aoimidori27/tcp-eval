@@ -1,11 +1,11 @@
 #!/bin/sh
 alive=0;
-for i in {1..40}; do 
-  echo -en "\033[00m mrouter$i:"; 
-  if ping -q -c 1 mrouter$i >/dev/null 2>/dev/null; then 
+for i in {1..40}; do
+  echo -en "\033[00m mrouter$i:";
+  if ping -q -c 1 mrouter$i >/dev/null 2>/dev/null; then
     echo -e "\033[01;32m online";
     ((alive++));
-  else 
+  else
     echo -e "\033[01;31m offline";
   fi;
 done;

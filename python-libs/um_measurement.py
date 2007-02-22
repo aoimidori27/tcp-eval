@@ -6,7 +6,7 @@ import sys, os, os.path, subprocess, re, time, signal
 
 from logging import info, debug, warning, error
 from datetime import timedelta, datetime
- 
+
 # umic-mesh imports
 from um_application import Application
 from um_config import *
@@ -15,35 +15,35 @@ from um_config import *
 class um_measurement(Application):
 
     def __init__(self):
-    
+
         # call the super constructor
         Application.__init__(self)
-    
+
         # initialization of the option parser
         self.parser.set_usage("usage: %prog [options]" )
-        
+
         self.parser.add_option(
-                               "-N" , "--nodes", 
-                               action = "store", 
-                               type = int, 
-                               metavar = "#", 
-                               dest = "nodes", 
+                               "-N" , "--nodes",
+                               action = "store",
+                               type = int,
+                               metavar = "#",
+                               dest = "nodes",
                                default = 2,
                                help = "Set range of mrouters to cover [default: %default]",
                            )
 
         self.parser.add_option(
-                               "-a" , "--asymmetric", 
-                               action = "store_true", 
-                               dest = "asymmetric", 
+                               "-a" , "--asymmetric",
+                               action = "store_true",
+                               dest = "asymmetric",
                                default = False,
                                help = "Consider one way tests only [default: %default]"
                            )
-        
+
         self.parser.add_option(
-                               "-t" , "--timeout-scale", 
-                               action = "store", 
-                               type = float, 
+                               "-t" , "--timeout-scale",
+                               action = "store",
+                               type = float,
                                metavar = "secs",
                                dest = "timeout_scale",
                                default = 1,
@@ -51,48 +51,48 @@ class um_measurement(Application):
                            )
 
         self.parser.add_option(
-                               "-R" , "--runs", 
-                               action = "store", 
-                               type = int, 
-                               metavar = "#", 
-                               dest = "runs", 
+                               "-R" , "--runs",
+                               action = "store",
+                               type = int,
+                               metavar = "#",
+                               dest = "runs",
                                default = 1,
                                help = "Set number of test runs in a row [default: %default]",
                            )
 
         self.parser.add_option(
-                               "-I" , "--iterations", 
-                               action = "store", 
-                               type = int, 
-                               metavar = "#", 
-                               dest = "iterations", 
-                               default = 1, 
+                               "-I" , "--iterations",
+                               action = "store",
+                               type = int,
+                               metavar = "#",
+                               dest = "iterations",
+                               default = 1,
                                help = "Set number of test runs in a row [default: %default]"
                            )
 
         self.parser.add_option(
-                               "-O" , "--output-directory", 
-                               action = "store", 
-                               metavar = "directory", 
-                               dest = "output_directory", 
+                               "-O" , "--output-directory",
+                               action = "store",
+                               metavar = "directory",
+                               dest = "output_directory",
                                default = ".",
                                help = "Set the directory to write log files to [default: %default]"
                            )
-        
+
         self.parser.add_option(
-                               "-w" , "--wipe-out", 
-                               action = "store_true", 
-                               dest = "wipe_out", 
+                               "-w" , "--wipe-out",
+                               action = "store_true",
+                               dest = "wipe_out",
                                default = False,
                                help = "Create a fresh output directory [default: %default]"
                            )
-        
+
 
     def set_option(self):
-        
+
         Application.set_option(self)
-        
-      
+
+
     def ssh_mrouter(self, number, command, timeout, suppress_output=False):
         timeout = timeout * self.options.timeout_scale
         debug("Calling \"%s\" on mrouter%i (timeout %i seconds)" % (command, number, timeout))
@@ -101,9 +101,9 @@ class um_measurement(Application):
                      "### command=\"%s\" (timeout %i, suppress_output = %s)\n" % (command, timeout, str(suppress_output)))
 
         command = """
-function sigchld() { 
+function sigchld() {
   if ! ps $BGPID 2>&1 >/dev/null; then
-    wait $BGPID; EXITSTATUS=$?; 
+    wait $BGPID; EXITSTATUS=$?;
   fi;
 };
 set +H
@@ -134,13 +134,13 @@ fi
 exit 254
 """ %(command,timeout*10)
 
-  
+
         ssh = [
-               "ssh", "-o", "PasswordAuthentication=no", "-o", "NumberOfPasswordPrompts=0", 
+               "ssh", "-o", "PasswordAuthentication=no", "-o", "NumberOfPasswordPrompts=0",
                 "mrouter%i" % number,
-#                "schaffrath@goldfinger.informatik.rwth-aachen.de" , 
+#                "schaffrath@goldfinger.informatik.rwth-aachen.de" ,
 #                "localhost",
-               "bash -i -c '%s'" %command 
+               "bash -i -c '%s'" %command
        ]
 
         null = open(os.devnull)
@@ -148,12 +148,12 @@ exit 254
             log = null
         else:
             log = self.log_file
-            
+
         prog = subprocess.Popen(
                                 ssh,
                                 bufsize=0,
                                 stdin=null,
-                                stdout=log, 
+                                stdout=log,
                                 stderr=log)
 
         end_ts_ssh = datetime.now() + timedelta(seconds=timeout + 6)
@@ -173,16 +173,16 @@ exit 254
 
         return prog.returncode
 
-        
+
 
 
     def main(self):
 
         self.parse_option()
         self.set_option()
-    
+
         start_ts_measurement = datetime.now()
-        
+
         # Prepare output directory
         info("Preparing output directory...")
         if not os.path.isdir(self.options.output_directory):
@@ -191,7 +191,7 @@ exit 254
             except Exception, t:
                 error("Failed to create directory: %s" % t)
                 sys.exit(1)
-        
+
         os.chdir(self.options.output_directory)
 
         if self.options.wipe_out:
@@ -225,4 +225,4 @@ exit 254
             info("Iteration %i: finished (%s)" % (iteration, datetime.now()-start_ts_iteration))
 
         info("Overall runtime: %s" % (datetime.now()-start_ts_measurement))
-    
+

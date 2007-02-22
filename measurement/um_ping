@@ -4,7 +4,7 @@
 # python imports
 import os, subprocess, re, time
 from logging import info, debug, warn, error
- 
+
 # umic-mesh imports
 from um_application import Application
 from um_measurement import *
@@ -14,35 +14,35 @@ from um_util import *
 class um_ping(um_measurement):
 
     def __init__(self):
-       
+
         um_measurement.__init__(self)
 
         self.parser.add_option(
-                               "-p" , "--packet-size", 
+                               "-p" , "--packet-size",
                                action = "store",
-                               type = int, 
-                               metavar = "bytes", 
-                               dest = "packet_size", 
+                               type = int,
+                               metavar = "bytes",
+                               dest = "packet_size",
                                default = 82,
                                help = "Set size of ping packets [default: %default]"
                            )
-        
+
         self.parser.add_option(
-                               "-c" , "--counts", 
-                               action = "store", 
-                               type = int, 
-                               metavar = "#", 
-                               dest = "count", 
+                               "-c" , "--counts",
+                               action = "store",
+                               type = int,
+                               metavar = "#",
+                               dest = "count",
                                default = 4,
                                help = "Set number of ping packets [default: %default]"
                            )
-        
+
         self.parser.add_option(
-                               "-i" , "--interval", 
-                               action = "store", 
-                               type = float, 
+                               "-i" , "--interval",
+                               action = "store",
+                               type = float,
                                metavar = "secs",
-                               dest = "interval", 
+                               dest = "interval",
                                default = 1.2,
                                help = "Set (fraction of) number of seconds between pings [default: %default]"
                            )

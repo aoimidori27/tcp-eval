@@ -15,12 +15,12 @@ from um_config import *
 
 class CommandFailed(Exception):
     "Convenience function to handle returncodes"
-    
+
     def __init__(self, cmd, rc, stderr = None):
         self.cmd = cmd
         self.rc  = rc
         self.stderr = stderr
-    
+
     def __str__(self):
         return "Command %s failed with return code %d." %(self.cmd, self.rc)
 
@@ -34,7 +34,7 @@ def execute(cmd, shell, raiseError=True):
     rc = prog.returncode
     if raiseError and rc != 0:
         raise CommandFailed(cmd, rc, stderr)
-    
+
     return (stdout, stderr)
 
 
@@ -50,7 +50,7 @@ def call(cmd, shell, raiseError=True):
 def requireroot():
     "Check if user is root"
 
-    if not os.getuid()==0:      
+    if not os.getuid()==0:
         error("You must be root. Operation not permitted.")
         sys.exit(1)
 
@@ -102,17 +102,17 @@ def getimagepath():
     "Get the image path for the desired note type"
 
     global imagepath
-    
+
     if not globals().has_key('imagepath'):
         nodeinfo = getnodeinfo()
         imagepath = "%s/%s.img/%s" % (imageprefix, nodeinfo['imagetype'], nodeinfo['imageversion'])
-    
+
     return imagepath
 
 
 def getnodenr():
     "Get node number from hostname"
-    
+
     hostname = gethostname()
 
     for nodeinfo in nodeinfos.itervalues():

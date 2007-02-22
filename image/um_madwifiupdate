@@ -22,14 +22,14 @@ class MadwifiUpdate(Application):
         self.parser.set_defaults(verbose = True,
                                  syslog = False,
                                  debug = False)
-        
+
         # execute object
         self.main()
 
 
     def set_option(self):
         "Set options"
-        
+
         # call the super set_option method
         Application.set_option(self)
 
@@ -41,7 +41,7 @@ class MadwifiUpdate(Application):
 
     def madwifiupdate(self):
         "Update Madwifi-ng source"
-        
+
         # create temporary directory
         tmp = "/tmp/madwifiupdate"
         dst = tmp + "/upstream"
@@ -62,7 +62,7 @@ class MadwifiUpdate(Application):
         call(cmd, shell = False)
 
         # get revision
-        cmd = "svn info %s | grep Revision | awk '{print $2;}'" %(dst)  
+        cmd = "svn info %s | grep Revision | awk '{print $2;}'" %(dst)
         (stdout, stderr) = execute(cmd, shell = True)
         local_revision = stdout.splitlines()[0]
         info("Revision of checkout is: %s" %(local_revision))
@@ -81,10 +81,10 @@ class MadwifiUpdate(Application):
                remote_repos+remote_module,dst)
         call(cmd, shell = False)
         os.chdir(save_path)
-    
-        info("Searching updated files...")  
-        
-        # add new files 
+
+        info("Searching updated files...")
+
+        # add new files
         cmd = "echo `svn st %s | grep '?' | awk '{ print $2; }'`" \
               %(dst)
         (stdout,stderr) = execute(cmd, shell = True)
@@ -101,7 +101,7 @@ class MadwifiUpdate(Application):
         (stdout,stderr) = execute(cmd, shell = True)
         debug("Stdout: %s" %stdout)
         if (stdout != "\n"):
-            info("Found removed files. Deleting them...")                       
+            info("Found removed files. Deleting them...")
             cmd = "svn rm %s" %(stdout)
             call(cmd, shell = True)
 
@@ -117,11 +117,11 @@ class MadwifiUpdate(Application):
                                           local_trunk),
                dst)
         call(cmd, shell = False)
-        
+
         # just for completeness rename it
         cmd = "mv %s %s/trunk" %(dst,tmp)
         call(cmd, shell = True)
-        
+
         # merging changes from upstream local trunk
         info("Merging changes with local trunk...")
         cmd = ("svn","merge","-r","%s:HEAD" %(local_revision),
@@ -133,7 +133,7 @@ class MadwifiUpdate(Application):
         info("Commiting these changes to repository...")
         cmd = ("svn","commit", tmp+"/trunk",
                "-m","new madwifi version")
-        call(cmd, shell = False)     
+        call(cmd, shell = False)
 
         # cleanup
         info("Cleaning up %s..." %(tmp))
@@ -148,13 +148,13 @@ class MadwifiUpdate(Application):
 
         # parse options
         self.parse_option()
-        
+
         # set options
         self.set_option()
-        
+
         # call the corresponding method
-        self.madwifiupdate()    
-          
+        self.madwifiupdate()
+
 
 
 if __name__ == "__main__":
