@@ -266,6 +266,7 @@ class Madwifi(Application):
         self.set_option()
         
         # call the corresponding method
+        requireroot()
         eval("self.%s()" %(self.action)) 
 
 
