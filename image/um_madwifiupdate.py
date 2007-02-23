@@ -57,7 +57,7 @@ class MadwifiUpdate(Application):
         info("Checking out madwifi trunk from remote...")
         save_path = os.getcwd()
         os.chdir(tmp)
-        cmd = ("svn","export","--force","-q", "%s%s" (remote_repos, remote_module,dst))
+        cmd = ("svn","export","--force","-q", "%s%s" %(remote_repos, remote_module), dst)
         call(cmd, shell = False)
         os.chdir(save_path)
 
