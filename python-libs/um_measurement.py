@@ -130,11 +130,11 @@ exit 254
         while prog.poll() == None:
             time.sleep(0.1)
             if datetime.now() > end_ts_ssh:
-                warning("ssh still running after timeout. Sending SIGTERM...")
+                warn("ssh still running after timeout. Sending SIGTERM...")
                 os.kill(prog.pid, signal.SIGTERM)
                 time.sleep(3)
                 if prog.poll() == None:
-                    warning("ssh still running after SIGTERM. Sending SIGKILL...")
+                    warn("ssh still running after SIGTERM. Sending SIGKILL...")
                     os.kill(prog.pid, signal.SIGKILL)
                     time.sleep(1)
                     if prog.poll() == None:
