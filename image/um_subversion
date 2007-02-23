@@ -81,8 +81,8 @@ class Subversion(Application):
                 scriptfolders = sets.Set(scriptmappings.values())
                 
                 for dst in scriptfolders:
-                    dst = "%s/%s" %(imagepath, dst)               
-                    cmd = "rm -v `find %s -lname '%s/scripts/*'`" %(dst, svnprefix)
+                    dst = "%s%s" %(imagepath, dst)               
+                    cmd = "find %s -lname '%s/scripts/*' -print0 | xargs -r -0 rm -v " %(dst, svnprefix)
                     try:
                         call(cmd,shell=True)
                     except CommandFailed:
@@ -92,23 +92,19 @@ class Subversion(Application):
                 info("Recreate symbolic links")
                 
                 for src, dst in scriptmappings.iteritems():
-                    nsrc = "%s%s%s" % (imagepath, svnprefix, dst)
-                    info(nsrc)
-                    ndst = "%s%s" %(svnprefix, dst)
-                    info(ndst)
-                    for f in dircache.listdir(nsrc):                        
-                        cmd = "ln -vsf %s/%s %s/%s" %(src, f, ndst, f)
+                    nsrc = "%s%s%s" % (imagepath, svnprefix, src)
+                    ndst = "%s%s" %(imagepath, dst)
+                    for f in dircache.listdir(nsrc):
+                        # ignore files which start with a .
+                        if f.startswith("."):
+                            continue
+                        # cut off .sh and .py extensions
+                        fn=f.replace(".py","")
+                        fn=f.replace(".sh","")                        
+                        cmd = "ln -vsf %s%s/%s %s/%s" %(svnprefix,src, f, ndst, fn)
+                        # use os.system because call() is too slow
+                        os.system(cmd)
                     
-#                for d in imageinfo['scriptfolders']:
-#                    src = "%s%s%s" %(imagepath, svnprefix, d)
-#                    info(src);
-#                    d = "%s%s" %(svnprefix, d)
-#                    for f in dircache.listdir(src):
-#                        if re.match("um_", f):
-#                            cmd = "ln -vsf %s/%s %s/%s" %(d, f, dst, f)
-#                            # use os.system() since call() is too slow
-#                            os.system(cmd)
-
 
     def status(self):
         "Subversion status"
