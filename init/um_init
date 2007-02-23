@@ -4,7 +4,7 @@
 # umic-mesh imports
 from um_application import Application
 from um_config import *
-from um_util import *
+from um_functions import *
 
 
 class Init(Application):
