@@ -1,63 +1,53 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 
-# python imports
-from logging import info, debug, warn, error
-
 # umic-mesh imports
 from um_application import Application
-from um_util import *
+from um_functions import *
 
 
 class Chroot(Application):
-    "Class to handle chroot into the images"
+    "Class to chroot into the images"
 
     def __init__(self):
         "Constructor of the object"
 
-        # call the super constructor
         Application.__init__(self)
 
-        # object variables (set the defaults for the option parser)
+        # object variables
         self.command = "/bin/bash"
+        
+        # helper variables
         if os.environ.has_key('SUDO_USER'):
-            self.user = os.environ['SUDO_USER']
+            default_user = os.environ['SUDO_USER']
         else:
-            self.user = os.environ['USER']
+            default_user = os.environ['USER']
 
         # initialization of the option parser
-        usage = "usage: %prog [options] [command] \n" \
-                "where  command is a command to execute within chroot"
+        usage = "usage: %prog [options] [COMMAND] \n" \
+                "where  COMMAND is a command to execute within chroot"
         self.parser.set_usage(usage)
-        self.parser.set_defaults(user = self.user,
-                                 verbose = True,
-                                 syslog = False)
+        self.parser.set_defaults(user = default_user)
 
-        self.parser.add_option("-u", "--user",
+        self.parser.add_option("-u", "--user", metavar = "NAME",
                                action = "store", dest = "user",
                                help = "set the user to be in the chroot [default: %default]")
-
-        # execute object
-        self.main()
 
 
     def set_option(self):
         "Set options"
 
-        # call the super set_option method
         Application.set_option(self)
 
-        # get options
-        self.user = self.options.user
-
+        # set arguments
         if len(self.args) > 0:
             self.command = self.args[0]
             for arg in self.args[1:]:
-                self.command = self.command + arg
+                self.command = "%s%s" %(self.command, arg)
 
 
     def chroot_exec(self):
-        "Chroot and execute a command"
+        "Chroot and execute the command"
 
         # must be root
         requireroot()
@@ -73,9 +63,6 @@ class Chroot(Application):
         mounts = [ {'args' : '-o bind', 'src' : '/dev', 'dst' : '/dev'},
                    {'args' : '-o bind', 'src' : '/proc', 'dst' : '/proc'} ]
 
-        # join with mounts of nodes
-        mounts.extend(imageinfo['mounts'])
-
         # mount
         for mountpoint in mounts:
             # check if directory is already mounted
@@ -83,14 +70,14 @@ class Chroot(Application):
             rc = subprocess.call(cmd)
             if rc != 0:
                 cmd = "mount %s %s %s%s" % (mountpoint['args'], mountpoint['src'],
-                                                 imagepath, mountpoint['dst'])
+                                            imagepath, mountpoint['dst'])
                 print cmd
                 execute(cmd, shell = True)
 
         # exec command
         cmd = "/usr/bin/linux32 /usr/sbin/chroot %s su %s -c " \
               "'export debian_chroot=%s && %s'" \
-              % (imagepath, self.user, nodetype, self.command)
+              % (imagepath, self.options.user, nodetype, self.command)
         call(cmd, shell = True)
 
         # umount
@@ -102,16 +89,11 @@ class Chroot(Application):
     def main(self):
         "Main method of the chroot object"
 
-        # parse options
         self.parse_option()
-
-        # set options
         self.set_option()
-
-        # call the corresponding method
         self.chroot_exec()
 
 
 
 if __name__ == "__main__":
-    Chroot()
+    Chroot().main()

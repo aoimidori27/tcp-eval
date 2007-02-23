@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# python imports
-from logging import info, debug, warn, error
-
 # umic-mesh imports
 from um_application import Application
 from um_util import *
@@ -15,20 +12,12 @@ class KernelUpdate(Application):
     def __init__(self):
         "Constructor of the object"
 
-        # call the super constructor
         Application.__init__(self)
-
-        # initialization of the option parser
-        self.parser.set_defaults(verbose = True)
-
-        # execute object
-        self.main()
 
 
     def set_option(self):
         "Set options"
 
-        # call the super set_option method
         Application.set_option(self)
 
 
@@ -36,7 +25,7 @@ class KernelUpdate(Application):
         "Update Kernel source"
 
         # get nodetype
-        nodetype = getnodetype()[0]
+        nodetype = getnodetype()
 
         # for kernelupdate only works for meshnodes
         if nodetype == "meshnode":
@@ -74,8 +63,7 @@ class KernelUpdate(Application):
         call(cmd, shell = False)
 
         # switch repository to trunk
-        cmd = ("svn", "switch", "%s/boot/linux/trunk" %(svninfos["svnrepos"]),
-               dst)
+        cmd = ("svn", "switch", "%s/boot/linux/trunk" %(svninfos["svnrepos"]), dst)
         info(cmd)
         call(cmd, shell = False)
 
@@ -103,25 +91,20 @@ class KernelUpdate(Application):
             call(cmd, shell = True)
 
         # clean up
-        info("Cleaning up %s ..." %(tmp))
+        info("Cleaning up %s..." %(tmp))
         cmd = "rm -rf %s" %(tmp)
         execute(cmd, shell = True)
-        info("done.")
+        info("Done.")
 
 
     def main(self):
         "Main method of the kernelupdate object"
 
-        # parse options
         self.parse_option()
-
-        # set options
         self.set_option()
-
-        # call the corresponding method
         self.kernelupdate()
 
 
 
 if __name__ == "__main__":
-    KernelUpdate()
+    KernelUpdate().main()
