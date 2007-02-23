@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# python imports
+from logging import info, debug, warn, error
+
 # umic-mesh imports
 from um_application import Application
 from um_config import *
@@ -17,12 +20,10 @@ class Init(Application):
         Application.__init__(self)
 
 
-
     def set_option(self):
         "Set options"
 
         Application.set_option(self)
-
 
 
     def init(self):
@@ -30,8 +31,8 @@ class Init(Application):
         nodetype  = getnodetype()
         nodeinfo  = getnodeinfo()
 
-        info("Hostname:  %s" % hostname)
-        info("Nodetype:  %s" % nodetype)
+        info("Hostname:  %s" %(hostname))
+        info("Nodetype:  %s" %(nodetype))
 
         for line in nodeinfo['startup']:
             try:
@@ -52,9 +53,6 @@ class Init(Application):
 
 
 
-# must be in default namespace because of config file...
-
 if __name__ == "__main__":
     Init().main()
-
 
