@@ -3,6 +3,7 @@
 
 # python imports
 import os
+from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_application import Application
@@ -135,3 +136,4 @@ class OlsrUpdate(Application):
 
 if __name__ == "__main__":
     OlsrUpdate().main()
+
