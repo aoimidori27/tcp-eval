@@ -233,15 +233,15 @@ class Madwifi(Application):
         "Set the antenna of desired device"
 
         try:
-            info("Setting tx/rx-antenna to %d" % self.antenna)
+            info("Setting tx/rx-antenna to %d" % self.options.antenna)
             call("echo 0 > /proc/sys/dev/%s/diversity" % (self.options.hwdevice),
                  shell = True)
-            call("echo %d > /proc/sys/dev/%s/txantenna" % (self.antenna, self.options.hwdevice),
+            call("echo %d > /proc/sys/dev/%s/txantenna" % (self.options.antenna, self.options.hwdevice),
                  shell = True)
-            call("echo %d > /proc/sys/dev/%s/rxantenna" % (self.antenna, self.options.hwdevice),
+            call("echo %d > /proc/sys/dev/%s/rxantenna" % (self.options.antenna, self.options.hwdevice),
                  shell = True)
         except CommandFailed:
-            error("Setting tx/rx-antenna to %d was unsuccessful" % self.antenna)
+            error("Setting tx/rx-antenna to %d was unsuccessful" % self.options.antenna)
    
  
     def deviceexists(self):
