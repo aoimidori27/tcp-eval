@@ -139,7 +139,7 @@ class Madwifi(Application):
     def killdev(self):
         "Destroying VAP"
 
-        if self.options.deviceexists():
+        if self.deviceexists():
             info("Destroying VAP %s" %(self.options.device))
             try:
                 call(["wlanconfig", self.options.device, "destroy"], \
@@ -153,7 +153,7 @@ class Madwifi(Application):
     def ifup(self):
         "Bring the network interface up"
 
-        if self.options.deviceexists():
+        if self.deviceexists():
             info("Bring VAP %s up" %(self.options.device))
             try:
                 call(["ip", "link", "set", self.options.device, "up"], \
@@ -171,7 +171,7 @@ class Madwifi(Application):
     def ifdown(self):
         "Take a network interface down"
 
-        if self.options.deviceexists():
+        if self.deviceexists():
             info("Take VAP %s down" %(self.options.device))
             try:
                 call(["ip", "link", "set", self.options.device, "down"], 
@@ -187,7 +187,7 @@ class Madwifi(Application):
     def setessid(self):
         "Set the ESSID of desired device"
 
-        if self.options.deviceexists():
+        if self.deviceexists():
             info("Setting essid on %s to %s" %(self.options.device, self.options.essid))
             try:
                 call(["iwconfig", self.options.device, "essid", self.options.essid],
@@ -202,7 +202,7 @@ class Madwifi(Application):
     def setchannel(self):
         "Set the WLAN channel of desired device"
 
-        if self.options.deviceexists():
+        if self.deviceexists():
             info("Setting channel on %s to %d" %(self.options.device, self.options.channel))
             try:
                 call(["iwconfig", self.options.device, "channel", self.options.channel.__str__()],
@@ -217,7 +217,7 @@ class Madwifi(Application):
     def settxpower(self):
         "Set the TX-Power of desired device"
 
-        if self.options.deviceexists():
+        if self.deviceexists():
             info("Setting txpower on %s to %s dBm" %(self.options.device, self.options.txpower))
             try:
                 call(["iwconfig", self.options.device, "txpower",
