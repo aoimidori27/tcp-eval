@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import subprocess, os, os.path, sys, re
+import subprocess, os, sys, re
 from logging import info, debug, warn, error
 from socket import gethostname
 
