@@ -71,46 +71,46 @@ class Measurement(Application):
 
         command = """
 
-### Begin BASH code
-function sigchld() { 
-    if ! ps $BGPID 2>&1 >/dev/null; then
-        wait $BGPID; EXITSTATUS=$?; 
-    fi;
-};
+        ### Begin BASH code
+        function sigchld() { 
+        if ! ps $BGPID 2>&1 >/dev/null; then
+                wait $BGPID; EXITSTATUS=$?; 
+            fi;
+        };
 
-set +H
-trap sigchld SIGCHLD;
-(%s) &
-BGPID=$!;
+        set +H
+        trap sigchld SIGCHLD;
+        (%s) &
+        BGPID=$!;
 
-for ((t=0;t<%d;t+=1)) do
-    if ! ps $BGPID >/dev/null 2>&1; then
-        exit $EXITSTATUS;
-    fi;
-    sleep 0.1;
-done;
+        for ((t=0;t<%d;t+=1)) do
+            if ! ps $BGPID >/dev/null 2>&1; then
+                exit $EXITSTATUS;
+            fi;
+            sleep 0.1;
+        done;
 
-echo -e "\\nWARNING: Test still running after timeout. Sending SIGINT...";
-kill -s SIGINT %%-
-sleep 2;
-echo jobs3: $(jobs -r);
+        echo -e "\\nWARNING: Test still running after timeout. Sending SIGINT...";
+        kill -s SIGINT %%-
+        sleep 2;
+        echo jobs3: $(jobs -r);
 
-if [ -n "$(jobs -r)" ]; then
-    echo -e "\\nWARNING: Test still running after SIGINT. Sending SIGTERM...";
-    kill -s SIGTERM %%-;
-    sleep 1;
-    echo jobs4: $(jobs -r);
-    
-    if [ -n "$(jobs -r)" ]; then
-        echo -e "\\nWARNING: Test still running after SIGTERM. Sending SIGKILL...";
-        kill -KILL %%-;
-        echo JOBS: $(jobs);
-    fi
-fi
-exit 254
-#### Begin BASH code
+        if [ -n "$(jobs -r)" ]; then
+            echo -e "\\nWARNING: Test still running after SIGINT. Sending SIGTERM...";
+            kill -s SIGTERM %%-;
+            sleep 1;
+            echo jobs4: $(jobs -r);
 
-                  """ %(command, timeout * 10)
+            if [ -n "$(jobs -r)" ]; then
+                echo -e "\\nWARNING: Test still running after SIGTERM. Sending SIGKILL...";
+                kill -KILL %%-;
+                echo JOBS: $(jobs);
+            fi
+        fi
+        exit 254
+        #### Begin BASH code
+
+        """ %(command, timeout * 10)
 
   
         ssh = ["ssh", "-o", "PasswordAuthentication=no", "-o",
