@@ -92,17 +92,22 @@ class Subversion(Application):
                 info("Recreate symbolic links")
                 
                 for src, dst in scriptmappings.iteritems():
-
-
-                for d in imageinfo['scriptfolders']:
-                    src = "%s%s%s" %(imagepath, svnprefix, d)
-                    info(src);
-                    d = "%s%s" %(svnprefix, d)
-                    for f in dircache.listdir(src):
-                        if re.match("um_", f):
-                            cmd = "ln -vsf %s/%s %s/%s" %(d, f, dst, f)
-                            # use os.system() since call() is too slow
-                            os.system(cmd)
+                    nsrc = "%s%s%s" % (imagepath, svnprefix, dst)
+                    info(nsrc)
+                    ndst = "%s%s" %(svnprefix, dst)
+                    info(ndst)
+                    for f in dircache.listdir(nsrc):                        
+                        cmd = "ln -vsf %s/%s %s/%s" %(src, f, ndst, f)
+                    
+#                for d in imageinfo['scriptfolders']:
+#                    src = "%s%s%s" %(imagepath, svnprefix, d)
+#                    info(src);
+#                    d = "%s%s" %(svnprefix, d)
+#                    for f in dircache.listdir(src):
+#                        if re.match("um_", f):
+#                            cmd = "ln -vsf %s/%s %s/%s" %(d, f, dst, f)
+#                            # use os.system() since call() is too slow
+#                            os.system(cmd)
 
 
     def status(self):
