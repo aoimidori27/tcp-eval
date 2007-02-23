@@ -163,12 +163,12 @@ exit 254
         if self.options.wipe_out:
             for file in os.listdir("."):
                 if os.path.isdir(file):
-                    warning("Output directory contains a directory (%s)" % file)
+                    warn("Output directory contains a directory (%s)" % file)
                 else:
                     try:
                         os.remove(file)
                     except Exception, t:
-                        warning("Failed remove %s: %s" % (file, t))
+                        warn("Failed remove %s: %s" % (file, t))
 
         # TODO: Add options to run iterations/runs in parallel
         for iteration in range(1, self.options.iterations+1):
@@ -193,7 +193,7 @@ exit 254
                                      % (run, iteration, source, target,
                                         datetime.now() - start_ts_run))
                             else:
-                                warning("FAILED: test #%i (%i): node%i -> node%i (%s)"
+                                warn("FAILED: test #%i (%i): node%i -> node%i (%s)"
                                         % (run, iteration, source, target,
                                            datetime.now() - start_ts_run))
                             
