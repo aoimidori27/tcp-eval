@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# python imports
-import os, subprocess, sys, re
-from logging import info, debug, warn, error
-from socket import gethostname
-
 # umic-mesh imports
 from um_application import Application
 from um_config import *
@@ -19,22 +14,13 @@ class Init(Application):
     def __init__(self):
         "Constructor of the object"
 
-        # call the super constructor
         Application.__init__(self)
 
-        # initialization of the option parser
-        self.parser.set_defaults(verbose = True,
-                                 syslog = False,
-                                 debug = False)
-
-        # execute object
-        self.main()
 
 
     def set_option(self):
         "Set options"
 
-        # call the super set_option method
         Application.set_option(self)
 
 
@@ -61,13 +47,8 @@ class Init(Application):
     def main(self):
         "Main method of the Init object"
 
-        # parse options
         self.parse_option()
-
-        # set options
         self.set_option()
-
-        # call the corresponding method
         self.init()
 
 
@@ -105,8 +86,6 @@ def execpy(script, arguments = []):
     # override sys.exit()
     sys.exit = raiseException
 
-    rc = 0
-
     try:
         info ("Now running %s " % script)
         execfile(script, globals())
@@ -124,27 +103,7 @@ def execpy(script, arguments = []):
 
     return rc
 
-def startdaemon(name):
-    if daemoninfos.has_key(name):
-        daemoninfo = daemoninfos[name]
-        # build arguments
-        args = []
-        args.append(daemoninfo["path"])
-        args.append("start")
-        args.extend(daemoninfo["args"])
-        return execpy('/usr/local/bin/mm_daemon.py',
-                      args)
-
-def stopdaemon(name):
-    if daemoninfos.has_key(name):
-        daemoninfo = daemoninfos[name]
-        # build arguments
-        args = []
-        args.append(daemoninfo["path"])
-        args.append("stop")
-        return execpy('/usr/local/bin/mm_daemon.py',
-                      args)
 
 
 if __name__ == "__main__":
-    Init()
+    Init().main()
