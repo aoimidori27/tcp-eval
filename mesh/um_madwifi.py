@@ -100,6 +100,7 @@ class Madwifi(Application):
                      shell = False)
             except CommandFailed:
                 error("Loading madwifi-ng driver was unsuccessful")
+                sys.exit(-1)
         else:
             warn("Madwifi-ng is already loaded")
 
@@ -119,6 +120,7 @@ class Madwifi(Application):
                                       shell = True)
             if retcode < 0:
                 error("Unloading madwifi-ng driver was unsuccessful")
+                sys.exit(-1)
         else:
             warn("Madwifi-ng is not loaded")
 
@@ -134,6 +136,7 @@ class Madwifi(Application):
             stderr = execute(cmd, shell = False)[1]
         except CommandFailed:
             error("Creating %s was unsuccessful" % self.options.device)
+            sys.exit(-1)
 
 
     def killdev(self):
@@ -146,6 +149,7 @@ class Madwifi(Application):
                      shell = False)
             except CommandFailed:
                 error("Destroying VAP %s was unsuccessful" %(self.options.device))
+                sys.exit(-1)
         else:
             warn("VAP %s does not exist" %(self.options.device))
 
@@ -164,6 +168,7 @@ class Madwifi(Application):
                      shell = False)
             except CommandFailed:
                 error("Bring VAP %s up was unsuccessful" %(self.options.device))
+                sys.exit(-1)
         else:
             warn("VAP %s does not exist" %(self.options.device))
 
@@ -180,6 +185,7 @@ class Madwifi(Application):
                      shell = False)
             except CommandFailed:
                 error("Take VAP %s down was unsuccessful" %(self.options.device))
+                sys.exit(-1)
         else:
             warn("VAP %s does not exist" %(self.options.device))
         
@@ -195,6 +201,7 @@ class Madwifi(Application):
             except CommandFailed:
                 error("Setting essid on %s to %s was unsuccessful" \
                       %(self.options.device, self.options.essid))
+                sys.exit(-1)
         else:
             warn("VAP %s does not exist" %(self.options.device))
     
@@ -210,6 +217,7 @@ class Madwifi(Application):
             except CommandFailed:
                 error("Setting channel on %s to %d was unsuccessful" \
                       %(self.options.device, self.options.channel))
+                sys.exit(-1)
         else:
             warn("VAP %s does not exist" %(self.options.device))
         
@@ -225,6 +233,7 @@ class Madwifi(Application):
             except CommandFailed:
                 error("Setting txpower on %s to %s dBm was unsuccessful"
                       %(self.options.device, self.options.txpower))
+                sys.exit(-1)
         else:
             warn("VAP %s does not exist" %(self.options.device))
 
@@ -242,6 +251,7 @@ class Madwifi(Application):
                  shell = True)
         except CommandFailed:
             error("Setting tx/rx-antenna to %d was unsuccessful" % self.options.antenna)
+            sys.exit(-1)
    
  
     def deviceexists(self):
