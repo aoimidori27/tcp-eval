@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import dircache, copy
+import dircache, copy, sets
 
 # umic-mesh imports
 from um_application import Application
