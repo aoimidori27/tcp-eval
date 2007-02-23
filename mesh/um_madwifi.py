@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# python imports
+import subprocess, re
+from logging import info, debug, warn, error
+
 # umic-mesh imports
 from um_application import Application
 from um_config import *
