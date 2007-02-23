@@ -2,61 +2,49 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os, subprocess, dircache, sre, copy
-from logging import info, debug, warn, error
+import dircache, copy
 
 # umic-mesh imports
 from um_application import Application
-from um_util import *
+from um_config import *
+from um_functions import *
 
 
 class Subversion(Application):
-    "Class to manage Subvserions repositories within those images"
+    "Class to manage Subvserions repositories within the images"
 
 
     def __init__(self):
         "Constructor of the object"
 
-        # call the super constructor
         Application.__init__(self);
-
-        # object variables (set the defaults for the option parser)
-        self.updatelinks = True
 
         # initialization of the option parser
         usage = "usage: %prog [options] COMMAND \n" \
-                "where  COMMAND := { status | update }\n"
+                "where  COMMAND := { status | update }"
         self.parser.set_usage(usage)
-
-        self.parser.set_defaults(syslog = False,
-                                 verbose = True,
-                                 updatelinks = self.updatelinks)
-
-        self.parser.add_option("-n", "--nolinks",
+        self.parser.set_defaults(updatelinks = True)
+        
+        self.parser.add_option("-l", "--links",
                                action = "store_false", dest = "updatelinks",
-                               help = "don't update symlinks in /usr/local/sbin")
-
-        # execute object
-        self.main()
+                               help = "update symlinks in /usr/local/[s]bin [default: %default]")
 
 
     def set_option(self):
         "Set options"
 
-        # call the super set_option method
         Application.set_option(self);
 
         # correct numbers of arguments?
         if len(self.args) != 1:
             self.parser.error("incorrect number of arguments")
 
-        # get options
-        self.updatelinks = self.options.updatelinks
+        # set arguments
         self.action = self.args[0]
 
         # does the command exists?
         if not self.action in ('update', 'status'):
-            self.parser.error('unkown COMMAND %s' %(args[0]))
+            self.parser.error('unkown COMMAND %s' %(self.action))
 
 
     def update(self):
@@ -79,28 +67,39 @@ class Subversion(Application):
                 else:
                     cmd = ('svn', 'update', dst)
                 info(cmd)
-                prog = call(cmd, shell=False)
+                prog = call(cmd, shell = False)
 
             # update links
-            if self.updatelinks:
+            if self.options.updatelinks:
+                scriptmappings = imageinfo['scriptmappings']
+                pattern = "%s/scripts/*" %(svnprefix)
+                
+                # delete all links
+                info("Delete every symbolic link whose contents %s" %(pattern))
+                
+                # hit every folder only once
+                scriptfolders = sets.Set(scriptmappings.values())
+                
+                for dst in scriptfolders:
+                    dst = "%s/%s" %(imagepath, dst)               
+                    cmd = "rm -v `find %s -lname '%s/scripts/*'`" %(dst, svnprefix)
+                    try:
+                        call(cmd,shell=True)
+                    except CommandFailed:
+                        warn("Removing of links in %s failed" %(dst))
+                
+                # recreate all links
+                info("Recreate symbolic links")
+                
+                for src, dst in scriptmappings.iteritems():
 
-                info("Updating symlinks in /usr/local/sbin")
-                dst = "%s/usr/local/sbin" %(imagepath)
-
-                # just remove every link with um_ in it
-                cmd = "rm -v `find %s -type l -name 'um_*'`" %(dst)
-                try:
-                    call(cmd,shell=True)
-                except CommandFailed:
-                    warn("Removing of links in %s failed" %(dst))
-                    # recreate those links
 
                 for d in imageinfo['scriptfolders']:
                     src = "%s%s%s" %(imagepath, svnprefix, d)
                     info(src);
-                    d = "%s%s" %(svnprefix,d)
+                    d = "%s%s" %(svnprefix, d)
                     for f in dircache.listdir(src):
-                        if sre.match("um_", f):
+                        if re.match("um_", f):
                             cmd = "ln -vsf %s/%s %s/%s" %(d, f, dst, f)
                             # use os.system() since call() is too slow
                             os.system(cmd)
@@ -112,7 +111,7 @@ class Subversion(Application):
         for image,imageinfo in imageinfos.iteritems():
             imagepath = "%s/%s" %(imageprefix, image)
 
-            for src,dst in imageinfo['svnmappings'].iteritems():
+            for src, dst in imageinfo['svnmappings'].iteritems():
                 dst = "%s%s%s" %(imagepath, svnprefix, dst)
                 cmd = ('svn', 'status', dst)
                 info(cmd)
@@ -122,10 +121,7 @@ class Subversion(Application):
     def main(self):
         "Main method of subversion object"
 
-        # parse options
         self.parse_option()
-
-        # set options
         self.set_option()
 
         # call the corresponding method
@@ -134,4 +130,5 @@ class Subversion(Application):
 
 
 if __name__ == '__main__':
-    Subversion()
+    Subversion().main()
+
