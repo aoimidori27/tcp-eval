@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+
 #
 # authprogs, Copyright 2003, Brian Hatch.
 #
