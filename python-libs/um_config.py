@@ -49,9 +49,9 @@ nodeinfos = dict(
         hostnameprefix = 'mrouter',
         imagetype      = 'meshnode',
         imageversion   = 'um_edgy',
-        wlandevices    = {'ath0' : 'config0'},
+        wlandevices    = {'ath0' : 'config0', 'ath1' : 'config1' },
         startup        = ['execpy(["um_madwifi", "--debug", "--dev=ath0", "start"])',
-                          'call(["/etc/init.d/snmpd","start"],shell=False)'] 
+                          'call(["/etc/init.d/snmpd", "start"], shell=False)'] 
     )
 )
 

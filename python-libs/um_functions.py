@@ -47,6 +47,65 @@ def call(cmd, shell, raiseError=True):
         raise CommandFailed(cmd, rc)
 
 
+def execpy(arguments = []):
+    "Function to execute a python script with arguments"
+
+    class SystemExitException(Exception):
+        "Private exception for execpy"
+
+        def __init__(self, status):
+            self.status = status
+
+    def raiseException(status):
+        "Just to raise the exception with status"
+
+        raise SystemExitException(status)
+
+    global __name__;
+
+    rc = 0
+
+    # save argument list
+    save_argv = sys.argv
+
+    # save function pointer for sys.exit()
+    save_exit = sys.exit
+
+    # save __name__
+    save_name = __name__;
+
+    # flush argument list
+    sys.argv = []
+
+    # add argument list
+    sys.argv.append(arguments)
+    
+    # override sys.exit()
+    sys.exit = raiseException
+
+    # override __name__
+    __name__ = "__main__"
+
+    try:
+        info ("Now running %s " % script)
+        execfile(script, globals())
+        error ("One should not get here.")
+    except SystemExitException, inst:
+        info ("Script %s exited with sys.exit(%d)"
+              % (script, inst.status))
+        rc = inst.status
+
+    if rc != 0:
+        warn("Returncode: %d." % rc)
+
+    # restore environment
+    sys.exit = save_exit
+    sys.argv = save_argv
+    __name__ = save_name
+
+    return rc
+
+
 def requireroot():
     "Check if user is root"
 
@@ -119,61 +178,3 @@ def getnodenr():
         if re.match(nodeinfo['hostnameprefix'], hostname):
             return re.sub(nodeinfo['hostnameprefix'],"",hostname)
 
-
-def execpy(arguments = []):
-    "Function to execute a python script with arguments"
-
-    class SystemExitException(Exception):
-        "Private exception for execpy"
-
-        def __init__(self, status):
-            self.status = status
-
-    def raiseException(status):
-        "Just to raise the exception with status"
-
-        raise SystemExitException(status)
-
-    global __name__;
-
-    rc = 0
-
-    # save argument list
-    save_argv = sys.argv
-
-    # save function pointer for sys.exit()
-    save_exit = sys.exit
-
-    # save __name__
-    save_name = __name__;
-
-    # flush argument list
-    sys.argv = []
-
-    # add argument list
-    sys.argv.append(arguments)
-    
-    # override sys.exit()
-    sys.exit = raiseException
-
-    # override __name__
-    __name__ = "__main__"
-
-    try:
-        info ("Now running %s " % script)
-        execfile(script, globals())
-        error ("One should not get here.")
-    except SystemExitException, inst:
-        info ("Script %s exited with sys.exit(%d)"
-              % (script, inst.status))
-        rc = inst.status
-
-    if rc != 0:
-        warn("Returncode: %d." % rc)
-
-    # restore environment
-    sys.exit = save_exit
-    sys.argv = save_argv
-    __name__ = save_name
-
-    return rc
