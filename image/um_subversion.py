@@ -99,8 +99,10 @@ class Subversion(Application):
                         if f.startswith("."):
                             continue
                         # cut off .sh and .py extensions
-                        fn=f.replace(".py","")
-                        fn=f.replace(".sh","")                        
+                        if f.endswith(".py"):
+                            fn=f.replace(".py","")
+                        else:
+                            fn=f.replace(".sh","")                        
                         cmd = "ln -vsf %s%s/%s %s/%s" %(svnprefix,src, f, ndst, fn)
                         # use os.system because call() is too slow
                         os.system(cmd)
