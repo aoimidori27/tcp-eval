@@ -4,6 +4,7 @@
 # global informations
 svnrepos    = 'svn://mesh.umic.rwth-aachen.de/umic-mesh'
 imageprefix = '/opt/umic-mesh/images'
+bootprefix  = '/opt/umic-mesh/boot'
 svnprefix   = '/opt/checkout'
 
 # informations about the kernel
@@ -35,79 +36,72 @@ nodeinfos = dict(
         hostnameprefix = 'vmeshhost',
         imagetype      = 'vmeshhost',
         imageversion   = 'um_edgy',
-        wlandevs       = {},
         startup        = [],
-        daemons        = []
     ),
     vmeshrouter = dict(
         hostnameprefix = 'vmrouter',
         imagetype      = 'vmeshnode',
         imageversion   = 'um_edgy',
-        wlandevs       = {},
+        xenconfig      = 'config0',
         startup        = [],
-        daemons        = []
     ),
     meshrouter = dict(
         hostnameprefix = 'mrouter',
         imagetype      = 'meshnode',
         imageversion   = 'um_edgy',
-        wlandevs       = {'ath0' : 'config0'},
-        startup        = ['execpy("/usr/local/sbin/um_madwifi",["--debug","autocreate"])',
-                          'call("/etc/init.d/snmpd start",shell=True)'], 
-        daemons        = []
+        wlandevices    = {'ath0' : 'config0'},
+        startup        = ['execpy("um_madwifi", ["--debug, --dev, ath0, start"])',
+                          'call("/etc/init.d/snmpd start", shell=True)'], 
     )
 )
 
 # informations about the different images
 imageinfos = dict(
     vmeshhost = dict(
-        mounts = [],
         svnmappings = { '/config/vmeshhost/trunk' : '/config',
                         '/linux/xen/trunk' : '/linux/default',
                         '/tools/nuttcp/trunk' : '/tools/nuttcp',
-                        '/scripts/vmesh' : '/scripts/vmesh',
+                        '/scripts/python-libs' : '/scripts/python-libs',
                         '/scripts/image' : '/scripts/image',
+                        '/scripts/vmesh' : '/scripts/vmesh',
                         '/scripts/util' : '/scripts/util',
-                        '/scripts/python-libs' : '/scripts/python-libs' },
-        # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ '/scripts/vmesh', '/scripts/util', '/scripts/image' ]
+                        '/scripts/measurement' : '/scripts/measurement' },
+        scriptmappings = { '/scripts/image' : '/usr/local/sbin',
+                           '/scripts/vmesh' : '/usr/local/sbin',
+                           '/scripts/image' : '/usr/local/sbin',
+                           '/scripts/measurement' : '/usr/local/bin'  }
     ),
     vmeshnode = dict(
-        mounts = [],
         svnmappings = { '/config/vmeshnode/trunk' : '/config',
                         '/linux/xen/trunk' : '/linux/default',
                         '/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
                         '/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
-                        '/scripts/init' : '/scripts/init',
-                        '/scripts/vmesh' : '/scripts/vmesh',
-                        '/scripts/routing' : '/scripts/routing',
-                        '/scripts/util' : '/scripts/util',
+                        '/tools/nuttcp/branches/um-version' : '/tools/nuttcp',
                         '/scripts/python-libs' : '/scripts/python-libs',
-                        '/tools/nuttcp/trunk' : '/tools/nuttcp' },
-        # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ '/scripts/init', '/scripts/vmesh', '/scripts/util' ]
+                        '/scripts/vmesh' : '/scripts/vmesh',
+                        '/scripts/util' : '/scripts/util' },
+        scriptmappings = { '/scripts/vmesh' : '/usr/local/sbin',
+                           '/scripts/util' : '/usr/local/bin' }
     ),
     meshnode = dict(
-        mounts = [],
         svnmappings = { '/config/vmeshnode/trunk' : '/config',
-                        '/drivers/madwifi-ng/branches/um-version' : '/drivers/madwifi-ng',
                         '/linux/vanilla/trunk' : '/linux/default',
                         '/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
                         '/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
-                        '/scripts/init' : '/scripts/init',
-                        '/scripts/mesh' : '/scripts/mesh',
-                        '/scripts/routing' : '/scripts/routing',
+                        '/drivers/madwifi-ng/branches/um-version' : '/drivers/madwifi-ng',
+                        '/tools/nuttcp/branches/um-version' : '/tools/nuttcp',
+                        '/tools/net-snmp/branches/um-version' : '/tools/net-snmp',
                         '/scripts/python-libs' : '/scripts/python-libs',
+                        '/scripts/mesh' : '/scripts/mesh',
                         '/scripts/util' : '/scripts/util',
-                        '/tools/nuttcp/trunk' : '/tools/nuttcp',
-                        '/tools/net-snmp/branches/um-version' : '/tools/net-snmp' },
-        # folders which content is mapped to /usr/local/bin
-        scriptfolders = [ '/scripts/init', '/scripts/mesh', '/scripts/util' ]
+                        '/scripts/measurement' : '/scripts/measurement' },
+        scriptmappings = { '/scripts/mesh' : '/usr/local/sbin',
+                           '/scripts/util' : '/usr/local/bin'  }    
     )
 )
 
-# informations about the wlan devices
-wlaninfos = dict(
+# wlan device configurations
+wlanconfig = dict(
     config0 = dict(
         hwdevice = 'wifi0',
         essid    = 'umic-mesh-ah',
@@ -125,5 +119,14 @@ wlaninfos = dict(
         address  = '169.254.10.@NODENR/16',
         wlanmode = 'sta',
         txpower  = 0
+    )
+)
+
+# xen configurations
+xenconfig = dict(
+    config0 = dict(
+        ramdisk = '%s/initrd/vmeshnode-initrd' %(bootprefix),
+        kernel  = '%s/linux/default/vmeshnode-vmlinuz' %(bootprefix),
+        memory  = 40
     )
 )

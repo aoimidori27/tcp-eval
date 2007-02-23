@@ -19,6 +19,8 @@ class Application(object):
         # initialization of the option parser
         usage = "usage: %prog [options]"
         self.parser.set_usage(usage)
+        self.parser.set_defaults(verbose = True, syslog = False, debug = False)
+        
         self.parser.add_option("-s", "--syslog",
                                action = "store_true", dest = "syslog",
                                help = "log to syslog [default: %default]")

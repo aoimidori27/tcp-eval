@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import subprocess, os, os.path, sys, sre
+import subprocess, os, os.path, sys, re
 from logging import info, debug, warn, error
 from socket import gethostname
 
@@ -50,7 +50,7 @@ def call(cmd, shell, raiseError=True):
 def requireroot():
     "Check if user is root"
 
-    if not os.getuid()==0:
+    if not os.getuid() == 0:
         error("You must be root. Operation not permitted.")
         sys.exit(1)
 
@@ -116,5 +116,5 @@ def getnodenr():
     hostname = gethostname()
 
     for nodeinfo in nodeinfos.itervalues():
-        if sre.match(nodeinfo['hostnameprefix'], hostname):
-            return sre.sub(nodeinfo['hostnameprefix'],"",hostname)
+        if re.match(nodeinfo['hostnameprefix'], hostname):
+            return re.sub(nodeinfo['hostnameprefix'],"",hostname)
