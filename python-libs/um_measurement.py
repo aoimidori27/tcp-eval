@@ -4,6 +4,7 @@
 # python imports
 import sys, os, os.path, subprocess, re, time, signal
 from datetime import timedelta, datetime
+from logging import info, debug, warn, error
  
 # umic-mesh imports
 from um_application import Application
