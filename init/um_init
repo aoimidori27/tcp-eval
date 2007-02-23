@@ -24,15 +24,14 @@ class Init(Application):
         Application.set_option(self)
 
 
+
     def init(self):
         hostname  = gethostname()
         nodetype  = getnodetype()
         nodeinfo  = getnodeinfo()
-        imagepath = getimagepath()
 
         info("Hostname:  %s" % hostname)
         info("Nodetype:  %s" % nodetype)
-        info("Imagepath: %s" % imagepath)
 
         for line in nodeinfo['startup']:
             try:
@@ -54,56 +53,8 @@ class Init(Application):
 
 
 # must be in default namespace because of config file...
-class SystemExitException(Exception):
-    "Private exception for execpy"
-
-    def __init__(self, status):
-        self.status = status
-
-def raiseException(status):
-    "Just to raise the exception with status"
-
-    raise SystemExitException(status)
-
-
-def execpy(script, arguments = []):
-    "Function to execute a python script with arguments"
-
-    # save argument list
-    save_argv = sys.argv
-
-    # save function pointer for sys.exit()
-    save_exit = sys.exit
-
-    # flush argument list
-    sys.argv = []
-
-    # build new argv[0] out of script name
-    sys.argv.append(script)
-    # add argument list
-    sys.argv.extend(arguments)
-
-    # override sys.exit()
-    sys.exit = raiseException
-
-    try:
-        info ("Now running %s " % script)
-        execfile(script, globals())
-    except SystemExitException, inst:
-        info ("Script %s exited with sys.exit(%d)"
-              % (script, inst.status))
-        rc = inst.status
-
-    if rc != 0:
-        warn("Returncode: %d." % rc)
-
-    # restore environment
-    sys.exit = save_exit
-    sys.argv = save_argv
-
-    return rc
-
-
 
 if __name__ == "__main__":
     Init().main()
+
+

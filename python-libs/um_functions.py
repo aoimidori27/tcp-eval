@@ -26,7 +26,7 @@ class CommandFailed(Exception):
 
 
 def execute(cmd, shell, raiseError=True):
-    "Excecute a shell command"
+    "Excecute a shell command, "
 
     debug("Executing: %s" % cmd.__str__())
     prog = subprocess.Popen(cmd, shell = shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -39,7 +39,7 @@ def execute(cmd, shell, raiseError=True):
 
 
 def call(cmd, shell, raiseError=True):
-    "Call a shell command"
+    "Call a shell command, wait for command to complete."
 
     debug("Executing: %s" % cmd.__str__())
     rc = subprocess.call(cmd, shell = shell)
@@ -118,3 +118,62 @@ def getnodenr():
     for nodeinfo in nodeinfos.itervalues():
         if re.match(nodeinfo['hostnameprefix'], hostname):
             return re.sub(nodeinfo['hostnameprefix'],"",hostname)
+
+
+def execpy(arguments = []):
+    "Function to execute a python script with arguments"
+
+    class SystemExitException(Exception):
+        "Private exception for execpy"
+
+        def __init__(self, status):
+            self.status = status
+
+    def raiseException(status):
+        "Just to raise the exception with status"
+
+        raise SystemExitException(status)
+
+    global __name__;
+
+    rc = 0
+
+    # save argument list
+    save_argv = sys.argv
+
+    # save function pointer for sys.exit()
+    save_exit = sys.exit
+
+    # save __name__
+    save_name = __name__;
+
+    # flush argument list
+    sys.argv = []
+
+    # add argument list
+    sys.argv.append(arguments)
+    
+    # override sys.exit()
+    sys.exit = raiseException
+
+    # override __name__
+    __name__ = "__main__"
+
+    try:
+        info ("Now running %s " % script)
+        execfile(script, globals())
+        error ("One should not get here.")
+    except SystemExitException, inst:
+        info ("Script %s exited with sys.exit(%d)"
+              % (script, inst.status))
+        rc = inst.status
+
+    if rc != 0:
+        warn("Returncode: %d." % rc)
+
+    # restore environment
+    sys.exit = save_exit
+    sys.argv = save_argv
+    __name__ = save_name
+
+    return rc
