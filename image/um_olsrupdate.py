@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 
+# python imports
+import os
+
 # umic-mesh imports
 from um_application import Application
-from um_util import *
+from um_functions import *
+from um_config import *
 
 
 class OlsrUpdate(Application):
