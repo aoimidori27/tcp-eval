@@ -77,11 +77,8 @@ def execpy(arguments = []):
     # save __name__
     save_name = __name__;
 
-    # flush argument list
-    sys.argv = []
-
-    # add argument list
-    sys.argv.append(arguments)
+    # override argument list
+    sys.argv = arguments
     
     # override sys.exit()
     sys.exit = raiseException
