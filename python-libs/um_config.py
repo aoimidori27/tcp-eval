@@ -96,7 +96,8 @@ imageinfos = dict(
                         '/scripts/util' : '/scripts/util',
                         '/scripts/measurement' : '/scripts/measurement' },
         scriptmappings = { '/scripts/mesh' : '/usr/local/sbin',
-                           '/scripts/util' : '/usr/local/bin'  }    
+                           '/scripts/util' : '/usr/local/bin',
+                           '/scripts/init' : '/usr/local/sbin' }    
     )
 )
 
