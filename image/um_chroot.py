@@ -20,7 +20,6 @@ class Chroot(Application):
         # object variables
         self.command = "/bin/bash"
         
-        # helper variables
         if os.environ.has_key('SUDO_USER'):
             default_user = os.environ['SUDO_USER']
         else:
