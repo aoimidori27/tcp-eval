@@ -65,6 +65,9 @@ def execpy(arguments = []):
 
     rc = 0
 
+    # script is first argument
+    script = arguments[0]
+
     # save argument list
     save_argv = sys.argv
 
