@@ -19,8 +19,13 @@ class Madwifi(Application):
         "Constructor of the object"
     
         Application.__init__(self)
+        
+        # object variables
+        self.commands = ('loadmod', 'unloadmod', 'createdev', 'killdev',
+                         'ifup', 'ifdown', 'setessid', 'setchannel', 
+                         'settxpower', 'setantenna', 'start')
+        self.action = ''
     
-        # helper variables
         nodeinfo = getnodeinfo()
         nodenr   = getnodenr().__str__()
         wlandevs = nodeinfo['wlandevices']
@@ -83,9 +88,7 @@ class Madwifi(Application):
         self.action = self.args[0]
 
         # does the command exists?
-        if not self.action in ("loadmod", "unloadmod", "createdev", "killdev",
-                               "ifup", "ifdown", "setessid", "setchannel", 
-                               "settxpower", "setantenna", "start"):
+        if not self.action in self.commands:
             self.parser.error("unknown COMMAND %s" %(self.action))
     
 
