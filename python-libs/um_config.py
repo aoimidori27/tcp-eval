@@ -59,46 +59,46 @@ nodeinfos = dict(
 # informations about the different images
 imageinfos = dict(
     vmeshhost = dict(
-        svnmappings = { '/config/vmeshhost/trunk' : '/config',
-                        '/linux/xen/trunk' : '/linux/default',
-                        '/tools/nuttcp/trunk' : '/tools/nuttcp',
-                        '/scripts/python-libs' : '/scripts/python-libs',
-                        '/scripts/image' : '/scripts/image',
-                        '/scripts/vmesh' : '/scripts/vmesh',
-                        '/scripts/util' : '/scripts/util',
-                        '/scripts/measurement' : '/scripts/measurement' },
-        scriptmappings = { '/scripts/image' : '/usr/local/sbin',
-                           '/scripts/vmesh' : '/usr/local/sbin',
-                           '/scripts/image' : '/usr/local/sbin',
-                           '/scripts/measurement' : '/usr/local/bin'  }
+        svnmappings = { '/config/vmeshhost/trunk' : 'config',
+                        '/linux/xen/trunk' : 'linux/default',
+                        '/tools/nuttcp/trunk' : 'tools/nuttcp',
+                        '/scripts/python-libs' : 'scripts/python-libs',
+                        '/scripts/image' : 'scripts/image',
+                        '/scripts/vmesh' : 'scripts/vmesh',
+                        '/scripts/util' : 'scripts/util',
+                        '/scripts/measurement' : 'scripts/measurement' },
+        scriptmappings = { 'scripts/image' : '/usr/local/sbin',
+                           'scripts/vmesh' : '/usr/local/sbin',
+                           'scripts/image' : '/usr/local/sbin',
+                           'scripts/measurement' : '/usr/local/bin'  }
     ),
     vmeshnode = dict(
-        svnmappings = { '/config/vmeshnode/trunk' : '/config',
-                        '/linux/xen/trunk' : '/linux/default',
-                        '/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
-                        '/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
-                        '/tools/nuttcp/branches/um-version' : '/tools/nuttcp',
-                        '/scripts/python-libs' : '/scripts/python-libs',
-                        '/scripts/vmesh' : '/scripts/vmesh',
-                        '/scripts/util' : '/scripts/util' },
-        scriptmappings = { '/scripts/vmesh' : '/usr/local/sbin',
-                           '/scripts/util' : '/usr/local/bin' }
+        svnmappings = { '/config/vmeshnode/trunk' : 'config',
+                        '/linux/xen/trunk' : 'linux/default',
+                        '/routing/olsr/branches/um-version-olsr4' : 'routing/olsr4',
+                        '/routing/olsr/branches/um-version-olsr5' : 'routing/olsr5',
+                        '/tools/nuttcp/branches/um-version' : 'tools/nuttcp',
+                        '/scripts/python-libs' : 'scripts/python-libs',
+                        '/scripts/vmesh' : 'scripts/vmesh',
+                        '/scripts/util' : 'scripts/util' },
+        scriptmappings = { 'scripts/vmesh' : '/usr/local/sbin',
+                           'scripts/util' : '/usr/local/bin' }
     ),
     meshnode = dict(
-        svnmappings = { '/config/vmeshnode/trunk' : '/config',
-                        '/linux/vanilla/trunk' : '/linux/default',
-                        '/routing/olsr/branches/um-version-olsr4' : '/routing/olsr4',
-                        '/routing/olsr/branches/um-version-olsr5' : '/routing/olsr5',
-                        '/drivers/madwifi-ng/branches/um-version' : '/drivers/madwifi-ng',
-                        '/tools/nuttcp/branches/um-version' : '/tools/nuttcp',
-                        '/tools/net-snmp/branches/um-version' : '/tools/net-snmp',
-                        '/scripts/python-libs' : '/scripts/python-libs',
-                        '/scripts/mesh' : '/scripts/mesh',
-                        '/scripts/util' : '/scripts/util',
-                        '/scripts/measurement' : '/scripts/measurement' },
-        scriptmappings = { '/scripts/mesh' : '/usr/local/sbin',
-                           '/scripts/util' : '/usr/local/bin',
-                           '/scripts/init' : '/usr/local/sbin' }    
+        svnmappings = { '/config/vmeshnode/trunk' : 'config',
+                        '/linux/vanilla/trunk' : 'linux/default',
+                        '/routing/olsr/branches/um-version-olsr4' : 'routing/olsr4',
+                        '/routing/olsr/branches/um-version-olsr5' : 'routing/olsr5',
+                        '/drivers/madwifi-ng/branches/um-version' : 'drivers/madwifi-ng',
+                        '/tools/nuttcp/branches/um-version' : 'tools/nuttcp',
+                        '/tools/net-snmp/branches/um-version' : 'tools/net-snmp',
+                        '/scripts/python-libs' : 'scripts/python-libs',
+                        '/scripts/mesh' : 'scripts/mesh',
+                        '/scripts/util' : 'scripts/util',
+                        '/scripts/measurement' : 'scripts/measurement' },
+        scriptmappings = { 'scripts/mesh' : '/usr/local/sbin',
+                           'scripts/util' : '/usr/local/bin',
+                           'scripts/init' : '/usr/local/sbin' }    
     )
 )
 
@@ -127,8 +127,8 @@ wlanconfig = dict(
 # xen configurations
 xenconfig = dict(
     config0 = dict(
-        ramdisk = '%s/initrd/vmeshnode-initrd' %(bootprefix),
-        kernel  = '%s/linux/default/vmeshnode-vmlinuz' %(bootprefix),
+        ramdisk = 'initrd/vmeshnode-initrd',
+        kernel  = 'linux/default/vmeshnode-vmlinuz',
         memory  = 40
     )
 )

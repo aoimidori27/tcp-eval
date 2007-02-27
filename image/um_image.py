@@ -74,7 +74,7 @@ class Image(Application):
             info("Update checkout within the image: %s" %(imagepath))
 
             for src, dst in svnmappings.iteritems():
-                dst = "%s%s%s" %(imagepath, svnprefix, dst)
+                dst = "%s%s/%s" %(imagepath, svnprefix, dst)
                 src = "%s%s" %(svnrepos, src)
                 
                 if not os.path.exists(dst):
@@ -110,7 +110,7 @@ class Image(Application):
             
             # recreate all links
             for src, dst in scriptmappings.iteritems():
-                nsrc = "%s%s%s" % (imagepath, svnprefix, src)
+                nsrc = "%s%s/%s" % (imagepath, svnprefix, src)
                 dst = "%s%s" %(imagepath, dst)
                 
                 for file in dircache.listdir(nsrc):
@@ -121,7 +121,7 @@ class Image(Application):
                     # split filename and file extension
                     (file, ext) = os.path.splitext(file)
 
-                    origfile = "%s%s/%s%s" %(svnprefix, src, file, ext)
+                    origfile = "%s/%s/%s%s" %(svnprefix, src, file, ext)
                     linksrc  = "%s/%s" %(dst, file)
 
                     try:
@@ -140,7 +140,7 @@ class Image(Application):
             info("Check the status of the checkout within the images: %s" %(imagepath))
             
             for src, dst in svnmappings.iteritems():
-                dst = "%s%s%s" %(imagepath, svnprefix, dst)
+                dst = "%s%s/%s" %(imagepath, svnprefix, dst)
                 cmd = ('svn', 'status', dst)
                 info("svn status %s" %(dst))
                 call(cmd, shell = False)
@@ -156,9 +156,9 @@ class Image(Application):
             info("Check the symbolic links within the image: %s" %(imagepath))
             
             for src, dst in scriptmappings.iteritems():
-                nsrc = "%s%s%s" % (imagepath, svnprefix, src)
+                nsrc = "%s%s/%s" % (imagepath, svnprefix, src)
                 dst = "%s%s" %(imagepath, dst)
-                
+               
                 for file in dircache.listdir(nsrc):
                     # ignore files which start with a .
                     if file.startswith("."):
@@ -167,7 +167,7 @@ class Image(Application):
                     # split filename and file extension
                     (file, ext) = os.path.splitext(file)
 
-                    origfile = "%s%s/%s%s" %(svnprefix, src, file, ext)
+                    origfile = "%s/%s/%s%s" %(svnprefix, src, file, ext)
                     linksrc  = "%s/%s" %(dst, file)
                     linkdst  = os.path.realpath(linksrc)
                    
