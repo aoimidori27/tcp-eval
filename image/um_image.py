@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os, os.path, dircache
+import os, os.path, sets, dircache
 from logging import info, debug, warn, error
 
 # umic-mesh imports
@@ -64,24 +64,28 @@ class Image(Application):
     def update_checkout(self):
         "Update checkout within the images"
 
-        # allow group mates to write and exec files
+        # allow group to write and exec files
         os.umask(0002)
+        
         for image, imageinfo in imageinfos.iteritems():
             svnmappings = imageinfo['svnmappings']
             imagepath = "%s/%s" %(imageprefix, image)
 
-            # iterate through svn mappings
+            info("Update checkout within the image: %s" %(imagepath))
+
             for src, dst in svnmappings.iteritems():
                 dst = "%s%s%s" %(imagepath, svnprefix, dst)
                 src = "%s%s" %(svnrepos, src)
+                
                 if not os.path.exists(dst):
-                    warn("%s got lost! doing a new checkout" %(dst))
-                    call("mkdir -p %s" % dst, shell = True)
+                    info("svn checkout %s %s" %(src, dst))
+                    call("mkdir -p %s" %(dst), shell = True)
                     cmd = ('svn', 'checkout', src, dst)
                 else:
+                    info("svn update %s" %(dst))
                     cmd = ('svn', 'update', dst)
-                info(cmd)
-                prog = call(cmd, shell = False)
+                
+                call(cmd, shell = False)
 
 
     def update_links(self):
@@ -90,80 +94,87 @@ class Image(Application):
         for image, imageinfo in imageinfos.iteritems():
             scriptmappings = imageinfo['scriptmappings']
             imagepath = "%s/%s" %(imageprefix, image)       
-                
+            pattern = "%s/scripts/*" %(svnprefix)       
+
+            info("Update symbolic links within the image: %s" %(imagepath)) 
+            
             # delete all links
-            info("Delete every symbolic link whose contents %s" %(pattern))
-            
-            # hit every folder only once
-            scriptfolders = sets.Set(scriptmappings.values())
-            
-            for dst in scriptfolders:
+            for dst in sets.Set(scriptmappings.values()):
                 dst = "%s%s" %(imagepath, dst)               
-                cmd = "find %s -lname '%s/scripts/*' -print0 | "\
-                      "xargs -r -0 rm -v" %(dst, svnprefix)
+                cmd = "find %s -lname '%s' -print0 | "\
+                      "xargs -r -0 rm" %(dst, pattern)
                 try:
                     call(cmd, shell = True)
                 except CommandFailed:
                     warn("Removing of links in %s failed" %(dst))
             
             # recreate all links
-            info("Recreate symbolic links")
-            
             for src, dst in scriptmappings.iteritems():
                 nsrc = "%s%s%s" % (imagepath, svnprefix, src)
-                ndst = "%s%s" %(imagepath, dst)
+                dst = "%s%s" %(imagepath, dst)
                 
                 for file in dircache.listdir(nsrc):
                     # ignore files which start with a .
                     if file.startswith("."):
                         continue
-                    # cut off .sh and .py extensions
-                    if file.endswith(".py"):
-                        nfile = file.replace(".py","")
-                    else:
-                        nfile = file.replace(".sh","")                        
-                    
-                    cmd = "ln -vsf %s%s/%s %s/%s" %(svnprefix, src, file, ndst, nfile)
-                    # use os.system because call() is too slow
-                    os.system(cmd)
+
+                    # split filename and file extension
+                    (file, ext) = os.path.splitext(file)
+
+                    origfile = "%s%s/%s%s" %(svnprefix, src, file, ext)
+                    linksrc  = "%s/%s" %(dst, file)
+
+                    try:
+                        os.symlink(origfile, linksrc)
+                    except OSError:
+                        warn("Recreating of the link %s failed" %(origfile))
 
 
     def status_checkout(self):
         "Check the status of the checkout within the images"
 
         for image, imageinfo in imageinfos.iteritems():
+            svnmappings = imageinfo['svnmappings']
             imagepath = "%s/%s" %(imageprefix, image)
 
-            for src, dst in imageinfo['svnmappings'].iteritems():
+            info("Check the status of the checkout within the images: %s" %(imagepath))
+            
+            for src, dst in svnmappings.iteritems():
                 dst = "%s%s%s" %(imagepath, svnprefix, dst)
                 cmd = ('svn', 'status', dst)
-                info(cmd)
-                prog = call(cmd, shell = False)
-
+                info("svn status %s" %(dst))
+                call(cmd, shell = False)
+        
 
     def status_links(self):
-        "Check the status of the symbolic links within the images"
-
+        "Check the symbolic links within the images"
+        
         for image, imageinfo in imageinfos.iteritems():
             scriptmappings = imageinfo['scriptmappings']
             imagepath = "%s/%s" %(imageprefix, image)       
 
+            info("Check the symbolic links within the image: %s" %(imagepath))
+            
             for src, dst in scriptmappings.iteritems():
                 nsrc = "%s%s%s" % (imagepath, svnprefix, src)
-                ndst = "%s%s" %(imagepath, dst)
+                dst = "%s%s" %(imagepath, dst)
                 
                 for file in dircache.listdir(nsrc):
                     # ignore files which start with a .
                     if file.startswith("."):
                         continue
-                    # cut off .sh and .py extensions
-                    if file.endswith(".py"):
-                        nfile = file.replace(".py","")
-                    else:
-                        nfile = file.replace(".sh","")                        
-                    
-                    if not os.path.islink("%s/%s" %(ndst, nfile))
-                        info("No such symbolic link %s/%s" %(ndst, nfile))
+
+                    # split filename and file extension
+                    (file, ext) = os.path.splitext(file)
+
+                    origfile = "%s%s/%s%s" %(svnprefix, src, file, ext)
+                    linksrc  = "%s/%s" %(dst, file)
+                    linkdst  = os.path.realpath(linksrc)
+                   
+                    if not os.path.lexists(linksrc):
+                        warn("Missing symbolic link %s -> %s" %(linksrc, origfile))
+                    elif not origfile == linkdst:
+                        warn("Broken symbolic link %s -> %s" %(linksrc, os.readlink(linksrc)))
                     
 
     def main(self):
@@ -174,8 +185,8 @@ class Image(Application):
 
         # call the corresponding method
         if self.options.checkout:
-            eval("self.%s_checkout()" %(self.action))        
-        if self.options.links && self.action != ''
+            eval("self.%s_checkout()" %(self.action))
+        if self.options.links:
             eval("self.%s_links()" %(self.action)) 
 
 
