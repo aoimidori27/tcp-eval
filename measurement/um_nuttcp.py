@@ -8,6 +8,7 @@ from logging import info, debug, warn, error
 from um_application import Application
 from um_measurement import *
 from um_config import *
+from um_functions import *
 
 class Nuttcp(Measurement):
     "Class for nuttcp measurements"
@@ -53,7 +54,7 @@ class Nuttcp(Measurement):
         if self.options.start_server:
             rc = self.ssh_node(target, "pidof nuttcp", 3, True)
             if (rc == 0):
-                warning("%s already runs nuttcp server albeit --start-server." % (target))
+                warn("%s already runs nuttcp server albeit --start-server." % (target))
 
             rc = self.ssh_node(target, "nuttcp -1 </dev/null 2>&0 1>&0", 3)
             if (rc != 0): 
