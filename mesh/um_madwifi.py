@@ -28,7 +28,7 @@ class Madwifi(Application):
     
         nodeinfo = getnodeinfo()
         nodenr   = getnodenr().__str__()
-        wlandevs = nodeinfo['wlandevices']
+        wlandevs = nodeinfos['wlandevices']
         wlancfg  = wlanconfig[wlandevs[devicename]]
         
         # initialization of the option parser
