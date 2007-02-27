@@ -43,16 +43,17 @@ nodeinfos = dict(
         imagetype      = 'vmeshnode',
         imageversion   = 'um_edgy',
         xenconfig      = 'config0',
+        meshdevices    = {},
         startup        = [],
     ),
     meshrouter = dict(
         hostnameprefix = 'mrouter',
         imagetype      = 'meshnode',
         imageversion   = 'um_edgy',
-        wlandevices    = {'ath0' : 'config0', 'ath1' : 'config1' },
-        startup        = ['execpy(["/usr/local/sbin/um_madwifi", "--debug", "loadmod"])',
-                          'execpy(["/usr/local/sbin/um_madwifi", "--debug", "--dev=ath0", "start"])',
-                          'call(["/etc/init.d/snmpd", "start"], shell=False)'] 
+        meshdevices    = { 'ath0' : 'wlancfg0', 'ath1' : 'wlancfg1' },
+        startup        = [ 'execpy(["/usr/local/sbin/um_madwifi", "--debug", "loadmod"])',
+                           'execpy(["/usr/local/sbin/um_madwifi", "--debug", "--dev=ath0", "start"])',
+                           'call(["/etc/init.d/snmpd", "start"], shell=False)' ] 
     )
 )
 
@@ -102,9 +103,9 @@ imageinfos = dict(
     )
 )
 
-# wlan device configurations
-wlanconfig = dict(
-    config0 = dict(
+# device configurations
+deviceconfig = dict(
+    wlancfg0 = dict(
         hwdevice = 'wifi0',
         essid    = 'umic-mesh-ah',
         channel  = 1,
@@ -113,7 +114,7 @@ wlanconfig = dict(
         wlanmode = 'ahdemo',
         txpower  = 0
     ),
-    config1 = dict(
+    wlancfg1 = dict(
         hwdevice = 'wifi1',
         essid    = 'umic-mesh-sta',
         channel  = 11,
