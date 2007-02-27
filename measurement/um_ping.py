@@ -7,7 +7,8 @@ from logging import info, debug, warn, error
 # umic-mesh imports
 from um_application import Application
 from um_measurement import *
-
+from um_config import *
+from um_functions import *
 
 class Ping(Measurement):
     "Class for ping measurements"
