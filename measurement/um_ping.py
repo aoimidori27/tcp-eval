@@ -41,13 +41,15 @@ class Ping(Measurement):
 
     def test(self, iteration, run, source, target):
         "Run the ping measurement"
+
+        targetip = getwlanip(target, self.options.device)
     
-        rc = self.ssh_node(source, "ping -s %i -c %i -i %i 169.254.9.%i"
+        rc = self.ssh_node(source, "ping -s %i -c %i -i %i %s"
                            % (self.options.packet_size, self.options.count,
-                              self.options.interval, target),
+                              self.options.interval, targetip),
                            self.options.count * self.options.interval + 4)
         if (rc != 0):
-            error("ping invocation on node%i failed: rc=%i" % (source, rc))
+            error("ping invocation on %s failed: rc=%i" % (source, rc))
             return False
         else:
             return True
