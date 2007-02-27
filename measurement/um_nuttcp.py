@@ -74,18 +74,23 @@ class Nuttcp(Measurement):
         wlandevs   = targetinfo["wlandevices"]
         activecfg  = wlandevs[self.options.device]
         activecfg  = wlanconfig[activecfg]
-        targetip   = activeconfig["address"]
+        targetip   = activecfg["address"]
         targetip   = targetip.replace("@NODENR",nodenr)
         # strip bitmask
         targetip   = targetip.split("/", 2)
         targetip   = targetip[0]
+
+        if self.options.reverse:
+            reverse = "-r"
+        else:
+            reverse = ""
         
         rc = self.ssh_node(source,
                            "nuttcp -T  %i %s -v -fparse %s"
                            % (self.options.duration, reverse, targetip),
                            self.options.duration + 5, False)
         if (rc != 0):
-            error("nuttcp invocation on node%i failed: rc=%i" % (source, rc))
+            error("nuttcp invocation %s  failed: rc=%i" % (source, rc))
             return False
         else:
             return True
