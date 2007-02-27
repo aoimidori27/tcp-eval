@@ -140,7 +140,7 @@ def getwlanip(node, device):
     targetinfo = getnodeinfo(node)
     nodenr     = node.replace(targetinfo["hostnameprefix"],"")
     wlandevs   = targetinfo["wlandevices"]
-    activecfg  = wlandevs[self.options.device]
+    activecfg  = wlandevs[device]
     activecfg  = wlanconfig[activecfg]
     targetip   = activecfg["address"]
     targetip   = targetip.replace("@NODENR",nodenr)
