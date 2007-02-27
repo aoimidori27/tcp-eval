@@ -20,28 +20,32 @@ class Measurement(Application):
         Application.__init__(self)
     
         # initialization of the option parser
-        usage = "usage: %prog [options]"
+        usage = "usage: %prog [options] nodes\n"
+        usage += " where a node is either a meshrouter number or a hostname\n"
+        usage += " example: %prog 1 2 3 vmrouter4 5 {8..9}\n"
+
+        
         self.parser.set_usage(usage)
-        self.parser.set_defaults(nodes = 2, asymmetric = False,
+        self.parser.set_defaults(asymmetric = False,
                                  tscale = 1, runs = 1,
                                  iterations = 1, output_dir = ".",
-                                 wipe_out = False)
-      
-        self.parser.add_option("-N" , "--nodes", metavar = "#", type = int,
-                               action = "store", dest = "nodes", 
-                               help = "Set range of nodes to cover [default: %default]")
+                                 wipe_out = False, device = "ath0")
+
         self.parser.add_option("-a" , "--asymmetric", 
                                action = "store_true", dest = "asymmetric", 
                                help = "Consider one way tests only [default: %default]")
-        self.parser.add_option("-t" , "--timeout-scale", metavar = "secs", type = float, 
-                               action = "store", dest = "tscale",
-                               help = "Set factor to scale watchdog timers [default: %default]")
-        self.parser.add_option("-R" , "--runs", metavar = "#", type = int,
-                               action = "store", dest = "runs", 
-                               help = "Set number of test runs in a row [default: %default]")
+        self.parser.add_option("-d", "--dev",  metavar = "DEV",
+                               action = "store", dest = "device",
+                               help = "define the device [default: %default]")
         self.parser.add_option("-I" , "--iterations", metavar = "#", type = int,
                                action = "store", dest = "iterations", 
                                help = "Set number of test runs in a row [default: %default]")
+        self.parser.add_option("-R" , "--runs", metavar = "#", type = int,
+                               action = "store", dest = "runs", 
+                               help = "Set number of test runs in a row [default: %default]")
+        self.parser.add_option("-t" , "--timeout-scale", metavar = "secs", type = float, 
+                               action = "store", dest = "tscale",
+                               help = "Set factor to scale watchdog timers [default: %default]")
         self.parser.add_option("-O" , "--output-directory", metavar = "outdir",
                                action = "store", dest = "output_dir", 
                                help = "Set the directory to write log files to [default: %default]")
@@ -50,19 +54,25 @@ class Measurement(Application):
                                help = "Create a fresh output directory [default: %default]")
 
 
+
+
     def set_option(self):
         "Set options"
-
+        
         Application.set_option(self)
         
+        # correct numbers of arguments?
+        if len(self.args) < 2:
+            self.parser.error("incorrect number of arguments. Need at least two Nodes!")
+                
       
-    def ssh_node(self, number, command, timeout, suppress_output=False):
+    def ssh_node(self, node, command, timeout, suppress_output=False):
         "Run command at ssh login"
         
         timeout = timeout * self.options.tscale
         
-        debug("Calling \"%s\" on node%i (timeout %i seconds)"
-              % (command, number, timeout))
+        debug("Calling \"%s\" on %s (timeout %i seconds)"
+              % (command, node, timeout))
         
         if self.options.debug:
             os.write(self.log_file,
@@ -114,7 +124,7 @@ class Measurement(Application):
 
   
         ssh = ["ssh", "-o", "PasswordAuthentication=no", "-o",
-               "NumberOfPasswordPrompts=0", "mrouter%i" % number,
+               "NumberOfPasswordPrompts=0", node,
                "bash -i -c '%s'" %command]
 
         null = open(os.devnull)
@@ -170,32 +180,49 @@ class Measurement(Application):
                     except Exception, t:
                         warn("Failed remove %s: %s" % (file, t))
 
+
         # TODO: Add options to run iterations/runs in parallel
         for iteration in range(1, self.options.iterations+1):
             info("Iteration %i: starting... "%(iteration))
             start_ts_iteration = datetime.now()
             
-            for source in range(1, self.options.nodes+1):
-                for target in range(1, self.options.nodes+1):
-                    if source < target or (not self.options.asymmetric and source != target):
-                        for run in range(1, self.options.runs+1):
-                            self.log_file = os.open("i%02i_s%02i_t%02i_r%03i" %
-                                                    (iteration, source, target, run),
-                                                    os.O_CREAT|os.O_APPEND|os.O_RDWR, 00664)
-                            
-                            info("start: test #%i (%i): node%i -> node%i"
-                                 % (run, iteration, source, target))
-                            
-                            start_ts_run = datetime.now()
-                            
-                            if self.test(iteration, run, source, target):
-                                info("finished: test #%i (%i): node%i -> node%i (%s)"
-                                     % (run, iteration, source, target,
-                                        datetime.now() - start_ts_run))
-                            else:
-                                warn("FAILED: test #%i (%i): node%i -> node%i (%s)"
-                                        % (run, iteration, source, target,
-                                           datetime.now() - start_ts_run))
+            for source in self.args:
+                # for convenience convert digits to mrouter names
+                if source.isdigit():
+                    source = "mrouter%s" % source
+                
+                for target in self.args:
+                    # for convenience convert digits to mrouter names
+                    if target.isdigit():
+                        target = "mrouter%s" % target
+                    
+                    # ignore self connections
+                    if source == target:
+                        continue
+
+                    # if asymmetric then only test source < target
+                    if self.options.asymmetric and (source > target):
+                        continue
+
+                    # iterate trough runs
+                    for run in range(1, self.options.runs+1):
+                        self.log_file = os.open("i%02i_s%s_t%s_r%03i" %
+                                                (iteration, source, target, run),
+                                                os.O_CREAT|os.O_APPEND|os.O_RDWR, 00664)
+                        
+                        info("start: test #%i (%i): %s -> %s"
+                             % (run, iteration, source, target))
+                        
+                        start_ts_run = datetime.now()
+                        
+                        if self.test(iteration, run, source, target):
+                            info("finished: test #%i (%i): %s -> %s (%s)"
+                                 % (run, iteration, source, target,
+                                    datetime.now() - start_ts_run))
+                        else:
+                            warn("FAILED: test #%i (%i): %s -> %s (%s)"
+                                 % (run, iteration, source, target,
+                                    datetime.now() - start_ts_run))
                             
                             os.fsync(self.log_file)
                             os.close(self.log_file)
