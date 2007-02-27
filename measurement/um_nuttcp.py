@@ -7,7 +7,7 @@ from logging import info, debug, warn, error
 # umic-mesh imports
 from um_application import Application
 from um_measurement import *
-
+from um_config import *
 
 class Nuttcp(Measurement):
     "Class for nuttcp measurements"
@@ -22,7 +22,7 @@ class Nuttcp(Measurement):
         self.parser.set_defaults(duration = 10, reverse = False,
                                  start_server = False)
                                  
-        self.parser.add_option("-d" , "--duration", metavar = "secs", type = int,
+        self.parser.add_option("-D" , "--duration", metavar = "secs", type = int,
                                action = "store", dest = "duration", 
                                help = "Set duration of nuttcp test [default: %default]")
         self.parser.add_option("-r" , "--reverse", 
@@ -53,21 +53,34 @@ class Nuttcp(Measurement):
         if self.options.start_server:
             rc = self.ssh_node(target, "pidof nuttcp", 3, True)
             if (rc == 0):
-                warning("node%i already runs nuttcp server albeit --start-server." % (target))
+                warning("%s already runs nuttcp server albeit --start-server." % (target))
 
             rc = self.ssh_node(target, "nuttcp -1 </dev/null 2>&0 1>&0", 3)
             if (rc != 0): 
-                error("node%i failed to start nuttcp server. rc=%d" % (target, rc))
+                error("%s failed to start nuttcp server. rc=%d" % (target, rc))
                 return False
                 
         # we might accidently hit a non server mode nuttcp here.
         rc = self.ssh_node(target, "pidof nuttcp", 3, False)
         if (rc != 0):
-            error("node%i is not running a nuttcp server. pidof rc=%d" % (target, rc))
+            error("%s is not running a nuttcp server. pidof rc=%d" % (target, rc))
             return False
 
-        rc = self.ssh_node(source, "nuttcp -T  %i %s -v -fparse 169.254.9.%i"
-                           % (self.options.duration, reverse, target),
+
+        # get ip of target
+        targetinfo = getnodeinfo(target)
+        nodenr     = target.replace(targetinfo["hostnameprefix"],"")
+        activecfg  = targetinfo[self.options.device]
+        activecfg  = wlanconfig[activecfg]
+        targetip   = activeconfig["address"]
+        targetip   = targetip.replace("@NODENR",nodenr)
+        # strip bitmask
+        targetip   = targetip.split("/", 2)
+        targetip   = targetip[0]
+        
+        rc = self.ssh_node(source,
+                           "nuttcp -T  %i %s -v -fparse %s"
+                           % (self.options.duration, reverse, targetip),
                            self.options.duration + 5, False)
         if (rc != 0):
             error("nuttcp invocation on node%i failed: rc=%i" % (source, rc))
