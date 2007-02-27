@@ -70,7 +70,8 @@ class Nuttcp(Measurement):
         # get ip of target
         targetinfo = getnodeinfo(target)
         nodenr     = target.replace(targetinfo["hostnameprefix"],"")
-        activecfg  = targetinfo[self.options.device]
+        wlandevs   = targetinfo["wlandevices"]
+        activecfg  = wlandevs[self.options.device]
         activecfg  = wlanconfig[activecfg]
         targetip   = activeconfig["address"]
         targetip   = targetip.replace("@NODENR",nodenr)
