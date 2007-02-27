@@ -91,6 +91,9 @@ class Image(Application):
     def update_links(self):
         "Update symbolic links within the images"
 
+        # allow group to write and exec files
+        os.umask(0002)
+
         for image, imageinfo in imageinfos.iteritems():
             scriptmappings = imageinfo['scriptmappings']
             imagepath = "%s/%s" %(imageprefix, image)       
