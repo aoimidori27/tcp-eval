@@ -143,7 +143,7 @@ def getnodeinfo(hostname = None):
             nodetype = getnodetype()
             nodeinfo = nodeinfos[nodetype]
     else:
-        for nodeinfo in nodeinfos.iteritems():
+        for nodeinfo in nodeinfos.itervalues():
             if hostname.startswith(nodeinfo["hostnameprefix"]):
                 break
 
