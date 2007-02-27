@@ -133,6 +133,23 @@ def getnodetype():
     return nodetype
 
 
+def getwlanip(node, device):
+    "Get the IP of a specific device of the specified node"
+
+    # get ip of target
+    targetinfo = getnodeinfo(node)
+    nodenr     = node.replace(targetinfo["hostnameprefix"],"")
+    wlandevs   = targetinfo["wlandevices"]
+    activecfg  = wlandevs[self.options.device]
+    activecfg  = wlanconfig[activecfg]
+    targetip   = activecfg["address"]
+    targetip   = targetip.replace("@NODENR",nodenr)
+    # strip bitmask
+    targetip   = targetip.split("/", 2)
+    targetip   = targetip[0]
+
+    return targetip
+
 
 def getnodeinfo(hostname = None):
     "Get the node infos for the desired node type, or hostname"

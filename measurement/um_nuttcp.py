@@ -62,23 +62,12 @@ class Nuttcp(Measurement):
                 return False
                 
         # we might accidently hit a non server mode nuttcp here.
-        rc = self.ssh_node(target, "pidof nuttcp", 3, False)
+        rc = self.ssh_node(target, "pidof nuttcp", 3, True)
         if (rc != 0):
             error("%s is not running a nuttcp server. pidof rc=%d" % (target, rc))
             return False
 
-
-        # get ip of target
-        targetinfo = getnodeinfo(target)
-        nodenr     = target.replace(targetinfo["hostnameprefix"],"")
-        wlandevs   = targetinfo["wlandevices"]
-        activecfg  = wlandevs[self.options.device]
-        activecfg  = wlanconfig[activecfg]
-        targetip   = activecfg["address"]
-        targetip   = targetip.replace("@NODENR",nodenr)
-        # strip bitmask
-        targetip   = targetip.split("/", 2)
-        targetip   = targetip[0]
+        targetip = getwlanip(target, self.options.device)
 
         if self.options.reverse:
             reverse = "-r"
