@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#g -*- coding: utf-8 -*-
 
 # python imports
 import subprocess, os, sys, re
@@ -144,7 +144,7 @@ def getnodeinfo(hostname = None):
             nodeinfo = nodeinfos[nodetype]
     else:
         for nodeinfo in nodeinfos.iteritems():
-            if hostname.startswith(nodeinfo[hostnameprefix]):
+            if hostname.startswith(nodeinfo["hostnameprefix"]):
                 break
 
     return nodeinfo
