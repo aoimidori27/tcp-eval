@@ -133,20 +133,25 @@ def getnodetype():
     return nodetype
 
 
-def getnodeinfo():
-    "Get the node infos for the desired note type"
 
+def getnodeinfo(hostname = None):
+    "Get the node infos for the desired node type, or hostname"
     global nodeinfo
 
-    if not globals().has_key('nodeinfo'):
-        nodetype = getnodetype()
-        nodeinfo = nodeinfos[nodetype]
+    if (hostname == None):
+        if not globals().has_key('nodeinfo'):
+            nodetype = getnodetype()
+            nodeinfo = nodeinfos[nodetype]
+    else:
+        for nodeinfo in nodeinfos.iteritems():
+            if hostname.startswith(nodeinfo[hostnameprefix]):
+                break
 
     return nodeinfo
 
 
 def getimageinfo():
-    "Get the image infos for the desired note type"
+    "Get the image infos for the desired node type"
 
     global imageinfo
 
@@ -158,7 +163,7 @@ def getimageinfo():
 
 
 def getimagepath():
-    "Get the image path for the desired note type"
+    "Get the image path for the desired node type"
 
     global imagepath
 
