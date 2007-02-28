@@ -22,15 +22,15 @@ class Ping(Measurement):
         # initialization of the option parser
         self.parser.set_defaults(packet_size = 82, count = 4, interval = 1.2)
 
-        self.parser.add_option("-p" , "--packet-size", metavar = "bytes", type = int, 
+        self.parser.add_option("-p" , "--psize", metavar = "byte", type = int, 
                                action = "store", dest = "packet_size", 
-                               help = "Set size of ping packets [default: %default]")
+                               help = "set size of ping packets [default: %default]")
         self.parser.add_option("-c" , "--counts", metavar = "#", type = int,
                                action = "store", dest = "count", 
-                               help = "Set number of ping packets [default: %default]")
-        self.parser.add_option("-i" , "--interval", metavar = "secs", type = float,
+                               help = "set number of ping packets [default: %default]")
+        self.parser.add_option("-i" , "--interval", metavar = "SEC", type = float,
                                action = "store", dest = "interval", 
-                               help = "Set (fraction of) number of seconds between "\
+                               help = "set (fraction of) number of seconds between "\
                                       "pings [default: %default]")
 
 

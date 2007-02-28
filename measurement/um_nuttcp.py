@@ -19,13 +19,16 @@ class Nuttcp(Measurement):
     
         Measurement.__init__(self)
 
+        # object variables
+        self.reverse = ''        
+           
         # initialization of the option parser
-        self.parser.set_defaults(duration = 10, reverse = False,
+        self.parser.set_defaults(length = 10, reverse = False,
                                  start_server = False)
                                  
-        self.parser.add_option("-D" , "--duration", metavar = "secs", type = int,
-                               action = "store", dest = "duration", 
-                               help = "Set duration of nuttcp test [default: %default]")
+        self.parser.add_option("-l" , "--length", metavar = "SEC", type = int,
+                               action = "store", dest = "length", 
+                               help = "Set length of nuttcp test [default: %default]")
         self.parser.add_option("-r" , "--reverse", 
                                action = "store_true", dest = "reverse", 
                                help = "Receive from server instead to transmit "\
@@ -42,9 +45,7 @@ class Nuttcp(Measurement):
 
         # being reverse?        
         if self.options.reverse:
-            reverse = "-r"
-        else:
-            reverse = "";  
+            self.reverse = "-r"
     
         
     def test(self, iteration, run, source, target):
@@ -68,16 +69,11 @@ class Nuttcp(Measurement):
             return False
 
         targetip = getwlanip(target, self.options.device)
-
-        if self.options.reverse:
-            reverse = "-r"
-        else:
-            reverse = ""
+ 
+        rc = self.ssh_node(source, "nuttcp -T  %i %s -v -fparse %s"
+                           % (self.options.length, self.reverse, targetip),
+                           self.options.length + 5, False)
         
-        rc = self.ssh_node(source,
-                           "nuttcp -T  %i %s -v -fparse %s"
-                           % (self.options.duration, reverse, targetip),
-                           self.options.duration + 5, False)
         if (rc != 0):
             error("nuttcp invocation %s  failed: rc=%i" % (source, rc))
             return False

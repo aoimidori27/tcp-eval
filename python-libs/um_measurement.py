@@ -20,40 +20,39 @@ class Measurement(Application):
         Application.__init__(self)
     
         # initialization of the option parser
-        usage = "usage: %prog [options] nodes\n"
-        usage += " where a node is either a meshrouter number or a hostname\n"
-        usage += " example: %prog 1 2 3 vmrouter4 5 {8..9}\n"
-
+        usage = "usage: %prog [options] NODES\n" \
+                "where NODES := either [v]mrouter numbers or hostnames"
         
         self.parser.set_usage(usage)
-        self.parser.set_defaults(asymmetric = False,
-                                 tscale = 1, runs = 1,
-                                 iterations = 1, output_dir = ".",
-                                 wipe_out = False, device = "ath0")
+        self.parser.set_defaults(asymmetric = False, device = 'ath0',
+                                 hostnameprefix = 'mrouter', tscale = 1,
+                                 runs = 1, iterations = 1, output_dir = '.',
+                                 wipe_out = False)
 
         self.parser.add_option("-a" , "--asymmetric", 
                                action = "store_true", dest = "asymmetric", 
-                               help = "Consider one way tests only [default: %default]")
+                               help = "consider one way tests only [default: %default]")
         self.parser.add_option("-d", "--dev",  metavar = "DEV",
                                action = "store", dest = "device",
-                               help = "define the device [default: %default]")
+                               help = "device on which the test should be [default: %default]")
+        self.parser.add_option("-H", "--hprefix",  metavar = "NAME",
+                               action = "store", dest = "hostnameprefix",
+                               help = "hostname prefix for the node IDs [default: %default]")
         self.parser.add_option("-I" , "--iterations", metavar = "#", type = int,
                                action = "store", dest = "iterations", 
-                               help = "Set number of test runs in a row [default: %default]")
+                               help = "set number of test runs in a row [default: %default]")
         self.parser.add_option("-R" , "--runs", metavar = "#", type = int,
                                action = "store", dest = "runs", 
-                               help = "Set number of test runs in a row [default: %default]")
-        self.parser.add_option("-t" , "--timeout-scale", metavar = "secs", type = float, 
+                               help = "set number of test runs in a row [default: %default]")
+        self.parser.add_option("-t" , "--tscale", metavar = "SEC", type = float, 
                                action = "store", dest = "tscale",
-                               help = "Set factor to scale watchdog timers [default: %default]")
-        self.parser.add_option("-O" , "--output-directory", metavar = "outdir",
+                               help = "set factor to scale watchdog timers [default: %default]")
+        self.parser.add_option("-O" , "--output", metavar = "dir",
                                action = "store", dest = "output_dir", 
-                               help = "Set the directory to write log files to [default: %default]")
+                               help = "set the directory to write log files to [default: %default]")
         self.parser.add_option("-w" , "--wipe-out", 
                                action = "store_true", dest = "wipe_out", 
-                               help = "Create a fresh output directory [default: %default]")
-
-
+                               help = "create a fresh output directory [default: %default]")
 
 
     def set_option(self):
@@ -63,7 +62,7 @@ class Measurement(Application):
         
         # correct numbers of arguments?
         if len(self.args) < 2:
-            self.parser.error("incorrect number of arguments. Need at least two Nodes!")
+            self.parser.error("Incorrect number of arguments. Need at least two Nodes!")
                 
       
     def ssh_node(self, node, command, timeout, suppress_output=False):
@@ -71,17 +70,17 @@ class Measurement(Application):
         
         timeout = timeout * self.options.tscale
         
-        debug("Calling \"%s\" on %s (timeout %i seconds)"
-              % (command, node, timeout))
+        debug("Calling \"%s\" on %s (timeout %i seconds)" % (command, node, timeout))
         
         if self.options.debug:
             os.write(self.log_file,
                      "### command=\"%s\" (timeout %i, suppress_output = %s)\n"
                      % (command, timeout, str(suppress_output)))
 
-        command = """
+        #######################
+        ### Begin BASH code ###
 
-        ### Begin BASH code
+        command = """
         function sigchld() { 
         if ! ps $BGPID 2>&1 >/dev/null; then
                 wait $BGPID; EXITSTATUS=$?; 
@@ -118,14 +117,13 @@ class Measurement(Application):
             fi
         fi
         exit 254
-        #### Begin BASH code
-
         """ %(command, timeout * 10)
-
+        
+        #### Begin BASH code ###
+        ########################
   
         ssh = ["ssh", "-o", "PasswordAuthentication=no", "-o",
-               "NumberOfPasswordPrompts=0", node,
-               "bash -i -c '%s'" %command]
+               "NumberOfPasswordPrompts=0", node, "bash -i -c '%s'" %command]
 
         null = open(os.devnull)
         if suppress_output:
@@ -135,7 +133,7 @@ class Measurement(Application):
             
         prog = subprocess.Popen(ssh, bufsize=0, stdin=null, stdout=log, stderr=log)
 
-        end_ts_ssh = datetime.now() + timedelta(seconds=timeout + 6)
+        end_ts_ssh = datetime.now() + timedelta(seconds = timeout + 6)
 
         while prog.poll() == None:
             time.sleep(0.1)
@@ -158,7 +156,7 @@ class Measurement(Application):
   
         start_ts_measurement = datetime.now()
         
-        # Prepare output directory
+        # prepare output directory
         info("Preparing output directory...")
         if not os.path.isdir(self.options.output_dir):
             try:
@@ -169,7 +167,7 @@ class Measurement(Application):
         
         os.chdir(self.options.output_dir)
 
-        # Clean up output directory 
+        # clean up output directory 
         if self.options.wipe_out:
             for file in os.listdir("."):
                 if os.path.isdir(file):
@@ -182,19 +180,19 @@ class Measurement(Application):
 
 
         # TODO: Add options to run iterations/runs in parallel
-        for iteration in range(1, self.options.iterations+1):
+        for iteration in range(1, self.options.iterations + 1):
             info("Iteration %i: starting... "%(iteration))
             start_ts_iteration = datetime.now()
             
             for source in self.args:
-                # for convenience convert digits to mrouter names
+                # for convenience convert node IDs to hostnames
                 if source.isdigit():
-                    source = "mrouter%s" % source
+                    source = "%s%s" %(self.options.hostnameprefix, source)
                 
                 for target in self.args:
-                    # for convenience convert digits to mrouter names
+                    # for convenience convert node IDs to hostnames
                     if target.isdigit():
-                        target = "mrouter%s" % target
+                        target =  "%s%s" %(self.options.hostnameprefix, target)
                     
                     # ignore self connections
                     if source == target:
@@ -204,8 +202,8 @@ class Measurement(Application):
                     if self.options.asymmetric and (source > target):
                         continue
 
-                    # iterate trough runs
-                    for run in range(1, self.options.runs+1):
+                    # iterate through runs
+                    for run in range(1, self.options.runs + 1):
                         self.log_file = os.open("i%02i_s%s_t%s_r%03i" %
                                                 (iteration, source, target, run),
                                                 os.O_CREAT|os.O_APPEND|os.O_RDWR, 00664)

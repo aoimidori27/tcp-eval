@@ -26,11 +26,12 @@ class Madwifi(Application):
                          'settxpower', 'setantenna', 'start')
         self.action = ''
     
-        nodeinfo = getnodeinfo()
-        nodenr   = getnodenr().__str__()
-        wlandevs = nodeinfo['meshdevices']
-        wlancfg  = deviceconfig[wlandevs[devicename]]
-        
+        nodeinfo  = getnodeinfo()
+        nodenr    = getnodenr().__str__()
+        meshdevs  = nodeinfo['meshdevices']
+        devicecfg = meshdevs[devicename]
+        activecfg = deviceconfig[devicecfg]
+            
         # initialization of the option parser
         usage = "usage: %prog [options] COMMAND \n" \
                 "where  COMMAND := { loadmod | unloadmod | createdev | " \
@@ -39,13 +40,13 @@ class Madwifi(Application):
                 "settxpower | setantenna | start }"
         self.parser.set_usage(usage)
         self.parser.set_defaults(device   = devicename,
-                                 address  = re.sub('@NODENR', nodenr,  wlancfg['address']),
-                                 channel  = wlancfg['channel'],
-                                 essid    = wlancfg['essid'],
-                                 wlanmode = wlancfg['wlanmode'],
-                                 hwdevice = wlancfg['hwdevice'],
-                                 txpower  = wlancfg['txpower'],
-                                 antenna  = wlancfg['antenna'])
+                                 address  = re.sub('@NODENR', nodenr,  activecfg['address']),
+                                 channel  = activecfg['channel'],
+                                 essid    = activecfg['essid'],
+                                 wlanmode = activecfg['wlanmode'],
+                                 hwdevice = activecfg['hwdevice'],
+                                 txpower  = activecfg['txpower'],
+                                 antenna  = activecfg['antenna'])
         
         self.parser.add_option("-a", "--addr", metavar = "IP",
                                action = "store", dest = "address",

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os, subprocess, sys, re, socket
 from logging import info, debug, warn, error
 
 # umic-mesh imports
@@ -18,18 +17,13 @@ class Init(Application):
     def __init__(self):
         "Constructor of the object"
 
-        # call the super constructor
         Application.__init__(self)
 
         # initialization of the option parser
-        self.parser.set_defaults(verbose = True,
-                                 syslog = False,
-                                 debug = False)
-
         usage = "usage: %prog [OPTIONS] FROM TO"
         self.parser.set_usage(usage)
-
         self.parser.set_defaults(ramdisk = None, kernel = None, memory = None)
+        
         self.parser.add_option("-k", "--kernel", metavar = "KERNEL",
                 action = "store", dest = "kernel",
                 help = "Kernel to use instead of the default one.")
@@ -40,20 +34,26 @@ class Init(Application):
                 action = "store", dest = "ramdisk",
                 help = "Initial ramdisk to use instead of the default one.")
 
-        # execute object
-        self.main()
-
 
     def set_option(self):
         "Set options"
 
-        # call the super set_option method
         Application.set_option(self)
+
+        # correct numbers of arguments?
+        if len(self.args) == 0:
+            self.parser.error("incorrect number of arguments")
+        elif len(self.args) == 1:
+            self.range = range(int(self.args[0]), int(self.args[0])+1)
+        else:
+            self.range = range(int(self.args[0]), int(self.args[1])+1)
+
 
     def append(self, list, item):
         tmp = list[:]
         tmp.append(item)
         return tmp
+
 
     def start_xen(self):
         cmd = ['sudo', 'xm', 'create', '/etc/xen/guests/vmeshrouter']
@@ -89,22 +89,11 @@ class Init(Application):
     def main(self):
         "Main method of the Init object"
 
-        # parse options
         self.parse_option()
-
-        # set options
         self.set_option()
-
-        if len(self.args) == 0:
-            error("RANGE not given")
-            sys.exit(2)
-        elif len(self.args) == 1:
-            self.range = range(int(self.args[0]), int(self.args[0])+1)
-        else:
-            self.range = range(int(self.args[0]), int(self.args[1])+1)
-
-        # call the corresponding method
         self.start_xen()
 
+
+
 if __name__ == "__main__":
-    Init()
+    Init().main()

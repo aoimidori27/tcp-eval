@@ -133,24 +133,6 @@ def getnodetype():
     return nodetype
 
 
-def getwlanip(node, device):
-    "Get the IP of a specific device of the specified node"
-
-    # get ip of target
-    targetinfo = getnodeinfo(node)
-    nodenr     = node.replace(targetinfo["hostnameprefix"],"")
-    wlandevs   = targetinfo["wlandevices"]
-    activecfg  = wlandevs[device]
-    activecfg  = wlanconfig[activecfg]
-    targetip   = activecfg["address"]
-    targetip   = targetip.replace("@NODENR",nodenr)
-    # strip bitmask
-    targetip   = targetip.split("/", 2)
-    targetip   = targetip[0]
-
-    return targetip
-
-
 def getnodeinfo(hostname = None):
     "Get the node infos for the desired node type, or hostname"
     global nodeinfo
@@ -165,6 +147,33 @@ def getnodeinfo(hostname = None):
                 break
 
     return nodeinfo
+    
+
+def getnodenr():
+    "Get node number from hostname"
+
+    hostname = gethostname()
+
+    for nodeinfo in nodeinfos.itervalues():
+        if re.match(nodeinfo['hostnameprefix'], hostname):
+            return re.sub(nodeinfo['hostnameprefix'],"",hostname)
+
+         
+def getwlanip(node, device):
+    "Get the IP of a specific device of the specified node"
+
+    # get ip of target
+    nodeinfo  = getnodeinfo(node)
+    nodenr    = getnodenr().__str__()
+    meshdevs  = nodeinfo['meshdevices']
+    devicecfg = meshdevs[device]
+    activecfg = deviceconfig[devicecfg]
+    address  = re.sub('@NODENR', nodenr,  activecfg['address'])
+    # strip bitmask
+    address = address.split("/", 2)
+    address = address[0]
+
+    return ip_adress
 
 
 def getimageinfo():
@@ -189,14 +198,3 @@ def getimagepath():
         imagepath = "%s/%s.img/%s" % (imageprefix, nodeinfo['imagetype'], nodeinfo['imageversion'])
 
     return imagepath
-
-
-def getnodenr():
-    "Get node number from hostname"
-
-    hostname = gethostname()
-
-    for nodeinfo in nodeinfos.itervalues():
-        if re.match(nodeinfo['hostnameprefix'], hostname):
-            return re.sub(nodeinfo['hostnameprefix'],"",hostname)
-
