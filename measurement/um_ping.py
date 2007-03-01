@@ -9,6 +9,7 @@ from um_application import Application
 from um_measurement import *
 from um_config import *
 from um_functions import *
+from um_node import *
 
 class Ping(Measurement):
     "Class for ping measurements"
@@ -43,7 +44,8 @@ class Ping(Measurement):
     def test(self, iteration, run, source, target):
         "Run the ping measurement"
 
-        targetip = getwlanip(target, self.options.device)
+        targetnode = Node(hostname = target)
+        targetip = targetnode.getipaddress(self.options.device)
     
         rc = self.ssh_node(source, "ping -s %i -c %i -i %i %s"
                            % (self.options.packet_size, self.options.count,
