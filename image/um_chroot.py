@@ -60,8 +60,8 @@ class Chroot(Application):
         # for chroot, imagetype and nodetype are required
         node      = Node(type = self.options.nodetype)
         nodetype  = node.gettype()
-        imageinfo = node.imageinfo()
-        imagepath = node.imagepath()
+        imageinfo = node.getimageinfo()
+        imagepath = node.getimagepath()
 
         info("Nodetype: %s" %(nodetype))
 
