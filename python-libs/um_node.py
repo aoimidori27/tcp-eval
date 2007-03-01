@@ -108,7 +108,7 @@ class Node(object):
         devicecfg = meshdevs[device]
         activecfg = deviceconfig[devicecfg]       
         netmask   = activecfg['netmask']
-        address   = "%s/%s" %(self.deviceIP(), netmask)
+        address   = "%s/%s" %(self.getipconfig(), netmask)
 
         return address
 
@@ -116,13 +116,13 @@ class Node(object):
     def getimageinfo(self):
         "Return the imageinfos for the node"
 
-        return imageinfos[self.info()['imagetype']]
+        return imageinfos[self.getinfo()['imagetype']]
 
 
     def getimagepath(self):
         "Return the imagepath for the node"
 
-        nodeinfo = self.info()
+        nodeinfo = self.getinfo()
         return "%s/%s.img/%s" % (imageprefix, nodeinfo['imagetype'], nodeinfo['imageversion'])
 
 
