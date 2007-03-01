@@ -9,6 +9,7 @@ from logging import info, debug, warn, error
 from um_application import Application
 from um_config import *
 from um_functions import *
+from um_node import *
 
 
 class Madwifi(Application):
@@ -26,8 +27,9 @@ class Madwifi(Application):
                          'settxpower', 'setantenna', 'start')
         self.action = ''
     
-        nodeinfo   = getnodeinfo()
-        nodenumber = getnodenumber()
+        node      = Node()
+        nodeinfo  = node.getinfo()
+        nodenumber= node.getnumber()
         meshdevs   = nodeinfo['meshdevices']
         devicecfg  = meshdevs[devicename]
         activecfg  = deviceconfig[devicecfg]
@@ -40,7 +42,7 @@ class Madwifi(Application):
                 "settxpower | setantenna | start }"
         self.parser.set_usage(usage)
         self.parser.set_defaults(device   = devicename,
-                                 address  = re.sub('@NODENR', nodenr,  activecfg['address']),
+                                 address  = re.sub('@NODENR', nodenumber,  activecfg['address']),
                                  channel  = activecfg['channel'],
                                  essid    = activecfg['essid'],
                                  wlanmode = activecfg['wlanmode'],
