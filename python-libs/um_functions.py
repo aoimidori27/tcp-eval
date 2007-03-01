@@ -9,9 +9,6 @@ from socket import gethostname
 # umic-mesh imports
 from um_config import *
 
-#
-# generic helper functions and classes
-#
 
 class CommandFailed(Exception):
     "Convenience function to handle returncodes"
@@ -112,96 +109,3 @@ def requireroot():
     if not os.getuid() == 0:
         error("You must be root. Operation not permitted.")
         sys.exit(1)
-
-
-#
-# mesh specific helper functions and classes
-#
-
-def getnodetype(hostname = None):
-    "Derived the nodetype either from the hostname or from environment variable UM_NODE_TYPE"
-
-    if not hostname == None:    	
-        for (can_nodetype, can_nodeinfo) in nodeinfos.iteritems():
-            if re.match(can_nodeinfo['hostnameprefix'], hostname):
-                nodetype = can_nodetype
-        
-        error("Could not derived the nodetype from the hostname %s" %(hostname))
-        sys.exit(1)
-        
-    elif os.environ.has_key('UM_NODE_TYPE'):
-        if nodeinfos.has_key(os.environ['UM_NODE_TYPE']):
-            return os.environ['UM_NODE_TYPE']
-        else:
-            error("Please set environment variable UM_NODE_TYPE"\
-                  "to one of %s." % nodeinfos.keys())
-            sys.exit(1)
-    
-    else:
-        error("Could neiher derived nodetype form the hostname "\
-              "nor from the environment variable UM_NODE_TYPE.")
-        sys.exit(1)
-
-    return nodetype
-
-
-def getnodeinfo(hostname = None):
-    "Return the nodeinfos for the desired notetype"
-
-    nodetype = getnodetype(hostname)
-    nodeinfo = nodeinfos[nodetype]
-
-    return nodeinfo
-
-
-def gethostnameprefix(hostname = None):
-    "Derived the hostnameprefix form the hostname"
-        
-    nodeinfo = getnodeinfo(hostname)
-    hostnameprefix = nodeinfo['hostnameprefix']
-
-    return hostnameprefix
-    
-
-def getnodenumber(hostname = None):
-    "Derived the nodenumber from the hostname"
-    
-    hostnameprefix = gethostnameprefix(hostname)
-    nodenumber = re.sub(hostnameprefix, '', hostname)
-
-    return nodenumber
-
-         
-def getdeviceIP(hostname = None, device = 'ath0'):
-    "Get the IP of a specific device of the specified node"
-
-    # get ip of target
-    nodeinfo   = getnodeinfo(hostname)
-    nodenumber = getnodenumber(hostname)
-    meshdevs   = nodeinfo['meshdevices']
-    devicecfg  = meshdevs[device]
-    activecfg  = deviceconfig[devicecfg]
-    address    = re.sub('@NODENR', nodenumber, activecfg['address'])
-    # strip bitmask
-    address = address.split("/", 2)
-    address = address[0]
-
-    return ip_adress
-
-
-def getimageinfo(hostname = None):
-    "Return the imageinfos for the desired notetype"
-
-    nodeinfo  = getnodeinfo(hostname)
-    imageinfo = imageinfos[nodeinfo['imagetype']]
-
-    return imageinfo
-
-
-def getimagepath(hostname = None):
-    "Return the imagepath for the desired notetype"
-
-    nodeinfo = getnodeinfo(hostname, cache)
-    imagepath = "%s/%s.img/%s" % (imageprefix, nodeinfo['imagetype'], nodeinfo['imageversion'])
-
-    return imagepath
