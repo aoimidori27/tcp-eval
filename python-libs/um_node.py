@@ -37,20 +37,26 @@ class Node(object):
             if type in nodeinfos:
                 self.type = type
             else:
-                raise NodeTypeException('Invalid value for \"NODETYPE\"'
+                raise NodeTypeException('Invalid value for NODETYPE'
                         'Please set it to one of %s.'% nodeinfos.keys())
         
         else:
             # Compute list of nodetypes which match for hostname
-            f = lambda x: re.match(um_config.nodeinfos[f]['hostnameprefix'])
-            type_list = filter(f, hostname)
+            type_list = []
+            for (nodetype, nodeinfo) in nodeinfos.iteritems():
+                if re.match(nodeinfo['hostnameprefix'], self.hostname):
+                    type_list.append(nodetype)
 
             if len(type_list) == 1:
                 self.type = type_list[0]
+            elif len(type_list) == 0:
+                raise NodeTypeException('Cannot derived NODETYPE from'
+                        'hostname, as there no types with fitting'
+                        'hostnameprefix" entries: %s' % type_list)
             else:
-                raise NodeTypeException('\"NODETYPE\" cannot be derived from'
-                        'hostname, as there are multiple types with fitting'
-                        'hostnameprefix" entries: %s' % cannodetype)
+                raise NodeTypeException('Cannot derived NODETYPE from'
+                        'hostname, as there multiple types with fitting'
+                        'hostnameprefix" entries: %s' % type_list)
 
 
     def gettype(self):
@@ -59,31 +65,31 @@ class Node(object):
         return self.type
     
 
-    def hostname(self):
+    def gethostname(self):
         "Returns the hostname of the node"
 
         return self.hostname
 
 
-    def info(self):
+    def getinfo(self):
         "Returns the nodeinfos of the node"
 
         return nodeinfos[self.type]
 
 
-    def hostnameprefix(self):
+    def gethostnameprefix(self):
         "Derives the hostnameprefix from the hostname"
 
         return self.info()['hostnameprefix']
 
 
-    def number(self):
+    def getnumber(self):
         "Derives the nodenumber from the hostname"
 
         return re.sub(self.hostnameprefix(), '', self.hostname)
 
 
-    def ipaddress(self, device = 'ath0'):
+    def getipaddress(self, device = 'ath0'):
         "Get the IP of a specific device of the node"
 
         # get ip of target
@@ -95,7 +101,7 @@ class Node(object):
         return adress
 
 
-    def ipconfig(self, device = 'ath0'):
+    def getipconfig(self, device = 'ath0'):
         "Get the IP of a specific device of the node"
         
         meshdevs  = self.info()['meshdevices']
@@ -107,13 +113,13 @@ class Node(object):
         return address
 
 
-    def imageinfo(self):
+    def getimageinfo(self):
         "Return the imageinfos for the node"
 
         return imageinfos[self.info()['imagetype']]
 
 
-    def imagepath(self):
+    def getimagepath(self):
         "Return the imagepath for the node"
 
         nodeinfo = self.info()
