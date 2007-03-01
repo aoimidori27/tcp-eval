@@ -80,13 +80,13 @@ class Node(object):
     def gethostnameprefix(self):
         "Derives the hostnameprefix from the hostname"
 
-        return self.info()['hostnameprefix']
+        return self.getinfo()['hostnameprefix']
 
 
     def getnumber(self):
         "Derives the nodenumber from the hostname"
 
-        return re.sub(self.hostnameprefix(), '', self.hostname)
+        return re.sub(self.gethostnameprefix(), '', self.hostname)
 
 
     def getipaddress(self, device = 'ath0'):

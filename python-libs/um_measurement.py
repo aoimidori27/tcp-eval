@@ -151,6 +151,12 @@ class Measurement(Application):
         return prog.returncode
 
 
+    def test(self, iteration, run, source, target):
+        "Bla Bla"
+        
+        raise NotImplementedError("Bla Bla")
+
+
     def run(self):
         "Run the mesurement"
   
