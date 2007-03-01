@@ -83,7 +83,7 @@ class Measurement(Application):
         command = """
         function sigchld() { 
         if ! ps $BGPID 2>&1 >/dev/null; then
-                wait $BGPID; EXITSTATUS=$?; 
+                wait $BGPID; export EXITSTATUS=$?; 
             fi;
         };
 
@@ -122,7 +122,7 @@ class Measurement(Application):
         #### Begin BASH code ###
         ########################
   
-        ssh = ["ssh", "-o", "PasswordAuthentication=no", "-o",
+        ssh = ["ssh", "-o", "PasswordAuthentication=no","-o", 
                "NumberOfPasswordPrompts=0", node, "bash -i -c '%s'" %command]
 
         null = open(os.devnull)

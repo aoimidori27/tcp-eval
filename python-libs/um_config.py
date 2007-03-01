@@ -110,7 +110,8 @@ deviceconfig = dict(
         essid    = 'umic-mesh-ah',
         channel  = 1,
         antenna  = 2,
-        address  = '169.254.9.@NODENR/16',
+        address  = '169.254.9.@NODENR',
+        netmask  = '16',
         wlanmode = 'ahdemo',
         txpower  = 0
     ),
@@ -119,7 +120,8 @@ deviceconfig = dict(
         essid    = 'umic-mesh-sta',
         channel  = 11,
         antenna  = 2,
-        address  = '169.254.10.@NODENR/16',
+        address  = '169.254.10.@NODENR',
+        netmask  = '16',
         wlanmode = 'sta',
         txpower  = 0
     )
