@@ -7,6 +7,7 @@ from logging import info, debug, warn, error
 # umic-mesh imports
 from um_application import Application
 from um_functions import *
+from um_node import *
 
 
 class Chroot(Application):
@@ -29,12 +30,14 @@ class Chroot(Application):
         usage = "usage: %prog [options] [COMMAND] \n" \
                 "where  COMMAND is a command to execute within chroot"
         self.parser.set_usage(usage)
-        self.parser.set_defaults(user = default_user)
+        self.parser.set_defaults(user = default_user, nodetype = 'meshrouter')
 
         self.parser.add_option("-u", "--user", metavar = "NAME",
                                action = "store", dest = "user",
                                help = "set the user to be in the chroot [default: %default]")
-
+        self.parser.add_option("-n", "--nodetype", metavar = "TYPE",
+                               action = "store", dest = "nodetype",
+                               help = "set the node type for chroot [default: %default]")
 
     def set_option(self):
         "Set options"
@@ -55,9 +58,10 @@ class Chroot(Application):
         requireroot()
 
         # for chroot, imagetype and nodetype are required
-        nodetype  = getnodetype()
-        imageinfo = getimageinfo()
-        imagepath = getimagepath()
+        node      = Node(type = self.options.nodetype)
+        nodetype  = node.gettype()
+        imageinfo = node.imageinfo()
+        imagepath = node.imagepath()
 
         info("Nodetype: %s" %(nodetype))
 
