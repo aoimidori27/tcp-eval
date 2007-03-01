@@ -8,6 +8,7 @@ from logging import info, debug, warn, error
 from um_application import Application
 from um_config import *
 from um_functions import *
+from um_node import *
 
 
 class Init(Application):
@@ -27,9 +28,10 @@ class Init(Application):
 
 
     def init(self):
-        hostname  = gethostname()
-        nodetype  = getnodetype()
-        nodeinfo  = getnodeinfo()
+        node     = Node()
+        hostname = node.gethostname()
+        nodetype = node.gettype()
+        nodeinfo = node.getinfo() 
 
         info("Hostname:  %s" %(hostname))
         info("Nodetype:  %s" %(nodetype))
