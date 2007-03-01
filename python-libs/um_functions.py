@@ -118,57 +118,70 @@ def requireroot():
 # mesh specific helper functions and classes
 #
 
-def getnodetype():
-    "Check environment variable UM_NODE_TYPE and return nodetype"
+def getnodetype(hostname = None):
+    "Derived the nodetype either from the hostname or from environment variable UM_NODE_TYPE"
 
-    global nodetype
-
-    if not globals().has_key('nodetype'):
-        if os.environ.has_key('UM_NODE_TYPE') and nodeinfos.has_key(os.environ['UM_NODE_TYPE']):
-            nodetype = os.environ['UM_NODE_TYPE']
+    if not hostname == None:    	
+        for (can_nodetype, can_nodeinfo) in nodeinfos.iteritems():
+            if re.match(can_nodeinfo['hostnameprefix'], hostname):
+                nodetype = can_nodetype
+        
+        error("Could not derived the nodetype from the hostname %s" %(hostname))
+        sys.exit(1)
+        
+    elif os.environ.has_key('UM_NODE_TYPE'):
+        if nodeinfos.has_key(os.environ['UM_NODE_TYPE']):
+            return os.environ['UM_NODE_TYPE']
         else:
-            error("Please set environment variable UM_NODE_TYPE to one of %s." % nodeinfos.keys())
+            error("Please set environment variable UM_NODE_TYPE"\
+                  "to one of %s." % nodeinfos.keys())
             sys.exit(1)
+    
+    else:
+        error("Could neiher derived nodetype form the hostname "\
+              "nor from the environment variable UM_NODE_TYPE.")
+        sys.exit(1)
 
     return nodetype
 
 
 def getnodeinfo(hostname = None):
-    "Get the node infos for the desired node type, or hostname"
-    global nodeinfo
+    "Return the nodeinfos for the desired notetype"
 
-    if (hostname == None):
-        if not globals().has_key('nodeinfo'):
-            nodetype = getnodetype()
-            nodeinfo = nodeinfos[nodetype]
-    else:
-        for nodeinfo in nodeinfos.itervalues():
-            if hostname.startswith(nodeinfo["hostnameprefix"]):
-                break
+    nodetype = getnodetype(hostname)
+    nodeinfo = nodeinfos[nodetype]
 
     return nodeinfo
+
+
+def gethostnameprefix(hostname = None):
+    "Derived the hostnameprefix form the hostname"
+        
+    nodeinfo = getnodeinfo(hostname)
+    hostnameprefix = nodeinfo['hostnameprefix']
+
+    return hostnameprefix
     
 
-def getnodenr():
-    "Get node number from hostname"
+def getnodenumber(hostname = None):
+    "Derived the nodenumber from the hostname"
+    
+    hostnameprefix = gethostnameprefix(hostname)
+    nodenumber = re.sub(hostnameprefix, '', hostname)
 
-    hostname = gethostname()
-
-    for nodeinfo in nodeinfos.itervalues():
-        if re.match(nodeinfo['hostnameprefix'], hostname):
-            return re.sub(nodeinfo['hostnameprefix'],"",hostname)
+    return nodenumber
 
          
-def getwlanip(node, device):
+def getdeviceIP(hostname = None, device = 'ath0'):
     "Get the IP of a specific device of the specified node"
 
     # get ip of target
-    nodeinfo  = getnodeinfo(node)
-    nodenr    = getnodenr().__str__()
-    meshdevs  = nodeinfo['meshdevices']
-    devicecfg = meshdevs[device]
-    activecfg = deviceconfig[devicecfg]
-    address  = re.sub('@NODENR', nodenr,  activecfg['address'])
+    nodeinfo   = getnodeinfo(hostname)
+    nodenumber = getnodenumber(hostname)
+    meshdevs   = nodeinfo['meshdevices']
+    devicecfg  = meshdevs[device]
+    activecfg  = deviceconfig[devicecfg]
+    address    = re.sub('@NODENR', nodenumber, activecfg['address'])
     # strip bitmask
     address = address.split("/", 2)
     address = address[0]
@@ -176,25 +189,19 @@ def getwlanip(node, device):
     return ip_adress
 
 
-def getimageinfo():
-    "Get the image infos for the desired node type"
+def getimageinfo(hostname = None):
+    "Return the imageinfos for the desired notetype"
 
-    global imageinfo
-
-    if not globals().has_key('imageinfo'):
-        nodeinfo  = getnodeinfo()
-        imageinfo = imageinfos[nodeinfo['imagetype']]
+    nodeinfo  = getnodeinfo(hostname)
+    imageinfo = imageinfos[nodeinfo['imagetype']]
 
     return imageinfo
 
 
-def getimagepath():
-    "Get the image path for the desired node type"
+def getimagepath(hostname = None):
+    "Return the imagepath for the desired notetype"
 
-    global imagepath
-
-    if not globals().has_key('imagepath'):
-        nodeinfo = getnodeinfo()
-        imagepath = "%s/%s.img/%s" % (imageprefix, nodeinfo['imagetype'], nodeinfo['imageversion'])
+    nodeinfo = getnodeinfo(hostname, cache)
+    imagepath = "%s/%s.img/%s" % (imageprefix, nodeinfo['imagetype'], nodeinfo['imageversion'])
 
     return imagepath

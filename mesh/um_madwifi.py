@@ -26,11 +26,11 @@ class Madwifi(Application):
                          'settxpower', 'setantenna', 'start')
         self.action = ''
     
-        nodeinfo  = getnodeinfo()
-        nodenr    = getnodenr().__str__()
-        meshdevs  = nodeinfo['meshdevices']
-        devicecfg = meshdevs[devicename]
-        activecfg = deviceconfig[devicecfg]
+        nodeinfo   = getnodeinfo()
+        nodenumber = getnodenumber()
+        meshdevs   = nodeinfo['meshdevices']
+        devicecfg  = meshdevs[devicename]
+        activecfg  = deviceconfig[devicecfg]
             
         # initialization of the option parser
         usage = "usage: %prog [options] COMMAND \n" \
