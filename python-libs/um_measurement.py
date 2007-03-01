@@ -152,9 +152,9 @@ class Measurement(Application):
 
 
     def test(self, iteration, run, source, target):
-        "Bla Bla"
-        
-        raise NotImplementedError("Bla Bla")
+        "The method should be implemented in the inheritance class"
+
+        raise NotImplementedError("The method should be implemented in the inheritance class.")
 
 
     def run(self):

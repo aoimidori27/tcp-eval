@@ -15,7 +15,7 @@ class Node(object):
     def __init__(self, hostname = None, type = None):
         """ Creates a new Node object.
 
-        If hostname is None, gethostname() is used. The \"NODETYPE\" will
+        If hostname is None, gethostname() is used. The "NODETYPE" will
         derived from the hostname and can be overriden by setting the
         parameter nodetype.
 
@@ -92,19 +92,18 @@ class Node(object):
     def getipaddress(self, device = 'ath0'):
         "Get the IP of a specific device of the node"
 
-        # get ip of target
-        meshdevs   = self.info()['meshdevices']
+        meshdevs   = self.getinfo()['meshdevices']
         devicecfg  = meshdevs[device]
         activecfg  = deviceconfig[devicecfg]
-        address    = re.sub('@NODENR', self.number(), activecfg['address'])
+        address    = re.sub('@NODENR', self.getnumber(), activecfg['address'])
         
-        return adress
+        return address
 
 
     def getipconfig(self, device = 'ath0'):
         "Get the IP of a specific device of the node"
         
-        meshdevs  = self.info()['meshdevices']
+        meshdevs  = self.getinfo()['meshdevices']
         devicecfg = meshdevs[device]
         activecfg = deviceconfig[devicecfg]       
         netmask   = activecfg['netmask']
