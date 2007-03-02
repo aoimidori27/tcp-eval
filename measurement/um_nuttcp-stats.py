@@ -40,7 +40,7 @@ class NuttcpStats(Analysis):
 
     def tput(self):
 
-        print("... Throughput ... \n")
+        print("Throughput ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("rate_Mbps=\d+\.\d+", "\d+\.\d+")
 
@@ -49,7 +49,7 @@ class NuttcpStats(Analysis):
 
     def RTO_count(self):
 
-        print("... #RTO ... \n")
+        print("#RTO ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("rto_count=\d+", "\d+")
 
@@ -64,7 +64,7 @@ class NuttcpStats(Analysis):
 
     def RTO_msec(self):
 
-        print("... RTO msec ... \n")
+        print("RTO msec ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("rto_msec=\d+", "\d+")
 
@@ -73,7 +73,7 @@ class NuttcpStats(Analysis):
 
     def RTT_msec(self):
 
-        print("... RTT msec ... \n")
+        print("RTT msec ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("rtt_msec=\d+", "\d+")
 
@@ -82,7 +82,7 @@ class NuttcpStats(Analysis):
 
     def RTT_var(self):
 
-        print("... RTT var msec ... \n")
+        print("RTT var msec ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("rtt_var_msec=\d+", "\d+")
 
@@ -91,7 +91,7 @@ class NuttcpStats(Analysis):
 
     def probes(self):
 
-        print("... #0WProbes ... \n")
+        print("#0WProbes ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("0wprobes_count=\d+", "\d+")
 
@@ -106,7 +106,7 @@ class NuttcpStats(Analysis):
 
     def backoffs(self):
 
-        print("... #Backoffs ... \n")
+        print("#Backoffs ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("backoffs_count=\d+", "\d+")
 
@@ -121,7 +121,7 @@ class NuttcpStats(Analysis):
 
     def lost_packets(self):
 
-        print("... #Lost Packets ... \n")
+        print("#Lost Packets ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("lost_packets=\d+", "\d+")
 
@@ -136,7 +136,7 @@ class NuttcpStats(Analysis):
 
     def retransmits(self):
 
-        print("... #Retransmits ... \n")
+        print("#Retransmits ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("retransmitted_packets=\d+", "\d+")
 

@@ -37,7 +37,7 @@ class PingStats(Analysis):
 
     def hops(self):
 
-        print("... Hop Information ... \n")
+        print("Hop Information ... \n")
         stats_input = self.get_stats("ttl=\d+", "\d+")
         
         #Array holds summed up values for every run and iteration. 
@@ -57,7 +57,7 @@ class PingStats(Analysis):
 
     def packet_loss(self):
 
-        print("... Packet Loss Information ... \n")
+        print("Packet Loss Information ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("\d+%", "\d+")
 
@@ -66,7 +66,7 @@ class PingStats(Analysis):
 
     def RTT_avg(self):
 
-        print("... average RoundTripTime ... \n")
+        print("Average RoundTripTime ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("/\d+\.\d+/\d+\.\d+/", "\d+\.\d+")
 
@@ -75,7 +75,7 @@ class PingStats(Analysis):
 
     def RTT_mdev(self):
 
-        print("... RoundTripTime medium derivation ... \n")
+        print("RTT medium derivation ... \n")
         stats_input = zeros([self.nodes,self.nodes], float)
         stats_input = self.get_stats("/\d+\.\d+ ms", "\d+\.\d+")
 
