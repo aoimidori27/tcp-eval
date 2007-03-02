@@ -11,7 +11,8 @@ from um_config import *
 from um_functions import *
 from um_node import *
 
-class Nuttcp(Measurement):
+
+class NuttcpTest(Measurement):
     "Class for nuttcp measurements"
 
 
@@ -21,8 +22,8 @@ class Nuttcp(Measurement):
         Measurement.__init__(self)
 
         # object variables
-        self._reverse = ''
-
+        self.reverse = ''        
+           
         # initialization of the option parser
         self.parser.set_defaults(length = 10, reverse = False,
                                  start_server = False)
@@ -46,7 +47,7 @@ class Nuttcp(Measurement):
 
         # being reverse?
         if self.options.reverse:
-            self._reverse = "-r"
+            self.reverse = "-r"
 
 
     def test(self, iteration, run, source, target):
@@ -84,7 +85,7 @@ class Nuttcp(Measurement):
 
 
     def main(self):
-        "Main method of the nuttcp object"
+        "Main method of the nuttcp test object"
 
         self.parse_option()
         self.set_option()
@@ -93,4 +94,4 @@ class Nuttcp(Measurement):
 
 
 if __name__ == "__main__":
-    Nuttcp().main()
+    NuttcpTest().main()

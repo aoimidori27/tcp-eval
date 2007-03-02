@@ -11,7 +11,8 @@ from um_config import *
 from um_functions import *
 from um_node import *
 
-class Ping(Measurement):
+
+class PingTest(Measurement):
     "Class for ping measurements"
 
 
@@ -59,7 +60,7 @@ class Ping(Measurement):
 
 
     def main(self):
-        "Main method of the ping object"
+        "Main method of the ping test object"
 
         self.parse_option()
         self.set_option()
@@ -68,4 +69,4 @@ class Ping(Measurement):
 
 
 if __name__ == "__main__":
-    Ping().main()
+    PingTest().main()
