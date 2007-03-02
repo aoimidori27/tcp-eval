@@ -5,7 +5,7 @@
 import sys, os, os.path, subprocess, re, time, signal
 from datetime import timedelta, datetime
 from logging import info, debug, warn, error
- 
+
 # umic-mesh imports
 from um_application import Application
 from um_config import *
@@ -16,21 +16,21 @@ class Measurement(Application):
 
     def __init__(self):
         "Constructor of the object"
-    
+
         Application.__init__(self)
-    
+
         # initialization of the option parser
         usage = "usage: %prog [options] NODES\n" \
                 "where NODES := either [v]mrouter numbers or hostnames"
-        
+
         self.parser.set_usage(usage)
         self.parser.set_defaults(asymmetric = False, device = 'ath0',
                                  hostnameprefix = 'mrouter', tscale = 1,
                                  runs = 1, iterations = 1, output_dir = '.',
                                  wipe_out = False)
 
-        self.parser.add_option("-a" , "--asymmetric", 
-                               action = "store_true", dest = "asymmetric", 
+        self.parser.add_option("-a" , "--asymmetric",
+                               action = "store_true", dest = "asymmetric",
                                help = "consider one way tests only [default: %default]")
         self.parser.add_option("-d", "--dev",  metavar = "DEV",
                                action = "store", dest = "device",
@@ -39,39 +39,39 @@ class Measurement(Application):
                                action = "store", dest = "hostnameprefix",
                                help = "hostname prefix for the node IDs [default: %default]")
         self.parser.add_option("-I" , "--iterations", metavar = "#", type = int,
-                               action = "store", dest = "iterations", 
+                               action = "store", dest = "iterations",
                                help = "set number of test runs in a row [default: %default]")
         self.parser.add_option("-R" , "--runs", metavar = "#", type = int,
-                               action = "store", dest = "runs", 
+                               action = "store", dest = "runs",
                                help = "set number of test runs in a row [default: %default]")
-        self.parser.add_option("-t" , "--tscale", metavar = "SEC", type = float, 
+        self.parser.add_option("-t" , "--tscale", metavar = "SEC", type = float,
                                action = "store", dest = "tscale",
                                help = "set factor to scale watchdog timers [default: %default]")
         self.parser.add_option("-O" , "--output", metavar = "dir",
-                               action = "store", dest = "output_dir", 
+                               action = "store", dest = "output_dir",
                                help = "set the directory to write log files to [default: %default]")
-        self.parser.add_option("-w" , "--wipe-out", 
-                               action = "store_true", dest = "wipe_out", 
+        self.parser.add_option("-w" , "--wipe-out",
+                               action = "store_true", dest = "wipe_out",
                                help = "create a fresh output directory [default: %default]")
 
 
     def set_option(self):
         "Set options"
-        
+
         Application.set_option(self)
-        
+
         # correct numbers of arguments?
         if len(self.args) < 2:
             self.parser.error("Incorrect number of arguments. Need at least two Nodes!")
-                
-      
+
+
     def ssh_node(self, node, command, timeout, suppress_output=False):
         "Run command at ssh login"
-        
+
         timeout = timeout * self.options.tscale
-        
+
         debug("Calling \"%s\" on %s (timeout %i seconds)" % (command, node, timeout))
-        
+
         if self.options.debug:
             os.write(self.log_file,
                      "### command=\"%s\" (timeout %i, suppress_output = %s)\n"
@@ -81,9 +81,9 @@ class Measurement(Application):
         ### Begin BASH code ###
 
         command = """
-        function sigchld() { 
+        function sigchld() {
         if ! ps $BGPID 2>&1 >/dev/null; then
-                wait $BGPID; export EXITSTATUS=$?; 
+                wait $BGPID; export EXITSTATUS=$?;
             fi;
         };
 
@@ -118,11 +118,11 @@ class Measurement(Application):
         fi
         exit 254
         """ %(command, timeout * 10)
-        
+
         #### Begin BASH code ###
         ########################
-  
-        ssh = ["ssh", "-o", "PasswordAuthentication=no","-o", 
+
+        ssh = ["ssh", "-o", "PasswordAuthentication=no","-o",
                "NumberOfPasswordPrompts=0", node, "bash -i -c '%s'" %command]
 
         null = open(os.devnull)
@@ -130,7 +130,7 @@ class Measurement(Application):
             log = null
         else:
             log = self.log_file
-            
+
         prog = subprocess.Popen(ssh, bufsize=0, stdin=null, stdout=log, stderr=log)
 
         end_ts_ssh = datetime.now() + timedelta(seconds = timeout + 6)
@@ -159,9 +159,9 @@ class Measurement(Application):
 
     def run(self):
         "Run the mesurement"
-  
+
         start_ts_measurement = datetime.now()
-        
+
         # prepare output directory
         info("Preparing output directory...")
         if not os.path.isdir(self.options.output_dir):
@@ -170,10 +170,10 @@ class Measurement(Application):
             except Exception, t:
                 error("Failed to create directory: %s" % t)
                 sys.exit(1)
-        
+
         os.chdir(self.options.output_dir)
 
-        # clean up output directory 
+        # clean up output directory
         if self.options.wipe_out:
             for file in os.listdir("."):
                 if os.path.isdir(file):
@@ -189,17 +189,17 @@ class Measurement(Application):
         for iteration in range(1, self.options.iterations + 1):
             info("Iteration %i: starting... "%(iteration))
             start_ts_iteration = datetime.now()
-            
+
             for source in self.args:
                 # for convenience convert node IDs to hostnames
                 if source.isdigit():
                     source = "%s%s" %(self.options.hostnameprefix, source)
-                
+
                 for target in self.args:
                     # for convenience convert node IDs to hostnames
                     if target.isdigit():
                         target =  "%s%s" %(self.options.hostnameprefix, target)
-                    
+
                     # ignore self connections
                     if source == target:
                         continue
@@ -213,12 +213,12 @@ class Measurement(Application):
                         self.log_file = os.open("i%02i_s%s_t%s_r%03i" %
                                                 (iteration, source, target, run),
                                                 os.O_CREAT|os.O_APPEND|os.O_RDWR, 00664)
-                        
+
                         info("start: test #%i (%i): %s -> %s"
                              % (run, iteration, source, target))
-                        
+
                         start_ts_run = datetime.now()
-                        
+
                         if self.test(iteration, run, source, target):
                             info("finished: test #%i (%i): %s -> %s (%s)"
                                  % (run, iteration, source, target,
@@ -227,11 +227,11 @@ class Measurement(Application):
                             warn("FAILED: test #%i (%i): %s -> %s (%s)"
                                  % (run, iteration, source, target,
                                     datetime.now() - start_ts_run))
-                            
+
                             os.fsync(self.log_file)
                             os.close(self.log_file)
-            
-            info("Iteration %i: finished (%s)" 
+
+            info("Iteration %i: finished (%s)"
                  % (iteration, datetime.now() - start_ts_iteration))
 
-        info("Overall runtime: %s" % (datetime.now() - start_ts_measurement))  
+        info("Overall runtime: %s" % (datetime.now() - start_ts_measurement))
