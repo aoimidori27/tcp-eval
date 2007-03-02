@@ -18,22 +18,22 @@ class Madwifi(Application):
 
     def __init__(self, devicename = 'ath0'):
         "Constructor of the object"
-    
+
         Application.__init__(self)
-        
+
         # object variables
         self.commands = ('loadmod', 'unloadmod', 'createdev', 'killdev',
-                         'ifup', 'ifdown', 'setessid', 'setchannel', 
+                         'ifup', 'ifdown', 'setessid', 'setchannel',
                          'settxpower', 'setantenna', 'start')
         self.action = ''
-    
+
         node      = Node()
-        nodeinfo  = node.getinfo()
-        nodenumber= node.getnumber()
+        nodeinfo  = node.info()
+        nodenumber= node.number()
         meshdevs   = nodeinfo['meshdevices']
         devicecfg  = meshdevs[devicename]
         activecfg  = deviceconfig[devicecfg]
-            
+
         # initialization of the option parser
         usage = "usage: %prog [options] COMMAND \n" \
                 "where  COMMAND := { loadmod | unloadmod | createdev | " \
@@ -49,16 +49,16 @@ class Madwifi(Application):
                                  hwdevice = activecfg['hwdevice'],
                                  txpower  = activecfg['txpower'],
                                  antenna  = activecfg['antenna'])
-        
+
         self.parser.add_option("-a", "--addr", metavar = "IP",
                                action = "store", dest = "address",
-                               help = "define the IP address [default: %default]")                
+                               help = "define the IP address [default: %default]")
         self.parser.add_option("-c", "--chan", metavar = "NUM", type = int,
                                action = "store", dest = "channel",
                                help = "define the wireless channel [default: %default]")
         self.parser.add_option("-d", "--dev",  metavar = "DEV",
                                action = "store", dest = "device",
-                               help = "define the device [default: %default]")  
+                               help = "define the device [default: %default]")
         self.parser.add_option("-e", "--essid", metavar = "ID",
                                action = "store", dest = "essid",
                                help = "define the essid [default: %default]")
@@ -76,13 +76,13 @@ class Madwifi(Application):
                                action = "store", dest = "antenna",
                                help = "define antenna for transmit and receive"\
                                "\n [default: %default]")
-   
-   
+
+
     def set_option(self):
         "Set options"
-        
+
         Application.set_option(self)
-        
+
         # correct numbers of arguments?
         if len(self.args) != 1:
             self.parser.error("incorrect number of arguments")
@@ -93,7 +93,7 @@ class Madwifi(Application):
         # does the command exists?
         if not self.action in self.commands:
             self.parser.error("unknown COMMAND %s" %(self.action))
-    
+
 
     def loadmod(self):
         "Loading madwifi-ng driver"
@@ -102,7 +102,7 @@ class Madwifi(Application):
         prog2 = subprocess.Popen(["grep", "ath_pci"],
                                  stdin = prog1.stdout, stdout = subprocess.PIPE)
         (stdout, stderr) = prog2.communicate()
-    
+
         if stdout == "":
             info("Loading madwifi-ng driver...")
             try:
@@ -114,12 +114,12 @@ class Madwifi(Application):
         else:
             warn("Madwifi-ng is already loaded")
 
-    
+
     def unloadmod(self):
         "Loading madwifi-ng driver"
 
         prog1 = subprocess.Popen(["lsmod"], stdout = subprocess.PIPE)
-        prog2 = subprocess.Popen(["grep", "ath-pci"], 
+        prog2 = subprocess.Popen(["grep", "ath-pci"],
                                  stdin = prog1.stdout, stdout = subprocess.PIPE)
         (stdout, stderr) = prog2.communicate()
 
@@ -137,7 +137,7 @@ class Madwifi(Application):
 
     def createdev(self):
         "Creating VAP in the desired mode"
-    
+
         info("Creating VAP in %s mode" %(self.options.wlanmode))
         cmd = ("wlanconfig", self.options.device, "create", "wlandev", \
                self.options.hwdevice, "wlanmode", self.options.wlanmode)
@@ -189,7 +189,7 @@ class Madwifi(Application):
         if self.deviceexists():
             info("Take VAP %s down" %(self.options.device))
             try:
-                call(["ip", "link", "set", self.options.device, "down"], 
+                call(["ip", "link", "set", self.options.device, "down"],
                      shell = False)
                 call(["ip", "addr", "flush", "dev", self.options.device],
                      shell = False)
@@ -198,8 +198,8 @@ class Madwifi(Application):
                 sys.exit(-1)
         else:
             warn("VAP %s does not exist" %(self.options.device))
-        
-    
+
+
     def setessid(self):
         "Set the ESSID of desired device"
 
@@ -214,8 +214,8 @@ class Madwifi(Application):
                 sys.exit(-1)
         else:
             warn("VAP %s does not exist" %(self.options.device))
-    
-        
+
+
     def setchannel(self):
         "Set the WLAN channel of desired device"
 
@@ -230,7 +230,7 @@ class Madwifi(Application):
                 sys.exit(-1)
         else:
             warn("VAP %s does not exist" %(self.options.device))
-        
+
 
     def settxpower(self):
         "Set the TX-Power of desired device"
@@ -262,8 +262,8 @@ class Madwifi(Application):
         except CommandFailed:
             error("Setting tx/rx-antenna to %d was unsuccessful" % self.options.antenna)
             sys.exit(-1)
-   
- 
+
+
     def deviceexists(self):
         cmd = ("ip", "link", "show",self.options.device)
         (stdout, stderr) = execute(cmd, shell = False, raiseError = False)
@@ -278,16 +278,16 @@ class Madwifi(Application):
         self.ifup()
         self.settxpower()
 
-        
+
     def main(self):
         "Main method of the madwifi object"
 
         self.parse_option()
         self.set_option()
-        
+
         # call the corresponding method
         requireroot()
-        eval("self.%s()" %(self.action)) 
+        eval("self.%s()" %(self.action))
 
 
 

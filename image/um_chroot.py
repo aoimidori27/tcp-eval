@@ -20,7 +20,7 @@ class Chroot(Application):
 
         # object variables
         self.command = "/bin/bash"
-        
+
         if os.environ.has_key('SUDO_USER'):
             default_user = os.environ['SUDO_USER']
         else:
@@ -59,9 +59,9 @@ class Chroot(Application):
 
         # for chroot, imagetype and nodetype are required
         node      = Node(type = self.options.nodetype)
-        nodetype  = node.gettype()
-        imageinfo = node.getimageinfo()
-        imagepath = node.getimagepath()
+        nodetype  = node.type()
+        imageinfo = node.imageinfo()
+        imagepath = node.imagepath()
 
         info("Nodetype: %s" %(nodetype))
 

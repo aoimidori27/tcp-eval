@@ -8,7 +8,6 @@ from socket import gethostname
 # umic-mesh imports
 from um_config import *
 
-
 class Node(object):
     "Provides access to configuration infos about a certain host (or a node type)"
 
@@ -23,105 +22,105 @@ class Node(object):
         """
 
         # object variables
-        self.hostname = ''
-        self.type = ''
+        self._hostname = ''
+        self._type = ''
 
-        if not hostname == None:
-            self.hostname = hostname
+        if hostname:
+            self._hostname = hostname
         else:
-            self.hostname = gethostname()
+            self._hostname = gethostname()
 
 
-        if not type == None:
-        
+        if type:
+
             if type in nodeinfos:
-                self.type = type
+                self._type = type
             else:
                 raise NodeTypeException('Invalid value for NODETYPE'
                         'Please set it to one of %s.'% nodeinfos.keys())
-        
+
         else:
             # Compute list of nodetypes which match for hostname
             type_list = []
             for (nodetype, nodeinfo) in nodeinfos.iteritems():
-                if re.match(nodeinfo['hostnameprefix'], self.hostname):
+                if re.match(nodeinfo['hostnameprefix'], self._hostname):
                     type_list.append(nodetype)
 
             if len(type_list) == 1:
-                self.type = type_list[0]
+                self._type = type_list[0]
             elif len(type_list) == 0:
                 raise NodeTypeException('Cannot derived NODETYPE from'
-                        'hostname, as there no types with fitting'
-                        'hostnameprefix" entries: %s' % type_list)
+                        ' hostname, as there are no types with fitting'
+                        ' "hostnameprefix" entries: %s' % type_list)
             else:
                 raise NodeTypeException('Cannot derived NODETYPE from'
-                        'hostname, as there multiple types with fitting'
-                        'hostnameprefix" entries: %s' % type_list)
+                        ' hostname, as there are multiple types with fitting'
+                        ' hostnameprefix" entries: %s' % type_list)
 
 
-    def gettype(self):
+    def type(self):
         "Returns the nodetype of the node"
 
-        return self.type
-    
+        return self._type
 
-    def gethostname(self):
+
+    def hostname(self):
         "Returns the hostname of the node"
 
-        return self.hostname
+        return self._hostname
 
 
-    def getinfo(self):
+    def info(self):
         "Returns the nodeinfos of the node"
 
-        return nodeinfos[self.type]
+        return nodeinfos[self._type]
 
 
-    def gethostnameprefix(self):
+    def hostnameprefix(self):
         "Derives the hostnameprefix from the hostname"
 
-        return self.getinfo()['hostnameprefix']
+        return self.info()['hostnameprefix']
 
 
-    def getnumber(self):
+    def number(self):
         "Derives the nodenumber from the hostname"
 
-        return re.sub(self.gethostnameprefix(), '', self.hostname)
+        return re.sub(self.hostnameprefix(), '', self.hostname())
 
 
-    def getipaddress(self, device = 'ath0'):
+    def ipaddress(self, device = 'ath0'):
         "Get the IP of a specific device of the node"
 
-        meshdevs   = self.getinfo()['meshdevices']
+        meshdevs   = self.info()['meshdevices']
         devicecfg  = meshdevs[device]
         activecfg  = deviceconfig[devicecfg]
-        address    = re.sub('@NODENR', self.getnumber(), activecfg['address'])
-        
+        address    = re.sub('@NODENR', self.number(), activecfg['address'])
+
         return address
 
 
-    def getipconfig(self, device = 'ath0'):
+    def ipconfig(self, device = 'ath0'):
         "Get the IP of a specific device of the node"
-        
-        meshdevs  = self.getinfo()['meshdevices']
+
+        meshdevs  = self.info()['meshdevices']
         devicecfg = meshdevs[device]
-        activecfg = deviceconfig[devicecfg]       
+        activecfg = deviceconfig[devicecfg]
         netmask   = activecfg['netmask']
-        address   = "%s/%s" %(self.getipconfig(), netmask)
+        address   = "%s/%s" %(self.ipaddress(), netmask)
 
         return address
 
 
-    def getimageinfo(self):
-        "Return the imageinfos for the node"
+    def imageinfo(self):
+        "Returns the imageinfos for the node"
 
-        return imageinfos[self.getinfo()['imagetype']]
+        return imageinfos[self.info()['imagetype']]
 
 
-    def getimagepath(self):
-        "Return the imagepath for the node"
+    def imagepath(self):
+        "Returns the imagepath for the node"
 
-        nodeinfo = self.getinfo()
+        nodeinfo = self.info()
         return "%s/%s.img/%s" % (imageprefix, nodeinfo['imagetype'], nodeinfo['imageversion'])
 
 

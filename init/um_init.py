@@ -29,9 +29,9 @@ class Init(Application):
 
     def init(self):
         node     = Node()
-        hostname = node.gethostname()
-        nodetype = node.gettype()
-        nodeinfo = node.getinfo() 
+        hostname = node.hostname()
+        nodetype = node.type()
+        nodeinfo = node.info() 
 
         info("Hostname:  %s" %(hostname))
         info("Nodetype:  %s" %(nodetype))
