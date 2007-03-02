@@ -28,7 +28,7 @@ class Node(object):
         if hostname:
             self._hostname = hostname
         else:
-            self._hostname = gethostname()
+            self._hostname = socket.gethostname()
 
 
         if type:
