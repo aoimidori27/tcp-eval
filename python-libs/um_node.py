@@ -88,8 +88,8 @@ class Node(object):
         return re.sub(self.hostnameprefix(), '', self.hostname())
 
 
-    def ipaddress(self, device = 'ath0'):
-        "Get the IP of a specific device of the node"
+    def ipconfig(self, device = 'ath0'):
+        "Get the IP of a specific device including the netmask in slashed notation"
 
         meshdevs   = self.info()['meshdevices']
         devicecfg  = meshdevs[device]
@@ -99,16 +99,13 @@ class Node(object):
         return address
 
 
-    def ipconfig(self, device = 'ath0'):
-        "Get the IP of a specific device of the node"
+    def ipaddress(self, device = 'ath0'):
+        "Get the IP of a specific device without the netmask of the node"
 
-        meshdevs  = self.info()['meshdevices']
-        devicecfg = meshdevs[device]
-        activecfg = deviceconfig[devicecfg]
-        netmask   = activecfg['netmask']
-        address   = "%s/%s" %(self.ipaddress(), netmask)
+        ipconfig = self.ipconfig()
+        raw_address = ipconfig[:ipconfig.find('/')]
 
-        return address
+        return raw_address
 
 
     def imageinfo(self):

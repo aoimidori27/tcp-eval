@@ -98,7 +98,7 @@ imageinfos = dict(
                         '/scripts/util' : 'scripts/util' },
         scriptmappings = { 'scripts/mesh' : '/usr/local/sbin',
                            'scripts/util' : '/usr/local/bin',
-                           'scripts/init' : '/usr/local/sbin' }    
+                           'scripts/init' : '/usr/local/sbin' }
     )
 )
 
@@ -109,8 +109,7 @@ deviceconfig = dict(
         essid    = 'umic-mesh-ah',
         channel  = 1,
         antenna  = 2,
-        address  = '169.254.9.@NODENR',
-        netmask  = '16',
+        address  = '169.254.9.@NODENR/16',
         wlanmode = 'ahdemo',
         txpower  = 0
     ),
@@ -119,8 +118,7 @@ deviceconfig = dict(
         essid    = 'umic-mesh-sta',
         channel  = 11,
         antenna  = 2,
-        address  = '169.254.10.@NODENR',
-        netmask  = '16',
+        address  = '169.254.10.@NODENR/16',
         wlanmode = 'sta',
         txpower  = 0
     )
