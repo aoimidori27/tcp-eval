@@ -228,8 +228,8 @@ class Measurement(Application):
                                  % (run, iteration, source, target,
                                     datetime.now() - start_ts_run))
 
-                            os.fsync(self.log_file)
-                            os.close(self.log_file)
+                        os.fsync(self.log_file)
+                        os.close(self.log_file)
 
             info("Iteration %i: finished (%s)"
                  % (iteration, datetime.now() - start_ts_iteration))
