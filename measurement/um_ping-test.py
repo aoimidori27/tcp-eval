@@ -45,7 +45,7 @@ class Ping(Measurement):
         "Run the ping measurement"
 
         targetnode = Node(hostname = target)
-        targetip = targetnode.getipaddress(self.options.device)
+        targetip = targetnode.ipaddress(self.options.device)
     
         rc = self.ssh_node(source, "ping -s %i -c %i -i %i %s"
                            % (self.options.packet_size, self.options.count,

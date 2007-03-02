@@ -9,6 +9,7 @@ from um_application import Application
 from um_measurement import *
 from um_config import *
 from um_functions import *
+from um_node import *
 
 class Nuttcp(Measurement):
     "Class for nuttcp measurements"
@@ -20,7 +21,7 @@ class Nuttcp(Measurement):
         Measurement.__init__(self)
 
         # object variables
-        self.reverse = ''        
+        self._reverse = ''        
            
         # initialization of the option parser
         self.parser.set_defaults(length = 10, reverse = False,
@@ -45,7 +46,7 @@ class Nuttcp(Measurement):
 
         # being reverse?        
         if self.options.reverse:
-            self.reverse = "-r"
+            self._reverse = "-r"
     
         
     def test(self, iteration, run, source, target):
@@ -68,7 +69,8 @@ class Nuttcp(Measurement):
             error("%s is not running a nuttcp server. pidof rc=%d" % (target, rc))
             return False
 
-        targetip = getwlanip(target, self.options.device)
+        targetnode = Node(hostname = target)
+        targetip = targetnode.ipaddress(self.options.device)
  
         rc = self.ssh_node(source, "nuttcp -T  %i %s -v -fparse %s"
                            % (self.options.length, self.reverse, targetip),
