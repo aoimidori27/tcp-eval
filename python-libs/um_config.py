@@ -95,6 +95,7 @@ imageinfos = dict(
                         '/tools/net-snmp/branches/um-version' : 'tools/net-snmp',
                         '/scripts/python-libs' : 'scripts/python-libs',
                         '/scripts/mesh' : 'scripts/mesh',
+                        '/scripts/init' : 'scripts/init',
                         '/scripts/util' : 'scripts/util' },
         scriptmappings = { 'scripts/mesh' : '/usr/local/sbin',
                            'scripts/util' : '/usr/local/bin',
