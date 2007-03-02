@@ -86,7 +86,6 @@ def execpy(arguments = []):
     try:
         info ("Now running %s " % script)
         execfile(script, globals())
-        error ("One should not get here.")
     except SystemExitException, inst:
         info ("Script %s exited with sys.exit(%d)"
               % (script, inst.status))
