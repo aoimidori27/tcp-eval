@@ -23,7 +23,7 @@ class Application(object):
         
         self.parser.add_option("-s", "--syslog",
                                action = "store_true", dest = "syslog",
-                               help = "log to syslog [default: %default]")
+                               help = "log to syslog")
         self.parser.add_option("-v", "--verbose",
                                action = "store_true", dest = "verbose",
                                help = "being more verbose [default]")
@@ -32,7 +32,7 @@ class Application(object):
                                help = "being more quiet")
         self.parser.add_option("--debug",
                                action = "store_true", dest = "debug",
-                               help = "being even more verbose [default: %default]")
+                               help = "being even more verbose")
 
 
     def parse_option(self):
