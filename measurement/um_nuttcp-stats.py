@@ -102,7 +102,7 @@ class NuttcpStats(Analysis):
 
         print("RTO msec ... \n")
         stats_input = zeros([self.options.nodes,self.options.nodes], float)
-        stats_input = self.get_stats("rto_msec=\d+", "\d+")
+        stats_input = self.get_stats("rto_msec=\d+\.\d+", "\d+\.\d+")
 
         return stats_input
 
@@ -112,7 +112,7 @@ class NuttcpStats(Analysis):
 
         print("RTT msec ... \n")
         stats_input = zeros([self.options.nodes,self.options.nodes], float)
-        stats_input = self.get_stats("rtt_msec=\d+", "\d+")
+        stats_input = self.get_stats("rtt_msec=\d+\.\d+", "\d+\.\d+")
 
         return stats_input
 
@@ -122,7 +122,7 @@ class NuttcpStats(Analysis):
 
         print("RTT var msec ... \n")
         stats_input = zeros([self.options.nodes,self.options.nodes], float)
-        stats_input = self.get_stats("rtt_var_msec=\d+", "\d+")
+        stats_input = self.get_stats("rtt_var_msec=\d+\.\d+", "\d+\.\d+")
 
         return stats_input
 

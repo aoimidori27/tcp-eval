@@ -138,8 +138,8 @@ class Analysis(Application):
     def get_hop_count(self):
         "Get hop_count matrix out of hops file"
 
-        if os.path.isfile(self.options.indir + "none.hops"):
-            FILE = open(self.options.indir + "none.hops" ,"r")
+        if os.path.isfile(self.options.indir + "none_hops"):
+            FILE = open(self.options.indir + "none_hops" ,"r")
             file_content_list = FILE.readlines()
         else:
             print("Please create 'hops' file first ! \n um_analysis_ping -O 'dir' hops")
@@ -282,7 +282,7 @@ class Analysis(Application):
                 print(stats)
         else:
             if hops == -1:
-                filename = self.analysis + "." + self.action
+                filename = self.analysis + "_" + self.action
                 print("Writing values to file %s%s" %(self.options.outdir,filename))
                 file = self.options.outdir + filename
                 FILE = open(file,"w")
@@ -303,7 +303,7 @@ class Analysis(Application):
             
             elif self.options.plot == 1:
                 #create plottable output
-                filename = self.analysis + "." + self.action + ".values"
+                filename = self.analysis + "_" + self.action + "_values"
                 print("For %s hop(s):" %hops)
                 print("Appending values to GnuPlot file %s%s\n" %(self.options.outdir,filename))
                 file = self.options.outdir + filename
@@ -312,7 +312,7 @@ class Analysis(Application):
                 FILE.close()
             
             else:
-                filename = self.analysis + "." + self.action
+                filename = self.analysis + "_" + self.action
                 print("Appending values to file %s%s" %(self.options.outdir,filename))
                 file = self.options.outdir + filename
                 FILE = open(file,"a")
@@ -336,7 +336,7 @@ class Analysis(Application):
                 if self.options.outdir == "stdout":
                     print("#hops\t#%s_%s\t#intervall\t#hop_count\n" %(self.analysis, self.action))
                 else:
-                    filename = self.analysis + "." + self.action + ".values"
+                    filename = self.analysis + "_" + self.action + "_values"
                     print("Creating GnuPlot file %s%s" %(self.options.outdir,filename))
                     file = self.options.outdir + filename
                     if os.path.isfile(file):
@@ -345,7 +345,7 @@ class Analysis(Application):
                     FILE.write("#hops\t#%s_%s\t#conf_intervall_constant\t#hop_count\n" %(self.analysis, self.action))
                     FILE.close()
             else:
-                filename = self.analysis + "." + self.action
+                filename = self.analysis + "_" + self.action
                 file = self.options.outdir + filename
                 if os.path.isfile(file):
                     os.remove(file)
@@ -367,4 +367,4 @@ class Analysis(Application):
             stats = eval("self.%s(%s,-1)" %(self.analysis, "result"))
             
             # print out the stuff
-            self.print_out(stats, -1, 0)
+            self.print_out(stats, -1, 0,-1)
