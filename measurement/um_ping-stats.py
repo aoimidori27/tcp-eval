@@ -28,6 +28,7 @@ class PingStats(Analysis):
 
 
     def set_option(self):
+        "Options Setter"
 
         Analysis.set_option(self)
 
@@ -36,14 +37,15 @@ class PingStats(Analysis):
 
 
     def hops(self):
+        "Greps the number of hops"
 
         print("Hop Information ... \n")
         stats_input = self.get_stats("ttl=\d+", "\d+")
         
         #Array holds summed up values for every run and iteration. 
         #Average over all of them and get an Integer out of i
-        for source in range(1, self.nodes+1):
-            for target in range(1, self.nodes+1):
+        for source in range(1, self.options.nodes+1):
+            for target in range(1, self.options.nodes+1):
                 if source==target:
                     continue
                 if stats_input[source-1][target-1] > 0:
@@ -56,27 +58,30 @@ class PingStats(Analysis):
 
 
     def packet_loss(self):
+        "Greps the packet loss"
 
         print("Packet Loss Information ... \n")
-        stats_input = zeros([self.nodes,self.nodes], float)
+        stats_input = zeros([self.options.nodes,self.options.nodes], float)
         stats_input = self.get_stats("\d+%", "\d+")
 
         return stats_input
 
 
     def RTT_avg(self):
+        "Greps the average RTT"
 
         print("Average RoundTripTime ... \n")
-        stats_input = zeros([self.nodes,self.nodes], float)
+        stats_input = zeros([self.options.nodes,self.options.nodes], float)
         stats_input = self.get_stats("/\d+\.\d+/\d+\.\d+/", "\d+\.\d+")
 
         return stats_input
 
 
     def RTT_mdev(self):
+        "Greps the RTT mdev"
 
         print("RTT medium derivation ... \n")
-        stats_input = zeros([self.nodes,self.nodes], float)
+        stats_input = zeros([self.options.nodes,self.options.nodes], float)
         stats_input = self.get_stats("/\d+\.\d+ ms", "\d+\.\d+")
 
         return stats_input

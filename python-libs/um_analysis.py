@@ -78,7 +78,8 @@ class Analysis(Application):
 
 
     def get_stats(self, ReExpr1, ReExpr2):
-        
+        "Get statistic depending on two Regular Expressions from measurement files"       
+ 
         # Define RE's
         ReExpr = re.compile(ReExpr1)
         ReExpr_value = re.compile(ReExpr2)
@@ -129,16 +130,14 @@ class Analysis(Application):
                             debug("No matches for Regular Expression %s in file %s" %(ReExpr1, file_name))
                 
                 # Array holds summed up values for every run and iteration. Average over all of them 
-                stats_input[source-1][target-1] = stats_input[source-1][target-1] /
+                stats_input[source-1][target-1] = stats_input[source-1][target-1] / \
                                                     (self.options.runs*self.options.iterations - failed_trys)
-                # Setting NaN values to 0 if no measurement was complete
-                stats_input = nan_to_num(stats_input)
-        
         return stats_input
 
 
     def get_hop_count(self):
-        
+        "Get hop_count matrix out of hops file"
+
         if os.path.isfile(self.options.indir + "none.hops"):
             FILE = open(self.options.indir + "none.hops" ,"r")
             file_content_list = FILE.readlines()
@@ -171,6 +170,7 @@ class Analysis(Application):
 
 
     def inline_stats(self, array, hops):
+        "Get the values for a specific hop count"
 
         counter = 0
         length = (self.options.nodes - 1) * self.options.nodes
@@ -207,6 +207,7 @@ class Analysis(Application):
 
 
     def min(self, array, hops):
+        "Calculates the Minimum of seen values"        
 
         print("Min:")
         result = self.inline_stats(array, hops)
@@ -215,6 +216,7 @@ class Analysis(Application):
 
     
     def max(self, array, hops):
+        "Calculates the Maximum of seen values"        
 
         print("Max:")
         result = self.inline_stats(array, hops)
@@ -223,6 +225,7 @@ class Analysis(Application):
 
 
     def mean(self, array, hops):
+        "Calculates the Mean of seen values"        
 
         print("Mean:")
         result = self.inline_stats(array, hops)
@@ -231,6 +234,7 @@ class Analysis(Application):
 
 
     def median(self, array, hops):
+        "Calculates the Median of seen values"        
 
         print("Median:")
         result = self.inline_stats(array, hops)
@@ -239,6 +243,7 @@ class Analysis(Application):
 
 
     def deviation(self, array, hops):
+        "Calculates the deviation of seen values"        
 
         print("Deviation:")
         result = self.inline_stats(array, hops)
@@ -247,6 +252,7 @@ class Analysis(Application):
 
 
     def none(self, array, hops):
+        "Returns just the seen values"        
 
         print("Doing nothing do parsed values ...")
         if hops == -1:
@@ -257,18 +263,20 @@ class Analysis(Application):
 
 
     def conf_interval(self, inlined_stats):
-    
+        "Calculates 0.95 confidence intervall"    
+
         #0.95 confidence interval
         return 1.96 * inlined_stats.std() / sqrt(len(inlined_stats))
 
 
-    def print_out(self, stats, hops, interval):
+    def print_out(self, stats, hops, interval, hop_count):
+        "Prints out the calculated results"
 
         if self.options.outdir == "stdout":
             if hops == -1:
                 print(stats)
             elif self.options.plot == 1:
-                print("%s\t%s\t%s" %(hops, stats, interval))
+                print("%s\t%s\t%s\t%s" %(hops, stats, interval, hop_count))
             else:
                 print("For %s hop(s):" %hops)
                 print(stats)
@@ -300,7 +308,7 @@ class Analysis(Application):
                 print("Appending values to GnuPlot file %s%s\n" %(self.options.outdir,filename))
                 file = self.options.outdir + filename
                 FILE = open(file,"a")
-                FILE.write("%s\t%s\t%s\n" %(hops, stats, interval))
+                FILE.write("%s\t%s\t%s\t%s\n" %(hops, stats, interval, hop_count))
                 FILE.close()
             
             else:
@@ -314,19 +322,19 @@ class Analysis(Application):
 
 
     def run(self):
+        "Main Method"
     
         print("Starting processing ...")
         if self.options.hop_count == 1:
             # call the corresponding parse stats method
             result = eval("self.%s()" %(self.action))
-            
             # hop processing
             hop_count = self.get_hop_count()
             max_hop = hop_count.max()
  
             if self.options.plot == 1:
                 if self.options.outdir == "stdout":
-                    print("#hops\t#%s_%s\t#intervall\n" %(self.analysis, self.action))
+                    print("#hops\t#%s_%s\t#intervall\t#hop_count\n" %(self.analysis, self.action))
                 else:
                     filename = self.analysis + "." + self.action + ".values"
                     print("Creating GnuPlot file %s%s" %(self.options.outdir,filename))
@@ -334,7 +342,7 @@ class Analysis(Application):
                     if os.path.isfile(file):
                         os.remove(file)
                     FILE = open(file,"a")
-                    FILE.write("#hops\t#%s_%s\t#conf_intervall_constant\n" %(self.analysis, self.action))
+                    FILE.write("#hops\t#%s_%s\t#conf_intervall_constant\t#hop_count\n" %(self.analysis, self.action))
                     FILE.close()
             else:
                 filename = self.analysis + "." + self.action
@@ -343,8 +351,10 @@ class Analysis(Application):
                     os.remove(file)
 
             for hop in range(1, max_hop + 1):
+                # evaluate for every hop value
                 stats = eval("self.%s(%s,%s)" %(self.analysis, "result", "hop"))
-                self.print_out(stats, hop, self.conf_interval(self.inline_stats(result, hop)))
+                inlined_values = self.inline_stats(result, hop)
+                self.print_out(stats, hop, self.conf_interval(inlined_values), len(inlined_values))
         else:
             if self.options.plot == 1:
                 print("Please use also the -H option !")
