@@ -19,6 +19,9 @@ class Measurement(Application):
 
         Application.__init__(self)
 
+        # Object variables
+        self.log_file = ""
+
         # initialization of the option parser
         usage = "usage: %prog [options] NODES\n" \
                 "where NODES := either [v]mrouter numbers or hostnames"
@@ -44,7 +47,7 @@ class Measurement(Application):
         self.parser.add_option("-R" , "--runs", metavar = "#", type = int,
                                action = "store", dest = "runs",
                                help = "set number of test runs in a row [default: %default]")
-        self.parser.add_option("-t" , "--tscale", metavar = "SEC", type = float,
+        self.parser.add_option("-t" , "--tscale", metavar = "#.#", type = float,
                                action = "store", dest = "tscale",
                                help = "set factor to scale watchdog timers [default: %default]")
         self.parser.add_option("-O" , "--output", metavar = "dir",
@@ -146,7 +149,7 @@ class Measurement(Application):
                     os.kill(prog.pid, signal.SIGKILL)
                     time.sleep(1)
                     if prog.poll() == None:
-                        error("ssh still running after SIGKILL. Giving up...")
+                        error("ssh still running after SIGKILL. Giving up.")
 
         return prog.returncode
 

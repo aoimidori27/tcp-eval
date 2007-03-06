@@ -24,6 +24,7 @@ class Node(object):
         # object variables
         self._hostname = ''
         self._type = ''
+        self.msg = ''
 
         if hostname:
             self._hostname = hostname

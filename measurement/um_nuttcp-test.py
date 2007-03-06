@@ -57,7 +57,7 @@ class NuttcpTest(Measurement):
         if self.options.start_server:
             rc = self.ssh_node(target, "pidof nuttcp", 3, True)
             if (rc == 0):
-                warn("%s already runs nuttcp server albeit --start-server." % (target))
+                warn("%s is already running nuttcp server albeit --start-server." % (target))
 
             rc = self.ssh_node(target, "nuttcp -1 </dev/null 2>&0 1>&0", 3)
             if (rc != 0):
@@ -73,12 +73,28 @@ class NuttcpTest(Measurement):
         targetnode = Node(hostname = target)
         targetip = targetnode.ipaddress(self.options.device)
 
-        rc = self.ssh_node(source, "nuttcp -T  %i %s -v -fparse %s"
+        measurement_rc = self.ssh_node(source, "nuttcp -T %i %s -v -fparse %s"
                            % (self.options.length, self.reverse, targetip),
                            self.options.length + 5, False)
 
-        if (rc != 0):
-            error("nuttcp invocation %s  failed: rc=%i" % (source, rc))
+        if (measurement_rc != 0):
+            error("nuttcp invocation %s  failed: rc=%i" % (source, measurement_rc))
+
+        if self.options.start_server:
+            rc = self.ssh_node(target, "pidof nuttcp", 3, True)
+            if (rc == 0):
+                warn("%s is still running nuttcp server albeit --start-server and test done. Sending SIGINT..." % (target))
+                self.ssh_node(target, "killall -INT nuttcp", 3, True)
+                rc = self.ssh_node(target, "pidof nuttcp", 3, True)
+                if (rc == 0):
+                    warn("%s is still running nuttcp after SIGINT. Sending SIGKILL..." % (target))
+                    self.ssh_node(target, "killall -KILL nuttcp", 3, True)
+                    rc = self.ssh_node(target, "pidof nuttcp", 3, True)
+                    if (rc == 0):
+                      error("%s is still running nuttcp after SIGKILL. Giving up." % (target))
+
+
+        if (measurement_rc != 0):
             return False
         else:
             return True

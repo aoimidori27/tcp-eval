@@ -16,14 +16,19 @@ class NuttcpStats(Analysis):
 
     def __init__(self):
         "Constructor of the object"
-    
+   
+        # Object variables
+        self.action = ""
+ 
         Analysis.__init__(self)
 
         # initialization of the option parser
         usage = "usage: %prog [options] [HOW] WHAT \n" \
                 "where  HOW := { min | max | mean | median | deviation } \n" \
                 "and    WHAT := { tput | RTO_count | RTO_msec | RTT_msec | "\
-                "RTT_var | probes | backoffs | lost_packets | ssthresh | cwnd }"
+                "RTT_var | probes | backoffs | lost_packets | ssthresh | cwnd | "\
+                "retransmits }"
+
 
         self.parser.set_usage(usage)
 

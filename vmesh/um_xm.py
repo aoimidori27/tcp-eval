@@ -19,6 +19,9 @@ class Init(Application):
 
         Application.__init__(self)
 
+        # Object variables
+        self.range = ''
+
         # initialization of the option parser
         usage = "usage: %prog [OPTIONS] FROM TO"
         self.parser.set_usage(usage)

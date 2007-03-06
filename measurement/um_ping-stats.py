@@ -19,6 +19,9 @@ class PingStats(Analysis):
 
         Analysis.__init__(self)
 
+        # Object variables
+        self.action = ""
+
         # initialization of the option parser
         usage = "usage: %prog [options] [HOW] WHAT \n" \
                 "where  HOW := { min | max | mean | median | deviation } \n" \
