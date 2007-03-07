@@ -26,7 +26,7 @@ class Init(Application):
         usage = "usage: %prog [OPTIONS] FROM TO"
         self.parser.set_usage(usage)
         self.parser.set_defaults(ramdisk = None, kernel = None, memory = None)
-        
+
         self.parser.add_option("-k", "--kernel", metavar = "KERNEL",
                 action = "store", dest = "kernel",
                 help = "Kernel to use instead of the default one.")
@@ -36,6 +36,9 @@ class Init(Application):
         self.parser.add_option("-r", "--ramdisk", metavar = "RAMDISK",
                 action = "store", dest = "ramdisk",
                 help = "Initial ramdisk to use instead of the default one.")
+        self.parser.add_option("-c", "--config", metavar = "CONFIG",
+                action = "store", dest = "config",
+                help = "Configuration from um_config.py's xenconfig.")
 
 
     def set_option(self):
@@ -68,6 +71,8 @@ class Init(Application):
             cmd.append('memory=%s' % self.options.memory)
         if self.options.ramdisk != None:
             cmd.append('ramdisk=%s' % self.options.ramdisk)
+        if self.options.config != None:
+            cmd.append('config=%s' % self.options.config)
 
         for number in self.range:
             # Test if the hostname vmrouter%s was already requested by someone else
