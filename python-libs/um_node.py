@@ -50,11 +50,11 @@ class Node(object):
             if len(type_list) == 1:
                 self._type = type_list[0]
             elif len(type_list) == 0:
-                raise NodeTypeException('Cannot derived NODETYPE from'
+                raise NodeTypeException('Cannot derive NODETYPE from'
                         ' hostname, as there are no types with fitting'
-                        ' "hostnameprefix" entries: %s' % type_list)
+                        ' "hostnameprefix" entries.')
             else:
-                raise NodeTypeException('Cannot derived NODETYPE from'
+                raise NodeTypeException('Cannot derive NODETYPE from'
                         ' hostname, as there are multiple types with fitting'
                         ' hostnameprefix" entries: %s' % type_list)
 
@@ -86,7 +86,7 @@ class Node(object):
     def number(self):
         "Derives the nodenumber from the hostname"
 
-        return re.sub(self.hostnameprefix(), '', self.hostname())
+        return int(re.sub(self.hostnameprefix(), '', self.hostname()))
 
 
     def ipconfig(self, device = 'ath0'):

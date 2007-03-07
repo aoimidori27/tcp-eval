@@ -29,7 +29,7 @@ class Madwifi(Application):
 
         node      = Node()
         nodeinfo  = node.info()
-        nodenumber= node.number()
+        nodenumber= node.number().__str__()
         meshdevs   = nodeinfo['meshdevices']
         devicecfg  = meshdevs[devicename]
         activecfg  = deviceconfig[devicecfg]
