@@ -11,7 +11,10 @@ from um_util import *
 from um_node import Node, NodeTypeException
 
 class Buildmesh(Application):
-    "Setup GRE tunnels and iptables rules to simulate a mesh network with vmeshrouters"
+    """ Setup GRE tunnels and iptables rules to simulate a mesh network with vmeshrouters.
+
+     This script has to be executed on each vmeshrouter, which shall be part of the simulated network.
+    """
 
     def __init__(self):
 
