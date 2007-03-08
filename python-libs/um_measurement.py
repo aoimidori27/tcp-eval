@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys, os, os.path, subprocess, re, time, signal
+import sys, os, os.path, subprocess, re, time, signal, atexit
 from datetime import timedelta, datetime
 from logging import info, debug, warn, error
 
@@ -21,6 +21,7 @@ class Measurement(Application):
 
         # Object variables
         self.log_file = ""
+        self.MasterConnections = []
 
         # initialization of the option parser
         usage = "usage: %prog [options] NODES\n" \
@@ -122,11 +123,24 @@ class Measurement(Application):
         exit 254
         """ %(command, timeout * 10)
 
-        #### Begin BASH code ###
-        ########################
+        #### End BASH code ###
+        ######################
 
-        ssh = ["ssh", "-o", "PasswordAuthentication=no","-o",
-               "NumberOfPasswordPrompts=0", node, "bash -i -c '%s'" %command]
+        if not self.MasterConnections.__contains__(node):
+            debug("Creating ssh master connection to node " + node);
+            ssh = ["ssh", "-o", "ControlPath=" + node, "-o", "ControlMaster=auto", "-nqfN", node]
+            prog = subprocess.Popen(ssh)
+            prog.wait();
+            if prog.returncode != 0:
+		error("Failed to setup ssh control connection.")
+		return prog.returncode
+            self.MasterConnections.append(node);
+            
+        ssh = ["ssh", 
+                 "-o", "PasswordAuthentication=no",
+                 "-o", "NumberOfPasswordPrompts=0", 
+                 "-o", "ControlPath=" + node,
+                 node, "bash -i -c '%s'" %command]
 
         null = open(os.devnull)
         if suppress_output:
@@ -160,9 +174,20 @@ class Measurement(Application):
         raise NotImplementedError("The method should be implemented in the inheritance class.")
 
 
+    def cleanup(self):
+        debug("Closing ssh master connections.")
+        for node in self.MasterConnections.__iter__():
+            ssh = [ "ssh", "-o", "ControlPath=" + node, "-O", "exit", node ];
+            prog = subprocess.Popen(ssh, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (stdout, stderr) = prog.communicate()
+            if prog.returncode != 0:
+                error("Failed to close ssh master connection to %s (%s/%s)" % (node, stdout, stderr));
+
+
     def run(self):
         "Run the mesurement"
 
+        atexit.register(self.cleanup)
         start_ts_measurement = datetime.now()
 
         # prepare output directory
