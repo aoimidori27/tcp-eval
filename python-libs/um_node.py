@@ -95,8 +95,7 @@ class Node(object):
         meshdevs   = self.info()['meshdevices']
         devicecfg  = meshdevs[device]
         activecfg  = deviceconfig[devicecfg]
-        address    = re.sub('@NODENR', self.number(), activecfg['address'])
-
+        address    = re.sub('@NODENR', self.number().__str__(), activecfg['address']) 
         return address
 
 
