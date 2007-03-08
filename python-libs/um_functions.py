@@ -22,7 +22,7 @@ class CommandFailed(Exception):
         return "Command %s failed with return code %d." %(self.cmd, self.rc)
 
 
-def execute(cmd, shell, raiseError=True):
+def execute(cmd, shell, raiseError = True):
     "Excecute a shell command, "
 
     debug("Executing: %s" % cmd.__str__())
