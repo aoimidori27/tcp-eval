@@ -57,4 +57,3 @@ class Init(Application):
 
 if __name__ == "__main__":
     Init().main()
-
