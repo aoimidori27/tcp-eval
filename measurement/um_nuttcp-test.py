@@ -47,7 +47,7 @@ class NuttcpTest(Measurement):
 
         # being reverse?
         if self.options.reverse:
-            self.reverse = "-r"
+            self.reverse = " -r"
 
 
     def test(self, iteration, run, source, target):
@@ -73,8 +73,8 @@ class NuttcpTest(Measurement):
         targetnode = Node(hostname = target)
         targetip = targetnode.ipaddress(self.options.device)
 
-        measurement_rc = self.ssh_node(source, "nuttcp -T %i %s -v -fparse %s"
-                           % (self.options.length, self.reverse, targetip),
+        measurement_rc = self.ssh_node(source, "nuttcp%s -T %i -v -fparse %s/%s"
+                           % (self.reverse, self.options.length, target, targetip),
                            self.options.length + 5, False)
 
         if (measurement_rc != 0):
