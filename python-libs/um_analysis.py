@@ -26,7 +26,7 @@ class Analysis(Application):
 
         # initialization of the option parser
         usage = "usage: %prog [options] [HOW] WHAT \n" \
-                "where  HOW := { min | max | mean | median | deviation } \n"
+                "where  HOW := { min | max | mean | median | deviation | fraction } \n"
 
         self.parser.set_usage(usage)
         self.parser.set_defaults(nodes = 2, iterations = 1, runs = 1, indir = "./",
@@ -73,7 +73,7 @@ class Analysis(Application):
             self.parser.error("incorrect number of arguments")
 
         # does the command exists?
-        if not self.analysis in ("min", "max", "mean", "median", "deviation", "none"):
+        if not self.analysis in ("min", "max", "mean", "median", "deviation", "none", "fraction"):
             print("I don't know this HOW !")
 
 
@@ -249,6 +249,47 @@ class Analysis(Application):
         result = self.inline_stats(array, hops)
         
         return result.std()
+    
+    def fraction(self, array, hops):
+        "Calculates the cumulative fraction of nodes on seen values"        
+
+        if self.options.hop_count != 0:
+            print("Use fraction with -O option only. NOT hop compatible !")
+            sys.exit(0)
+        
+        result = self.inline_stats(array, -1)
+        array_len = len(result)
+        
+        if self.options.outdir == "stdout":
+            print("#Fraction\t#Tput")
+        else:
+            filename = self.analysis + "_" + self.action + "_values"
+            print("Creating GnuPlot file %s%s" %(self.options.outdir,filename))
+            file = self.options.outdir + filename
+            if os.path.isfile(file):
+                os.remove(file)
+            FILE = open(file,"a")
+            FILE.write("#Fraction\t#Tput\n")
+            FILE.close()
+            
+#        for value in range(0, int(result.max() + 1.5)):
+        result_sort = sort(result)
+        for value in result_sort:
+            count = 0
+            for result_count in range(0, array_len):
+                if result[result_count] <= value:
+                    count += 1
+            fraction = float(count) / float(array_len)
+            if self.options.outdir == "stdout":
+                print("%s\t%s" %(fraction, value))
+            else:
+                filename = self.analysis + "_" + self.action + "_values"
+                print("Appending values to GnuPlot file %s%s\n" %(self.options.outdir,filename))
+                file = self.options.outdir + filename
+                FILE = open(file,"a")
+                FILE.write("%s\t%s\n" %(fraction, value))
+                FILE.close()
+        sys.exit(0)
 
 
     def none(self, array, hops):
