@@ -23,6 +23,7 @@ class Analysis(Application):
         # object variables
         self.action = ''
         self.analysis = 'none'
+        self.max_hops = 0
 
         # initialization of the option parser
         usage = "usage: %prog [options] [HOW] WHAT \n" \
@@ -165,9 +166,26 @@ class Analysis(Application):
             counterX += 1
         
         debug(hop_values)
+        self.max_hops = hop_values.max()
         
         return hop_values
 
+    def get_neighs_per_hop(self):
+        "Gets the Count of Neighbours per Hop"
+        
+        hops = self.get_hop_count()
+        neighs = zeros([self.options.nodes, self.max_hops], int)
+        
+        #Get #neighbours per hopcount and node
+        for hop in range(1, self.max_hops+1):
+            for source in range(1, self.options.nodes+1):
+                count_neigh = 0
+                for target in range(1, self.options.nodes+1):
+                    if hops[source-1][target-1] == hop:
+                        count_neigh += 1
+                neighs[source-1][hop-1] = count_neigh
+        
+        return neighs
 
     def inline_stats(self, array, hops):
         "Get the values for a specific hop count"
@@ -253,42 +271,73 @@ class Analysis(Application):
     def fraction(self, array, hops):
         "Calculates the cumulative fraction of nodes on seen values"        
 
-        if self.options.hop_count != 0:
-            print("Use fraction with -O option only. NOT hop compatible !")
-            sys.exit(0)
-        
-        result = self.inline_stats(array, -1)
-        array_len = len(result)
-        
-        if self.options.outdir == "stdout":
-            print("#Fraction\t#Tput")
-        else:
-            filename = self.analysis + "_" + self.action + "_values"
-            print("Creating GnuPlot file %s%s" %(self.options.outdir,filename))
-            file = self.options.outdir + filename
-            if os.path.isfile(file):
-                os.remove(file)
-            FILE = open(file,"a")
-            FILE.write("#Fraction\t#Tput\n")
-            FILE.close()
-            
-#        for value in range(0, int(result.max() + 1.5)):
-        result_sort = sort(result)
-        for value in result_sort:
-            count = 0
-            for result_count in range(0, array_len):
-                if result[result_count] <= value:
-                    count += 1
-            fraction = float(count) / float(array_len)
+        if self.options.hop_count == 1:
             if self.options.outdir == "stdout":
-                print("%s\t%s" %(fraction, value))
+                print("Use only with -O. You can't see nothing on the screen :)")
+            else:
+                for hop in range(1, self.max_hops+1):
+                    filename = self.analysis + "_" + self.action + "_values_" + str(hop)
+                    print("Creating GnuPlot file %s%s" %(self.options.outdir,filename))
+                    file = self.options.outdir + filename
+                    if os.path.isfile(file):
+                        os.remove(file)
+                    FILE = open(file,"a")
+                    FILE.write("#Fraction\t#%s\n" %self.action)
+                    FILE.close()
+#                    filename = self.analysis + "_" + self.action + "_values"
+
+                    result = self.inline_stats(array, hop)
+                    result_sort = sort(result)
+                    array_len = len(result_sort)
+        
+                    for value in result_sort:
+                        count = 0
+                        for result_count in range(0, array_len):
+                            if result[result_count] <= value:
+                                count += 1
+                        fraction = float(count) / float(array_len)
+        
+                        if self.options.outdir == "stdout":
+                            print("%s\t%s" %(fraction, value))
+                        else:
+                            print("Appending values to GnuPlot file %s%s\n" %(self.options.outdir,filename))
+                            file = self.options.outdir + filename
+                            FILE = open(file,"a")
+                            FILE.write("%s\t%s\n" %(fraction, value))
+                            FILE.close()
+        else:
+            result = self.inline_stats(array, -1)
+            array_len = len(result)
+
+            if self.options.outdir == "stdout":
+                print("#Fraction\t#%s" %self.action)
             else:
                 filename = self.analysis + "_" + self.action + "_values"
-                print("Appending values to GnuPlot file %s%s\n" %(self.options.outdir,filename))
+                print("Creating GnuPlot file %s%s" %(self.options.outdir,filename))
                 file = self.options.outdir + filename
+                if os.path.isfile(file):
+                    os.remove(file)
                 FILE = open(file,"a")
-                FILE.write("%s\t%s\n" %(fraction, value))
+                FILE.write("#Fraction\t#%s\n" %self.action)
                 FILE.close()
+                
+    #        for value in range(0, int(result.max() + 1.5)):
+            result_sort = sort(result)
+            for value in result_sort:
+                count = 0
+                for result_count in range(0, array_len):
+                    if result[result_count] <= value:
+                        count += 1
+                fraction = float(count) / float(array_len)
+                if self.options.outdir == "stdout":
+                    print("%s\t%s" %(fraction, value))
+                else:
+                    filename = self.analysis + "_" + self.action + "_values"
+                    print("Appending values to GnuPlot file %s%s\n" %(self.options.outdir,filename))
+                    file = self.options.outdir + filename
+                    FILE = open(file,"a")
+                    FILE.write("%s\t%s\n" %(fraction, value))
+                    FILE.close()
         sys.exit(0)
 
 
@@ -371,7 +420,6 @@ class Analysis(Application):
             result = eval("self.%s()" %(self.action))
             # hop processing
             hop_count = self.get_hop_count()
-            max_hop = hop_count.max()
  
             if self.options.plot == 1:
                 if self.options.outdir == "stdout":
@@ -391,7 +439,7 @@ class Analysis(Application):
                 if os.path.isfile(file):
                     os.remove(file)
 
-            for hop in range(1, max_hop + 1):
+            for hop in range(1, self.max_hops + 1):
                 # evaluate for every hop value
                 stats = eval("self.%s(%s,%s)" %(self.analysis, "result", "hop"))
                 inlined_values = self.inline_stats(result, hop)
