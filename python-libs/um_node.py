@@ -118,7 +118,7 @@ class Node(object):
         "Returns the imagepath for the node"
 
         nodeinfo = self.info()
-        return "%s/%s.img/%s" % (imageprefix, nodeinfo['imagetype'], nodeinfo['imageversion'])
+        return "%s/%s" % (imageprefix, nodeinfo['imagetype'])
 
 
 

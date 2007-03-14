@@ -3,6 +3,7 @@
 
 # python imports
 from logging import info, debug, warn, error
+import os.path
 
 # umic-mesh imports
 from um_application import Application
@@ -57,11 +58,12 @@ class Chroot(Application):
         # must be root
         requireroot()
 
-        # for chroot, imagetype and nodetype are required
+        # for chroot, nodetype and imagepath are required
         node      = Node(type = self.options.nodetype)
         nodetype  = node.type()
-        imageinfo = node.imageinfo()
-        imagepath = node.imagepath()
+        # "mount" resolves symlinks, so we need to use a symlink-free path
+        # or unmounting will not work.
+        imagepath = os.path.realpath(node.imagepath())
 
         info("Nodetype: %s" %(nodetype))
 
