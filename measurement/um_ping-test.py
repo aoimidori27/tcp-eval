@@ -48,7 +48,7 @@ class PingTest(Measurement):
         targetnode = Node(hostname = target)
         targetip = targetnode.ipaddress(self.options.device)
 
-        rc = self.ssh_node(source, "ping -s %i -c %i -i %i %s"
+        rc = self.ssh_node(source, "ping -s %i -c %i -i %s %s"
                            % (self.options.packet_size, self.options.count,
                               self.options.interval, targetip),
                            self.options.count * self.options.interval + 4)
