@@ -73,6 +73,8 @@ class NuttcpTest(Measurement):
         targetnode = Node(hostname = target)
         targetip = targetnode.ipaddress(self.options.device)
 
+        route_rc = self.ssh_node(source, "ip route list %s" % targetip, 3, False)
+
         measurement_rc = self.ssh_node(source, "nuttcp%s -T %i -v -fparse %s/%s"
                            % (self.reverse, self.options.length, target, targetip),
                            self.options.length + 5, False)
