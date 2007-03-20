@@ -3,7 +3,7 @@
 
 # python imports
 from logging import info, debug, warn, error
-import os.path
+import os
 
 # umic-mesh imports
 from um_application import Application
@@ -82,10 +82,16 @@ class Chroot(Application):
                 print cmd
                 execute(cmd, shell = True)
 
+        # If we are running in 64bit userland, we need the 32bit userland wrapper.
+        if os.uname()[4] == "x86_64":
+            cmd_prefix = "/usr/bin/linux32"
+        else:
+            cmd_prefix = ""
+
         # exec command
-        cmd = "/usr/bin/linux32 /usr/sbin/chroot %s su %s -c " \
+        cmd = "%s /usr/sbin/chroot %s su %s -c " \
               "'export debian_chroot=%s && %s'" \
-              % (imagepath, self.options.user, nodetype, self.command)
+              % (cmd_prefix, imagepath, self.options.user, nodetype, self.command)
         call(cmd, shell = True)
 
         # umount
