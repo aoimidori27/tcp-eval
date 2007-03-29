@@ -27,7 +27,7 @@ class Buildmesh(Application):
         usage = """usage: %prog [options] [CONFIGFILE]
 
 CONFIGFILE syntax: A line looks like the following:
-    host1: host2, host3,  host5-host6
+    host1: host2 host3 host5-host6
 
 host1 reaches all hosts listed after the colon, every host listed after the
 colon reaches host1. Empty lines and lines starting with # are ignored.
@@ -42,7 +42,7 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
             Config file syntax: Each line either begins with a # (comment)
             or has a form like:
 
-                host1: host2, host3,  host5-host6
+                host1: host2 host3 host5-host6
 
             Where host* are numbers.
 
@@ -50,7 +50,7 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
 
             means, that host1 reaches host2 and vice versa.
 
-                host1: host2, host3
+                host1: host2 host3
 
             is equivalent to
 
@@ -121,8 +121,6 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
                 reachability_map[host].add(r)
                 reachability_map[r].add(host)
 
-        print reachability_map
-
         return reachability_map
 
     def gre_ip(self, hostnum, mask=False):
@@ -153,10 +151,10 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
 
         try:
             info("setting up GRE Broadcast tunnel for %s" % hostnum)
-            execute('sudo ip tunnel del wldev', True, False)
-            execute('sudo ip tunnel add wldev mode gre local %s remote 224.66.66.66 ttl 1 \
-                     && sudo ip addr add %s broadcast 255.255.255.255 dev wldev \
-                     && sudo ip link set wldev up' % (public_ip, gre_ip), True)
+            execute('ip tunnel del wldev', True, False)
+            execute('ip tunnel add wldev mode gre local %s remote 224.66.66.66 ttl 1 \
+                     && ip addr add %s broadcast 255.255.255.255 dev wldev \
+                     && ip link set wldev up' % (public_ip, gre_ip), True)
         except CommandFailed, inst:
             error("Setting up GRE tunnel %s (%s, %s) failed." % (hostnum, public_ip, gre_ip))
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -166,10 +164,10 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
         peers = self.conf.get(hostnum, set())
 
         try:
-            execute('sudo iptables -D INPUT -j mesh_gre_in;'
-                    'sudo iptables -F mesh_gre_in;'
-                    'sudo iptables -X mesh_gre_in;'
-                    'sudo iptables -N mesh_gre_in', True)
+            execute('iptables -D INPUT -j mesh_gre_in;'
+                    'iptables -F mesh_gre_in;'
+                    'iptables -X mesh_gre_in;'
+                    'iptables -N mesh_gre_in', True)
         except CommandFailed, inst:
             error('Could not create iptables chain "mesh_gre_in"')
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -178,15 +176,15 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
         for p in peers:
             try:
                 info("Add iptables entry: %s reaches %s" % (p, hostnum))
-                execute('sudo iptables -A mesh_gre_in -s %s -j ACCEPT' % self.gre_ip(p), True)
+                execute('iptables -A mesh_gre_in -s %s -j ACCEPT' % self.gre_ip(p), True)
             except CommandFailed, inst:
                 error('Adding iptables entry "%s reaches %s" failed.' % (p, hostnum))
                 error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
                 raise
 
         try:
-            execute('sudo iptables -A mesh_gre_in -s %s -j DROP &&'
-                    'sudo iptables -A INPUT -j mesh_gre_in' % self.gre_net(), True)
+            execute('iptables -A mesh_gre_in -s %s -j DROP &&'
+                    'iptables -A INPUT -j mesh_gre_in' % self.gre_net(), True)
         except CommandFailed, inst:
             error("Inserting iptables chain into INPUT failed.")
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
