@@ -142,7 +142,7 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
 
     def public_ip(self):
         """ Gets the local public ip """
-        return "127.0.0.10"
+        return socket.gethostbyname(gethostname))
 
     def setup_gre(self):
         hostnum = self.node.number()
