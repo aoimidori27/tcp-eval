@@ -7,7 +7,7 @@ import socket
 
 # umic-mesh imports
 from um_application import Application
-from um_util import *
+from um_functions import *
 from um_node import Node, NodeTypeException
 
 class Buildmesh(Application):
@@ -24,7 +24,15 @@ class Buildmesh(Application):
 
         self.config = None
 
-        usage = "usage: %prog [options] [CONFIGFILE]"
+        usage = """usage: %prog [options] [CONFIGFILE]
+
+CONFIGFILE syntax: A line looks like the following:
+    host1: host2, host3,  host5-host6
+
+host1 reaches all hosts listed after the colon, every host listed after the
+colon reaches host1. Empty lines and lines starting with # are ignored.
+"""
+
         self.parser.set_usage(usage)
 
     def parse_config(self, file):
@@ -69,7 +77,7 @@ class Buildmesh(Application):
         # REACHES = DIGITS REACHES "|" DIGITS "-" DIGITS " " REACHES
         # additional spaces are allowed everywhere, except around the "-"
         line_re = re.compile(r"""
-                ^([0-9])+\ *:                   # HOST ":"
+                ^([0-9]+)\ *:                   # HOST ":"
                 \ *                             # optional spaces
                 (
                     ([0-9]+(-[0-9]+)?           # DIGITS | DIGITS "-" DIGITS
@@ -99,7 +107,7 @@ class Buildmesh(Application):
                 # expand ranges if necessary
                 rm = range_re.match(r)
                 if rm:
-                    reaches.update(range(int(rm.group(1)), int(rm.group(2)+1)))
+                    reaches.update(range(int(rm.group(1)), int(rm.group(2))+1))
                 else:
                     reaches.add(int(r))
 
@@ -145,10 +153,10 @@ class Buildmesh(Application):
 
         try:
             info("setting up GRE Broadcast tunnel for %s" % hostnum)
-            execute('sudo ip tunnel del wldev', '/bin/sh', False)
+            execute('sudo ip tunnel del wldev', True, False)
             execute('sudo ip tunnel add wldev mode gre local %s remote 224.66.66.66 ttl 1 \
                      && sudo ip addr add %s broadcast 255.255.255.255 dev wldev \
-                     && sudo ip link set wldev up' % (public_ip, gre_ip), '/bin/sh')
+                     && sudo ip link set wldev up' % (public_ip, gre_ip), True)
         except CommandFailed, inst:
             error("Setting up GRE tunnel %s (%s, %s) failed." % (hostnum, public_ip, gre_ip))
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -161,7 +169,7 @@ class Buildmesh(Application):
             execute('sudo iptables -D INPUT -j mesh_gre_in;'
                     'sudo iptables -F mesh_gre_in;'
                     'sudo iptables -X mesh_gre_in;'
-                    'sudo iptables -N mesh_gre_in', '/bin/sh')
+                    'sudo iptables -N mesh_gre_in', True)
         except CommandFailed, inst:
             error('Could not create iptables chain "mesh_gre_in"')
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -170,7 +178,7 @@ class Buildmesh(Application):
         for p in peers:
             try:
                 info("Add iptables entry: %s reaches %s" % (p, hostnum))
-                execute('sudo iptables -A mesh_gre_in -s %s -j ACCEPT' % self.gre_ip(p), '/bin/sh')
+                execute('sudo iptables -A mesh_gre_in -s %s -j ACCEPT' % self.gre_ip(p), True)
             except CommandFailed, inst:
                 error('Adding iptables entry "%s reaches %s" failed.' % (p, hostnum))
                 error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -178,7 +186,7 @@ class Buildmesh(Application):
 
         try:
             execute('sudo iptables -A mesh_gre_in -s %s -j DROP &&'
-                    'sudo iptables -A INPUT -j mesh_gre_in' % self.gre_net(), '/bin/sh')
+                    'sudo iptables -A INPUT -j mesh_gre_in' % self.gre_net(), True)
         except CommandFailed, inst:
             error("Inserting iptables chain into INPUT failed.")
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
