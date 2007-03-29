@@ -7,7 +7,7 @@ import socket
 
 # umic-mesh imports
 from um_application import Application
-from um_util import *
+from um_functions import *
 from um_node import Node, NodeTypeException
 
 class Buildmesh(Application):
