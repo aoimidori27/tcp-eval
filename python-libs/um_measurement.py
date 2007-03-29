@@ -132,10 +132,10 @@ class Measurement(Application):
             prog = subprocess.Popen(ssh)
             prog.wait();
             if prog.returncode != 0:
-		error("Failed to setup ssh control connection.")
-		return prog.returncode
+                error("Failed to setup ssh control connection.")
+                return prog.returncode
             self.MasterConnections.append(node);
-            
+
         ssh = ["ssh", 
                  "-o", "PasswordAuthentication=no",
                  "-o", "NumberOfPasswordPrompts=0", 
