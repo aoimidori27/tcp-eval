@@ -1,7 +1,13 @@
 #/bin/sh
 
-SVN_USER=
-SVN_PASSWD=
+if [ "$(whoami)" != "root" ]; then
+	echo "ERROR: You need to be root in order to re-create the website."
+	exit 1
+fi
+
+# FIXME: Add svn root checkout only account?
+SVN_USER=schaffrath
+SVN_PASSWD=jhufn?t%
 
 if ! type -P bibtex2html > /dev/null ; then
 	echo "ERROR: bibtex2html not found."
@@ -9,21 +15,26 @@ if ! type -P bibtex2html > /dev/null ; then
 fi
 
 if [ ! -d .svn ]; then
-	echo "ERROR: This is not a working copy. Call this script in the website's working copy."
-	exit 1
-fi
-
-URL=$(svn info . |grep "^URL:")
-
-if [ "$URL" = "${URL%%umic-mesh/website/trunk}" ]; then
-	echo "ERROR: Wrong repository?"
-	exit 1
-fi
-
-if [ -n "$(svn --ignore-externals st . | grep -v ^X)"  ]; then
 	if [ "$1" != "--force" ]; then
-		echo "ERROR: Repository is not clean. Check with 'svn st'. Use --force to override check."
+		echo "ERROR: This is not a working copy. Call this script in the website's working copy. Use --force to override check."
 		exit 1
+	else
+		RECREATE_FROM_SCRATCH=1
+	fi
+fi
+
+if [ -z "$RECREATE_FROM_SCRATCH" ]; then
+	URL=$(svn info . |grep "^URL:")
+	if [ "$URL" = "${URL%%umic-mesh/website/trunk}" ]; then
+		echo "ERROR: Wrong repository?"
+		exit 1
+	fi
+
+	if [ -n "$(svn --ignore-externals st . | grep -v ^X)"  ]; then
+		if [ "$1" != "--force" ]; then
+			echo "ERROR: Repository is not clean. Check with 'svn st'. Use --force to override check."
+			exit 1
+		fi
 	fi
 fi
 
