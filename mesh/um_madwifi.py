@@ -271,6 +271,7 @@ class Madwifi(Application):
 
 
     def start(self):
+        self.parse_option()
         self.createdev()
         self.setchannel()
         self.setessid()
