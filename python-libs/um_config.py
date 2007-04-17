@@ -52,8 +52,10 @@ nodeinfos = dict(
         imageversion   = 'um_edgy',
         meshdevices    = { 'ath0' : 'wlancfg0', 'ath1' : 'wlancfg2' },
         startup        = [ 'execpy(["/usr/local/sbin/um_madwifi", "--debug", "loadmod"])',
-                           'execpy(["/usr/local/sbin/um_madwifi", "--debug", "--dev=ath0", "start"])',
-                           'execpy(["/usr/local/sbin/um_madwifi", "--debug", "--dev=ath1", "start"])',
+                           'Madwifi("ath0").start()',
+                           'Madwifi("ath1").start()',
+#                           'execpy(["/usr/local/sbin/um_madwifi", "--debug", "--dev=ath0", "start"])',
+#                           'execpy(["/usr/local/sbin/um_madwifi", "--debug", "--dev=ath1", "start"])',
                            'call(["/etc/init.d/snmpd", "start"], shell=False)' ] 
     )
 )
