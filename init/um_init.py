@@ -9,6 +9,7 @@ from um_application import Application
 from um_config import *
 from um_functions import *
 from um_node import *
+from um_madwifi import Madwifi
 
 
 class Init(Application):
