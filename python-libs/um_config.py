@@ -50,9 +50,10 @@ nodeinfos = dict(
         hostnameprefix = 'mrouter',
         imagetype      = 'meshnode',
         imageversion   = 'um_edgy',
-        meshdevices    = { 'ath0' : 'wlancfg0', 'ath1' : 'wlancfg1' },
+        meshdevices    = { 'ath0' : 'wlancfg0', 'ath1' : 'wlancfg2' },
         startup        = [ 'execpy(["/usr/local/sbin/um_madwifi", "--debug", "loadmod"])',
                            'execpy(["/usr/local/sbin/um_madwifi", "--debug", "--dev=ath0", "start"])',
+                           'execpy(["/usr/local/sbin/um_madwifi", "--debug", "--dev=ath1", "start"])',
                            'call(["/etc/init.d/snmpd", "start"], shell=False)' ] 
     )
 )
@@ -76,6 +77,7 @@ imageinfos = dict(
     vmeshnode = dict(
         svnmappings = { '/config/vmeshnode/trunk' : 'config',
                         '/linux/xen/trunk' : 'linux/default',
+                        '/linux/xen/branches/linux-2.6.16.29-xen-elcn' : 'linux/elcn',
                         '/routing/olsr/branches/um-version-olsr4' : 'routing/olsr4',
                         '/routing/olsr/branches/um-version-olsr5' : 'routing/olsr5',
                         '/tools/nuttcp/branches/um-version' : 'tools/nuttcp',
@@ -94,7 +96,7 @@ imageinfos = dict(
                         '/routing/olsr/branches/um-version-olsr5' : 'routing/olsr5',
                         '/drivers/madwifi-ng/branches/um-version' : 'drivers/madwifi-ng',
                         '/tools/nuttcp/branches/um-version' : 'tools/nuttcp',
-                        '/projects/meshstat/net-snmp/branches/um-version/' : 'tools/net-snmp',
+                        '/projects/meshstat/net-snmp/branches/um-version' : 'net-snmp',
                         '/tools/set-tcp_elcn/' : 'tools/set-tcp_elcn',
                         '/scripts/python-libs' : 'scripts/python-libs',
                         '/scripts/mesh' : 'scripts/mesh',
@@ -124,6 +126,15 @@ deviceconfig = dict(
         antenna  = 2,
         address  = '169.254.10.@NODENR/16',
         wlanmode = 'sta',
+        txpower  = 0
+    ), 
+    wlancfg2 = dict(
+        hwdevice = 'wifi1',
+        essid    = 'umic-mesh-ah2',
+        channel  = 11,
+        antenna  = 2,
+        address  = '169.254.10.@NODENR/16',
+        wlanmode = 'ahdemo',
         txpower  = 0
     )
 )
