@@ -3,7 +3,7 @@
 # script to load and initialize netconsole module
 
 LOGSERVER=bootserver
-LOGPORT=514 # syslog
+LOGPORT=515 # syslog
 
 # fill arp cache
 ping -c 1 $LOGSERVER
