@@ -53,6 +53,9 @@ function makedev() {
    
    # net tun
    mknod $INITRD_TMP/dev/net/tun c 10 200
+ 
+   # watchdog
+   mknod $INITRD_TMP/dev/watchdog c 10 130
    
 }
 
