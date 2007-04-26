@@ -43,12 +43,12 @@ rm -Rf .svn/ *
 umask 0002
 svn --username=$SVN_USER --password=$SVN_PASSWD co svn://www.umic-mesh.net/umic-mesh/website/trunk .
 
-# Generate user check out plus literature
+# Generate user check outs plus literature
 TMPDIR=/tmp/$0.$$
 svn --username=$SVN_USER --password=$SVN_PASSWD co svn://www.umic-mesh.net/diplomarbeiten/thesis/branches $TMPDIR
 WARNING=
 for user in $TMPDIR/*; do
-	svn --username=$SVN_USER --password=$SVN_PASSWD co svn://www.umic-mesh.net/diplomarbeiten/branches/$(basename $user) internal_theses/
+	mv $user/html internal_theses/$(basename $user)
 	bibtex2html -b -R $user/literature/paper/ -f -P internal -O internal_theses/$(basename $user)/literature $user/literature/Literature.bib || WARNING="$WARNING $user"
 done
 
