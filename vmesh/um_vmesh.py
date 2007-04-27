@@ -90,6 +90,8 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
         ## read (asymmetric) reachability information from the config file
         asym_map = {}
         for line in open(file, 'r'):
+            # strip trailing spaces
+            line = line.strip()
 
             # ignore comments
             if comment_re.match(line):
@@ -98,7 +100,7 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
             # parse line, skip on syntax error
             lm = line_re.match(line)
             if not lm:
-                warn("Syntax error in line %s. Skipping.")
+                warn("Syntax error in line %s. Skipping." %line)
                 continue
 
             host = lm.group(1)
