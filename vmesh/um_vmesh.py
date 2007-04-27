@@ -164,9 +164,10 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
     def setup_iptables(self):
         hostnum = self.node.number()
         peers = self.conf.get(hostnum, set())
+        prefix = self.node.hostnameprefix()
 
         try:
-            execute('iptables -D INPUT -j mesh_gre_in;'
+            execute('iptables -D INPUT -j mesh_gre_in -d 224.66.66.66;'
                     'iptables -F mesh_gre_in;'
                     'iptables -X mesh_gre_in;'
                     'iptables -N mesh_gre_in', True)
@@ -178,15 +179,15 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
         for p in peers:
             try:
                 info("Add iptables entry: %s reaches %s" % (p, hostnum))
-                execute('iptables -A mesh_gre_in -s %s -j ACCEPT' % self.gre_ip(p), True)
+                execute('iptables -A mesh_gre_in -s %s%s -j ACCEPT' %(prefix,p), True)
             except CommandFailed, inst:
                 error('Adding iptables entry "%s reaches %s" failed.' % (p, hostnum))
                 error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
                 raise
 
         try:
-            execute('iptables -A mesh_gre_in -s %s -j DROP &&'
-                    'iptables -A INPUT -j mesh_gre_in' % self.gre_net(), True)
+            execute('iptables -A mesh_gre_in -j DROP &&'
+                    'iptables -A INPUT -d 224.66.66.66 -j mesh_gre_in', True)
         except CommandFailed, inst:
             error("Inserting iptables chain into INPUT failed.")
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
