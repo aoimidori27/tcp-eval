@@ -178,10 +178,11 @@ ignored.
             iface = self.options.interface
             info("setting up GRE Broadcast tunnel for %s" % hostnum)
             execute('ip tunnel del %s' % iface, True, False)
-            execute('ip tunnel add %(iface)s mode gre local %(public)s remote 224.66.66.66 ttl 1 \
+            execute('ip tunnel add %(iface)s mode gre local %(public)s remote %(mcast)s ttl 1 \
                      && ip addr add %(gre)s broadcast 255.255.255.255 dev %(iface)s \
                      && ip link set %(iface)s up' %
-                     {"public": public_ip, "gre": gre_ip, "iface": iface}, True)
+                     {"public": public_ip, "gre": gre_ip, "iface": iface, "mcast": self.options.multicast},
+                     True)
         except CommandFailed, inst:
             error("Setting up GRE tunnel %s (%s, %s) failed." % (hostnum, public_ip, gre_ip))
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -190,12 +191,13 @@ ignored.
         hostnum = self.node.number()
         peers = self.conf.get(hostnum, set())
         prefix = self.node.hostnameprefix()
+        mcast = self.options.multicast
 
         try:
-            execute('iptables -D INPUT -j mesh_gre_in -d 224.66.66.66;'
-                    'iptables -F mesh_gre_in;'
-                    'iptables -X mesh_gre_in;'
-                    'iptables -N mesh_gre_in', True)
+            execute('iptables -D INPUT -j mesh_gre_in -d %s' % mcast
+                    + 'iptables -F mesh_gre_in;'
+                    + 'iptables -X mesh_gre_in;'
+                    + 'iptables -N mesh_gre_in', True)
         except CommandFailed, inst:
             error('Could not create iptables chain "mesh_gre_in"')
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -212,7 +214,7 @@ ignored.
 
         try:
             execute('iptables -A mesh_gre_in -j DROP &&'
-                    'iptables -A INPUT -d 224.66.66.66 -j mesh_gre_in', True)
+                    'iptables -A INPUT -d %s -j mesh_gre_in' % mcast, True)
         except CommandFailed, inst:
             error("Inserting iptables chain into INPUT failed.")
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -235,8 +237,9 @@ ignored.
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                proc =subprocess.Popen(["ssh", h, "um_vmesh", "-l", "-"])
-                proc.communicate("%s: %s", host, " ".join(self.conf.get(host)))
+                proc =subprocess.Popen(["ssh", h, "sudo", "um_vmesh", "-i", "wldev", "-l", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                neigh = " ".join(map(lambda x: x.__str__(), self.conf.get(host)))
+                proc.communicate("%s: %s" % (host, neigh))
                 if proc.returncode != 0:
                     error("Configuring host %s FAILED (%s" % (h, prog.returncode))
         else:
