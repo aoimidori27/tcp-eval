@@ -4,6 +4,8 @@
 # python imports
 import re
 import socket
+import sys
+import subprocess
 
 # umic-mesh imports
 from um_application import Application
@@ -22,29 +24,46 @@ class Buildmesh(Application):
 
         self.node = None
 
-        self.config = None
+        self.conf = None
 
         usage = """usage: %prog [options] [CONFIGFILE]
 
 CONFIGFILE syntax: A line looks like the following:
-    host1: host2 host3 host5-host6
+    1: 2 3 5-6
 
-host1 reaches all hosts listed after the colon, every host listed after the
-colon reaches host1. Empty lines and lines starting with # are ignored.
+vmrouter1 reaches all vmrouters listed after the colon, every vmrouter listed
+after the colon reaches vmrouter1. Empty lines and lines starting with # are
+ignored.
 """
 
         self.parser.set_usage(usage)
+
+        self.parser.set_defaults(remote = True, interface = "ath0",
+                multicast="224.66.66.66")
+
+        self.parser.add_option("-r", "--remote",
+                               action = "store_true", dest = "remote",
+                               help = "Apply settings for all hosts in config")
+        self.parser.add_option("-l", "--local",
+                               action = "store_false", dest = "remote",
+                               help = "Apply just the settings for the local host")
+        self.parser.add_option("-i", "--interface",
+                               action = "store", dest = "interface", metavar="IFACE",
+                               help = "Interface to use for the GRE tunnel (default: %default)")
+        self.parser.add_option("-m", "--multicast",
+                               action = "store", dest = "multicast", metavar="IP",
+                               help = "Multicast IP to use for GRE tunnel (default: %default)")
 
     def parse_config(self, file):
         """ returns an hash which maps
                 host number -> set of reachable host numbers
 
             Config file syntax: Each line either begins with a # (comment)
-            or has a form like:
+            or has a form like
 
                 host1: host2 host3 host5-host6
 
-            Where host* are numbers.
+            where host* are numbers.
 
                 host1: host2
 
@@ -89,7 +108,11 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
 
         ## read (asymmetric) reachability information from the config file
         asym_map = {}
-        for line in open(file, 'r'):
+        if file == "-":
+            fd = sys.stdin
+        else:
+            fd = open(file, 'r')
+        for line in fd:
             # strip trailing spaces
             line = line.strip()
 
@@ -152,11 +175,13 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
         gre_ip = self.gre_ip(hostnum, mask=True)
 
         try:
+            iface = self.options.interface
             info("setting up GRE Broadcast tunnel for %s" % hostnum)
-            execute('ip tunnel del wldev', True, False)
-            execute('ip tunnel add wldev mode gre local %s remote 224.66.66.66 ttl 1 \
-                     && ip addr add %s broadcast 255.255.255.255 dev wldev \
-                     && ip link set wldev up' % (public_ip, gre_ip), True)
+            execute('ip tunnel del %s' % iface, True, False)
+            execute('ip tunnel add %(iface)s mode gre local %(public)s remote 224.66.66.66 ttl 1 \
+                     && ip addr add %(gre)s broadcast 255.255.255.255 dev %(iface)s \
+                     && ip link set %(iface)s up' %
+                     {"public": public_ip, "gre": gre_ip, "iface": iface}, True)
         except CommandFailed, inst:
             error("Setting up GRE tunnel %s (%s, %s) failed." % (hostnum, public_ip, gre_ip))
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -205,14 +230,25 @@ colon reaches host1. Empty lines and lines starting with # are ignored.
         else:
             self.conf = self.parse_config(self.args[0])
 
-        self.node = Node()
-        if self.node.type() != 'vmeshrouter':
-            raise NodeTypeException("Only vmeshrouters are supported")
+        if self.options.remote:
+            # Apply settings on remote hosts
+            for host in self.conf.keys():
+                h = "vmrouter%s" % host
+                info("Configuring host %s" % h)
+                proc =subprocess.Popen(["ssh", h, "um_vmesh", "-l", "-"])
+                proc.communicate("%s: %s", host, " ".join(self.conf.get(host)))
+                if proc.returncode != 0:
+                    error("Configuring host %s FAILED (%s" % (h, prog.returncode))
+        else:
+            # Apply settings on local host
+            self.node = Node()
+            if self.node.type() != 'vmeshrouter':
+                raise NodeTypeException("Only vmeshrouters are supported")
 
-        info("Setting up GRE tunnel ...")
-        self.setup_gre()
-        info("Setting up iptables rules ... ")
-        self.setup_iptables()
+            info("Setting up GRE tunnel ...")
+            self.setup_gre()
+            info("Setting up iptables rules ... ")
+            self.setup_iptables()
 
 if __name__ == "__main__":
     try:
