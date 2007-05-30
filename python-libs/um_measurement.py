@@ -2,96 +2,28 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys, os, os.path, subprocess, re, time, signal, atexit
+import sys, os, os.path, socket, subprocess, re, time, signal
+import errno
 from datetime import timedelta, datetime
-from logging import info, debug, warn, error
+from logging import info, debug, warn, error, critical
 
 # umic-mesh imports
 from um_application import Application
 from um_config import *
+from um_ssh import *
 
 
 class Measurement(Application):
     "Framework for UMIC-Mesh measurements"
 
-    def __init__(self):
-        "Constructor of the object"
-
-        Application.__init__(self)
-
-        # Object variables
-        self.log_file = ""
-        self.MasterConnections = []
-
-        # initialization of the option parser
-        usage = "usage: %prog [options] NODES\n" \
-                "where NODES := either [v]mrouter numbers or hostnames"
-
-        self.parser.set_usage(usage)
-        self.parser.set_defaults(asymmetric = False, device = 'ath0',
-                                 hostnameprefix = 'mrouter', tscale = 1,
-                                 runs = 1, iterations = 1, output_dir = '.',
-                                 wipe_out = False)
-
-        self.parser.add_option("-a" , "--asymmetric",
-                               action = "store_true", dest = "asymmetric",
-                               help = "consider one way tests only [default: %default]")
-        self.parser.add_option("-d", "--dev",  metavar = "DEV",
-                               action = "store", dest = "device",
-                               help = "device on which the test should be [default: %default]")
-        self.parser.add_option("-H", "--hprefix",  metavar = "NAME",
-                               action = "store", dest = "hostnameprefix",
-                               help = "hostname prefix for the node IDs [default: %default]")
-        self.parser.add_option("-I" , "--iterations", metavar = "#", type = int,
-                               action = "store", dest = "iterations",
-                               help = "set number of test runs in a row [default: %default]")
-        self.parser.add_option("-R" , "--runs", metavar = "#", type = int,
-                               action = "store", dest = "runs",
-                               help = "set number of test runs in a row [default: %default]")
-        self.parser.add_option("-t" , "--tscale", metavar = "#.#", type = float,
-                               action = "store", dest = "tscale",
-                               help = "set factor to scale watchdog timers [default: %default]")
-        self.parser.add_option("-O" , "--output", metavar = "dir",
-                               action = "store", dest = "output_dir",
-                               help = "set the directory to write log files to [default: %default]")
-        self.parser.add_option("-w" , "--wipe-out",
-                               action = "store_true", dest = "wipe_out",
-                               help = "create a fresh output directory [default: %default]")
-
-
-    def set_option(self):
-        "Set options"
-
-        Application.set_option(self)
-
-        # correct numbers of arguments?
-        if len(self.args) < 2:
-            self.parser.error("Incorrect number of arguments. Need at least two Nodes!")
-
-
-    def ssh_node(self, node, command, timeout, suppress_output=False):
-        "Run command at ssh login"
-
-        timeout = timeout * self.options.tscale
-
-        debug("Calling \"%s\" on %s (timeout %i seconds)" % (command, node, timeout))
-
-        if self.options.debug:
-            os.write(self.log_file,
-                     "### command=\"%s\" (timeout %i, suppress_output = %s)\n"
-                     % (command, timeout, str(suppress_output)))
-
-        #######################
-        ### Begin BASH code ###
-
-        command = """
+    TimeoutCommand = """
         function sigchld() {
         if ! ps $BGPID 2>&1 >/dev/null; then
                 wait $BGPID; export EXITSTATUS=$?;
             fi;
         };
 
-        set +H
+        set +H # Disable !  style history substitution
         trap sigchld SIGCHLD;
         (%s) &
         BGPID=$!;
@@ -121,87 +53,209 @@ class Measurement(Application):
             fi
         fi
         exit 254
-        """ %(command, timeout * 10)
+        """
 
-        #### End BASH code ###
-        ######################
+    def __init__(self):
 
-        if not self.MasterConnections.__contains__(node):
-            debug("Creating ssh master connection to node " + node);
-            ssh = ["ssh", "-o", "ControlPath=" + node, "-o", "ControlMaster=auto", "-nqfN", node]
-            prog = subprocess.Popen(ssh)
-            prog.wait();
-            if prog.returncode != 0:
-                error("Failed to setup ssh control connection.")
-                return prog.returncode
-            self.MasterConnections.append(node);
+        Application.__init__(self)
 
-        ssh = ["ssh", 
-                 "-o", "PasswordAuthentication=no",
-                 "-o", "NumberOfPasswordPrompts=0", 
-                 "-o", "ControlPath=" + node,
-                 node, "bash -i -c '%s'" %command]
+        # Object variables
+        self.LogFile = ""
+        self.Connections = {}
+        self.TestMethods = self.get_test_methods()
+
+        # initialization of the option parser {{{
+        usage = "usage: %prog [options] NODES\n" \
+                "where NODES := either [v]mrouter numbers or hostnames"
+
+        self.parser.set_usage(usage)
+        self.parser.set_defaults(asymmetric = False, device = 'ath0',
+                                 hostnameprefix = 'mrouter', tscale = 1,
+                                 runs = 1, iterations = 1, output_dir = '.',
+                                 ignore_critical = False,  abort_run = False,
+                                 unified_log = False, wipe_out = False)
+
+        self.parser.add_option("-a" , "--asymmetric",
+                               action = "store_true", dest = "asymmetric",
+                               help = "consider one way tests only [default: %default]")
+        self.parser.add_option("-d", "--dev",  metavar = "DEV",
+                               action = "store", dest = "device",
+                               help = "device on which the test should be [default: %default]")
+        self.parser.add_option("-H", "--hprefix",  metavar = "NAME",
+                               action = "store", dest = "hostnameprefix",
+                               help = "hostname prefix for the node IDs [default: %default]")
+        self.parser.add_option("-I" , "--iterations", metavar = "#", type = int,
+                               action = "store", dest = "iterations",
+                               help = "set number of test runs in a row [default: %default]")
+        self.parser.add_option("-C", "--ignore-critical", action = "store_true", dest = "ignore_critical",
+                               help = "ignore critical errors like ssh being immune to SIGKILL, etc.")
+        self.parser.add_option("-k", "--abort_run",
+                               action = "store_true", dest = "abort_run",
+                               help = "if run comprises several tests abort a run if a single test fails  [default: %default]")
+        self.parser.add_option("-R" , "--runs", metavar = "#", type = int,
+                               action = "store", dest = "runs",
+                               help = "set number of test runs in a row [default: %default]")
+        self.parser.add_option("-t" , "--tscale", metavar = "#.#", type = float,
+                               action = "store", dest = "tscale",
+                               help = "set factor to scale watchdog timers [default: %default]")
+        self.parser.add_option("-u", "--unified-log",
+                               action = "store_true", dest = "unified_log",
+                               help = "if a run comprises several tests store ouput in one file  [default: %default]")
+        self.parser.add_option("-O" , "--output", metavar = "dir",
+                               action = "store", dest = "output_dir",
+                               help = "set the directory to write log files to [default: %default]")
+        self.parser.add_option("-w" , "--wipe-out",
+                               action = "store_true", dest = "wipe_out",
+                               help = "create a fresh output directory [default: %default]")
+        # }}}
+
+
+    def set_option(self):
+        "Set options"
+
+        Application.set_option(self)
+
+        # correct numbers of arguments?
+        if len(self.args) < 2:
+            self.parser.error("Incorrect number of arguments. Need at least two nodes!")
+
+
+    # FIXME: Add support for other usernames
+    def remote_execute(self, node, command, timeout, suppress_output=False):
+        """ Run command at some node via ssh.
+
+        command may last at most timeout seconds and may not contain ' at the
+        moment. This is considered a FIXME.
+
+        If program terminated in time, return exit status of the program. If we
+        needed to kill the SSH connection, return -1.
+        """
+
+        timeout = timeout * self.options.tscale
+
+        if not suppress_output:
+            info("Calling \"%s\" on %s (timeout %i seconds)" % (command, node, timeout))
+
+        if self.options.debug:
+            os.write(self.LogFile,
+                     "### command=\"%s\" (timeout %i, suppress_output = %s)\n"
+                     % (command, timeout, str(suppress_output)))
+
+        ssh_command = self.TimeoutCommand % (command, timeout * 10)
+
+        # Open an SSH connection if none is open yet and keep it open over the
+        # end of this method
+        self.Connections[node] = self.Connections.get(node, SshConnection(node))
+        conn = self.Connections[node]
 
         null = open(os.devnull)
         if suppress_output:
             log = null
         else:
-            log = self.log_file
+            log = self.LogFile
 
-        prog = subprocess.Popen(ssh, bufsize=0, stdin=null, stdout=log, stderr=log)
+        debug("Calling \"%s\" on %s (timeout %i seconds)" % (str(command), node, timeout))
+        # FIXME: Is there a reason, we need an interactive bash?
+        prog = conn.execute("bash -c '%s'" % ssh_command, bufsize=0, stdin=null, stdout=log, stderr=log)
 
-        end_ts_ssh = datetime.now() + timedelta(seconds = timeout + 6)
+        # Allow 4 seconds grace period for bash code execution
+        grace_period = 4 * self.options.tscale;
+        end_ts_ssh = datetime.now() + timedelta(seconds = timeout + grace_period)
 
-        while prog.poll() == None:
-            time.sleep(0.1)
-            if datetime.now() > end_ts_ssh:
-                warn("ssh still running after timeout. Sending SIGTERM...")
-                os.kill(prog.pid, signal.SIGTERM)
-                time.sleep(3)
-                if prog.poll() == None:
-                    warn("ssh still running after SIGTERM. Sending SIGKILL...")
-                    os.kill(prog.pid, signal.SIGKILL)
-                    time.sleep(1)
-                    if prog.poll() == None:
-                        error("ssh still running after SIGKILL. Giving up.")
+        while datetime.now() < end_ts_ssh:
+            if prog.poll() != None:
+                return prog.returncode
+            debug("sleeping...")
+            time.sleep(1)
 
-        return prog.returncode
+        warn("ssh still running after timeout. Sending SIGTERM...")
+        os.kill(prog.pid, signal.SIGTERM)
+        time.sleep(1)    # Give some time to recover
+        if prog.poll() != None:
+            return -1
 
+        warn("ssh still running after SIGTERM. Sending SIGKILL...")
+        os.kill(prog.pid, signal.SIGKILL)
+        time.sleep(1)
+        if prog.poll() == None:
+            error("ssh still running after SIGKILL. Giving up.")
+            if not options.ignore_critical:
+                raise SshException()
+
+        return -1
 
     def test(self, iteration, run, source, target):
         "The method should be implemented in the inheritance class"
 
         raise NotImplementedError("The method should be implemented in the inheritance class.")
 
+    def sigterm(self):
+        debug("SIGTERM caught.")
 
-    def cleanup(self):
-        debug("Closing ssh master connections.")
-        for node in self.MasterConnections.__iter__():
-            ssh = [ "ssh", "-o", "ControlPath=" + node, "-O", "exit", node ];
-            prog = subprocess.Popen(ssh, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            (stdout, stderr) = prog.communicate()
-            if prog.returncode != 0:
-                error("Failed to close ssh master connection to %s (%s/%s)" % (node, stdout, stderr));
+    def sigint(self):
+        debug("SIGINT caught.")
 
+    def host_pairs(self, hostnames = False):
+        """ Returns all valid source host/target host pairs, for which tests
+        should be run """
+        prefix = self.options.hostnameprefix
+        for target in self.args:
+            for source in self.args:
+                if source == target:
+                    continue
+                if self.options.asymmetric and source > target:
+                    continue
+                if hostnames:
+                    yield (prefix + source, prefix + target)
+                else:
+                    yield (source, target)
+
+    def get_test_methods(self):
+        methods = []
+        for name  in dir(self):
+            # TODO: check for valid signature
+            if name.startswith("test_"):
+                method = getattr(self, name)
+                if callable(method):
+                    methods.append(method)
+        return methods
+
+
+    def log_open(self, iteration, source, target, run, test_name):
+        if self.options.unified_log:
+            logname = "i%02i_s%s_t%s_r%03i" % (iteration, source, target, run)
+        else:
+            logname = "i%02i_s%s_t%s_r%03i_%s" % (iteration, source, target, run, test_name)
+        return os.open(logname, os.O_CREAT|os.O_APPEND|os.O_RDWR, 00664)
 
     def run(self):
-        "Run the mesurement"
+        "Run the measurement"
 
-        atexit.register(self.cleanup)
+        signal.signal(signal.SIGTERM, self.sigterm)
+
         start_ts_measurement = datetime.now()
 
-        # prepare output directory
+        # Check available test methods {{{
+        if len(self.TestMethods) == 0:
+            error("FATAL: no test methods.")
+            sys.exit(1)                 # FIXME Replace by exception, please!
+        if len(self.TestMethods) == 1:
+            self.MultipleTests = False
+            self.options.unified_log = True
+        else:
+            self.MultipleTests = True
+        # }}}
+        # Prepare output directory {{{
         info("Preparing output directory...")
-        if not os.path.isdir(self.options.output_dir):
-            try:
-                os.makedirs(self.options.output_dir)
-            except Exception, t:
+        try:
+            os.makedirs(self.options.output_dir)
+            os.chdir(self.options.output_dir)
+        except os.error, inst:
+            if inst.errno != errno.EEXIST or not os.path.isdir(self.options.output_dir):
                 error("Failed to create directory: %s" % t)
                 sys.exit(1)
 
-        os.chdir(self.options.output_dir)
-
-        # clean up output directory
+        # Clean up output directory
         if self.options.wipe_out:
             for file in os.listdir("."):
                 if os.path.isdir(file):
@@ -209,57 +263,69 @@ class Measurement(Application):
                 else:
                     try:
                         os.remove(file)
-                    except Exception, t:
+                    except os.error, inst:
                         warn("Failed remove %s: %s" % (file, t))
+        # }}}
 
+        try:
+            for iteration in range(1, self.options.iterations + 1):
+                info("Iteration %i: starting... "%(iteration))
+                start_ts_iteration = datetime.now()
 
-        # TODO: Add options to run iterations/runs in parallel
-        for iteration in range(1, self.options.iterations + 1):
-            info("Iteration %i: starting... "%(iteration))
-            start_ts_iteration = datetime.now()
-
-            for source in self.args:
-                # for convenience convert node IDs to hostnames
-                if source.isdigit():
-                    source = "%s%s" %(self.options.hostnameprefix, source)
-
-                for target in self.args:
-                    # for convenience convert node IDs to hostnames
-                    if target.isdigit():
-                        target =  "%s%s" %(self.options.hostnameprefix, target)
-
-                    # ignore self connections
-                    if source == target:
-                        continue
-
-                    # if asymmetric then only test source < target
-                    if self.options.asymmetric and (source > target):
-                        continue
+                for (source, target) in self.host_pairs(hostnames = True):
 
                     # iterate through runs
                     for run in range(1, self.options.runs + 1):
-                        self.log_file = os.open("i%02i_s%s_t%s_r%03i" %
-                                                (iteration, source, target, run),
-                                                os.O_CREAT|os.O_APPEND|os.O_RDWR, 00664)
 
-                        info("start: test #%i (%i): %s -> %s"
-                             % (run, iteration, source, target))
+                        if self.MultipleTests:
+                            info("start: run #%i (%i): %s -> %s"  % (run, iteration, source, target))
 
                         start_ts_run = datetime.now()
+                        run_ok = self.run_tests(iteration, source, target, run)
 
-                        if self.test(iteration, run, source, target):
-                            info("finished: test #%i (%i): %s -> %s (%s)"
-                                 % (run, iteration, source, target,
-                                    datetime.now() - start_ts_run))
-                        else:
-                            warn("FAILED: test #%i (%i): %s -> %s (%s)"
-                                 % (run, iteration, source, target,
-                                    datetime.now() - start_ts_run))
+                        if self.MultipleTests:
+                            if run_ok:
+                                info("finished: run #%i (%i): %s -> %s (%s)" % (run, iteration, source, target, datetime.now() - start_ts_run))
+                            else:
+                                warn("FAILED: run #%i (%i): %s -> %s (%s)"  % (run, iteration, source, target, datetime.now() - start_ts_run))
 
-                        os.fsync(self.log_file)
-                        os.close(self.log_file)
+                info("Iteration %i: finished (%s)" % (iteration, datetime.now() - start_ts_iteration))
 
-            info("Iteration %i: finished (%s)"
-                 % (iteration, datetime.now() - start_ts_iteration))
+            info("Overall runtime: %s" % (datetime.now() - start_ts_measurement))
 
-        info("Overall runtime: %s" % (datetime.now() - start_ts_measurement))
+        # TODO: Think about if to catch this exception in an inner loop to do... what?!
+        except SshException:
+            critical("Caught SshException. Giving up.")
+
+    def run_tests(self, iteration, source, target, run):
+        """ Run all tests for an iteration/source/target-pair. """
+
+        run_ok = True
+
+        for test in self.TestMethods:
+
+            test_name = test.__name__.replace("test_", "", 1)
+
+            self.LogFile = self.log_open(iteration, source, target, run, test_name)
+            if self.MultipleTests:
+                info("running test \"%s\""  % test_name)
+
+            start_ts_test = datetime.now()
+
+            test_ok = test(iteration, run, source, target)
+            if test_ok:
+                info("finished: test \"%s\" (%s)" % (test_name, datetime.now() - start_ts_test))
+            else:
+                warn("FAILED: test \"%s\" (%s)"  % (test_name, datetime.now() - start_ts_test))
+                run_ok = False
+
+            os.fsync(self.LogFile)
+            os.close(self.LogFile)
+
+            if not test_ok:
+                if self.options.abort_run:
+                    break
+                if self.MultipleTests:
+                    info("Continuing run #%i..." % run)
+
+        return run_ok

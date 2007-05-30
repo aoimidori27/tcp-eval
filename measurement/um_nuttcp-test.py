@@ -22,8 +22,8 @@ class NuttcpTest(Measurement):
         Measurement.__init__(self)
 
         # object variables
-        self.reverse = ''        
-           
+        self.reverse = ''
+
         # initialization of the option parser
         self.parser.set_defaults(length = 10, reverse = False,
                                  start_server = False)
@@ -50,22 +50,22 @@ class NuttcpTest(Measurement):
             self.reverse = " -r"
 
 
-    def test(self, iteration, run, source, target):
+    def test_nuttcp(self, iteration, run, source, target):
         "Run the nuttcp measurement"
 
         # if desired start the nuttcp server here
         if self.options.start_server:
-            rc = self.ssh_node(target, "pidof nuttcp", 3, True)
+            rc = self.remote_execute(target, "pidof nuttcp", 3, True)
             if (rc == 0):
                 warn("%s is already running nuttcp server albeit --start-server." % (target))
 
-            rc = self.ssh_node(target, "nuttcp -1 </dev/null 2>&0 1>&0", 3)
+            rc = self.remote_execute(target, "nuttcp -1 </dev/null 2>&0 1>&0", 3)
             if (rc != 0):
                 error("%s failed to start nuttcp server. rc=%d" % (target, rc))
                 return False
 
         # we might accidently hit a non server mode nuttcp here.
-        rc = self.ssh_node(target, "pidof nuttcp", 3, True)
+        rc = self.remote_execute(target, "pidof nuttcp", 3, True)
         if (rc != 0):
             error("%s is not running a nuttcp server. pidof rc=%d" % (target, rc))
             return False
@@ -73,9 +73,9 @@ class NuttcpTest(Measurement):
         targetnode = Node(hostname = target)
         targetip = targetnode.ipaddress(self.options.device)
 
-        route_rc = self.ssh_node(source, "ip route list %s" % targetip, 3, False)
+        route_rc = self.remote_execute(source, "ip route list %s" % targetip, 3, False)
 
-        measurement_rc = self.ssh_node(source, "nuttcp%s -T %i -v -fparse %s/%s"
+        measurement_rc = self.remote_execute(source, "nuttcp%s -T %i -v -fparse %s/%s"
                            % (self.reverse, self.options.length, target, targetip),
                            self.options.length + 5, False)
 
@@ -83,15 +83,15 @@ class NuttcpTest(Measurement):
             error("nuttcp invocation %s  failed: rc=%i" % (source, measurement_rc))
 
         if self.options.start_server:
-            rc = self.ssh_node(target, "pidof nuttcp", 3, True)
+            rc = self.remote_execute(target, "pidof nuttcp", 3, True)
             if (rc == 0):
                 warn("%s is still running nuttcp server albeit --start-server and test done. Sending SIGINT..." % (target))
-                self.ssh_node(target, "killall -INT nuttcp", 3, True)
-                rc = self.ssh_node(target, "pidof nuttcp", 3, True)
+                self.remote_execute(target, "killall -INT nuttcp", 3, True)
+                rc = self.remote_execute(target, "pidof nuttcp", 3, True)
                 if (rc == 0):
                     warn("%s is still running nuttcp after SIGINT. Sending SIGKILL..." % (target))
-                    self.ssh_node(target, "killall -KILL nuttcp", 3, True)
-                    rc = self.ssh_node(target, "pidof nuttcp", 3, True)
+                    self.remote_execute(target, "killall -KILL nuttcp", 3, True)
+                    rc = self.remote_execute(target, "pidof nuttcp", 3, True)
                     if (rc == 0):
                       error("%s is still running nuttcp after SIGKILL. Giving up." % (target))
 

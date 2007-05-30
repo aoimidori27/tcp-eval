@@ -42,13 +42,13 @@ class PingTest(Measurement):
         Measurement.set_option(self)
 
 
-    def test(self, iteration, run, source, target):
+    def test_ping(self, iteration, run, source, target):
         "Run the ping measurement"
 
         targetnode = Node(hostname = target)
         targetip = targetnode.ipaddress(self.options.device)
 
-        rc = self.ssh_node(source, "ping -s %i -c %i -i %s %s"
+        rc = self.remote_execute (source, "ping -s %i -c %i -i %s %s"
                            % (self.options.packet_size, self.options.count,
                               self.options.interval, targetip),
                            self.options.count * self.options.interval + 4)
