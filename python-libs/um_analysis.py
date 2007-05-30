@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/envpython
 # -*- coding: utf-8 -*-
 
 # python imports
@@ -7,7 +7,7 @@ from logging import info, debug, warn, error
 from datetime import timedelta, datetime
 from numpy import *
 from scipy import *
- 
+
 # umic-mesh imports
 from um_application import Application
 from um_config import *
@@ -17,9 +17,9 @@ class Analysis(Application):
     "Framework for UMIC-Mesh analysis"
 
     def __init__(self):
-        
+
         Application.__init__(self)
-        
+
         # object variables
         self.action = ''
         self.analysis = 'none'
@@ -60,9 +60,9 @@ class Analysis(Application):
 
     def set_option(self):
         "Set options"
-        
+
         Application.set_option(self)
-        
+
         # correct numbers of arguments?
         if len(self.args) > 0:
             if len(self.args) == 1:
@@ -79,26 +79,26 @@ class Analysis(Application):
 
 
     def get_stats(self, ReExpr1, ReExpr2):
-        "Get statistic depending on two Regular Expressions from measurement files"       
- 
+        "Get statistic depending on two Regular Expressions from measurement files"
+
         # Define RE's
         ReExpr = re.compile(ReExpr1)
         ReExpr_value = re.compile(ReExpr2)
-        
+
         stats_input = zeros([self.options.nodes,self.options.nodes], float)
-        
+
         for source in range(1, self.options.nodes + 1):
             for target in range(1, self.options.nodes + 1):
                 if source == target:
                     continue
                 failed_trys = 0
-                
+
                 for run in range(1, self.options.runs + 1):
                     for iterate in range(1, self.options.iterations + 1):
-                        
+
                         # Open File
                         file_name = "i%02i_smrouter%i_tmrouter%i_r%03i" % (iterate, source, target, run)
-                        
+
                         if os.path.exists("%s%s" %(self.options.indir, file_name)):
                             file = open("%s%s" %(self.options.indir, file_name), "rU")
                         else:
@@ -122,15 +122,15 @@ class Analysis(Application):
                             else:
                                 failed_trys += 1
                                 debug("No matches for Regular Expression %s in file %s" %(ReExpr2, file_name))
-                                
+
                         # Average over all seen values in this file
                         if counter != 0:
                             stats_input[source-1][target-1] += value/counter
                         else:
                             failed_trys += 1
                             debug("No matches for Regular Expression %s in file %s" %(ReExpr1, file_name))
-                
-                # Array holds summed up values for every run and iteration. Average over all of them 
+
+                # Array holds summed up values for every run and iteration. Average over all of them
                 stats_input[source-1][target-1] = stats_input[source-1][target-1] / \
                                                     (self.options.runs*self.options.iterations - failed_trys)
         return stats_input
@@ -147,10 +147,10 @@ class Analysis(Application):
             sys.exit(0)
 
         RegHops = re.compile("\d+")
-        
+
         hop_values = zeros( [self.options.nodes, self.options.nodes], int)
         counterX = 0
-        
+
         for file_content in file_content_list:
             match = RegHops.finditer(file_content)
             counterY = 0
@@ -162,20 +162,20 @@ class Analysis(Application):
                         continue
                     else:
                         hop_values[counterX][counterY] = int(result.group())
-                    counterY += 1   
+                    counterY += 1
             counterX += 1
-        
+
         debug(hop_values)
         self.max_hops = hop_values.max()
-        
+
         return hop_values
 
     def get_neighs_per_hop(self):
         "Gets the Count of Neighbours per Hop"
-        
+
         hops = self.get_hop_count()
         neighs = zeros([self.options.nodes, self.max_hops], int)
-        
+
         #Get #neighbours per hopcount and node
         for hop in range(1, self.max_hops+1):
             for source in range(1, self.options.nodes+1):
@@ -184,7 +184,7 @@ class Analysis(Application):
                     if hops[source-1][target-1] == hop:
                         count_neigh += 1
                 neighs[source-1][hop-1] = count_neigh
-        
+
         return neighs
 
     def inline_stats(self, array, hops):
@@ -209,67 +209,67 @@ class Analysis(Application):
                 for target in range(1, self.options.nodes + 1):
                         if source == target:
                             continue
-                            
+
                         if hop_count[source-1][target-1] == hops and hop_count[source-1][target-1] != 0:
                             debug("source:%i, target:%i\n" %(source-1, target-1))
                             inline_stats[counter]=array[source-1][target-1]
                             counter +=1
-                            
+
             # Filter those elements that were not set
             mask_array = where(inline_stats >= 0,1,0)
             inline_stats = compress(mask_array, inline_stats)
 
         debug(inline_stats)
-        
+
         return inline_stats
 
 
     def min(self, array, hops):
-        "Calculates the Minimum of seen values"        
+        "Calculates the Minimum of seen values"
 
         print("Min:")
         result = self.inline_stats(array, hops)
-        
+
         return result.min()
 
-    
+
     def max(self, array, hops):
-        "Calculates the Maximum of seen values"        
+        "Calculates the Maximum of seen values"
 
         print("Max:")
         result = self.inline_stats(array, hops)
-        
+
         return result.max()
 
 
     def mean(self, array, hops):
-        "Calculates the Mean of seen values"        
+        "Calculates the Mean of seen values"
 
         print("Mean:")
         result = self.inline_stats(array, hops)
-        
+
         return result.mean()
 
 
     def median(self, array, hops):
-        "Calculates the Median of seen values"        
+        "Calculates the Median of seen values"
 
         print("Median:")
         result = self.inline_stats(array, hops)
-        
+
         return median(result)
 
 
     def deviation(self, array, hops):
-        "Calculates the deviation of seen values"        
+        "Calculates the deviation of seen values"
 
         print("Deviation:")
         result = self.inline_stats(array, hops)
-        
+
         return result.std()
-    
+
     def fraction(self, array, hops):
-        "Calculates the cumulative fraction of nodes on seen values"        
+        "Calculates the cumulative fraction of nodes on seen values"
 
         if self.options.hop_count == 1:
             if self.options.outdir == "stdout":
@@ -289,14 +289,14 @@ class Analysis(Application):
                     result = self.inline_stats(array, hop)
                     result_sort = sort(result)
                     array_len = len(result_sort)
-        
+
                     for value in result_sort:
                         count = 0
                         for result_count in range(0, array_len):
                             if result[result_count] <= value:
                                 count += 1
                         fraction = float(count) / float(array_len)
-        
+
                         if self.options.outdir == "stdout":
                             print("%s\t%s" %(fraction, value))
                         else:
@@ -320,7 +320,7 @@ class Analysis(Application):
                 FILE = open(file,"a")
                 FILE.write("#Fraction\t#%s\n" %self.action)
                 FILE.close()
-                
+
     #        for value in range(0, int(result.max() + 1.5)):
             result_sort = sort(result)
             for value in result_sort:
@@ -342,7 +342,7 @@ class Analysis(Application):
 
 
     def none(self, array, hops):
-        "Returns just the seen values"        
+        "Returns just the seen values"
 
         print("Doing nothing do parsed values ...")
         if hops == -1:
@@ -353,7 +353,7 @@ class Analysis(Application):
 
 
     def conf_interval(self, inlined_stats):
-        "Calculates 0.95 confidence intervall"    
+        "Calculates 0.95 confidence intervall"
 
         #0.95 confidence interval
         return 1.96 * inlined_stats.std() / sqrt(len(inlined_stats))
@@ -376,7 +376,7 @@ class Analysis(Application):
                 print("Writing values to file %s%s" %(self.options.outdir,filename))
                 file = self.options.outdir + filename
                 FILE = open(file,"w")
-                
+
                 # Special handling for hops file because of new line failure with > 18 nodes
                 if self.action == "hops":
                     for source in range(1, self.options.nodes + 1):
@@ -390,7 +390,7 @@ class Analysis(Application):
                     FILE.write(str(stats))
 
                 FILE.close()
-            
+
             elif self.options.plot == 1:
                 #create plottable output
                 filename = self.analysis + "_" + self.action + "_values"
@@ -400,7 +400,7 @@ class Analysis(Application):
                 FILE = open(file,"a")
                 FILE.write("%s\t%s\t%s\t%s\n" %(hops, stats, interval, hop_count))
                 FILE.close()
-            
+
             else:
                 filename = self.analysis + "_" + self.action
                 print("Appending values to file %s%s" %(self.options.outdir,filename))
@@ -413,14 +413,14 @@ class Analysis(Application):
 
     def run(self):
         "Main Method"
-    
+
         print("Starting processing ...")
         if self.options.hop_count == 1:
             # call the corresponding parse stats method
             result = eval("self.%s()" %(self.action))
             # hop processing
             hop_count = self.get_hop_count()
- 
+
             if self.options.plot == 1:
                 if self.options.outdir == "stdout":
                     print("#hops\t#%s_%s\t#intervall\t#hop_count\n" %(self.analysis, self.action))
@@ -448,12 +448,12 @@ class Analysis(Application):
             if self.options.plot == 1:
                 print("Please use also the -H option !")
                 sys.exit(0)
-            
+
             # call the corresponding parse stats method
             result = eval("self.%s()" %(self.action))
-            
+
             # call the corresponding evaluate stats method
             stats = eval("self.%s(%s,-1)" %(self.analysis, "result"))
-            
+
             # print out the stuff
             self.print_out(stats, -1, 0,-1)
