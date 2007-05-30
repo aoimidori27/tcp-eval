@@ -32,6 +32,7 @@ class SshConnection:
     AtexitRegistered = False
     Connections = {}
 
+    # FIXME: Add pid to ControlPath?
     DefaultCmd = ["ssh",
             "-o", "BatchMode=yes",
             "-o", "ConnectionAttempts=1",
@@ -45,23 +46,25 @@ class SshConnection:
     def __init__(self, host):
         self.Host = host
 
-        if not host in SshConnections.Connections:
-            SshConnections.Connections[host] = 0
+        if not host in SshConnection.Connections:
+            SshConnection.Connections[host] = 0
         else:
-            SshConnections.Connections[host] += 1
+            SshConnection.Connections[host] += 1
 
         self.ensure_connection()
 
-        if not SshConnections.AtexitRegistered:
-            atexit.register(SshConnections.cleanup)
-            SshConnections.AtexitRegistered = True
+        if not SshConnection.AtexitRegistered:
+            atexit.register(SshConnection.cleanup)
+            SshConnection.AtexitRegistered = True
 
 
     def __del__(self):
         host = self.Host
-        SshConnections.Connections[host] -= 1
-        if SshConnections.Connections[host] == 0:
-            cmd = SshConnections.DefaultCmd + [ "-qqO", "exit", host]
+        if host not in SshConnection.Connections:
+            return
+        SshConnection.Connections[host] -= 1
+        if SshConnection.Connections[host] == 0:
+            cmd = SshConnection.DefaultCmd + [ "-qqO", "exit", host]
             prog = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (stdout, stderr) = prog.communicate()
             if prog.returncode != 0:
@@ -71,14 +74,15 @@ class SshConnection:
 
 
     def ensure_connection(self):
-        cmd = SshConnections.DefaultCmd + ["-O", "check", self.Host]
+        cmd = SshConnection.DefaultCmd + ["-O", "check", self.Host]
         if subprocess.call(cmd) == 0:
+            debug("SSH Master Connection to node %s already exists" % self.Host)
             return
 #        elif self.Connections[self.Host] > 0
 #            warn("Master connection to node \"%s\" vanished. Re-establishing..." % self.Host)
 
-        debug("Creating ssh master connection to node " + self.Host);
-        cmd = SshConnections.DefaultCmd + [
+        info("Creating ssh master connection to node " + self.Host);
+        cmd = SshConnection.DefaultCmd + [
                "-o", "ControlMaster=yes",
                "-N", # Do not execute a remote command
                "-n", # Redirects stdin from /dev/null
@@ -95,17 +99,17 @@ class SshConnection:
 
 
     def execute(self, command, **kwargs):
-        cmd = SshConnections.DefaultCmd + [ self.Host, command ]
+        cmd = SshConnection.DefaultCmd + [ self.Host, command ]
         return subprocess.Popen(cmd, **kwargs)
 
     def cleanup(cls):
         debug("Closing ssh master connections.")
-        for host in SshConnections.Connections.keys():
-            cmd = SshConnections.DefaultCmd + [ "-qqO", "exit", host]
+        for host in SshConnection.Connections.keys():
+            cmd = SshConnection.DefaultCmd + [ "-qqO", "exit", host]
             prog = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (stdout, stderr) = prog.communicate()
             if prog.returncode != 0:
                 error("Failed to close ssh master connection to %s (%s/%s)" % (host, stdout, stderr));
             else:
-                SshConnections.Connections.pop(host)
+                SshConnection.Connections.pop(host)
     cleanup = classmethod(cleanup)
