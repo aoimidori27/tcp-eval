@@ -14,8 +14,22 @@ from um_ssh import *
 
 
 class Measurement(Application):
-    "Framework for UMIC-Mesh measurements"
+    """Framework for UMIC-Mesh measurements
 
+       For an example how to use this class, see um_ping-test.py.
+
+       To implement your own measurements, derive from this class and add
+       test_* methods which implement the various measurements. These test
+       methods will be executed on a call to Measurement.run() in no particular
+       order.
+
+       To execute commands on a remote host, the method remote_execute can be
+       used. A timeout setting prevents infinite running remote commands.
+
+       FIXME: Document the concepts "run" and "iteration"
+    """
+
+    # Some bash code to implement a timelimit for a program run in background
     TimeoutCommand = """
         function sigchld() {
         if ! ps $BGPID 2>&1 >/dev/null; then
@@ -127,7 +141,7 @@ class Measurement(Application):
         command may last at most timeout seconds and may not contain ' at the
         moment. This is considered a FIXME.
 
-        If program terminated in time, return exit status of the program. If we
+        If program terminates in time, return exit status of the program. If we
         needed to kill the SSH connection, return -1.
         """
 
@@ -184,11 +198,6 @@ class Measurement(Application):
 
         return -1
 
-    def test(self, iteration, run, source, target):
-        "The method should be implemented in the inheritance class"
-
-        raise NotImplementedError("The method should be implemented in the inheritance class.")
-
     def sigterm(self):
         debug("SIGTERM caught.")
 
@@ -211,6 +220,7 @@ class Measurement(Application):
                     yield (source, target)
 
     def get_test_methods(self):
+        """ Collects all implemented test methods """
         methods = []
         for name  in dir(self):
             # TODO: check for valid signature

@@ -22,11 +22,14 @@ class SshConnection:
         Implements an interface for SSH with Master Connections.
 
         After creating an instance, you can just execute remote commands via
-        the execute methode.
+        the execute method.
 
         SshConnection automatically manages MasterConnections in a pool for
         all instances of SshConnection.
 
+        FIXME: Add keepalive setting, so a master connection stays alive even
+        if all instances are destroyed (i.e. make execution of __del__
+        optional)
     """
 
     AtexitRegistered = False
@@ -59,6 +62,11 @@ class SshConnection:
 
 
     def __del__(self):
+        """ Destructor.
+
+            Closes master connection if self is the last instance using this
+            connection
+        """
         host = self.Host
         if host not in SshConnection.Connections:
             return
@@ -74,6 +82,7 @@ class SshConnection:
 
 
     def ensure_connection(self):
+        """ Ensures that a master connection exists """
         cmd = SshConnection.DefaultCmd + ["-O", "check", self.Host]
         if subprocess.call(cmd) == 0:
             debug("SSH Master Connection to node %s already exists" % self.Host)
@@ -99,10 +108,18 @@ class SshConnection:
 
 
     def execute(self, command, **kwargs):
+        """ Execute a command on the remote host
+
+            **kwargs is just passed to subprocess.Popen.
+        """
         cmd = SshConnection.DefaultCmd + [ self.Host, command ]
         return subprocess.Popen(cmd, **kwargs)
 
     def cleanup(cls):
+        """ Atexit handler.
+
+            Closes all master connections.
+        """
         debug("Closing ssh master connections.")
         for host in SshConnection.Connections.keys():
             cmd = SshConnection.DefaultCmd + [ "-qqO", "exit", host]
