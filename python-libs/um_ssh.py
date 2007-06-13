@@ -45,7 +45,6 @@ class SshConnection:
             "-o", "ControlPath=%s-%%r@%%h:%%p" % socket.gethostname()
             ]
 
-
     def __init__(self, host):
         self.Host = host
 
@@ -59,7 +58,6 @@ class SshConnection:
         if not SshConnection.AtexitRegistered:
             atexit.register(SshConnection.cleanup)
             SshConnection.AtexitRegistered = True
-
 
     def __del__(self):
         """ Destructor.
@@ -79,7 +77,6 @@ class SshConnection:
                 error("Failed to close ssh master connection to %s (%s/%s)" % (host, stdout, stderr));
             else:
                 self.Connections.pop(host)
-
 
     def ensure_connection(self):
         """ Ensures that a master connection exists """
@@ -106,11 +103,12 @@ class SshConnection:
 
         self.Connections[self.Host] = True
 
-
     def execute(self, command, **kwargs):
-        """ Execute a command on the remote host
+        """ Execute a command on the remote host.
 
             **kwargs is just passed to subprocess.Popen.
+
+            Returns subprocess.Popen instance.
         """
         cmd = SshConnection.DefaultCmd + [ self.Host, command ]
         return subprocess.Popen(cmd, **kwargs)
