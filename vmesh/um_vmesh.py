@@ -252,6 +252,7 @@ ignored.
                 info("Configuring host %s" % h)
                 proc =subprocess.Popen(["ssh", h, "sudo", "um_vmesh", "-i", "wldev", "-l", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 neigh = " ".join(map(lambda x: x.__str__(), self.conf.get(host)))
+                proc.communicate("%s: %s" % (host, neigh))
                 if proc.returncode != 0:
                     error("Configuring host %s FAILED (%s)" % (h, proc.returncode))
         else:
