@@ -146,6 +146,7 @@ ignored.
 
         ## Add offset
         asym_map2 = {}
+        offset = self.options.offset
         for (host, reaches) in asym_map.iteritems():
             asym_map2[host+offset] = map(lambda x: x+offset, reaches)
         asym_map = asym_map2
@@ -251,9 +252,8 @@ ignored.
                 info("Configuring host %s" % h)
                 proc =subprocess.Popen(["ssh", h, "sudo", "um_vmesh", "-i", "wldev", "-l", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 neigh = " ".join(map(lambda x: x.__str__(), self.conf.get(host)))
-                proc.communicate("%s: %s" % (host, neigh))
                 if proc.returncode != 0:
-                    error("Configuring host %s FAILED (%s" % (h, prog.returncode))
+                    error("Configuring host %s FAILED (%s)" % (h, proc.returncode))
         else:
             # Apply settings on local host
             self.node = Node()
