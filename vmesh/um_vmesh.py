@@ -38,8 +38,11 @@ ignored.
 
         self.parser.set_usage(usage)
 
-        self.parser.set_defaults(remote = True, interface = "ath0",
-                multicast="224.66.66.66")
+        self.parser.set_defaults(
+                remote = True,
+                interface = "ath0",
+                multicast="224.66.66.66",
+                offset = 0)
 
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
@@ -53,6 +56,9 @@ ignored.
         self.parser.add_option("-m", "--multicast",
                                action = "store", dest = "multicast", metavar="IP",
                                help = "Multicast IP to use for GRE tunnel (default: %default)")
+        self.parser.add_option("-o", "--offset",
+                               action = "store", dest = "offset", metavar="OFFSET", type = int,
+                               help = "Add this offset to all hosts in the config (default: %default)")
 
     def parse_config(self, file):
         """ returns an hash which maps
@@ -137,6 +143,12 @@ ignored.
                     reaches.add(int(r))
 
             asym_map[int(host)] = reaches
+
+        ## Add offset
+        asym_map2 = {}
+        for (host, reaches) in asym_map.iteritems():
+            asym_map2[host+offset] = map(lambda x: x+offest, reaches)
+        asym_map = asym_map2
 
         ## Compute symmetric hull
         hosts = set(asym_map.keys()).union(reduce(lambda u,v: u.union(v), asym_map.values(), set()))
