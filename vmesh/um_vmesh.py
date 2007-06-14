@@ -147,7 +147,7 @@ ignored.
         ## Add offset
         asym_map2 = {}
         for (host, reaches) in asym_map.iteritems():
-            asym_map2[host+offset] = map(lambda x: x+offest, reaches)
+            asym_map2[host+offset] = map(lambda x: x+offset, reaches)
         asym_map = asym_map2
 
         ## Compute symmetric hull
