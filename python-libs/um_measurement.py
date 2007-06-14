@@ -281,7 +281,7 @@ class Measurement(Application):
             return "i%02i_s%s_t%s_r%03i_%s" % (iteration, source, target, run, test_name)
 
     def log_open(self, iteration, source, target, run, test_name):
-        file = log_name(self, iteration, source, target, run, test_name)
+        file = self.log_name(self, iteration, source, target, run, test_name)
         return os.open(file, os.O_CREAT|os.O_APPEND|os.O_RDWR, 00664)
 
     def run(self):
