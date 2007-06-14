@@ -70,7 +70,6 @@ class Measurement(Application):
         """
 
     def __init__(self):
-
         Application.__init__(self)
 
         # Object variables
@@ -78,7 +77,10 @@ class Measurement(Application):
         self.Connections = {}
         self.TestMethods = self.get_test_methods()
 
-        # initialization of the option parser {{{
+        self.tcpdump = None
+        self.tcpdump_proc = {}
+
+        # initialization of the option parser
         usage = "usage: %prog [options] NODES\n" \
                 "where NODES := either [v]mrouter numbers or hostnames"
 
@@ -121,7 +123,33 @@ class Measurement(Application):
         self.parser.add_option("-w" , "--wipe-out",
                                action = "store_true", dest = "wipe_out",
                                help = "create a fresh output directory [default: %default]")
-        # }}}
+
+        # FIXME: Add documentation:
+        # Every such script will be terminated at the end of the run/iteration/test
+        # A run/test cript is started with following additional parameters:
+        #       log-string source target
+        # A iteration script is started with additional parameters
+        #       log-string nodes
+        self.parser.add_option("--run-script", metavar ="SCRIPT",
+                               action = "store", dest = "run_script",
+                               help = "Script to execute for every run.")
+        self.parser.add_option("--run-script-at", metavar = "TARGET",
+                               action = "store", dest = "run_script_at",
+                               help = "One of 'source', 'target'")
+
+        self.parser.add_option("--iteration-script", metavar ="SCRIPT",
+                               action = "store", dest = "iteration_script",
+                               help = "Script to execute for every iteration")
+        self.parser.add_option("--iteration-script-at", metavar = "TARGET",
+                               action = "store", dest = "iteration_script_at",
+                               help = "One of 'all' or a hostname")
+
+        self.parser.add_option("--test-script", metavar ="SCRIPT",
+                               action = "store", dest = "test_script",
+                               help = "Script to execute for every test")
+        self.parser.add_option("--test-script-at", metavar = "TARGET",
+                               action = "store", dest = "test_script_at",
+                               help = "One of 'source', 'target'")
 
 
     def set_option(self):
@@ -133,6 +161,31 @@ class Measurement(Application):
         if len(self.args) < 2:
             self.parser.error("Incorrect number of arguments. Need at least two nodes!")
 
+
+    def remote_start(self, node, command, **kwargs):
+        # Open an SSH connection if none is open yet and keep it open over the
+        # end of this method
+        self.Connections[node] = self.Connections.get(node, SshConnection(node))
+        conn = self.Connections[node]
+
+        return conn.execute(command, **kwargs)
+
+    def remote_stop(self, conn, timeout = 1):
+        # FIXME: This ecould block the whole measurement ...
+        # FIXME Documentation: Changes signal handler
+        limited_wait = TimeoutFunction(proc.wait, timeout)
+        rc = None
+        try:
+            os.kill(proc.pid, signal.SIGTERM)
+            limited_wait
+            return signal.SIGTERM
+        except TimeoutFunctionException:
+            try:
+                os.kill(proc.pid, signal.SIGKILL)
+                limited_wait
+                return signal.SIGKILL
+            except TimeoutFunctionException:
+                return None
 
     # FIXME: Add support for other usernames
     def remote_execute(self, node, command, timeout, suppress_output=False):
@@ -157,11 +210,6 @@ class Measurement(Application):
 
         ssh_command = self.TimeoutCommand % (command, timeout * 10)
 
-        # Open an SSH connection if none is open yet and keep it open over the
-        # end of this method
-        self.Connections[node] = self.Connections.get(node, SshConnection(node))
-        conn = self.Connections[node]
-
         null = open(os.devnull)
         if suppress_output:
             log = null
@@ -170,31 +218,27 @@ class Measurement(Application):
 
         debug("Calling \"%s\" on %s (timeout %i seconds)" % (str(command), node, timeout))
         # FIXME: Is there a reason, we need an interactive bash?
-        prog = conn.execute("bash -c '%s'" % ssh_command, bufsize=0, stdin=null, stdout=log, stderr=log)
+        proc = self.remote_start(node, "bash -c '%s'" % ssh_command, bufsize=0,
+                stdin=null, stdout=log, stderr=log)
 
         # Allow 4 seconds grace period for bash code execution
         grace_period = 4 * self.options.tscale;
         end_ts_ssh = datetime.now() + timedelta(seconds = timeout + grace_period)
 
         while datetime.now() < end_ts_ssh:
-            if prog.poll() != None:
-                return prog.returncode
+            if proc.poll() != None:
+                return proc.returncode
             debug("sleeping...")
             time.sleep(1)
 
-        warn("ssh still running after timeout. Sending SIGTERM...")
-        os.kill(prog.pid, signal.SIGTERM)
-        time.sleep(1)    # Give some time to recover
-        if prog.poll() != None:
-            return -1
-
-        warn("ssh still running after SIGTERM. Sending SIGKILL...")
-        os.kill(prog.pid, signal.SIGKILL)
-        time.sleep(1)
-        if prog.poll() == None:
+        warn("ssh still running after timeout.")
+        rc = self.remote_stop(proc)
+        if rc == signal.SIGTERM:
+            warn("ssh terminated by SIGTERM")
+        elif rc == signal.SIGKILL:
+            warn("ssh terminated by SIGKILL")
+        else:
             error("ssh still running after SIGKILL. Giving up.")
-            if not options.ignore_critical:
-                raise SshException()
 
         return -1
 
@@ -230,13 +274,15 @@ class Measurement(Application):
                     methods.append(method)
         return methods
 
+    def log_name(self, iteration, source, target, run, test_name):
+        if self.options.unified_log or not test_name:
+            return "i%02i_s%s_t%s_r%03i" % (iteration, source, target, run)
+        else:
+            return "i%02i_s%s_t%s_r%03i_%s" % (iteration, source, target, run, test_name)
 
     def log_open(self, iteration, source, target, run, test_name):
-        if self.options.unified_log:
-            logname = "i%02i_s%s_t%s_r%03i" % (iteration, source, target, run)
-        else:
-            logname = "i%02i_s%s_t%s_r%03i_%s" % (iteration, source, target, run, test_name)
-        return os.open(logname, os.O_CREAT|os.O_APPEND|os.O_RDWR, 00664)
+        file = log_name(self, iteration, source, target, run, test_name)
+        return os.open(file, os.O_CREAT|os.O_APPEND|os.O_RDWR, 00664)
 
     def run(self):
         "Run the measurement"
@@ -245,7 +291,7 @@ class Measurement(Application):
 
         start_ts_measurement = datetime.now()
 
-        # Check available test methods {{{
+        # Check available test methods
         if len(self.TestMethods) == 0:
             error("FATAL: no test methods.")
             sys.exit(1)                 # FIXME Replace by exception, please!
@@ -254,8 +300,8 @@ class Measurement(Application):
             self.options.unified_log = True
         else:
             self.MultipleTests = True
-        # }}}
-        # Prepare output directory {{{
+
+        # Prepare output directory
         info("Preparing output directory...")
         try:
             os.makedirs(self.options.output_dir)
@@ -275,7 +321,6 @@ class Measurement(Application):
                         os.remove(file)
                     except os.error, inst:
                         warn("Failed remove %s: %s" % (file, t))
-        # }}}
 
         try:
             for iteration in range(1, self.options.iterations + 1):
@@ -288,18 +333,24 @@ class Measurement(Application):
                     for run in range(1, self.options.runs + 1):
 
                         if self.MultipleTests:
-                            info("start: run #%i (%i): %s -> %s"  % (run, iteration, source, target))
+                            info("start: run #%i (%i): %s -> %s"
+                                    % (run, iteration, source, target))
 
                         start_ts_run = datetime.now()
                         run_ok = self.run_tests(iteration, source, target, run)
 
                         if self.MultipleTests:
                             if run_ok:
-                                info("finished: run #%i (%i): %s -> %s (%s)" % (run, iteration, source, target, datetime.now() - start_ts_run))
+                                info("finished: run #%i (%i): %s -> %s (%s)"
+                                        % (run, iteration, source, target,
+                                            datetime.now() - start_ts_run))
                             else:
-                                warn("FAILED: run #%i (%i): %s -> %s (%s)"  % (run, iteration, source, target, datetime.now() - start_ts_run))
+                                warn("FAILED: run #%i (%i): %s -> %s (%s)"
+                                        % (run, iteration, source, target,
+                                            datetime.now() - start_ts_run))
 
-                info("Iteration %i: finished (%s)" % (iteration, datetime.now() - start_ts_iteration))
+                info("Iteration %i: finished (%s)"
+                        % (iteration, datetime.now() - start_ts_iteration))
 
             info("Overall runtime: %s" % (datetime.now() - start_ts_measurement))
 
@@ -310,7 +361,25 @@ class Measurement(Application):
     def run_tests(self, iteration, source, target, run):
         """ Run all tests for an iteration/source/target-pair. """
 
+        def start_script(script, script_node, source, target, logstring):
+            if not script:
+                return None
+            if script_node == 'source':
+                node = source
+            elif script_node == 'target':
+                node = target
+            else:
+                # Fixme: Throw exception?
+                return None
+            return self.remote_start(node, script + " %s %s %s" % (logstring, source, target),
+                    stdin=null, stdout=null, stderr=null)
+
+
         run_ok = True
+
+        logstring = self.log_name(iteration, source, target, run, None)
+        runscript_proc = start_script(self.options.test_script, self.options.test_script_at,
+                source, target, logstring)
 
         for test in self.TestMethods:
 
@@ -322,12 +391,19 @@ class Measurement(Application):
 
             start_ts_test = datetime.now()
 
+            logstring = self.log_name(iteration, source, target, run, test_name)
+            testscript_proc = start_script(self.options.test_script, self.options.test_script_at,
+                    source, target, logstring)
+
             test_ok = test(iteration, run, source, target)
             if test_ok:
                 info("finished: test \"%s\" (%s)" % (test_name, datetime.now() - start_ts_test))
             else:
                 warn("FAILED: test \"%s\" (%s)"  % (test_name, datetime.now() - start_ts_test))
                 run_ok = False
+
+            if testscript_proc:
+                remote_stop(testscript_proc)
 
             os.fsync(self.LogFile)
             os.close(self.LogFile)
@@ -338,4 +414,31 @@ class Measurement(Application):
                 if self.MultipleTests:
                     info("Continuing run #%i..." % run)
 
+        if runscript_proc:
+            remote_stop(runscript_proc)
+
         return run_ok
+
+
+class TimeoutFunctionException(Exception):
+    """Exception to raise on a timeout"""
+    pass
+
+class TimeoutFunction:
+
+    def __init__(self, function, timeout):
+        self.timeout = timeout
+        self.function = function
+
+    def handle_timeout(self, signum, frame):
+        raise TimeoutFunctionException()
+
+    def __call__(self, *args):
+        old = signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.timeout)
+        try:
+            result = self.function(*args)
+        finally:
+            signal.signal(signal.SIGALRM, old)
+        signal.alarm(0)
+        return result
