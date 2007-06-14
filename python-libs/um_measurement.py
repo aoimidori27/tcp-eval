@@ -170,7 +170,7 @@ class Measurement(Application):
 
         return conn.execute(command, **kwargs)
 
-    def remote_stop(self, conn, timeout = 1):
+    def remote_stop(self, proc, timeout = 1):
         # FIXME: This ecould block the whole measurement ...
         # FIXME Documentation: Changes signal handler
         limited_wait = TimeoutFunction(proc.wait, timeout)
