@@ -12,7 +12,7 @@ from um_functions import *
 from um_node import *
 
 
-class ThrulayTest(Measurement):
+class thrulayTest(Measurement):
     "Class for thrulay measurements"
 
 
@@ -34,15 +34,15 @@ class ThrulayTest(Measurement):
         Measurement.set_option(self)
 
 
-    def test(self, iteration, run, source, target):
+    def test_throughput(self, iteration, run, source, target):
         "Run the thrulay measurement"
 
         targetnode = Node(hostname = target)
         targetip = targetnode.ipaddress(self.options.device)
 
-        route_rc = self.ssh_node(source, "ip route list %s" % targetip, 3, False)
+        route_rc = self.remote_execute(source, "ip route list %s" % targetip, 3, False)
 
-        measurement_rc = self.ssh_node(source, "thrulay -t %i -H %s/%s" % (self.options.length, target, targetip), self.options.length + 5, False)
+        measurement_rc = self.remote_execute(source, "thrulay -t %i -H %s/%s" % (self.options.length, target, targetip), self.options.length + 5, False)
 
         if (measurement_rc != 0):
             error("thrulay invocation %s  failed: rc=%i" % (source, measurement_rc))
