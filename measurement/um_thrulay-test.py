@@ -42,7 +42,7 @@ class thrulayTest(Measurement):
 
         route_rc = self.remote_execute(source, "ip route list %s" % targetip, 3, False)
 
-        measurement_rc = self.remote_execute(source, "thrulay -t %i -H %s/%s" % (self.options.length, target, targetip), self.options.length + 5, False)
+        measurement_rc = self.remote_execute(source, "thrulay -t %i -H %s/%s" % (self.options.length, targetip, target), self.options.length + 5, False)
 
         if (measurement_rc != 0):
             error("thrulay invocation %s  failed: rc=%i" % (source, measurement_rc))
