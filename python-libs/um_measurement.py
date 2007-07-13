@@ -81,7 +81,7 @@ class Measurement(Application):
         self.tcpdump_proc = {}
 
         # initialization of the option parser
-        usage = "usage: %prog [options] NODES\n" \
+        usage = "usage: %prog [options] NODES|hostpairfilename\n" \
                 "where NODES := either [v]mrouter numbers or hostnames"
 
         self.parser.set_usage(usage)
@@ -158,8 +158,8 @@ class Measurement(Application):
         Application.set_option(self)
 
         # correct numbers of arguments?
-        if len(self.args) < 2:
-            self.parser.error("Incorrect number of arguments. Need at least two nodes!")
+        if len(self.args) < 1:
+            self.parser.error("Incorrect number of arguments. Need either at least two nodes or one filename!")
 
 
     def remote_start(self, node, command, **kwargs):
@@ -252,6 +252,19 @@ class Measurement(Application):
         """ Returns all valid source host/target host pairs, for which tests
         should be run """
         prefix = self.options.hostnameprefix
+        if len(self.args) == 1:
+                fd = open(self.args[0])
+                for line in fd.readlines():
+                        source, target = line.strip().split(" ")
+                        if len(source) == 0 or len(target) == 0:
+                                warn("skipping illegal line in hostpairsfile")
+                                continue
+                        if hostnames:
+                                yield (prefix + source, prefix + target)
+                        else:
+                                yield (source, target)
+                return 
+
         for target in self.args:
             for source in self.args:
                 if source == target:
