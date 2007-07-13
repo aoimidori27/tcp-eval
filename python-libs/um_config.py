@@ -96,6 +96,7 @@ imageinfos = dict(
     meshnode = dict(
         svnmappings = { '/config/vmeshnode/trunk' : 'config',
                         '/linux/vanilla/trunk' : 'linux/default',
+                        '/linux/vanilla/branches/linux-2.6.16.29-ring3' : 'linux/ring3',
                         '/linux/vanilla/branches/linux-2.6.16.29-elcn' : 'linux/elcn',
                         '/routing/olsr/branches/um-version-olsr4' : 'routing/olsr4',
                         '/routing/olsr/branches/um-version-olsr5' : 'routing/olsr5',
@@ -106,6 +107,8 @@ imageinfos = dict(
                         '/tools/nuttcp/branches/um-version' : 'tools/nuttcp',
                         '/tools/thrulay/branches/advanced' : 'tools/thrulay',
                         '/tools/tcpdump/branches/elcn' : 'tools/tcpdump',
+                        '/tools/libpcap/branches/ring3' : 'tools/libpcap',
+                        '/tools/libpfring/branches/um-version' : 'tools/libpfring',
                         '/scripts/python-libs' : 'scripts/python-libs',
                         '/scripts/mesh' : 'scripts/mesh',
                         '/scripts/init' : 'scripts/init',
