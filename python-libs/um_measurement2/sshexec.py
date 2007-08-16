@@ -6,8 +6,8 @@ import struct
 
 from twisted.conch.ssh import channel, common, connection, keys, transport, userauth
 from twisted.conch.error import ConchError
-from twisted.internet import defer, error
-from twisted.internet.protocol import ClientFactory
+from twisted.conch.client import agent
+from twisted.internet import defer, error, protocol
 from twisted.python import log, failure
 
 from um_functions import StrictStruct
@@ -67,7 +67,7 @@ class _Transport(transport.SSHClientTransport):
     def connectionSecure(self):
         self.requestService(_Auth(self.factory.user, self.factory.conn))
 
-class _TransportFactory(ClientFactory):
+class _TransportFactory(protocol.ClientFactory):
     # This factory exists just for passing additional parameters on reactor.connectTCP:
     #
     #       fact = _TransportFactory(...)
@@ -121,22 +121,58 @@ class _TransportFactory(ClientFactory):
 
 
 class _Auth(userauth.SSHUserAuthClient):
+    """
+    SSH authentication class.
+
+    Uses Public-Key-Authentification if ssh-agent is available, else password authentication.
+
+    Magic stuff copied from twisted.conch.client.default.
+    """
+
+    def __init__(self, user, *args):
+        userauth.SSHUserAuthClient.__init__(self, user, *args)
+        self._agent = None
+
+    def serviceStarted(self):
+        # Use SSH agent if available
+        print "SERVICE STARTED"
+        if 'SSH_AUTH_SOCK' in os.environ:
+            cc = protocol.ClientCreator(reactor, agent.SSHAgentClient)
+            d = cc.connectUNIX(os.environ['SSH_AUTH_SOCK'])
+            d.addCallback(self._setAgent)
+            d.addErrback(self._ebSetAgent)
+        else:
+            userauth.SSHUserAuthClient.serviceStarted(self)
+
+    def serviceStopped(self):
+        if self._agent:
+            self._agent.transport.loseConnection()
+            self._agent = None
+
+    def _setAgent(self, agent):
+        self._agent = agent
+        d = self._agent.getPublicKeys()
+        d.addBoth(self._ebSetAgent)
+        return d
+
+    def _ebSetAgent(self, f):
+        userauth.SSHUserAuthClient.serviceStarted(self)
 
     def getPassword(self):
         return defer.succeed(getpass.getpass("password: "))
 
+    def signData(self, publicKey, signData):
+        return self._agent.signData(publicKey, signData)
+
     def getPrivateKey(self):
-        path = os.path.expanduser('~/.ssh/id_dsa')
-        return defer.succeed(keys.getPrivateKeyObject(path))
+        return None
 
     def getPublicKey(self):
-        path = os.path.expanduser('~/.ssh/id_dsa')
-        # this works with rsa too
-        # just change the name here and in getPrivateKey
-        if not os.path.exists(path) or self.lastPublicKey:
-            # the file doesn't exist, or we've tried a public key
-            return
-        return keys.getPublicKeyString(path+'.pub')
+        if self._agent:
+            blob = self._agent.getPublicKey()
+            if blob:
+                print "BLOB"
+                return blob
 
 
 class _Connection(connection.SSHConnection):
