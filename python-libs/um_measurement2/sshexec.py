@@ -124,7 +124,7 @@ class _Auth(userauth.SSHUserAuthClient):
     """
     SSH authentication class.
 
-    Uses Public-Key-Authentification if ssh-agent is available, else password authentication.
+    Uses public key authentication if ssh-agent is available, else password authentication.
 
     Magic stuff copied from twisted.conch.client.default.
     """
@@ -135,7 +135,6 @@ class _Auth(userauth.SSHUserAuthClient):
 
     def serviceStarted(self):
         # Use SSH agent if available
-        print "SERVICE STARTED"
         if 'SSH_AUTH_SOCK' in os.environ:
             cc = protocol.ClientCreator(reactor, agent.SSHAgentClient)
             d = cc.connectUNIX(os.environ['SSH_AUTH_SOCK'])
@@ -171,7 +170,6 @@ class _Auth(userauth.SSHUserAuthClient):
         if self._agent:
             blob = self._agent.getPublicKey()
             if blob:
-                print "BLOB"
                 return blob
 
 
