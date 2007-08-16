@@ -108,3 +108,57 @@ def requireroot():
     if not os.getuid() == 0:
         error("You must be root. Operation not permitted.")
         sys.exit(1)
+
+class StrictStruct:
+    """
+    Imitiate a struct/record
+    """
+
+    def __init__(self, list=None, **kwargs):
+        """
+        Takes two parameters:
+
+        If "list" is not None, it gives the allowed entries in the struct.
+        Else, the list of allowed entries will be extracted from the **kwargs argument:
+
+        Usage examples:
+            StrictStruct(['foo', 'bar'])
+            StrictStruct(['foo', 'bar'], foo=1, bar=3)
+            StrictStruct(foo=1, bar=3)
+        """
+
+        self.__dict__["_items"] = {}
+        if list is None:
+            for (k,v) in kwargs.iteritems():
+                if k not in self.__dict__:
+                    self._items[k] = v
+        else:
+            for i in list:
+                if i not in self.__dict__:
+                    self._items[i] = None
+            for (k,v) in kwargs.iteritems():
+                if k in self._items:
+                    self._items[k] = v
+                else:
+                    raise AttributeError("'%s' instance has no attribute '%s'"
+                            % (self.__class__, k))
+
+    def __getattr__(self, name):
+        try:
+            return self._items[name]
+        except KeyError, inst:
+            raise AttributeError("'%s' instance has no attribute '%s'"
+                    % (self.__class__, name))
+
+    def __setattr__(self, name, value):
+        if name in self.__dict__:
+            self.__dict__[name] = value
+        elif name in self._items:
+            self._items[name] = value
+        else:
+            raise AttributeError("'%s' instance has no attribute '%s'"
+                    % (self.__class__, name))
+
+    def __str__(self):
+
+        return "<%s: %r>" % (self.__class__, self._items)
