@@ -107,6 +107,7 @@ class _TransportFactory(protocol.ClientFactory):
         Note: Despite its naming similarity to clientConnectionFailed/Lost, it
         is not a standard method of the ClientFactory class.
         """
+        # FIXME: Untwingle classes?
         if self._connectDeferred is not None:
             self._connectDeferred.callback(conn)
 

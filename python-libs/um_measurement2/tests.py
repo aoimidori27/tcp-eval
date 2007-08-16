@@ -58,7 +58,12 @@ class SSHTest:
         else:
             raise TestFailed("Could not open channel - connection already closed")
 
-        command = self._factory._command
+        print self._factory._command.__class__
+
+        if self._factory._command is str:
+            command = self._factory._command
+        else:
+            command = self._factory._command(self._src, self._dst)
 
         self._proc = conn.executeChan(command, self._log_fd, self._log_fd)
 
@@ -103,6 +108,11 @@ class SSHTest:
 class SSHTestFactory:
 
     def __init__(self, command, name = None, timeout = None):
+        """
+        FIXME.
+
+        command is either a string or a callable which takes src, dst as parameters.
+        """
         self._command = command
         # FIXME: user, port
         self._user = "noschinski"
@@ -114,7 +124,7 @@ class SSHTestFactory:
             self._name = name
 
         self._connections = {}
-        
+
         self._lost_ds = []
         self._cleaningUp = False
 
