@@ -1,6 +1,7 @@
 import sys
 
 import sshexec
+import os, pwd
 
 from twisted.internet import defer, error, reactor
 from twisted.python import failure
@@ -115,7 +116,7 @@ class SSHTestFactory:
         """
         self._command = command
         # FIXME: user, port
-        self._user = "noschinski"
+        self._user = pwd.getpwuid(os.getuid())[0]
         self._timeout = timeout
 
         if name is None:
