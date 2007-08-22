@@ -12,6 +12,147 @@ from twisted.python import log, failure
 
 from um_functions import StrictStruct
 
+class SSHConnectionFactory:
+
+    def __init__(self, user):
+        self._connections = {}
+        self._lost_ds = []
+        self._user = user
+        self._cleaningUp = False
+
+    def _cancelTimeout(self, result, callLater):
+        """
+        Cancels the timeout represented by the IDelayedCall in callLater
+        """
+        if callLater.active():
+            callLater.cancel()
+        return result
+
+    def _lostHandler(self, reason, host):
+        """
+        Handles connectionLost event. If we initiated the disconnect,
+        connectionLost is no error.
+        """
+        # FIXME: documentation
+        if self._cleaningUp:
+            return reason
+        else:
+            # FIXME: signal error?
+            print "CONNECTION TO %s LOST: %s" % (host, reason)
+            del self._connections[host]
+
+    def _connect(self, user, host, port = 22):
+        """
+        Creates a connection and returns a deferred.
+
+        The deferred is callback()'ed, if the connection was established and
+        errbacked if the connection attempt failed.
+        """
+        conn = _Connection()
+        connect_d = defer.Deferred()
+        lost_d = defer.Deferred()
+
+        fact = _TransportFactory(user, conn, connectDeferred = connect_d, lostDeferred = lost_d)
+        reactor.connectTCP(host, port, fact)
+
+        return (connect_d, lost_d)
+
+    @defer.inlineCallbacks
+    def _stop(self, proc):
+        """
+        Forces a process to stop by doing TERM, KILL, disconnect.
+        """
+        proc.kill("TERM")
+        yield timeoutDeferred(2)
+
+        if proc.stopped:
+            return
+        proc.kill("KILL")
+        yield timeoutDeferred(2)
+
+        if proc.stopped:
+            return
+        proc.disconnect()
+
+    def connect(self, nodes):
+        """
+        Creates master connections.
+
+        Returns a deferred. callback(None) if all connections could be
+        successfully established, errback(reason), if at least one connection
+        fails. reason is then the errback value from the first failed
+        connection.
+        """
+
+        deferreds = []
+        for n in nodes:
+            if n in self._connections:
+                continue
+            connect_d, lost_d = self._connect(user = self._user, host = n)
+            deferreds.append(connect_d)
+            lost_d.addErrback(self._lostHandler, n)
+            self._lost_ds.append(lost_d)
+
+        dl = defer.DeferredList(deferreds, fireOnOneErrback = True)
+
+        def addConnections(resList):
+            for res in resList:
+                conn = res[1]
+                host = conn.transport.transport.getPeer().host
+                self._connections[host] = conn
+            return None
+
+        dl.addCallback(addConnections)
+        dl.addErrback(lambda reason: reason)
+
+        return dl
+
+    @defer.inlineCallbacks
+    def disconnect(self):
+        self._cleaningUp = True
+        for c in self._connections.itervalues():
+            c.transport.loseConnection()
+        for ld in self._lost_ds:
+            try:
+                yield ld
+            except error.ConnectionDone:
+                pass
+            # FIXME: Handle other?
+
+    @defer.inlineCallbacks
+    def remoteExecute(self, node, command, timeout=None, out_fd=None, err_fd=None):
+
+        if node in self._connections:
+            conn = self._connections[node]
+        else:
+            raise CommandChannelDisconnect("Could not open channel - no connection to %s." % node)
+
+        # FIXME: in_fd
+        proc = conn.executeChan(command, out_fd, err_fd)
+
+        # Still necessary?
+        if proc is None:
+            raise CommandChannelDisconnect("Could not open channel - no connection to %s." % node)
+
+        try:
+            if timeout is not None:
+                cl = reactor.callLater(timeout, self._stop, proc)
+#                proc.deferred().addBoth(self._cancelTimeout, cl)
+            result = yield proc.deferred()
+            proc.stopped = True
+            if result.type == "exit-status":
+                defer.returnValue(result.status)
+            elif result.type == "exit-signal":
+                defer.returnValue(-result.status)
+            else:
+                #FIXME return something more sensible? Make a constant?
+                defer.returnValue(-255)
+        except:
+            proc.stopped = True
+            raise
+
+
+
 class _Transport(transport.SSHClientTransport):
 
     def __init__(self, factory):
@@ -165,6 +306,7 @@ class _Auth(userauth.SSHUserAuthClient):
         return self._agent.signData(publicKey, signData)
 
     def getPrivateKey(self):
+        # FIXME: id_rsa.
         return None
 
     def getPublicKey(self):
@@ -232,6 +374,8 @@ class SSHProc:
         self._chan = chan
         self._d = defer.Deferred()
         self._chan.d.chainDeferred(self._d)
+        # FIXME: We should be able to decide for ourselves if we are stopped?
+        self.stopped = False
 
     def deferred(self):
         """
@@ -346,10 +490,12 @@ class CommandChannel(channel.SSHChannel):
         self.conn.sendRequest(self, 'exec', common.NS(self._command))
 
     def dataReceived(self, data):
-        self._stdout.write(data)
+        if self._stdout is not None:
+            self._stdout.write(data)
 
     def extReceived(self, type, data):
-        self._stderr.write(data)
+        if self._stdout is not None:
+            self._stderr.write(data)
 
     def request_exit_status(self, data):
         """
@@ -388,3 +534,13 @@ def parseSSHAnswer(format, data):
         else:
             raise NotImplementedError("Format char '%s' is not implemented" % fmt)
     return parsed
+
+def timeoutDeferred(timeout):
+    """
+    Returns a deferred, which is fired after timeout seconds.
+    """
+
+    d = defer.Deferred()
+    cl = reactor.callLater(timeout, d.callback, None)
+    return d
+

@@ -88,23 +88,95 @@ class SSHTest:
             raise TestFailed(str(inst))
 
     @defer.inlineCallbacks
-    def stop(self):
+    def stop(self, proc = None):
         """
         Stops the test by trying SIGTERM, SIGKILL and disconnecting in that order.
         """
-        self._proc.kill("TERM")
+        if proc == None:
+            proc = self._proc
+
+        proc.kill("TERM")
 
         yield timeoutDeferred(self._sig_timeout)
 
         if self._stopped:
             return
-        self._proc.kill("KILL")
+        proc.kill("KILL")
 
         yield timeoutDeferred(self._sig_timeout)
 
         if self._stopped:
             return
-        self._proc.disconnect()
+        proc.disconnect()
+
+class SSHTestComplex(SSHTest):
+
+    def cancelTimeout(result):
+        if cl.active():
+            cl.cancel()
+        return result
+
+    @defer.inlineCallbacks()
+    def remoteExecute(self, host, command, timeout=None):
+        if self._src in self._factory._connections:
+            conn = self._factory._connections[self._src]
+        else:
+            raise TestFailed("Could not open channel - connection already closed")
+        proc = conn.executeChan(command, self._log_fd, self._log_fd)
+
+        if timeout is not None:
+            cl = reactor.callLater(timeout, self.cancelProc, proc)
+            proc.deferred().addBoth(self.cancelTimeout)
+
+        try:
+            result = yield proc.deferred()
+        except Exception, inst: # FIXME: Catch which exceptions?
+            result = inst
+
+        # FIXME: extract exit code
+
+        return result
+
+    # FIXME: Do a clean refactoring.
+
+
+    @defer.inlineCallbacks
+    def start(self):
+        """
+        Starts the test. Returns a deferred which fires on test termination.
+
+        May only be called once.
+        """
+        if self._src in self._factory._connections:
+            conn = self._factory._connections[self._src]
+        else:
+            raise TestFailed("Could not open channel - connection already closed")
+
+        if self._factory._command is str:
+            command = self._factory._command
+        else:
+            command = self._factory._command(self._src, self._dst)
+
+        self._proc = conn.executeChan(command, self._log_fd, self._log_fd)
+
+        # Still necessary?
+        if self._proc is None:
+            raise TestFailed("Could not open channel - connection already closed")
+
+        try:
+            # FIXME: We should wrap the results?
+            result = yield self._proc.deferred()
+            self._stopped = True
+            if result.type == "exit-status":
+                defer.returnValue(result)
+            else:
+                raise TestFailed(result)
+        except IOError, inst: #Catch which errors?
+            self._stopped = True
+            raise TestFailed(str(inst))
+        except Exception, inst:
+            self._stopped = True
+            raise TestFailed(str(inst))
 
 class SSHTestFactory:
 

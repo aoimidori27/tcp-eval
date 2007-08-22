@@ -13,6 +13,18 @@ from logging import info, debug, warn, error, critical
 
 from um_application import Application
 
+
+def combine(*args):
+    print "LEN: %s; %s; %s" % (len(args), args, args[0])
+    def join_args(*args):
+        return args
+    for i in args[0]:
+        if len(args)==1:
+            yield (i,)
+        else:
+            for t in combine(*args[1:]):
+                yield join_args(i, *t)
+
 class Measurement2App(Application):
     """
     Framework for UMIC-Mesh measurement applications.
