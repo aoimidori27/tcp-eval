@@ -5,6 +5,7 @@ import getpass
 import os
 import struct
 import pwd
+import signal
 
 from twisted.internet import reactor
 from twisted.conch.ssh import channel, common, connection, keys, transport, userauth
@@ -60,23 +61,32 @@ class SSHConnectionFactory:
         reactor.connectTCP(host, port, fact)
 
         return (connect_d, lost_d)
+        
 
     @defer.inlineCallbacks
     def _stop(self, proc):
         """
         Forces a process to stop by doing TERM, KILL, disconnect.
         """
-        proc.kill("TERM")
+        proc.kill(signal.SIGTERM)
         yield timeoutDeferred(2)
 
         if proc.stopped:
             return
-        proc.kill("KILL")
+        proc.kill(signal.SIGKILL)
         yield timeoutDeferred(2)
 
         if proc.stopped:
             return
         proc.disconnect()
+
+    def _name2sig(self, signame):
+        """
+
+        Converts a ssh signal string to a signal number
+
+        """
+        return eval("signal.SIG%s" %signame)
 
     def isConnected(self, node):
         return self._connections.has_key(node)
@@ -150,7 +160,9 @@ class SSHConnectionFactory:
             if result.type == "exit-status":
                 defer.returnValue(result.status)
             elif result.type == "exit-signal":
-                defer.returnValue(-result.status)
+                (signame, core_dumped,
+                 err_msg, lang_tag) = result.status                
+                defer.returnValue(-self.name2sig(signame))
             else:
                 #FIXME return something more sensible? Make a constant?
                 defer.returnValue(-255)
@@ -396,11 +408,28 @@ class SSHProc:
         """
         self._chan.forceDisconnect()
 
+
+    def _sig2name(self, sig):
+        """
+
+        Converts a signal number to a ssh signal string.
+        (Which is the signal name without the "SIG" prefix
+
+        """
+        signals = dir(signal)
+        signals = filter(lambda x: not x.startswith("SIG_"), signal)
+        signals = filter(lambda x: x.startswith("SIG"), signal)
+        for signal in signals:
+            if eval("signal.%s" %signal) == sig:
+                return signal[3:]
+        raise LookupException, "No signal name found for %s!" % sig
+        
+
     def kill(self, signal):
         """
-        Sends a signal to the remote process. See _Channel.kill
+        Sends a signal to the remote process. (see signal.*)
         """
-        self._chan.kill(signal)
+        self._chan.kill(_sig2name(signal))
 
 
 class ChanExitStruct(StrictStruct):
