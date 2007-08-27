@@ -11,12 +11,15 @@ from um_config import *
 class Node(object):
     "Provides access to configuration infos about a certain host (or a node type)"
 
-    def __init__(self, hostname = None, type = None):
+    def __init__(self, hostname = None, type_ = None):
         """ Creates a new Node object.
 
         If hostname is None, gethostname() is used. The "NODETYPE" will
         derived from the hostname and can be overriden by setting the
         parameter nodetype.
+
+        If hostname is an int the nodetype will be used to determine the
+        correct hostname. 
 
         If no nodetype can be derived, a NodeTypeException is raised.
         """
@@ -26,21 +29,25 @@ class Node(object):
         self._type = ''
         self.msg = ''
 
-        if hostname:
-            self._hostname = hostname
-        else:
-            self._hostname = gethostname()
-
-
-        if type:
-
-            if type in nodeinfos:
-                self._type = type
+        # if type is given check for validity
+        if type_:
+            if type_ in nodeinfos:
+                self._type = type_
             else:
                 raise NodeTypeException('Invalid value for NODETYPE'
                         'Please set it to one of %s.'% nodeinfos.keys())
 
+        # if hostname is a number and type is set, generate hostname
+        if hostname is type(int) and type_:
+            hostname = nodeinfos[type_]['hostnameprefix']+str(hostname)            
+
+        
+        if hostname:                
+            self._hostname = hostname
         else:
+            self._hostname = gethostname()
+
+        if not type_:
             # Compute list of nodetypes which match for hostname
             type_list = []
             for (nodetype, nodeinfo) in nodeinfos.iteritems():
