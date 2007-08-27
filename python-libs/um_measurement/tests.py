@@ -16,7 +16,7 @@ This module should collect standard test methods.
 """
 
 @defer.inlineCallbacks
-def test_ping(self, log_file,
+def test_ping(log_file,
               ping_src,
               ping_dst,
               ping_size     = 56,
@@ -30,8 +30,8 @@ def test_ping(self, log_file,
         
     required arguments:
         log_file   : file descriptor where the results are written to
-        thrulay_src: sender of the pings
-        thrulay_dst: receiver of the pings
+        ping_src: sender of the pings
+        ping_dst: receiver of the pings
 
     optional arguments:
         ping_size    : size in bytes of the packets send out
@@ -54,7 +54,7 @@ def test_ping(self, log_file,
 
 
 @defer.inlineCallbacks
-def test_thrulay(self, log_file,
+def test_thrulay(log_file,
                  thrulay_src,
                  thrulay_dst,
                  thrulay_duration = 15,
