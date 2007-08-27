@@ -1,10 +1,12 @@
-from twisted.internet import reactor
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import getpass
 import os
 import struct
 import pwd
 
+from twisted.internet import reactor
 from twisted.conch.ssh import channel, common, connection, keys, transport, userauth
 from twisted.conch.error import ConchError
 from twisted.conch.client import agent
