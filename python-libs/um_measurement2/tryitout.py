@@ -9,7 +9,7 @@ from sshexec import SSHConnectionFactory
 
 @defer.inlineCallbacks
 def main():
-    scf = SSHConnectionFactory("noschinski")
+    scf = SSHConnectionFactory()
     yield scf.connect(["localhost","127.0.0.1"])
     result = yield scf.remoteExecute("localhost", "ls", out_fd=sys.stdout, err_fd=sys.stderr)
     print "RESULT: %s" % result

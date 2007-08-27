@@ -3,6 +3,7 @@ from twisted.internet import reactor
 import getpass
 import os
 import struct
+import pwd
 
 from twisted.conch.ssh import channel, common, connection, keys, transport, userauth
 from twisted.conch.error import ConchError
@@ -14,7 +15,8 @@ from um_functions import StrictStruct
 
 class SSHConnectionFactory:
 
-    def __init__(self, user):
+    def __init__(self, user=pwd.getpwuid(os.getuid())[0]
+):
         self._connections = {}
         self._lost_ds = []
         self._user = user
@@ -73,6 +75,9 @@ class SSHConnectionFactory:
         if proc.stopped:
             return
         proc.disconnect()
+
+    def isConnected(self, node):
+        return self._connections.has_key(node)
 
     def connect(self, nodes):
         """

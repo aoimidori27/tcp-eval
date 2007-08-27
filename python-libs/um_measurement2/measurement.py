@@ -5,13 +5,13 @@ import errno
 import os.path
 import random
 import sys
+from logging import info, debug, warn, error, critical
 
 from twisted.internet import defer, reactor
 from twisted.python import log
 
-from logging import info, debug, warn, error, critical
-
 from um_application import Application
+from um_measurement2.sshexec import SSHConnectionFactory
 
 
 def combine(*args):
@@ -43,99 +43,137 @@ class Measurement2App(Application):
 
         self.node_list = None
         self.node_pairs = None
-        self.tests = []
+        self._scf = SSHConnectionFactory()
+        self._null = None
 
         p = self.parser
 
-        usage = "usage: %prog [options] NODES|hostpairfilename\n" \
-                "where NODES := either [v]mrouter numbers or hostnames"
+        usage = "usage: %prog [options] -L outputdir\n" 
         p.set_usage(usage)
 
 
         p.set_defaults(
-                asymmetric = False,
-                hostprefix = 'mrouter',
-                outer_loops = 1,
-                inner_loops = 1,
                 log_dir = None,
                 )
 
-        # FIXME: this option is only relevant if we give a node list instead of a pair list.
-        p.add_option("-a", "--asymmetric",
-                action = "store_true", dest = "asymmetric",
-                help = "consider one way tests only [default: %default]")
-        p.add_option("-H", "--hostprefix", metavar="PREFIX",
-                action = "store", dest = "hostprefix",
-                help = "hostname prefix for node IDs [default: %default]")
-        p.add_option("-o", "--outer-loops", metavar="COUNT",
-                action = "store", dest = "outer_loops", type = int,
-                help = "repeat the outer test loop COUNT times [default: %default]")
-        p.add_option("-i", "--inner-loops", metavar="COUNT",
-                action = "store", dest = "inner_loops", type = int,
-                help = "repeat the inner test loop COUNT times [default: %default]")
         # FIXME: Ignore critical; Abort run
         p.add_option("-L", "--log-dir", metavar="NAME",
                 action = "store", dest = "log_dir",
-                help = "where to store the log files. If not given, defaults to stdout.")
+                help = "Where to store the log files.")
 
-        # FIXME: Add run-script facility.
 
     def set_option(self):
-
         Application.set_option(self)
 
-        def make_hostname(node):
-            """ Adds hostprefix, if necessary """
-            if node.isdigit():
-                return self.options.hostprefix + node
-            else:
-                return node
+        if not self.options.log_dir:
+            self.parser.error("An output directory must be specified.")
 
-        def make_pair(line):
-            """ Split the line in hosts and add hostprefix if necessary """
-            s = map(make_hostname, line.split(' '))
-            return (s[0], s[1])
 
-        if len(self.args) >= 2:
-            # Use command line parameters as list of hosts
-            self.node_list = map(make_hostname, self.args)
-        elif len(self.args) == 1:
-            # Read list of node pairs from a file
-            info("Parsing node pair file")
-            self.node_pairs = map(make_pair, open(self.args[0]).readlines)
-        else:
-            self.parser.error("Incorrect number of arguments. Need either at " \
-                    + "least two nodes or one filename!")
+    def _getNull(self):
+        if not self._null:
+            self._null = open('/dev/null','w')
+        return self._null
 
-    def add_test(self, test):
-        self.tests.append(test)
 
-    def run(self):
-        m = Measurement2(
-                node_list = self.node_list,
-                node_pairs = self.node_pairs,
-                symmetric = not self.options.asymmetric,
-                outer_repeats = self.options.outer_loops,
-                inner_repeats = self.options.inner_loops,
-                log_dir = self.options.log_dir
-                )
-        for test in self.tests:
-            info("Adding test %s" % test)
-            m.add_test(test)
+    @defer.inlineCallbacks
+    def remote_execute_many(self, hosts, cmd, **kwargs):
+        """Executes command cmd on hosts"""
+        deferedList = []
 
-        # Create log directory, if necessary
-        log_dir = self.options.log_dir
-        if log_dir is not None:
-            try:
-                info("Creating log_dir.")
-                os.makedirs(log_dir)
-            except os.error, inst:
-                if not (inst.errno == errno.EEXIST and os.path.isdir(log_dir)):
-                    error("Failed to creat log_dir!")
-                    sys.exit(1)
+        for host in hosts:            
+            deferedList.append(self.remote_execute(host, cmd,
+                                                   **kwargs))
+        yield defer.DeferredList(deferedList)
+        
+        
 
-        m.start()
-        reactor.run()
+    @defer.inlineCallbacks
+    def remote_execute(self, host, cmd, log_file=None, **kwargs):
+        """Executes command cmd on host, creating a master connection if necessary"""
+        if not log_file:
+            logfile = self._getNull()
+        if not self._scf.isConnected(host):
+            info("no master connection to %s found creating one..." % host)
+            yield self._scf.connect([host])
+        debug("%s: running %s" %(host,cmd))
+        yield self._scf.remoteExecute(host, cmd,
+                                      out_fd=log_file,
+                                      err_fd=sys.stderr, **kwargs)
+
+
+    @defer.inlineCallbacks
+    def run_test(self, test, **kwargs):
+        "Runs a test method with arguments self, logfile, args"
+        if not os.path.exists(self.options.log_dir):
+            info("%s does not exist, creating. " % self.options.log_dir)
+            os.mkdir(self.options.log_dir)
+        log_name = "%s_%s" %(self.logprefix, test.func_name)
+        log_path = os.path.join(self.options.log_dir, log_name)
+        log_file = file(log_path, 'w')
+        if kwargs.has_key('run_label'):
+            log_file.write("run_label:%s\n" %kwargs['run_label'])
+            log_file.flush()
+        if kwargs.has_key('scenario_label'):
+            log_file.write("scenario_label:%s\n" %kwargs['scenario_label'])
+            log_file.flush()            
+
+        # actually run test
+        info("Starting test %s with: %s", test.func_name, kwargs)
+        rc = yield test(log_file, **kwargs)
+        info("Finished test.")
+        
+        log_file.close()
+
+    @defer.inlineCallbacks
+    def tear_down(self):
+        yield self._scf.disconnect()
+
+
+    def generate_pair_permutations(self, nodelist,
+                                   symmetric=True,
+                                   label_= lambda src, dst: r"%s\\sra%s" %(src,dst),
+                                   **kwargs):
+        """returns a list of dicts
+        Generates all 2-tuple permutations of the given nodelist
+        """
+        res = list()
+        for target in nodelist:
+            for source in nodelist:
+                if source == target:
+                    continue
+                if not symmetric and source > target:
+                    continue
+                else:
+                    res.append(dict( run_label=label_(source,target), src=source, dst=target, **kwargs))
+        return res
+    
+
+#    def run(self):
+#m = Measurement2(
+#                node_list = self.node_list,
+#                node_pairs = self.node_pairs,
+#                symmetric = not self.options.asymmetric,
+#                outer_repeats = self.options.outer_loops,
+#                inner_repeats = self.options.inner_loops,
+#                log_dir = self.options.log_dir
+#                )
+#        for test in self.tests:
+#            info("Adding test %s" % test)
+#            m.add_test(test)
+#
+#        # Create log directory, if necessary
+#        log_dir = self.options.log_dir
+#        if log_dir is not None:
+#            try:
+#                info("Creating log_dir.")
+#                os.makedirs(log_dir)
+#            except os.error, inst:
+#                if not (inst.errno == errno.EEXIST and os.path.isdir(log_dir)):
+#                    error("Failed to creat log_dir!")
+#                    sys.exit(1)
+#
+#        m.start()
+#        reactor.run()
 
 
 
@@ -249,6 +287,9 @@ class Measurement2():
         return d
 
 
+
+        
+        
     @defer.inlineCallbacks
     def start(self):
         """
