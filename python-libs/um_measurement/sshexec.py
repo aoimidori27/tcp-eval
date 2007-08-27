@@ -162,7 +162,7 @@ class SSHConnectionFactory:
             elif result.type == "exit-signal":
                 (signame, core_dumped,
                  err_msg, lang_tag) = result.status                
-                defer.returnValue(-self.name2sig(signame))
+                defer.returnValue(-self._name2sig(signame))
             else:
                 #FIXME return something more sensible? Make a constant?
                 defer.returnValue(-255)
@@ -413,15 +413,15 @@ class SSHProc:
         """
 
         Converts a signal number to a ssh signal string.
-        (Which is the signal name without the "SIG" prefix
+        (Which is the signal name without the "SIG" prefix)
 
         """
         signals = dir(signal)
-        signals = filter(lambda x: not x.startswith("SIG_"), signal)
-        signals = filter(lambda x: x.startswith("SIG"), signal)
-        for signal in signals:
-            if eval("signal.%s" %signal) == sig:
-                return signal[3:]
+        signals = filter(lambda x: not x.startswith("SIG_"), signals)
+        signals = filter(lambda x: x.startswith("SIG"), signals)
+        for signalname in signals:
+            if eval("signal.%s" %signalname) == sig:
+                return signalname[3:]
         raise LookupException, "No signal name found for %s!" % sig
         
 
@@ -429,7 +429,7 @@ class SSHProc:
         """
         Sends a signal to the remote process. (see signal.*)
         """
-        self._chan.kill(_sig2name(signal))
+        self._chan.kill(self._sig2name(signal))
 
 
 class ChanExitStruct(StrictStruct):
