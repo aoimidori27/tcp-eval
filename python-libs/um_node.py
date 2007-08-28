@@ -38,9 +38,8 @@ class Node(object):
                         'Please set it to one of %s.'% nodeinfos.keys())
 
         # if hostname is a number and type is set, generate hostname
-        if hostname is type(int) and type_:
+        if type(hostname) is int and type_:
             hostname = nodeinfos[type_]['hostnameprefix']+str(hostname)            
-
         
         if hostname:                
             self._hostname = hostname
