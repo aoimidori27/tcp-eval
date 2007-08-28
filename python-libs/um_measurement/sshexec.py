@@ -6,6 +6,7 @@ import os
 import struct
 import pwd
 import signal
+import base64
 
 from twisted.internet import reactor
 from twisted.conch.ssh import channel, common, connection, keys, transport, userauth
@@ -422,7 +423,7 @@ class SSHProc:
         for signalname in signals:
             if eval("signal.%s" %signalname) == sig:
                 return signalname[3:]
-        raise LookupException, "No signal name found for %s!" % sig
+        raise LookupError, "No signal name found for %s!" % sig
         
 
     def kill(self, signal):

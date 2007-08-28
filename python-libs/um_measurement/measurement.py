@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import errno
-import os.path
-import random
 import sys
+import os.path
+import os
 from logging import info, debug, warn, error, critical
 
 from twisted.internet import defer, reactor
@@ -12,18 +11,6 @@ from twisted.python import log
 
 from um_application import Application
 from um_measurement.sshexec import SSHConnectionFactory
-
-
-def combine(*args):
-    print "LEN: %s; %s; %s" % (len(args), args, args[0])
-    def join_args(*args):
-        return args
-    for i in args[0]:
-        if len(args)==1:
-            yield (i,)
-        else:
-            for t in combine(*args[1:]):
-                yield join_args(i, *t)
 
 class Measurement(Application):
     """
@@ -46,6 +33,8 @@ class Measurement(Application):
         self.node_pairs = None
         self._scf = SSHConnectionFactory()
         self._null = None
+
+        self._stats = dict()
 
         p = self.parser
 
@@ -92,18 +81,39 @@ class Measurement(Application):
 
     @defer.inlineCallbacks
     def remote_execute(self, host, cmd, log_file=None, **kwargs):
-        """Executes command cmd on host, creating a master connection if necessary"""
+        """Executes command cmd on host(s), creating a master connection if necessary"""
+
+        # for convenience assume that if host is not string its something to it
+        # iterate over        
+        if type(host) is not str:
+            yield remote_execute_many(self, host, cmd, **kwargs)
+        
         if not log_file:
             logfile = self._getNull()
+            
         if not self._scf.isConnected(host):
             info("no master connection to %s found creating one..." % host)
             yield self._scf.connect([host])
+            
         debug("%s: running %s" %(host,cmd))
         yield self._scf.remoteExecute(host, cmd,
                                       out_fd=log_file,
                                       err_fd=sys.stderr, **kwargs)
 
+    def _update_stats(self, test, rc):
+        """ This function updates internal statistics """
+        test_name = test.func_name
 
+        if not self._stats.has_key(test_name): 
+            self._stats[test_name] = dict()
+
+        test_stats = self._stats[test_name]
+
+        if not test_stats.has_key(rc):
+            test_stats[rc] = 1
+        else:
+            test_stats[rc] += 1
+            
     @defer.inlineCallbacks
     def run_test(self, test, **kwargs):
         """Runs a test method with arguments self, logfile, args"""
@@ -131,6 +141,8 @@ class Measurement(Application):
             info("Finished test.")
         else:
             warn("Test returned with RC=%s" %rc)
+
+        self._update_stats(test,rc)
         
         log_file.close()
 
