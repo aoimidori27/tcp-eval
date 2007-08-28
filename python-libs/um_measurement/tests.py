@@ -8,6 +8,7 @@ import pwd
 from twisted.internet import defer, error, reactor
 from twisted.python import failure
 
+from um_node import Node
 
 """
 
@@ -16,7 +17,8 @@ This module should collect standard test methods.
 """
 
 @defer.inlineCallbacks
-def test_ping(log_file,
+def test_ping(mrs,
+              log_file,
               ping_src,
               ping_dst,
               ping_size     = 56,
@@ -29,9 +31,10 @@ def test_ping(log_file,
     This test performs a simple ping from src to dst.
         
     required arguments:
+        mrs        : reference to parent measurement class
         log_file   : file descriptor where the results are written to
-        ping_src: sender of the pings
-        ping_dst: receiver of the pings
+        ping_src   : sender of the pings
+        ping_dst   : receiver of the pings
 
     optional arguments:
         ping_size    : size in bytes of the packets send out
@@ -39,22 +42,23 @@ def test_ping(log_file,
         ping_interval: time between to pings in seconds
         
     """
-        
     # for convenience accept numbers as src and dst
-    src = Node(src, type="meshrouter")
-    dst = Node(dst, type="meshrouter")
-    
+    src = Node(ping_src, type_="meshrouter")
+    dst = Node(ping_dst, type_="meshrouter")
+
     cmd = "ping -i %.3f -c %u -s %u %s %s" % (ping_interval, ping_count,
                                               ping_size, ping_opts,
                                               dst.ipaddress())
-    yield self.remote_execute(src.hostname(),
+    yield mrs.remote_execute(src.hostname(),
                               cmd,
                               log_file,
                               timeout=(ping_interval*ping_count)+5)
+#                              timeout=2)
 
 
 @defer.inlineCallbacks
-def test_thrulay(log_file,
+def test_thrulay(mrs,
+                 log_file, 
                  thrulay_src,
                  thrulay_dst,
                  thrulay_duration = 15,
@@ -68,6 +72,7 @@ def test_thrulay(log_file,
 
     required arguments:
          log_file   : file descriptor where the results are written to
+         mrs        : reference to parent measurement class
          thrulay_src: sender of the flow
          thrulay_dst: receiver of the flow
 
@@ -79,17 +84,17 @@ def test_thrulay(log_file,
     """
 
     # for convenience accept numbers as src and dst
-    src = Node(thrulay_src, type="meshrouter")
-    dst = Node(thrulay_dst, type="meshrouter")
+    src = Node(thrulay_src, type_="meshrouter")
+    dst = Node(thrulay_dst, type_="meshrouter")
 
     cmd = "thrulay -Q -c %s -t %.3f -H %s/%s" % (thrulay_cc,
                                                thrulay_duration,
                                                dst.ipaddress(),
                                                dst.hostname())
 
-    yield self.remote_execute(src.hostname(),
-                              cmd,
-                              log_file,
-                              timeout=thrulay_duration+5)
+    yield mrs.remote_execute(src.hostname(),
+                             cmd,
+                             log_file,
+                             timeout=thrulay_duration+5)
 
 
