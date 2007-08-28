@@ -126,8 +126,11 @@ class Measurement(Application):
 
         # actually run test
         info("Starting test %s with: %s", test.func_name, kwargs)
-        yield test(log_file, **kwargs)
-        info("Finished test.")
+        rc = yield test(self, log_file, **kwargs)
+        if (rc == 0):
+            info("Finished test.")
+        else:
+            warn("Test returned with RC=%s" %rc)
         
         log_file.close()
 
@@ -135,6 +138,12 @@ class Measurement(Application):
     @defer.inlineCallbacks
     def tear_down(self):
         yield self._scf.disconnect()
+
+    def sleep(self, seconds):
+        """ This function returns a deferred which will fire seconds later """
+        d = defer.Deferred()
+        reactor.callLater(seconds, d.callback, 0)
+        return d
 
 
     def generate_pair_permutations(self, nodelist,
