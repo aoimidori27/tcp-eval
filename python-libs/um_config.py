@@ -109,6 +109,7 @@ imageinfos = dict(
                         '/tools/tcpdump/branches/elcn' : 'tools/tcpdump',
                         '/tools/libpcap/branches/ring3' : 'tools/libpcap',
                         '/tools/libpfring/branches/um-version' : 'tools/libpfring',
+                        '/tools/Twisted/branches/um-version' : 'tools/Twisted',
                         '/scripts/python-libs' : 'scripts/python-libs',
                         '/scripts/mesh' : 'scripts/mesh',
                         '/scripts/init' : 'scripts/init',
