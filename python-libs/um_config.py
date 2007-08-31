@@ -111,6 +111,7 @@ imageinfos = dict(
                         '/tools/libpfring/branches/um-version' : 'tools/libpfring',
                         '/tools/Twisted/branches/um-version' : 'tools/Twisted',
                         '/scripts/python-libs' : 'scripts/python-libs',
+                        '/scripts/rpcserver' : 'scripts/rpcserver',
                         '/scripts/mesh' : 'scripts/mesh',
                         '/scripts/init' : 'scripts/init',
                         '/scripts/util' : 'scripts/util' },
