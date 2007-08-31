@@ -39,11 +39,9 @@ class SSHConnectionFactory:
         Handles connectionLost event. If we initiated the disconnect,
         connectionLost is no error.
         """
-        # FIXME: documentation
         if self._cleaningUp:
             return reason
         else:
-            # FIXME: signal error?
             print "CONNECTION TO %s LOST: %s" % (host, reason)
             del self._connections[host]
 
@@ -139,13 +137,21 @@ class SSHConnectionFactory:
 
     @defer.inlineCallbacks
     def remoteExecute(self, node, command, timeout=None, out_fd=None, err_fd=None):
+        """
+        Executes "command" on "node" with "timeout" and write output to
+        "out_fd" and "err_fd" (the latter must be python file objects).
+
+        Return value is a deferred which results in
+          * return code if the program terminated by itself
+          * -signal if the program was killed by a signal
+          * -255 if we got no exit-* message (connection loss, forced disconnect ...)
+        """
 
         if node in self._connections:
             conn = self._connections[node]
         else:
             raise CommandChannelDisconnect("Could not open channel - no connection to %s." % node)
 
-        # FIXME: in_fd
         proc = conn.executeChan(command, out_fd, err_fd)
 
         # Still necessary?
@@ -165,7 +171,6 @@ class SSHConnectionFactory:
                  err_msg, lang_tag) = result.status                
                 defer.returnValue(-self._name2sig(signame))
             else:
-                #FIXME return something more sensible? Make a constant?
                 defer.returnValue(-255)
         except:
             proc.stopped = True
@@ -179,7 +184,9 @@ class _Transport(transport.SSHClientTransport):
         self.factory = factory
 
     def _isInKnownHosts(self, host, pubKey):
-        # FIXME
+        """
+        Assume every host is known :/
+        """
         return 1
 
         # copied from twisted.conch.client.default - but does not work with hashed known_hosts ...
@@ -236,11 +243,7 @@ class _TransportFactory(protocol.ClientFactory):
     #
     # It is not intended to be used more than once; doing so will cause breakage.
     #
-    # FIXME: Untwingle all these classes ...
-    #
-    # FIXME: It would be nice to have a reconnecting factory. This would require:
-    #   - Working support for key authentication
-    #   - ...
+    # _Connection depends on the existance of the clientConnectionEstablished method.
 
     def __init__(self, user, conn, connectDeferred = None, lostDeferred = None):
         """
@@ -250,7 +253,6 @@ class _TransportFactory(protocol.ClientFactory):
            established or when establishing the connection failed
          * lostDeferred is called (as errback), if the connection was lost in
            an unclean fashion.
-           FIXME: The connection is also lost, if I close the connection ...
         """
         self.user = user
         self.conn = conn
@@ -268,7 +270,6 @@ class _TransportFactory(protocol.ClientFactory):
         Note: Despite its naming similarity to clientConnectionFailed/Lost, it
         is not a standard method of the ClientFactory class.
         """
-        # FIXME: Untwingle classes?
         if self._connectDeferred is not None:
             self._connectDeferred.callback(conn)
 
@@ -326,7 +327,9 @@ class _Auth(userauth.SSHUserAuthClient):
         return self._agent.signData(publicKey, signData)
 
     def getPrivateKey(self):
-        # FIXME: id_rsa.
+        """
+        Not implemented.
+        """
         return None
 
     def getPublicKey(self):
@@ -356,13 +359,15 @@ class _Connection(connection.SSHConnection):
             connection.SSHConnection.channelClosed(self, channel)
         else:
             # See http://twistedmatrix.com/trac/ticket/2782.
-            # FIXME: A more useful error?
             channel.openFailed(ConchError("Service stopped"))
 
     def executeChan(self, command, fd_out, fd_err):
         """
-        returns an SSHProc instance (or None, if the connection was already closed before ...)
-        FIXME
+        Executes a program on the remote host.
+
+        stdout and stderr are redirected to fd_out, fd_err (file objects).
+        returns an SSHProc instance (or None, if the connection was already
+        closed before ...)
         """
 
         if not self._established:
@@ -381,7 +386,6 @@ class _Connection(connection.SSHConnection):
 
     def serviceStopped(self):
         self._established = False
-        # FIXME: Message SSHExec?
         connection.SSHConnection.serviceStopped(self)
 
 
@@ -394,7 +398,6 @@ class SSHProc:
         self._chan = chan
         self._d = defer.Deferred()
         self._chan.d.chainDeferred(self._d)
-        # FIXME: We should be able to decide for ourselves if we are stopped?
         self.stopped = False
 
     def deferred(self):
@@ -442,7 +445,6 @@ class ChanExitStruct(StrictStruct):
 
 class CommandChannelDisconnect(Exception):
     """Command channel was closed, but no result was set"""
-    # FIXME: Better description
 
     def __str__(self):
         s = self.__doc__

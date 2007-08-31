@@ -46,7 +46,6 @@ class Measurement(Application):
                 log_dir = None,
                 )
 
-        # FIXME: Ignore critical; Abort run
         p.add_option("-L", "--log-dir", metavar="NAME",
                 action = "store", dest = "log_dir",
                 help = "Where to store the log files.")
