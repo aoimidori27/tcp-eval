@@ -27,7 +27,11 @@ class Tcpdump(xmlrpc.XMLRPC):
         # Call super constructor
         xmlrpc.XMLRPC.__init__(self)
 
-        self._daemon = "/usr/sbin/tcpdump"
+        if os.path.exists("/usr/local/sbin/tcpdump"):
+            self._daemon = "/usr/local/sbin/tcpdump"
+        else:
+            self._daemon = "/usr/sbin/tcpdump"
+
         self._name = "tcpdump"
         self._proc = None
 
@@ -36,7 +40,8 @@ class Tcpdump(xmlrpc.XMLRPC):
         # -Z?
         cmd = [self._daemon, "-i", iface, "-w", "-", expr]
 
-        dir = "/mnt/scratch/%s/tcpdump" % Node(type_="meshrouter").hostname()
+#        dir = "/mnt/scratch/%s/tcpdump" % Node(type_="meshrouter").hostname()
+        dir = "/tmp"
 
         try:
             os.mkdir(dir)
@@ -62,7 +67,7 @@ class Tcpdump(xmlrpc.XMLRPC):
             else:
                 error("Tcpdump failed:")
                 error(line)
-                rc = self_.proc.wait()
+                rc = self._proc.wait()
         except OSError, inst:
             rc = 255
             error(inst)
