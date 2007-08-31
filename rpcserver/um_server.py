@@ -165,10 +165,9 @@ class RPCServerApp(Application):
         self._restart = flag
         
         
-    def main(self):
+    def main(self, path='rpc-modules'):
         "Main method of the RPCServer Application"
 
-        path = 'rpc-modules'
         self.parse_option()
         self.set_option()
 
@@ -188,4 +187,5 @@ class RPCServerApp(Application):
 
 
 if __name__ == '__main__':
-    RPCServerApp().main()
+    path = os.path.join(os.path.dirname(sys.argv[0]), 'rpc-modules')
+    RPCServerApp().main(path)
