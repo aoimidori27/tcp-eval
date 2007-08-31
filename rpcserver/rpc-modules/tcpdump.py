@@ -2,6 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import os
+import errno
+import re
+import signal
+import subprocess
+
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
 
@@ -22,39 +27,47 @@ class Tcpdump(xmlrpc.XMLRPC):
         # Call super constructor
         xmlrpc.XMLRPC.__init__(self)
 
-        self._name = "tcpdump"
         self._daemon = "/usr/sbin/tcpdump"
+        self._name = "tcpdump"
+        self._proc = None
 
 
-    def start(self, expression, interface):
-        """ This function will be called within its own thread """
-
+    def start(self, iface, expr):
         # -Z?
-        args = "-i %s -w - %s" % (interface, expression)
-        cmd = [ "start-stop-daemon", "--start",  "--quiet",
-                "--exec", self._daemon,
-                "--",     args ]
+        cmd = [self._daemon, "-i", iface, "-w", "-", expr]
 
         dir = "/mnt/scratch/%s/tcpdump" % Node(type_="meshrouter").hostname()
 
         try:
             os.mkdir(dir)
+            os.chmod(dir, 0777)
+        except OSError, inst:
+            if inst.errno == errno.EEXIST:
+                pass
+            else:
+                error(inst)
+                return (255, "")
+
+        try:
             temp_fd, temp_file = mkstemp(suffix=".pcap", dir=dir)
 
-            proc = subprocess.Popen(cmd, stdout=temp_fd, stderr=subprocess.PIPE)
-            (dummy, stderr) = proc.communicate()
-            rc = proc.wait()
 
-            if rc != 0:
-                for line in stderr.splitlines():
-                    error(" %s" %line)
+            self._proc = subprocess.Popen(cmd, stdout=temp_fd, stderr=subprocess.PIPE)
+            # This expects tcpdump to output an line like
+            #   tcpdump: listening on eth1, link-type EN10MB (Ethernet), capture size 96 bytes
+            # as first output on stderr ...
+            line = self._proc.stderr.readline()
+            if re.search("listening on.*link-type", line):
+                rc = 0;
             else:
-                rc = temp_file
+                error("Tcpdump failed:")
+                error(line)
+                rc = self_.proc.wait()
         except OSError, inst:
             rc = 255
             error(inst)
 
-        return rc
+        return (rc, temp_file)
 
     def stop(self):
         """ This function will be called within its own thread """
@@ -66,6 +79,7 @@ class Tcpdump(xmlrpc.XMLRPC):
         rc = 0
         try:
             (stdout, stderr) = execute(cmd, shell=False)
+            self._proc.wait()
             debug(stdout)
         except CommandFailed, inst:
             rc = inst.rc
@@ -75,8 +89,8 @@ class Tcpdump(xmlrpc.XMLRPC):
 
         return rc
 
-    def xmlrpc_start(self, expression, interface):
-        return threads.deferToThread(self.start, expression, interface)
+    def xmlrpc_start(self, iface, expr):
+        return threads.deferToThread(self.start, iface, expr)
 
 
     def xmlrpc_stop(self):

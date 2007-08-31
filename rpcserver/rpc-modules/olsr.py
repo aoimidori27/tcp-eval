@@ -57,10 +57,11 @@ class Olsr(RPCService):
     def start(self):
         """ This function will be called within its own thread """
         
-        args = "-f %s" % self._configfile
+        args = ["-f", self._configfile]
         cmd = [ "start-stop-daemon", "--start",  "--quiet",
                 "--exec", self._daemon,
-                "--",     args ]
+                "--"]
+        cmd.extend(args)
         rc = 0
         try:
             (stdout, stderr) = execute(cmd, shell=False)
