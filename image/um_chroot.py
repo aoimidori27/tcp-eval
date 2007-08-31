@@ -59,7 +59,7 @@ class Chroot(Application):
         requireroot()
 
         # for chroot, nodetype and imagepath are required
-        node      = Node(type = self.options.nodetype)
+        node      = Node(type_ = self.options.nodetype)
         nodetype  = node.type()
         # "mount" resolves symlinks, so we need to use a symlink-free path
         # or unmounting will not work.
