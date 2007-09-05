@@ -3,6 +3,7 @@
 
 
 import os
+from logging import info, debug, warn, error, critical
 
 from twisted.internet import defer, utils
 
