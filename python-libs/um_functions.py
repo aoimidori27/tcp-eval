@@ -42,6 +42,7 @@ def call(cmd, shell, raiseError=True):
     rc = subprocess.call(cmd, shell = shell)
     if raiseError and rc != 0:
         raise CommandFailed(cmd, rc)
+    return rc
 
 
 def execpy(arguments = []):
