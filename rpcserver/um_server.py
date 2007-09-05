@@ -5,6 +5,7 @@
 import os
 import imp
 import sys
+import socket
 from logging import info, debug, warn, error, critical
 
 # twisted imports
@@ -45,7 +46,7 @@ class MeshDbPool(adbapi.ConnectionPool):
         
 
     @defer.inlineCallbacks
-    def getCurrentServiceConfig(self, servicename, hostname):
+    def getCurrentServiceConfig(self, servicename, hostname = socket.gethostname()):
         """ Returns the current config as an dictionary if available, else None """
 
         # first get serviceID and the service table
