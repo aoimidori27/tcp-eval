@@ -61,7 +61,8 @@ class MeshDbPool(adbapi.ConnectionPool):
 
         # look which flavor is selected in current config for this host
         query = "SELECT flavorID FROM current_service_conf AS c, nodes " \
-                "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID;" % hostname
+                "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID "\
+                "AND c.servID='%s';" % (hostname, servID)
         debug(query)
         result = yield self.runQuery(query)
         debug(result)
@@ -109,11 +110,17 @@ class RPCServer(xmlrpc.XMLRPC):
     
             
         # find and load rpc modules
-        for file in os.listdir(self._module_path):
-            name, ext = os.path.splitext(os.path.basename(file))
+        for filename in os.listdir(self._module_path):
+            name, ext = os.path.splitext(os.path.basename(filename))
                
             # Only handle python files 
             if not ext == '.py':
+                continue
+
+            # check if this file is readable
+            fpath = os.path.join(self._module_path, filename)
+            if not os.access(fpath, os.R_OK):
+                warn("Permission denied to read %s. Module skipped." %fpath)
                 continue
 
             # Load module
