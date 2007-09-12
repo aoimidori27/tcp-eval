@@ -67,6 +67,8 @@ imageinfos = dict(
                         '/linux/xen/trunk' : 'linux/default',
                         '/tools/nuttcp/trunk' : 'tools/nuttcp',
                         '/tools/thrulay/branches/advanced' : 'tools/thrulay',
+                        '/boot/bios/trunk' : 'boot/bios',
+                        '/boot/etherboot/trunk' : 'boot/etherboot',
                         '/scripts/python-libs' : 'scripts/python-libs',
                         '/scripts/image' : 'scripts/image',
                         '/scripts/vmesh' : 'scripts/vmesh',
