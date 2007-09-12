@@ -45,12 +45,12 @@ class Olsr(RPCService):
     def xmlrpc_isAlive(self):
         """ Check if olsrd is alive by looking in the process table. """
         cmd = ["/bin/ps", "-C", "olsrd5" ]
-        rc = call(cmd, shell=False, raiseError=False)
+        rc = yield twisted_call(cmd, shell=False)
 
         if (rc==0):
-            return True
+            defer.returnValue(True)
         else:
-            return False
+            defer.returnValue(False)
 
 
     #

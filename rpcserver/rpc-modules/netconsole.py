@@ -44,13 +44,12 @@ class Netconsole(RPCService):
     def xmlrpc_isAlive(self):
         """ Check if netconsole module is loaded. """
         cmd = "/sbin/lsmod | grep netconsole"
-        rc = call(cmd, shell=True, raiseError=False)
+        rc = yield twisted_call(cmd, shell=True)
 
         if (rc==0):
-            return True
+            defer.returnValue(True)
         else:
-            return False
-
+            defer.returnValue(False)
 
     #
     # Internal stuff
@@ -60,7 +59,8 @@ class Netconsole(RPCService):
         # Call super constructor
         RPCService.__init__(self, parent)
 
-        self._name = "olsr"
+        # servicename in database
+        self._name = "netconsole"
         self._flavor = None
         self._logserver = None
         self._logport   = None
@@ -86,7 +86,7 @@ class Netconsole(RPCService):
         if assoc.has_key("flavor"):
             self._flavor = assoc["flavor"]
 
-        if not assoc.has_key("logserver") or not assoc_has_key("logport"):
+        if not assoc.has_key("logserver") or not assoc.has_key("logport"):
             error("netconsole: Oops, configuration is broken!")
             defer.returnValue(-1)
 
@@ -101,8 +101,7 @@ class Netconsole(RPCService):
         """ This function loads the netconsole module. """
         
         cmd = [ "/usr/local/sbin/um_netconsole", self._logserver,
-                self._logport ]
-        cmd.extend(args)
+                self._logport.__str__() ]
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
         if len(stdout):
             debug(stdout)
