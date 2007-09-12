@@ -5,6 +5,14 @@
 LOGSERVER=bootserver
 LOGPORT=515 # syslog
 
+if [ -n "$1" ]; then
+  LOGSERVER=$1
+fi;
+
+if [ -n "$2" ]; then
+  LOGPORT=$2
+fi;
+
 # fill arp cache
 ping -c 1 $LOGSERVER
 
