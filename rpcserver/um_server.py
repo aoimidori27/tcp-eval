@@ -43,6 +43,51 @@ class MeshDbPool(adbapi.ConnectionPool):
     def fetchAssoc(self, query):
         """ Fetchas an associative array from the database, returns a defered """
         return self.runInteraction(self._getAssoc, query)
+
+
+    @defer.inlineCallbacks
+    def getCurrentServiceConfigMany(self, servicename, hostname = socket.gethostname()):
+        """ Returns the current configs as an list of dictionary if available, else None """
+
+        # first get serviceID and the service table
+        query = "SELECT servID, servTable FROM services WHERE servName = '%s'" %servicename
+        debug(query)
+        result = yield self.runQuery(query)
+        debug(result)
+        if len(result) is not 1:
+            warn("Service %s not found." %servicename)
+            defer.returnValue(None)
+        (servID, servTable) = result[0]
+
+        # look which flavors are selected in current config for this host
+        query = "SELECT flavorID FROM current_service_conf AS c, nodes " \
+                "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID "\
+                "AND c.servID='%s';" % (hostname, servID)
+        debug(query)
+        result = yield self.runQuery(query)
+        debug(result)
+        if len(result) < 1:
+            info("No flavors of service %s activated for this host" %servicename)
+            defer.returnValue(None)
+
+
+        final_result = list()
+
+        for row in result:
+            (flavorID,) = row
+
+            # get configuration out of service table
+            query = "SELECT * FROM %s WHERE id=%u ORDER BY 'prio' ASC;" %(servTable, flavorID)
+            debug(query)
+            res = yield self.fetchAssoc(query)
+            debug(res)
+            if len(res) is 0:
+                error("Database error: no flavor %u in %s!") %(flavorID, servTable)
+                defer.returnValue(None)
+            final_result.append(res)
+
+        defer.returnValue(final_result)
+        
         
 
     @defer.inlineCallbacks
