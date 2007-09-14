@@ -4,8 +4,6 @@ import logging
 from twisted.web import xmlrpc
 
 
-
-
     
 class RPCService(xmlrpc.XMLRPC):
     """ Base class for services """
@@ -19,11 +17,6 @@ class RPCService(xmlrpc.XMLRPC):
 
         self._name = None
         self._parent = parent
-
-
-    def xmlrpc_getFlavor():
-        return self._flavor
-
 
     # to make logging more meaningful use own logging methods!
     def info(self, msg, *args, **kwargs):
