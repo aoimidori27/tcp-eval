@@ -41,7 +41,7 @@ class Wlan_devices(RPCService):
 
     def xmlrpc_stop(self):
         return self.stop()
-
+    
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
         """ returns always true """
@@ -114,7 +114,7 @@ class Wlan_devices(RPCService):
                 debug(stdout)
 
             if (rc != 0):
-                error("madwifi.start(): failed to create %s" %config["vap"])
+                error("wlan_devices.start(): failed to create %s" %config["vap"])
                 for line in stderr.splitlines():
                     error(" %s" %line)
                 final_rc = rc                
@@ -127,7 +127,7 @@ class Wlan_devices(RPCService):
 
         final_rc = 0
         if not self._configs:
-            warn("madwifi.stop() not initialized with configs")
+            warn("wlan_devices.stop() not initialized with configs")
             defer.returnValue(2)
 
         for config in self._configs:
@@ -139,7 +139,7 @@ class Wlan_devices(RPCService):
                 debug(stdout)
 
             if (rc != 0):
-                error("madwifi.stop(): failed to destroy %s" %config["vap"])
+                error("wlan_devices.stop(): failed to destroy %s" %config["vap"])
                 for line in stderr.splitlines():
                     error(" %s" %line)
                 final_rc = rc                
