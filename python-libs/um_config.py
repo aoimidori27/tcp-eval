@@ -65,7 +65,7 @@ imageinfos = dict(
     vmeshhost = dict(
         svnmappings = { '/config/vmeshhost/trunk' : 'config',
                         '/linux/xen/trunk' : 'linux/default',
-                        '/tools/nuttcp/trunk' : 'tools/nuttcp',
+                        '/tools/nuttcp/branches/um-version' : 'tools/nuttcp',
                         '/tools/thrulay/branches/advanced' : 'tools/thrulay',
                         '/tools/twisted/branches/um-version' : 'tools/twisted',
                         '/boot/bios/trunk' : 'boot/bios',
