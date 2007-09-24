@@ -10,7 +10,7 @@ from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
 from um_rpcservice import RPCService
-from um_twisted import twisted_execute, twisted_call
+from um_twisted_functions import twisted_execute, twisted_call
 from um_node import Node          
 
 class Wlan_parameters(RPCService):
