@@ -23,7 +23,7 @@ BINFILES="$BINFILES,kill,logger,ls,mknod,mount,ping,rm,sed"
 BINFILES="$BINFILES,sh,sleep,umount,uname,run-init,chroot"
 
 # files which belong to /sbin
-SBINFILES="brctl,dhclient3,dhclient,hwclock,ifconfig,insmod,ip,losetup"
+SBINFILES="brctl,dhclient3,dhclient,hwclock,ifconfig,insmod,ip,losetup,usplash_write"
 SBINFILES="$SBINFILES,modprobe,ntpdate,portmap,route"
 SBINFILES="$SBINFILES,ethtool,syslog-ng,strace"
 
