@@ -12,6 +12,8 @@ tmpfile=/tmp/dirvish.status.$$
 
 WARNINGS=""
 for machine in `ls|grep -v lost+found`; do
+    test ! -d $machine/dirvish continue;
+    
     echo "================== $machine =================="
 
     cd $machine
