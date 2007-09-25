@@ -11,7 +11,8 @@ from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
 
 # twisted imports
-from twisted.internet import defer, threads
+from twisted.internet import defer, protocol, reactor, threads
+from twisted.internet import error as twisted_error
 from twisted.web import xmlrpc
 
 from um_rpcservice import RPCService
@@ -21,6 +22,10 @@ from um_node import Node
 
 class Tcpdump(xmlrpc.XMLRPC):
     """Class for managing the packet capturin"""
+
+    NOT_RUNNING = 1
+    STOPPING_FAILED = 2
+    STOPPED = 3
 
     def __init__(self, parent = None):
 
@@ -36,11 +41,16 @@ class Tcpdump(xmlrpc.XMLRPC):
         self._proc = None
 
 
-    def start(self, iface, expr):
+    @defer.inlineCallbacks
+    def xmlrpc_start(self, iface, expr):
+        if self._proc is not None and self._proc.active():
+            error("Tcpdump already started!")
+            defer.returnValue((False, ""))
+
         # -Z?
         cmd = [self._daemon, "-i", iface, "-w", "-", expr]
 
-#        dir = "/mnt/scratch/%s/tcpdump" % Node(type_="meshrouter").hostname()
+#        dir = "/mnt/scratch/%s/tcpdump" % Node().hostname()
         dir = "/tmp"
 
         try:
@@ -51,52 +61,102 @@ class Tcpdump(xmlrpc.XMLRPC):
                 pass
             else:
                 error(inst)
-                return (255, "")
+                defer.returnValue((False, ""))
 
         try:
             temp_fd, temp_file = mkstemp(suffix=".pcap", dir=dir)
-
-
-            self._proc = subprocess.Popen(cmd, stdout=temp_fd, stderr=subprocess.PIPE)
-            # This expects tcpdump to output an line like
-            #   tcpdump: listening on eth1, link-type EN10MB (Ethernet), capture size 96 bytes
-            # as first output on stderr ...
-            line = self._proc.stderr.readline()
-            if re.search("listening on.*link-type", line):
-                rc = 0;
-            else:
-                error("Tcpdump failed:")
-                error(line)
-                rc = self._proc.wait()
         except OSError, inst:
-            rc = 255
             error(inst)
+            defer.returnValue((False, ""))
 
-        return (rc, temp_file)
+        self._proc = _ProcessProtocol()
+        reactor.spawnProcess(self._proc, self._daemon, args = cmd, path='/',
+                childFDs = {1: temp_fd, 2: "r"})
+        os.close(temp_fd)
 
-    def stop(self):
-        """ This function will be called within its own thread """
+        success, status, stderr = yield self._proc.deferred()
 
-        cmd = [ "start-stop-daemon", "--stop",  "--quiet",
-                "--exec", self._daemon,
-                "--signal", "TERM",
-                "--retry",  "5"]
-        rc = 0
-        try:
-            (stdout, stderr) = execute(cmd, shell=False)
-            self._proc.wait()
-            debug(stdout)
-        except CommandFailed, inst:
-            rc = inst.rc
-            error(inst)
-            for line in inst.stderr.splitlines():
-                error(" %s" %line)
+        if not success:
+            error("Tcpdump failed (exit status: %s):" % status)
+            error(stderr)
+            os.unlink(temp_file)
+            defer.returnValue((False, ""))
+        else:
+            defer.returnValue((True, temp_file))
 
-        return rc
-
-    def xmlrpc_start(self, iface, expr):
-        return threads.deferToThread(self.start, iface, expr)
-
-
+    @defer.inlineCallbacks
     def xmlrpc_stop(self):
-        return threads.deferToThread(self.stop)
+        if self._proc is None:
+            defer.returnValue(Tcpdump.NOT_RUNNING)
+        rc =  yield self._proc.kill()
+        self._proc = None
+        if rc:
+            defer.returnValue(Tcpdump.STOPPED)
+        else:
+            defer.returnValue(Tcpdump.STOPPING_FAILED)
+
+
+class _ProcessProtocol(protocol.ProcessProtocol):
+
+    def __init__(self):
+        self._stderr = []
+        self._ended = False
+        self._fired = False
+        self._timeout = None
+        self._deferred = defer.Deferred()
+
+    def active(self):
+        return not self._ended
+
+    def deferred(self):
+        return self._deferred
+
+    def connectionMade(self):
+        self.transport.closeStdin()
+
+    def errConnectionLost(self):
+        if not self._fired:
+            self._checkStderr()
+
+    def errReceived(self, data):
+        if self._fired:
+            return
+        self._stderr.append(data)
+        if data.find('\n') == -1:
+            return
+        # This expects tcpdump to output an line like
+        #   tcpdump: listening on eth1, link-type EN10MB (Ethernet), capture size 96 bytes
+        # as first output on stderr ...
+        stderr = "".join(self._stderr)
+        self._fired = True
+        if re.search("listening on.*link-type", stderr):
+            self._deferred.callback((True, None, stderr))
+        else:
+            self._deferred.callback((False, None, stderr))
+
+    @defer.inlineCallbacks
+    def kill(self):
+        try:
+            self.transport.signalProcess('TERM')
+            self._timeout = twisted_sleep(2)
+            if (yield self._timeout):
+                defer.returnValue(True)
+
+            self.transport.loseConnection()
+            self.transport.signalProcess('KILL')
+        except twisted_error.ProcessExitedAlready:
+            defer.returnValue(True)
+
+        self._timeout = twisted_sleep(2)
+        if (yield self._timeout):
+            defer.returnValue(True)
+        else:
+            defer.returnValue(False)
+
+    def processEnded(self, status):
+        self._ended = True
+        if self._timeout is not None and self._timeout.active():
+            self._timeout.callLater.cancel()
+            self._timeout.callback(True)
+        if not self._fired:
+            self._deferred.callback((False, status, "".join(self._stderr)))
