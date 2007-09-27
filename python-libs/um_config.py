@@ -88,7 +88,7 @@ imageinfos = dict(
                         '/routing/olsr/branches/um-version-olsr5' : 'routing/olsr5',
                         '/tools/nuttcp/branches/um-version' : 'tools/nuttcp',
                         '/tools/thrulay/branches/advanced' : 'tools/thrulay',
-                        '/tools/tcpdump/branches/elcn' : 'tools/tcpdump',
+                        '/tools/tcpdump/branches/um-version-elcn' : 'tools/tcpdump',
                         '/tools/set-tcp_elcn/' : 'tools/set-tcp_elcn',
                         '/scripts/python-libs' : 'scripts/python-libs',
                         '/scripts/vmesh' : 'scripts/vmesh',
