@@ -5,7 +5,7 @@
 import os
 from logging import info, debug, warn, error, critical
 
-from twisted.internet import defer, utils
+from twisted.internet import defer, utils, reactor
 
 
 """
@@ -15,17 +15,28 @@ This module contains useful functions to use within the twisted framework.
 
 """
 
-            
+def twisted_sleep(timeout):
+    """
+    Returns a deferred, which is fired after timeout seconds.
+    The deferred gets an additional "callLater" property, which contains
+    a reference to an IDelayedCall instance.
+    """
+
+    d = defer.Deferred()
+    #FIXME!~!!
+    d.callLater = reactor.callLater(timeout, d.callback, None)
+    return d
+
 
 @defer.inlineCallbacks
 def twisted_execute(cmd, shell=True):
     """
     Executes the given command and
     returns a sequence (stdout, stderr, returncode)
-    
+
     Function which mimics um_functions.execute()
     but without exceptions.
-    
+
     for use in twisted (the subprocess module won't work!!!)
 
     """
@@ -40,7 +51,7 @@ def twisted_execute(cmd, shell=True):
                                                     ('-c', cmd),
                                                     env=os.environ,
                                                     path='.')
-        
+
     defer.returnValue((stdout, stderr, rc))
 
 @defer.inlineCallbacks
@@ -57,10 +68,10 @@ def twisted_call(cmd, shell=True):
 
 class _ExecuteHelper(defer.Deferred):
     """
-    
+
     This a wrapper around utils.getProcessOutputAndValue, which returns the
     signal number as negative returncode in case of errback()
-    
+
     """
 
     def __init__(self, *args, **kwargs):
