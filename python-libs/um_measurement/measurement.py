@@ -14,7 +14,7 @@ from um_measurement.sshexec import SSHConnectionFactory
 
 class Measurement(Application):
     """
-    
+
     Framework for UMIC-Mesh measurement applications.
 
     Provides an Application wrapper for Measurement classes. Must be
@@ -23,7 +23,7 @@ class Measurement(Application):
     As usual for Application subclassses, the subclass may add own parameters
     to self.parser.
     It must call parse_option() and Measurement2App.set_option afterwards.
-    
+
     """
 
     def __init__(self):
@@ -38,7 +38,7 @@ class Measurement(Application):
 
         p = self.parser
 
-        usage = "usage: %prog [options] -L outputdir\n" 
+        usage = "usage: %prog [options] -L outputdir\n"
         p.set_usage(usage)
 
 
@@ -58,7 +58,7 @@ class Measurement(Application):
             self.parser.error("An output directory must be specified.")
 
 
-            
+
     def _getNull(self):
         """ Provides a null file descriptor. """
         if not self._null:
@@ -71,29 +71,29 @@ class Measurement(Application):
         """Executes command cmd on hosts"""
         deferedList = []
 
-        for host in hosts:            
+        for host in hosts:
             deferedList.append(self.remote_execute(host, cmd,
                                                    **kwargs))
         yield defer.DeferredList(deferedList)
-        
-        
+
+
 
     @defer.inlineCallbacks
     def remote_execute(self, host, cmd, log_file=None, **kwargs):
         """Executes command cmd on host(s), creating a master connection if necessary"""
 
         # for convenience assume that if host is not string its something to it
-        # iterate over        
+        # iterate over
         if type(host) is not str:
             yield remote_execute_many(self, host, cmd, **kwargs)
-        
+
         if not log_file:
             logfile = self._getNull()
-            
+
         if not self._scf.isConnected(host):
             info("no master connection to %s found creating one..." % host)
             yield self._scf.connect([host])
-            
+
         debug("%s: running %s" %(host,cmd))
         yield self._scf.remoteExecute(host, cmd,
                                       out_fd=log_file,
@@ -103,7 +103,7 @@ class Measurement(Application):
         """ This function updates internal statistics """
         test_name = test.func_name
 
-        if not self._stats.has_key(test_name): 
+        if not self._stats.has_key(test_name):
             self._stats[test_name] = dict()
 
         test_stats = self._stats[test_name]
@@ -112,15 +112,15 @@ class Measurement(Application):
             test_stats[rc] = 1
         else:
             test_stats[rc] += 1
-            
+
     @defer.inlineCallbacks
     def run_test(self, test, **kwargs):
         """Runs a test method with arguments self, logfile, args"""
-        
+
         if not os.path.exists(self.options.log_dir):
             info("%s does not exist, creating. " % self.options.log_dir)
             os.mkdir(self.options.log_dir)
-            
+
         log_name = "%s_%s" %(self.logprefix, test.func_name)
         log_path = os.path.join(self.options.log_dir, log_name)
         log_file = file(log_path, 'w')
@@ -131,7 +131,7 @@ class Measurement(Application):
             log_file.flush()
         if kwargs.has_key('scenario_label'):
             log_file.write("scenario_label:%s\n" %kwargs['scenario_label'])
-            log_file.flush()            
+            log_file.flush()
 
         # actually run test
         info("Starting test %s with: %s", test.func_name, kwargs)
@@ -142,7 +142,7 @@ class Measurement(Application):
             warn("Test returned with RC=%s" %rc)
 
         self._update_stats(test,rc)
-        
+
         log_file.close()
 
 
@@ -162,10 +162,10 @@ class Measurement(Application):
                                    label_= lambda src, dst: r"%s\\sra%s" %(src,dst),
                                    **kwargs):
         """returns a list of dicts
-        
+
         Generates all 2-tuple permutations of the given nodelist. The dicts
-        generated have the keys src, dst, run_label and all keys out of kwargs.        
-        
+        generated have the keys src, dst, run_label and all keys out of kwargs.
+
         """
         res = list()
         for target in nodelist:
