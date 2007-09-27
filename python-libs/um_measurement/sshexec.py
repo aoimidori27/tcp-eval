@@ -16,6 +16,7 @@ from twisted.internet import defer, error, protocol
 from twisted.python import log, failure
 
 from um_functions import StrictStruct
+from um_twisted_functions import twisted_sleep
 
 class SSHConnectionFactory:
 
@@ -68,12 +69,12 @@ class SSHConnectionFactory:
         Forces a process to stop by doing TERM, KILL, disconnect.
         """
         proc.kill(signal.SIGTERM)
-        yield timeoutDeferred(2)
+        yield twisted_sleep(2)
 
         if proc.stopped:
             return
         proc.kill(signal.SIGKILL)
-        yield timeoutDeferred(2)
+        yield twisted_sleep(2)
 
         if proc.stopped:
             return
@@ -573,13 +574,3 @@ def parseSSHAnswer(format, data):
         else:
             raise NotImplementedError("Format char '%s' is not implemented" % fmt)
     return parsed
-
-def timeoutDeferred(timeout):
-    """
-    Returns a deferred, which is fired after timeout seconds.
-    """
-
-    d = defer.Deferred()
-    cl = reactor.callLater(timeout, d.callback, None)
-    return d
-
