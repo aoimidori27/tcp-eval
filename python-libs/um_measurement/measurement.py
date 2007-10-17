@@ -6,11 +6,13 @@ import os.path
 import os
 from logging import info, debug, warn, error, critical
 
+from twisted.web.xmlrpc import Proxy
 from twisted.internet import defer, reactor
 from twisted.python import log
 
 from um_application import Application
 from um_measurement.sshexec import SSHConnectionFactory
+
 
 class Measurement(Application):
     """
@@ -33,6 +35,8 @@ class Measurement(Application):
         self.node_pairs = None
         self._scf = SSHConnectionFactory()
         self._null = None
+
+        self.xmlrpc_port = 7080
 
         self._stats = dict()
 
@@ -66,15 +70,38 @@ class Measurement(Application):
         return self._null
 
 
+
+    @defer.inlineCallbacks
+    def xmlrpc_many(self, hosts, cmd, *args):
+        """Calls a remote procedure on hosts"""
+
+        deferredList = []
+
+        for host in hosts:
+            deferredList.append(self.xmlrpc(host, cmd,
+                                           *args))
+        yield defer.DeferredList(deferredList)
+            
+
+
+    @defer.inlineCallbacks
+    def xmlrpc(self, host, cmd, *args):
+        """Calls a remote procedure on a host"""
+
+        proxy = Proxy('http://%s:%u' %(host, self.xmlrpc_port))
+        debug("Calling %s on %s with args %s" %(cmd,host,args))
+        yield proxy.callRemote(cmd, *args)
+        
+
     @defer.inlineCallbacks
     def remote_execute_many(self, hosts, cmd, **kwargs):
         """Executes command cmd on hosts"""
-        deferedList = []
+        deferredList = []
 
         for host in hosts:
-            deferedList.append(self.remote_execute(host, cmd,
+            deferredList.append(self.remote_execute(host, cmd,
                                                    **kwargs))
-        yield defer.DeferredList(deferedList)
+        yield defer.DeferredList(deferredList)
 
 
 
