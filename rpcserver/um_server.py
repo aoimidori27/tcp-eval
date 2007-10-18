@@ -41,18 +41,31 @@ class MeshDbPool(adbapi.ConnectionPool):
         return res    
 
     def fetchAssoc(self, query):
-        """ Fetchas an associative array from the database, returns a defered """
+        """ Fetches an associative array from the database, returns a defered """
         return self.runInteraction(self._getAssoc, query)
 
+    def _fetchColumnAsList(self, txn, query, column):
+        """ This function returns a list of the specified column """
+        debug(query)
+        txn.execute(query)
+        res = list()
+        if txn.rowcount > 0:
+            for row in txn.fetchall():
+                res.append(row[column])                
+        return res                
+
+    def fetchColumnAsList(self, query, column=0):
+        """ Fetches a column of a query as a list """
+        return self.runInteraction(self._fetchColumnAsList, query, column)
 
     @defer.inlineCallbacks
     def startedService(self, config, rc, message, hostname = socket.gethostname()):
         """ Updates the Database on startup of a service flavor. """
 
         # store record in database
-        query = """INSERT INTO current_service_status (nodeID,servID,flavorID,version,returncode,message) 
-                   SELECT nodeID, %u, %u, %u, %d,'%s' FROM nodes WHERE nodes.name='%s';
-                """ %(config['servID'], config['flavorID'], config['version'],
+        query = """INSERT INTO current_service_status (nodeID,servID,flavorID,version,prio,returncode,message) 
+                   SELECT nodeID, %u, %u, %u, %u, %d,'%s' FROM nodes WHERE nodes.name='%s';
+                """ %(config['servID'], config['flavorID'], config['version'], config['prio'],
                       rc, message, hostname)
         debug(query)
         result = yield self.runQuery(query)
@@ -61,12 +74,11 @@ class MeshDbPool(adbapi.ConnectionPool):
     def stoppedService(self, config, rc, message, hostname = socket.gethostname()):
         """ Updates the Database on stop of a service flavor. """
 
-        query = """UPDATE current_service_status, nodes SET
-                   current_service_status.last_stopped=NOW(),
-                   returncode = %d, message = '%s'
+        query = """DELETE FROM current_service_status USING current_service_status, nodes 
                    WHERE nodes.name='%s' AND nodes.nodeID=current_service_status.nodeID
                    AND servID=%d AND flavorID=%d;
-                """ % (rc, message, hostname, config['servID'], config['flavorID'])
+                """  % (hostname, config['servID'], config['flavorID'])
+
         debug(query)
         result = yield self.runQuery(query)
                                            
@@ -86,7 +98,7 @@ class MeshDbPool(adbapi.ConnectionPool):
         (servID, servTable) = result[0]
 
         # look which flavors are selected in current config for this host
-        query = "SELECT flavorID FROM current_service_conf AS c, nodes " \
+        query = "SELECT flavorID,prio FROM current_service_conf AS c, nodes " \
                 "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID "\
                 "AND c.servID='%s';" % (hostname, servID)
         debug(query)
@@ -100,11 +112,12 @@ class MeshDbPool(adbapi.ConnectionPool):
         final_result = list()
 
         for row in result:
-            (flavorID,) = row
+            (flavorID,prio) = row
             # get configuration out of service table
             query = "SELECT * FROM services_flavors LEFT JOIN %s USING (flavorID) WHERE flavorID=%d;" % (servTable, flavorID)
             debug(query)
             res = yield self.fetchAssoc(query)
+            res["prio"] = prio
             debug(res)
             if len(res) is 0:
                 error("Database error: no flavor %u in %s!") %(flavorID, servTable)
@@ -131,7 +144,7 @@ class MeshDbPool(adbapi.ConnectionPool):
         (servID, servTable) = result[0]
 
         # look which flavor is selected in current config for this host
-        query = "SELECT flavorID FROM current_service_conf AS c, nodes " \
+        query = "SELECT flavorID, prio FROM current_service_conf AS c, nodes " \
                 "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID "\
                 "AND c.servID='%s';" % (hostname, servID)
         debug(query)
@@ -140,17 +153,55 @@ class MeshDbPool(adbapi.ConnectionPool):
         if len(result) is not 1:
             info("No flavor of service %s activated for this host" %servicename)
             defer.returnValue(None)
-        (flavorID,) = result[0]
+        (flavorID,prio) = result[0]
 
         # get configuration out of service table
         query = "SELECT * FROM services_flavors LEFT JOIN %s USING (flavorID) WHERE flavorID=%d;" % (servTable, flavorID)
         debug(query)
         result = yield self.fetchAssoc(query)
+        result["prio"] = prio;
         debug(result)
         if len(result) is 0:
             error("Database error: no flavor %u in %s!") %(flavorID, servTable)
             defer.returnValue(None)
-        defer.returnValue(result)        
+        defer.returnValue(result)
+
+    @defer.inlineCallbacks
+    def getServicesToStart(self, hostname = socket.gethostname()):
+        """ Returns a list of servicenames, appropriate sorted. """
+        
+        query = """SELECT DISTINCT servName
+                   FROM services,nodes, current_service_conf
+                   LEFT JOIN current_service_status USING (servID,flavorID,version)
+                   WHERE current_service_conf.nodeID=nodes.nodeID
+                   AND isNull(last_started)
+                   AND nodes.name='%s'
+                   AND services.servID=current_service_conf.servID
+                   ORDER BY current_service_conf.prio ASC;""" % hostname
+        debug(query)        
+        service_list = yield self.fetchColumnAsList(query)
+        debug(service_list)
+        
+        defer.returnValue(service_list)
+
+    @defer.inlineCallbacks
+    def getServicesToStop(self, hostname = socket.gethostname()):
+        """ Returns a list of servicenames, appropriate sorted. """
+
+
+        query = """SELECT DISTINCT servName FROM current_service_status,services
+                   WHERE nodeID=(SELECT nodeID FROM nodes WHERE name='%s')
+                   AND (current_service_status.servID, flavorID, version)
+                   NOT IN (SELECT servID,flavorID,version FROM current_service_conf)
+                   AND services.servID=current_service_status.servID
+                   ORDER BY current_service_status.prio DESC;
+                """ % hostname
+        debug(query)
+        service_list = yield self.fetchColumnAsList(query)
+        debug(service_list)
+        
+        defer.returnValue(service_list)
+        
         
 
 class RPCServer(xmlrpc.XMLRPC):
@@ -161,6 +212,8 @@ class RPCServer(xmlrpc.XMLRPC):
         self._module_path = module_path
 
         self._parent = parent
+
+        self._services = dict()
 
         # Call super constructor
         xmlrpc.XMLRPC.__init__(self)
@@ -204,14 +257,10 @@ class RPCServer(xmlrpc.XMLRPC):
            
             # Register modules
             info(" Registering rpc module %s" %name.capitalize())
-            self.putSubHandler(name, eval('module.%s(parent=self)' %name.capitalize()))
-        info("Startup complete.")
+            self._services[name] = eval('module.%s(parent=self)' %name.capitalize())
+            self.putSubHandler(name, self._services[name])
 
-    def xmlrpc_stats(self, service="olsr", hostname="mrouter1"):
-        res = self._dbpool.getCurrentServiceConfig(service,hostname)
-        debug("blub: %s" %type(res))
-        debug("bla: %s" %res)
-        return res
+        info("Startup complete.")
 
     def xmlrpc_ping(self):
         return 'OK'
@@ -222,6 +271,34 @@ class RPCServer(xmlrpc.XMLRPC):
             self._parent.set_restart()
         reactor.callLater(1,reactor.stop)
         return 'OK'
+
+    def xmlrpc_test(self):
+        return self._dbpool.getServicesToStart();
+
+    def xmlrpc_test2(self):
+        return self._dbpool.getServicesToStop();
+
+
+    @defer.inlineCallbacks
+    def xmlrpc_apply(self):
+        info("Applying configuration changes...")
+
+        info("Stopping services...")
+        services = yield self._dbpool.getServicesToStop()
+
+        for service in services:
+            debug("Stopping service %s" % service)
+            yield self._services[service].xmlrpc_stop()
+
+        info("Starting services...")
+        services = yield self._dbpool.getServicesToStart()
+
+        for service in services:
+            debug("Starting service %s" % service)
+            yield self._services[service].xmlrpc_start()            
+
+        defer.returnValue(0)
+        
 
 
 class RPCServerApp(Application):
