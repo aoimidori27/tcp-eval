@@ -57,6 +57,7 @@ class Sysctl(RPCService):
         # name of this service in the database
         self._name = "sysctl"
         self._configfile = None
+        self._configs = None
     
     
     @defer.inlineCallbacks
@@ -74,6 +75,8 @@ class Sysctl(RPCService):
         if not list_of_assoc:
             info("Found no configuration")
             defer.returnValue(-1)
+
+        self._configs = list_of_assoc
 
         if self._configfile and os.path.exists(self._configfile):
             tempfile = file(self._configfile, 'w')
@@ -104,7 +107,11 @@ class Sysctl(RPCService):
             error("sysctl.start(): Command failed with RC=%s", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
-                
+
+
+        for config in self._configs:
+            yield self._parent._dbpool.startedService(config,
+                                                      rc, message=stderr)
         defer.returnValue(rc)
 
     def stop(self):

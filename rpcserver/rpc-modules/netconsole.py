@@ -61,9 +61,7 @@ class Netconsole(RPCService):
 
         # servicename in database
         self._name = "netconsole"
-        self._flavor = None
-        self._logserver = None
-        self._logport   = None
+        self._config = None
     
     
     @defer.inlineCallbacks
@@ -83,15 +81,11 @@ class Netconsole(RPCService):
             info("Found no configuration")
             defer.returnValue(-1)
 
-        if assoc.has_key("flavor"):
-            self._flavor = assoc["flavor"]
+        self._config = assoc
 
         if not assoc.has_key("logserver") or not assoc.has_key("logport"):
             error("netconsole: Oops, configuration is broken!")
             defer.returnValue(-1)
-
-        self._logserver = assoc["logserver"]
-        self._logport   = assoc["logport"]
 
         defer.returnValue(0)
                                    
@@ -100,16 +94,17 @@ class Netconsole(RPCService):
     def start(self):
         """ This function loads the netconsole module. """
         
-        cmd = [ "/usr/local/sbin/um_netconsole", self._logserver,
-                self._logport.__str__() ]
+        cmd = [ "/usr/local/sbin/um_netconsole", self._config['logserver'],
+                self._config['logport'].__str__() ]
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
         if len(stdout):
             debug(stdout)
         if (rc != 0):
-            error("netconsole.start(): Command failed with RC=%s", rc)
+            error("netconsole.start(): Command failed with RC=%d", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
-                
+        yield self._parent._dbpool.startedService(self._config,
+                                                  rc, message=stderr)
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
@@ -124,7 +119,8 @@ class Netconsole(RPCService):
             error("netconsole.stop(): Command failed with RC=%s", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
-            
+        yield self._parent._dbpool.stoppedService(self._config,
+                                                  rc, message=stderr)            
         defer.returnValue(rc)
 
 

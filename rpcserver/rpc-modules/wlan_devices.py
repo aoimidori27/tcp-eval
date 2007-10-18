@@ -117,7 +117,10 @@ class Wlan_devices(RPCService):
                 error("wlan_devices.start(): failed to create %s" %config["vap"])
                 for line in stderr.splitlines():
                     error(" %s" %line)
-                final_rc = rc                
+                final_rc = rc
+
+            yield self._parent._dbpool.startedService(config,
+                                                      rc, message=stderr)
                 
         defer.returnValue(final_rc)
 
@@ -142,7 +145,9 @@ class Wlan_devices(RPCService):
                 error("wlan_devices.stop(): failed to destroy %s" %config["vap"])
                 for line in stderr.splitlines():
                     error(" %s" %line)
-                final_rc = rc                
+                final_rc = rc
+            yield self._parent._dbpool.stoppedService(config,
+                                                      rc, message=stderr)
                 
         defer.returnValue(final_rc)
 

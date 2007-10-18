@@ -111,7 +111,10 @@ class Wlan_ipconfig(RPCService):
                 self.error("start(): failed to bring %s up" %config["interface"])
                 for line in stderr.splitlines():
                     error(" %s" %line)
-                final_rc = rc                
+                final_rc = rc
+
+            yield self._parent._dbpool.startedService(config,
+                                                      rc, message=stderr)
                 
         defer.returnValue(final_rc)
 
@@ -139,8 +142,10 @@ class Wlan_ipconfig(RPCService):
                 self.error("stop(): failed to delete %s" %config["interface"])
                 for line in stderr.splitlines():
                     error(" %s" %line)
-                final_rc = rc                
-                
+                final_rc = rc
+            
+            yield self._parent._dbpool.stoppedService(config,
+                                                      rc, message=stderr)
         defer.returnValue(final_rc)
 
 

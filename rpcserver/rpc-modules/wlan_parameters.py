@@ -41,7 +41,7 @@ class Wlan_parameters(RPCService):
 
     def xmlrpc_stop(self):
         """ This is not implemented """
-        return -1
+        return self.stop();
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
@@ -109,13 +109,14 @@ class Wlan_parameters(RPCService):
             if (rc != 0):
                 self.error("failed to set %s of %s" %(attribute,interface))
                 self.stderror(stderr)
+
             
         defer.returnValue(rc)
                 
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function creates the vaps. """
+        """ This function sets up vaps. """
 
         final_rc = 0
         nodenr = Node().number()
@@ -126,24 +127,75 @@ class Wlan_parameters(RPCService):
             txpower    = config["txpower"]
             mcast_rate = config["mcast_rate"]
 
+            stderr = "";
+
             rc = yield self.iwcmd("iwconfig", config, "essid")
             if rc != 0:
+                stderr = stderr+"setting essid failed\n"
                 final_rc = rc
 
             rc = yield self.iwcmd("iwconfig", config, "channel")
             if rc != 0:
+                stderr = stderr+"setting channel failed\n"
                 final_rc = rc
 
             rc = yield self.iwcmd("iwconfig", config, "txpower")
             if rc != 0:
+                stderr = stderr+"setting txpower failed\n"
                 final_rc = rc
 
-            rc = yield self.iwcmd("iwpriv", config, "mcast_rate")
+            rc = yield self.iwcmd("iwpriv", config, "mcast_rate")            
             if rc != 0:
-                final_rc = rc                                
+                stderr = stderr+"setting mcast_rate failed\n"
+                final_rc = rc
+                
+            yield self._parent._dbpool.startedService(config,
+                                                      final_rc, message=stderr)
+            
                                                         
         defer.returnValue(final_rc)
 
+    @defer.inlineCallbacks
+    def stop(self):
+        """ This function resets vaps to reasonable defaults. """
+
+        final_rc = 0
+        nodenr = Node().number()
+
+        for config in self._configs:
+            interface  = config["interface"]
+
+            config["channel"] = 1;
+            config["mcast_rate"] = 1000;
+            config["txpower"] = 17;
+
+            stderr = "";
+
+            rc = yield self.iwcmd("iwconfig", config, "essid")
+            if rc != 0:
+                stderr = stderr+"setting essid failed\n"
+                final_rc = rc
+
+            rc = yield self.iwcmd("iwconfig", config, "channel")
+            if rc != 0:
+                stderr = stderr+"setting channel failed\n"
+                final_rc = rc
+
+            rc = yield self.iwcmd("iwconfig", config, "txpower")
+            if rc != 0:
+                stderr = stderr+"setting txpower failed\n"
+                final_rc = rc
+
+            rc = yield self.iwcmd("iwpriv", config, "mcast_rate")            
+            if rc != 0:
+                stderr = stderr+"setting mcast_rate failed\n"
+                final_rc = rc
+                
+            yield self._parent._dbpool.stoppedService(config,
+                                                      final_rc, message=stderr)
+            
+                                                        
+        defer.returnValue(final_rc)
 
 
 

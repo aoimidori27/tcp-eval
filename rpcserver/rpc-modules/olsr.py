@@ -62,7 +62,7 @@ class Olsr(RPCService):
         RPCService.__init__(self, parent)
 
         self._name = "olsr"
-        self._flavor = None
+        self._config = None
         self._configfile = None
         self._daemon = "/usr/local/sbin/olsrd5"
     
@@ -83,8 +83,7 @@ class Olsr(RPCService):
             info("Found no configuration")
             defer.returnValue(-1)
 
-        if assoc.has_key("flavor"):
-            self._flavor = assoc["flavor"]            
+        self._config = assoc
 
         if self._configfile and os.path.exists(self._configfile):
             tempfile = file(self._configfile, 'w')
@@ -116,7 +115,9 @@ class Olsr(RPCService):
             error("olsr.start(): Command failed with RC=%s", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
-                
+
+        yield self._parent._dbpool.startedService(self._config,
+                                                  rc, message=stderr)
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
@@ -134,7 +135,8 @@ class Olsr(RPCService):
             error("olsr.stop(): Command failed with RC=%s", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
-            
+        yield self._parent._dbpool.stoppedService(self._config,
+                                                  rc, message=stderr)            
         defer.returnValue(rc)
 
 

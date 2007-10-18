@@ -46,6 +46,32 @@ class MeshDbPool(adbapi.ConnectionPool):
 
 
     @defer.inlineCallbacks
+    def startedService(self, config, rc, message, hostname = socket.gethostname()):
+        """ Updates the Database on startup of a service flavor. """
+
+        # store record in database
+        query = """INSERT INTO current_service_status (nodeID,servID,flavorID,version,returncode,message) 
+                   SELECT nodeID, %u, %u, %u, %d,'%s' FROM nodes WHERE nodes.name='%s';
+                """ %(config['servID'], config['flavorID'], config['version'],
+                      rc, message, hostname)
+        debug(query)
+        result = yield self.runQuery(query)
+
+    @defer.inlineCallbacks
+    def stoppedService(self, config, rc, message, hostname = socket.gethostname()):
+        """ Updates the Database on stop of a service flavor. """
+
+        query = """UPDATE current_service_status, nodes SET
+                   current_service_status.last_stopped=NOW(),
+                   returncode = %d, message = '%s'
+                   WHERE nodes.name='%s' AND nodes.nodeID=current_service_status.nodeID
+                   AND servID=%d AND flavorID=%d;
+                """ % (rc, message, hostname, config['servID'], config['flavorID'])
+        debug(query)
+        result = yield self.runQuery(query)
+                                           
+
+    @defer.inlineCallbacks
     def getCurrentServiceConfigMany(self, servicename, hostname = socket.gethostname()):
         """ Returns the current configs as an list of dictionary if available, else None """
 
@@ -75,15 +101,15 @@ class MeshDbPool(adbapi.ConnectionPool):
 
         for row in result:
             (flavorID,) = row
-
             # get configuration out of service table
-            query = "SELECT * FROM %s WHERE id=%u ORDER BY 'prio' ASC;" %(servTable, flavorID)
+            query = "SELECT * FROM services_flavors LEFT JOIN %s USING (flavorID) WHERE flavorID=%d;" % (servTable, flavorID)
             debug(query)
             res = yield self.fetchAssoc(query)
             debug(res)
             if len(res) is 0:
                 error("Database error: no flavor %u in %s!") %(flavorID, servTable)
                 defer.returnValue(None)
+                
             final_result.append(res)
 
         defer.returnValue(final_result)
@@ -117,15 +143,14 @@ class MeshDbPool(adbapi.ConnectionPool):
         (flavorID,) = result[0]
 
         # get configuration out of service table
-        query = "SELECT * FROM %s WHERE id=%u;" %(servTable, flavorID)
+        query = "SELECT * FROM services_flavors LEFT JOIN %s USING (flavorID) WHERE flavorID=%d;" % (servTable, flavorID)
         debug(query)
         result = yield self.fetchAssoc(query)
         debug(result)
         if len(result) is 0:
             error("Database error: no flavor %u in %s!") %(flavorID, servTable)
             defer.returnValue(None)
-        defer.returnValue(result)
-        
+        defer.returnValue(result)        
         
 
 class RPCServer(xmlrpc.XMLRPC):
