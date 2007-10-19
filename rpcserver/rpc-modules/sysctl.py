@@ -38,7 +38,7 @@ class Sysctl(RPCService):
 
     def xmlrpc_stop(self):
         """ Not yet implemented. """
-        return -1
+        return self.stop()
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
@@ -114,10 +114,15 @@ class Sysctl(RPCService):
                                                       rc, message=stderr)
         defer.returnValue(rc)
 
+    @defer.inlineCallbacks
     def stop(self):
-        """ This function is not yet implemented. """
+        """ This function does nothing. """
+
+        for config in self._configs:
+            yield self._parent._dbpool.stoppedService(config,
+                                                      0, message="")
             
-        return -1
+        defer.returnValue(0)
 
 
 
