@@ -115,6 +115,9 @@ class Olsr(RPCService):
             error("olsr.start(): Command failed with RC=%s", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
+            # when an error occurs stdout is important too
+            if len(stdout):
+                stderr = stderr+stdout
 
         yield self._parent._dbpool.startedService(self._config,
                                                   rc, message=stderr)

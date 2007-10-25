@@ -14,6 +14,7 @@ from twisted.internet import reactor, defer
 from twisted.enterprise import adbapi
 
 from um_application import Application
+from um_twisted_functions import twisted_call
 
 
 class MeshDbPool(adbapi.ConnectionPool):
@@ -298,16 +299,26 @@ class RPCServer(xmlrpc.XMLRPC):
         services = yield self._dbpool.getServicesToStop()
 
         for service in services:
-            debug("Stopping service %s" % service)
+            text = "Stopping service %s" % service
+            debug(text)
+            yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
+                shell=False)
             yield self._services[service].xmlrpc_stop()
 
         info("Starting services...")
         services = yield self._dbpool.getServicesToStart()
 
         for service in services:
-            info("Starting service %s" % service)
+            text = "Starting service %s" % service 
+            info(text)
+            yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
+                shell=False)
             rc = yield self._services[service].xmlrpc_start()            
             info("RC=%s" %rc)      
+
+        text = "Done."
+        yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
+                shell=False)
 
         defer.returnValue(0)
         
