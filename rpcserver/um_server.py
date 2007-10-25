@@ -208,7 +208,7 @@ class MeshDbPool(adbapi.ConnectionPool):
         """ Clears the serivce status table from entries of this host. """
        
         query = """DELETE FROM current_service_status USING current_service_status, nodes 
-                   WHERE nodes.name='%s';
+                   WHERE nodes.name='%s' AND nodes.nodeID=current_service_status.nodeID;
                 """  % hostname
         debug(query)
         result = yield self.runQuery(query)
