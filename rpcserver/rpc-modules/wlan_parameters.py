@@ -10,7 +10,7 @@ from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
 from um_rpcservice import RPCService
-from um_twisted_functions import twisted_execute, twisted_call
+from um_twisted_functions import twisted_execute, twisted_call, twisted_sleep
 from um_node import Node          
 
 class Wlan_parameters(RPCService):
@@ -143,6 +143,7 @@ class Wlan_parameters(RPCService):
             # give him a second chance on this, this maybe timing critical
             if rc != 0:
                 info("Setting txpower failed, try another time...")
+                yield twisted_sleep(1)
                 rc = yield self.iwcmd("iwconfig", config, "txpower")    
             if rc != 0:
                 stderr = stderr+"setting txpower failed\n"
