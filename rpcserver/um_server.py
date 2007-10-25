@@ -170,14 +170,14 @@ class MeshDbPool(adbapi.ConnectionPool):
     def getServicesToStart(self, hostname = socket.gethostname()):
         """ Returns a list of servicenames, appropriate sorted. """
         
-        query = """SELECT DISTINCT servName
-                   FROM services,nodes, current_service_conf
-                   LEFT JOIN current_service_status USING (servID,flavorID,version)
-                   WHERE current_service_conf.nodeID=nodes.nodeID
-                   AND isNull(last_started)
-                   AND nodes.name='%s'
+        query = """SELECT DISTINCT servName FROM current_service_conf,services
+                   WHERE nodeID=(SELECT nodeID FROM nodes WHERE name='%s')
+                   AND (current_service_conf.servID, flavorID, version)
+                   NOT IN (SELECT servID,flavorID,version FROM current_service_status)
                    AND services.servID=current_service_conf.servID
-                   ORDER BY current_service_conf.prio ASC;""" % hostname
+                   ORDER BY current_service_conf.prio ASC;
+                """ % hostname
+
         debug(query)        
         service_list = yield self.fetchColumnAsList(query)
         debug(service_list)
@@ -201,7 +201,16 @@ class MeshDbPool(adbapi.ConnectionPool):
         debug(service_list)
         
         defer.returnValue(service_list)
-        
+
+    @defer.inlineCallbacks
+    def clearUpServiceStatus(self, hostname = socket.gethostname()):
+        """ Clears the serivce status table from entries of this host. """
+       
+        query = """DELETE FROM current_service_status USING current_service_status, nodes 
+                   WHERE nodes.name='%s';
+                """  % hostname
+        debug(query)
+        result = yield self.runQuery(query)
         
 
 class RPCServer(xmlrpc.XMLRPC):
@@ -261,12 +270,14 @@ class RPCServer(xmlrpc.XMLRPC):
             self.putSubHandler(name, self._services[name])
 
         info("Startup complete.")
+        
 
     def xmlrpc_ping(self):
         return 'OK'
 
     def xmlrpc_restart(self):
         info("Client requested restart...")
+
         if self._parent:
             self._parent.set_restart()
         reactor.callLater(1,reactor.stop)
@@ -294,8 +305,9 @@ class RPCServer(xmlrpc.XMLRPC):
         services = yield self._dbpool.getServicesToStart()
 
         for service in services:
-            debug("Starting service %s" % service)
-            yield self._services[service].xmlrpc_start()            
+            info("Starting service %s" % service)
+            rc = yield self._services[service].xmlrpc_start()            
+            info("RC=%s" %rc)      
 
         defer.returnValue(0)
         
@@ -318,6 +330,11 @@ class RPCServerApp(Application):
     def set_restart(self, flag = True):
         "Set restart flag"
         self._restart = flag
+
+    @defer.inlineCallbacks
+    def startup(self, inst):
+        yield inst._dbpool.clearUpServiceStatus()
+        yield inst.xmlrpc_apply()
         
         
     def main(self, path='rpc-modules'):
@@ -330,7 +347,8 @@ class RPCServerApp(Application):
         debug("calling reactor.listenTCP()")
         reactor.listenTCP(7080, server.Site(inst))
         self._restart = False
-        debug("calling reactor.run()")
+       
+        self.startup(inst) 
         rc = reactor.run()
         if self._restart:            
             debug("Requesting restart via sys.exit(0)")
