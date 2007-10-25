@@ -118,6 +118,9 @@ class Wlan_devices(RPCService):
                 for line in stderr.splitlines():
                     error(" %s" %line)
                 final_rc = rc
+            else:
+                cmd = [ "ip", "link", "set", config["vap"], "up" ]
+                yield twisted_call(cmd, shell=False)
 
             yield self._parent._dbpool.startedService(config,
                                                       rc, message=stderr)
@@ -134,6 +137,8 @@ class Wlan_devices(RPCService):
             defer.returnValue(2)
 
         for config in self._configs:
+            cmd = [ "ip", "link", "set", config["vap"], "down" ]
+            yield twisted_call(cmd, shell=False)
             
             cmd = [ "wlanconfig", config["vap"], "destroy" ]            
                 
