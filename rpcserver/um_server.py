@@ -173,8 +173,8 @@ class MeshDbPool(adbapi.ConnectionPool):
         
         query = """SELECT DISTINCT servName FROM current_service_conf,services
                    WHERE nodeID=(SELECT nodeID FROM nodes WHERE name='%s')
-                   AND (current_service_conf.servID, flavorID, version)
-                   NOT IN (SELECT servID,flavorID,version FROM current_service_status)
+                   AND (nodeID, current_service_conf.servID, flavorID, version)
+                   NOT IN (SELECT nodeID, servID,flavorID,version FROM current_service_status)
                    AND services.servID=current_service_conf.servID
                    ORDER BY current_service_conf.prio ASC;
                 """ % hostname
@@ -192,8 +192,8 @@ class MeshDbPool(adbapi.ConnectionPool):
 
         query = """SELECT DISTINCT servName FROM current_service_status,services
                    WHERE nodeID=(SELECT nodeID FROM nodes WHERE name='%s')
-                   AND (current_service_status.servID, flavorID, version)
-                   NOT IN (SELECT servID,flavorID,version FROM current_service_conf)
+                   AND (nodeID, current_service_status.servID, flavorID, version)
+                   NOT IN (SELECT nodeID, servID,flavorID,version FROM current_service_conf)
                    AND services.servID=current_service_status.servID
                    ORDER BY current_service_status.prio DESC;
                 """ % hostname
