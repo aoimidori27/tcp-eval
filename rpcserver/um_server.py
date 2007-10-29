@@ -25,7 +25,10 @@ class MeshDbPool(adbapi.ConnectionPool):
                                        user   = "rpcserver",
                                        host   = "www.umic-mesh.net",
                                        passwd = '2PZrfjNXYNBxwru',
-                                       db     = "umic-mesh")
+                                       db     = "umic-mesh", 
+                                       cp_min = 1,
+                                       cp_max = 3,
+                                       cp_reconnect = True)
 
     def _getAssoc(self, txn, query):
         """ This function returns an associative array of the first row """
