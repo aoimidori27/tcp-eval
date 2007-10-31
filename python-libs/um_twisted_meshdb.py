@@ -201,11 +201,34 @@ class MeshDbPool(adbapi.ConnectionPool):
 
     @defer.inlineCallbacks
     def clearUpServiceStatus(self, hostname = socket.gethostname()):
-        """ Clears the serivce status table from entries of this host. """
+        """ Clears the service status table from entries of this host. """
        
         query = """DELETE FROM current_service_status USING current_service_status, nodes 
                    WHERE nodes.name='%s' AND nodes.nodeID=current_service_status.nodeID;
                 """  % hostname
         debug(query)
-        result = yield self.runQuery(query)
+        result = yield self.runOperation(query)
 
+
+    def _getRowcount(self, txn, query):
+        """ This function returns the number of rows effected by the transaction. """
+
+        txn.execute(query)
+        return txn.rowcount
+    
+
+    @defer.inlineCallbacks
+    def switchTestbedProfile(self, name):
+        """ Switches the current used testbed profile """
+
+        query = """UPDATE current_testbed_conf, testbed_profiles
+                   SET current_testbed_profile=testbed_profiles.ID
+                   WHERE testbed_profiles.name='%s';
+                """ % name
+
+        debug(query)
+        rowcount = yield self.runInteraction(self._getRowcount,query)
+
+        defer.returnValue(rowcount)
+        
+        

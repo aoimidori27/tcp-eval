@@ -12,6 +12,7 @@ from twisted.python import log
 
 from um_application import Application
 from um_measurement.sshexec import SSHConnectionFactory
+from um_twisted_meshdb import MeshDbPool
 
 
 class Measurement(Application):
@@ -35,6 +36,8 @@ class Measurement(Application):
         self.node_pairs = None
         self._scf = SSHConnectionFactory()
         self._null = None
+        self._dbpool = MeshDbPool(username = "measurement",
+                                  password = "XaNU7X84BQJveYQX")
 
         self.xmlrpc_port = 7080
 
