@@ -143,7 +143,7 @@ class Wlan_parameters(RPCService):
             # give him a second chance on this, this maybe timing critical
             if rc != 0:
                 info("Setting txpower failed, try another time...")
-                yield twisted_sleep(1)
+                yield twisted_sleep(5)
                 rc = yield self.iwcmd("iwconfig", config, "txpower")    
             if rc != 0:
                 stderr = stderr+"setting txpower failed\n"
