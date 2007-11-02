@@ -73,8 +73,6 @@ class Measurement(Application):
         return self._null
 
 
-
-    @defer.inlineCallbacks
     def xmlrpc_many(self, hosts, cmd, *args):
         """Calls a remote procedure on hosts"""
 
@@ -83,28 +81,69 @@ class Measurement(Application):
         for host in hosts:
             deferredList.append(self.xmlrpc(host, cmd,
                                            *args))
-        yield defer.DeferredList(deferredList)
+        return defer.DeferredList(deferredList, consumeErrors=True)                
             
 
 
-    @defer.inlineCallbacks
     def xmlrpc(self, host, cmd, *args):
         """Calls a remote procedure on a host"""
 
         proxy = Proxy('http://%s:%u' %(host, self.xmlrpc_port))
         debug("Calling %s on %s with args %s" %(cmd,host,args))
-        yield proxy.callRemote(cmd, *args)
-        
+        return proxy.callRemote(cmd, *args)
 
     @defer.inlineCallbacks
+    def switchTestbedProfile(self, name):
+        """
+        
+        Switches the current testbed profile
+        and applies configuration changes to all nodes.
+        
+        """
+
+        yield self._dbpool.switchTestbedProfile(name)
+
+        current = yield self._dbpool.getCurrentTestbedProfile()
+        if not current==name:
+            error("Switch to testbed profile %s failed. Current: %s"
+                  %(name,current))
+            defer.returnValue(-1)
+
+        info("Applying configuration changes...")
+        nodes = yield self._dbpool.getTestbedNodes()
+        results = yield self.xmlrpc_many(nodes,"apply")
+
+        i = 0
+        succeeded = 0
+        failed = 0
+        for result in results:
+            if result[0] == defer.FAILURE:
+                warn("Failed to setup %s: %s" %(nodes[i], result[1].getErrorMessage()))
+                failed = failed+1
+            else:
+                rc = result[1]
+                if (rc != 0):
+                    warn("Failed to setup %s: apply() returned: %d" &(nodes[i], rc))
+                    failed = failed+1
+                else:
+                    succeeded = succeeded+1
+            i=i+1
+        info("Succeeded: %d, Failed: %d" %(succeeded, failed))
+        info("Testbed profile is now: %s" %current)
+        
+
     def remote_execute_many(self, hosts, cmd, **kwargs):
-        """Executes command cmd on hosts"""
+        """Executes command cmd on hosts, returns a DeferredList"""
         deferredList = []
 
         for host in hosts:
             deferredList.append(self.remote_execute(host, cmd,
                                                    **kwargs))
-        yield defer.DeferredList(deferredList)
+        # if a defered returns a failure, the failure instance is
+        # in the result set returnend by DeferredList
+        # so prevent "Unhandled error in Deferred" warnings by
+        # setting consumeErrors=True
+        return defer.DeferredList(deferredList, consumeErrors=True)
 
 
 
