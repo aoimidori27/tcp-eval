@@ -39,6 +39,7 @@ class OlsrUpdate(Application):
 
         remote_repos   = olsrinfos["remote_repos"]
         remote_module  = olsrinfos["remote_module"]
+        remote_tag     = olsrinfos["remote_tag"]
         local_repos    = svnrepos
         local_upstream = olsrinfos["local_upstream"]
         local_trunk    = olsrinfos["local_trunk"]
@@ -60,10 +61,10 @@ class OlsrUpdate(Application):
         call(cmd, shell = True)
 
         # check out trunk from remote repos
-        info("Checking out olsr trunk from remote...")
+        info("Checking out olsr tag %s from remote...", remote_tag )
         save_path = os.getcwd()
         os.chdir(tmp)
-        cmd = ["cvs","-Q", "-d%s" %(remote_repos), "co","-d","upstream", remote_module]
+        cmd = ["cvs","-Q", "-d%s" %(remote_repos), "co","-r", remote_tag, "-d","upstream", remote_module]
         call(cmd, shell = False)
         os.chdir(save_path)
 
@@ -94,7 +95,7 @@ class OlsrUpdate(Application):
 
         # commit changes
         info("Commiting changes...")
-        cmd = ("svn", "ci", dst, "-m", "new olsr version")
+        cmd = ("svn", "ci", dst, "-m", "new olsr version (cvs tag: %s)" %remote_tag)
         call(cmd, shell = False)
 
         # switch upstream to trunk
@@ -114,7 +115,7 @@ class OlsrUpdate(Application):
 
         # commiting changes to local trunk
         info("Commiting these changes to repository...")
-        cmd = ("svn", "commit", trunk, "-m", "new olsr version")
+        cmd = ("svn", "commit", trunk, "-m", "merged new olsr version (cvs tag: %s)" %remote_tag)
         call(cmd, shell = False)
 
         # cleanup
