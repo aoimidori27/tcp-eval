@@ -139,6 +139,8 @@ class Wlan_parameters(RPCService):
                 stderr = stderr+"setting channel failed\n"
                 final_rc = rc
 
+            # wait some time before trying to adjust txpower
+            yield twisted_sleep(3)
             rc = yield self.iwcmd("iwconfig", config, "txpower")
             # give him a second chance on this, this maybe timing critical
             if rc != 0:
