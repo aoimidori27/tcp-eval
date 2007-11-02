@@ -26,7 +26,8 @@ olsrinfos = dict(
 # informations about madwifi
 madwifiinfos = dict(
     remote_repos    = 'http://svn.madwifi.org',
-    remote_module   = '/trunk',
+    remote_module   = '/madwifi/tags',
+    remote_tag      = 'release-0.9.3.3',
     local_upstream  = '/drivers/madwifi-ng/trunk',
     local_trunk     = '/drivers/madwifi-ng/branches/um-version'
 )
