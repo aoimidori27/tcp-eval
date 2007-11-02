@@ -36,27 +36,17 @@ nodeinfos = dict(
         hostnameprefix = 'vmeshhost',
         imagetype      = 'vmeshhost',
         imageversion   = 'um_edgy',
-        startup        = [],
     ),
     vmeshrouter = dict(
         hostnameprefix = 'vmrouter',
         imagetype      = 'vmeshnode',
         imageversion   = 'um_edgy',
-        xenconfig      = 'config0',
-        meshdevices    = {},
-        startup        = [],
+        xenconfig      = 'config0'
     ),
     meshrouter = dict(
         hostnameprefix = 'mrouter',
         imagetype      = 'meshnode',
-        imageversion   = 'um_edgy',
-        meshdevices    = { 'ath0' : 'wlancfg0', 'ath1' : 'wlancfg2' },
-        startup        = [ 'execpy(["/usr/local/sbin/um_madwifi", "--debug", "loadmod"])',
-                           'Madwifi("ath0").start()',
-                           'Madwifi("ath1").start()' ]
-#                           'execpy(["/usr/local/sbin/um_madwifi", "--debug", "--dev=ath0", "start"])',
-#                           'execpy(["/usr/local/sbin/um_madwifi", "--debug", "--dev=ath1", "start"])',
-#                           'call(["/etc/init.d/snmpd", "start"], shell=False)' ] 
+        imageversion   = 'um_edgy'
     )
 )
 
@@ -67,7 +57,6 @@ imageinfos = dict(
                         '/linux/xen/trunk' : 'linux/default',
                         '/tools/nuttcp/branches/um-version-tcp_info' : 'tools/nuttcp',
                         '/tools/flowgrind/trunk' : 'tools/flowgrind',
-#                        '/tools/thrulay/branches/advanced' : 'tools/thrulay',
                         '/tools/twisted/branches/um-version' : 'tools/twisted',
                         '/boot/bios/trunk' : 'boot/bios',
                         '/boot/etherboot/trunk' : 'boot/etherboot',
@@ -89,7 +78,6 @@ imageinfos = dict(
                         '/routing/olsr/branches/um-version-olsr5' : 'routing/olsr5',
                         '/tools/nuttcp/branches/um-version-tcp_info' : 'tools/nuttcp',
                         '/tools/flowgrind/trunk' : 'tools/flowgrind',
-#                        '/tools/thrulay/branches/advanced' : 'tools/thrulay',
                         '/tools/tcpdump/branches/um-version-elcn' : 'tools/tcpdump',
                         '/tools/set-elcn/trunk' : 'tools/set-elcn',
                         '/scripts/python-libs' : 'scripts/python-libs',
@@ -111,7 +99,6 @@ imageinfos = dict(
                         '/tools/set-elcn/trunk' : 'tools/set-elcn',
                         '/tools/nuttcp/branches/um-version-tcp_info' : 'tools/nuttcp',
                         '/tools/flowgrind/trunk' : 'tools/flowgrind',
-#                        '/tools/thrulay/branches/advanced' : 'tools/thrulay',
                         '/tools/tcpdump/branches/um-version-elcn' : 'tools/tcpdump',
                         '/tools/libpcap/branches/ring3' : 'tools/libpcap',
                         '/tools/libpfring/branches/um-version' : 'tools/libpfring',
@@ -119,44 +106,13 @@ imageinfos = dict(
                         '/scripts/python-libs' : 'scripts/python-libs',
                         '/scripts/rpcserver' : 'scripts/rpcserver',
                         '/scripts/mesh' : 'scripts/mesh',
-                        '/scripts/init' : 'scripts/init',
                         '/scripts/util' : 'scripts/util' },
         scriptmappings = { 'scripts/mesh' : '/usr/local/sbin',
                            'scripts/util' : '/usr/local/bin',
-                           'scripts/init' : '/usr/local/sbin' }
+                           'scripts/rpcserver' : '/usr/local/sbin' }
     )
 )
 
-# device configurations
-deviceconfig = dict(
-    wlancfg0 = dict(
-        hwdevice = 'wifi0',
-        essid    = 'umic-mesh-ah',
-        channel  = 1,
-        antenna  = 2,
-        address  = '169.254.9.@NODENR/16',
-        wlanmode = 'ahdemo',
-        txpower  = 0
-    ),
-    wlancfg1 = dict(
-        hwdevice = 'wifi1',
-        essid    = 'umic-mesh-sta',
-        channel  = 11,
-        antenna  = 2,
-        address  = '169.254.10.@NODENR/16',
-        wlanmode = 'sta',
-        txpower  = 0
-    ), 
-    wlancfg2 = dict(
-        hwdevice = 'wifi1',
-        essid    = 'umic-mesh-ah2',
-        channel  = 11,
-        antenna  = 2,
-        address  = '169.254.10.@NODENR/16',
-        wlanmode = 'ahdemo',
-        txpower  = 0
-    )
-)
 
 # xen configurations
 xenconfig = dict(
