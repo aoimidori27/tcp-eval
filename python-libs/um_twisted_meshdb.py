@@ -230,5 +230,31 @@ class MeshDbPool(adbapi.ConnectionPool):
         rowcount = yield self.runInteraction(self._getRowcount,query)
 
         defer.returnValue(rowcount)
+
+    @defer.inlineCallbacks
+    def getCurrentTestbedProfile(self):
+        """ Returns the name of the current used testbed profile """
+
+        query = """SELECT testbed_profiles.name AS name
+                   FROM current_testbed_conf, testbed_profiles
+                   WHERE testbed_profiles.ID = current_testbed_profile;
+                """
+
+        debug(query)
+        result = yield self.fetchAssoc(query)
+        defer.returnValue(result["name"])
+
+
+    def getTestbedNodes(self):
+        """ Returns a list of nodes which are in the current testbedprofile """
+
+        query = """SELECT nodes.name
+                   FROM nodes, testbed_profiles_data, current_testbed_conf
+                   WHERE testbed_profiles_data.tprofileID = current_testbed_profile
+                   AND testbed_profiles_data.nodeID = nodes.nodeID;
+                """
+        debug(query)
+        return self.fetchColumnAsList(query)
+
         
         
