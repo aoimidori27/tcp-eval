@@ -18,6 +18,7 @@ kernelinfos = dict(
 olsrinfos = dict(
     remote_repos    = ':pserver:anonymous@olsrd.cvs.sourceforge.net:/cvsroot/olsrd',
     remote_module   = 'olsrd-current',
+    remote_tag      = 'OLSRD_0_5_4',
     local_upstream  = '/routing/olsr/trunk',
     local_trunk     = '/routing/olsr/branches/um-version-olsr5'
 )
