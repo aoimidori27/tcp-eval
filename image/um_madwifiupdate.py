@@ -6,7 +6,7 @@ from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_application import Application
-from um_util import *
+from um_functions import *
 
 
 class MadwifiUpdate(Application):
@@ -36,6 +36,7 @@ class MadwifiUpdate(Application):
 
         remote_repos   = madwifiinfos["remote_repos"]
         remote_module  = madwifiinfos["remote_module"]
+        remote_tag     = madwifiinfos["remote_tag"]
         local_repos    = svnrepos
         local_upstream = madwifiinfos["local_upstream"]
         local_trunk    = madwifiinfos["local_trunk"]
@@ -60,7 +61,7 @@ class MadwifiUpdate(Application):
         info("Checking out madwifi trunk from remote...")
         save_path = os.getcwd()
         os.chdir(tmp)
-        cmd = ("svn","export","--force","-q", "%s%s" %(remote_repos, remote_module), dst)
+        cmd = ("svn","export","--force","-q", "%s%s/%s" %(remote_repos, remote_module, remote_tag), dst)
         call(cmd, shell = False)
         os.chdir(save_path)
 
@@ -87,7 +88,7 @@ class MadwifiUpdate(Application):
 
         # commit changes
         info("Commiting changes...")
-        cmd = ("svn", "ci", dst, "-m","new madwifi version")
+        cmd = ("svn", "ci", dst, "-m","new madwifi version (tag: %s)" %remote_tag)
         call(cmd, shell = False)
 
         # switch upstream to trunk
@@ -107,7 +108,7 @@ class MadwifiUpdate(Application):
 
         # commiting changes to local trunk
         info("Commiting these changes to repository...")
-        cmd = ("svn","commit", trunk, "-m","new madwifi version")
+        cmd = ("svn","commit", trunk, "-m","merging new madwifi version (tag: %s)" %remote_tag)
         call(cmd, shell = False)
 
         # cleanup
