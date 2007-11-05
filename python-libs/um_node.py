@@ -3,7 +3,7 @@
 
 # python imports
 import os, re
-from socket import gethostname
+from socket import gethostname, gethostbyname
 
 # umic-mesh imports
 from um_config import *
@@ -95,21 +95,10 @@ class Node(object):
         return int(re.sub(self.hostnameprefix(), '', self.hostname()))
 
 
-    def ipconfig(self, device = 'ath0'):
-        "Get the IP of a specific device including the netmask in slashed notation"
-
-        meshdevs   = self.info()['meshdevices']
-        devicecfg  = meshdevs[device]
-        activecfg  = deviceconfig[devicecfg]
-        address    = re.sub('@NODENR', self.number().__str__(), activecfg['address']) 
-        return address
-
-
     def ipaddress(self, device = 'ath0'):
         "Get the IP of a specific device without the netmask of the node"
 
-        ipconfig = self.ipconfig()
-        raw_address = ipconfig[:ipconfig.find('/')]
+        raw_address = socket.gethostbyname(self._hostname)
 
         return raw_address
 
