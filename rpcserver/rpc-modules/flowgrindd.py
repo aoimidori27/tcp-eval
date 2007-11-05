@@ -92,7 +92,7 @@ class Flowgrindd(RPCService):
     def start(self):
         """ This function invokes start-stop daemon to bring up flowgrindd """
         
-        args = ["-p", self._config["port"]]
+        args = ["-p", "%u" %self._config["port"]]
         if (self._config["verbose"]):
             args.extend("-D")
         cmd = [ "start-stop-daemon", "--start",  
