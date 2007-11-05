@@ -129,7 +129,7 @@ class Wlan_devices(RPCService):
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function destroys the vaps """
+        """ This function destroys the vaps. """
 
         final_rc = 0
         if not self._configs:
