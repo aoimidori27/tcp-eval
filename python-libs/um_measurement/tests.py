@@ -98,3 +98,46 @@ def test_thrulay(mrs,
                              timeout=thrulay_duration+5)
 
 
+
+@defer.inlineCallbacks
+def test_flowgrind(mrs,
+                 log_file, 
+                 flowgrind_src,
+                 flowgrind_dst,
+                 flowgrind_duration = 15,
+                 flowgrind_cc     = "reno",
+                 flowgrind_opts   = "",
+                 **kwargs ):
+    """
+
+    This test performs a simple flowgrind test with one tcp
+    flow from src to dst.
+
+    required arguments:
+         log_file   : file descriptor where the results are written to
+         mrs        : reference to parent measurement class
+         flowgrind_src: sender of the flow
+         flowgrind_dst: receiver of the flow
+
+    optional arguments:
+         flowgrind_duration: duration of the flow in seconds
+         flowgrind_cc      : congestion control method to use
+         flowgrind_opts    : additional command line arguments
+
+    """
+
+    # for convenience accept numbers as src and dst
+    src = Node(flowgrind_src, type_="meshrouter")
+    dst = Node(flowgrind_dst, type_="meshrouter")
+
+    cmd = "flowgrind -Q -c %s -t %.3f -H %s/%s" % (flowgrind_cc,
+                                               flowgrind_duration,
+                                               dst.ipaddress(),
+                                               dst.hostname())
+
+    yield mrs.remote_execute(src.hostname(),
+                             cmd,
+                             log_file,
+                             timeout=flowgrind_duration+5)
+
+
