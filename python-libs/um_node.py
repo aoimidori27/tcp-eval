@@ -98,7 +98,7 @@ class Node(object):
     def ipaddress(self, device = 'ath0'):
         "Get the IP of a specific device without the netmask of the node"
 
-        raw_address = socket.gethostbyname("%s.%s" %(device, self._hostname))
+        raw_address = gethostbyname("%s.%s" %(device, self._hostname))
 
         return raw_address
 
