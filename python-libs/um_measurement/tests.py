@@ -16,7 +16,6 @@ This module should collect standard test methods.
 
 """
 
-@defer.inlineCallbacks
 def test_ping(mrs,
               log_file,
               ping_src,
@@ -49,14 +48,12 @@ def test_ping(mrs,
     cmd = "ping -i %.3f -c %u -s %u %s %s" % (ping_interval, ping_count,
                                               ping_size, ping_opts,
                                               dst.ipaddress())
-    yield mrs.remote_execute(src.hostname(),
+    return mrs.remote_execute(src.hostname(),
                               cmd,
                               log_file,
                               timeout=(ping_interval*ping_count)+5)
-#                              timeout=2)
 
 
-@defer.inlineCallbacks
 def test_thrulay(mrs,
                  log_file, 
                  thrulay_src,
@@ -92,14 +89,13 @@ def test_thrulay(mrs,
                                                dst.ipaddress(),
                                                dst.hostname())
 
-    yield mrs.remote_execute(src.hostname(),
+    return mrs.remote_execute(src.hostname(),
                              cmd,
                              log_file,
                              timeout=thrulay_duration+5)
 
 
 
-@defer.inlineCallbacks
 def test_flowgrind(mrs,
                  log_file, 
                  flowgrind_src,
@@ -135,7 +131,7 @@ def test_flowgrind(mrs,
                                                dst.ipaddress(),
                                                dst.hostname())
 
-    yield mrs.remote_execute(src.hostname(),
+    return mrs.remote_execute(src.hostname(),
                              cmd,
                              log_file,
                              timeout=flowgrind_duration+5)
