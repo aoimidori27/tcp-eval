@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# python imports
 import getpass
 import os
 import struct
 import pwd
 import signal
 import base64
+from logging import info, debug, warn, error
 
+# twisted imports
 from twisted.internet import reactor
 from twisted.conch.ssh import channel, common, connection, keys, transport, userauth
 from twisted.conch.error import ConchError
@@ -15,6 +18,7 @@ from twisted.conch.client import agent
 from twisted.internet import defer, error, protocol
 from twisted.python import log, failure
 
+# umic-mesh imports
 from um_functions import StrictStruct
 from um_twisted_functions import twisted_sleep
 
@@ -66,18 +70,19 @@ class SSHConnectionFactory:
     @defer.inlineCallbacks
     def _stop(self, proc):
         """
-        Forces a process to stop by doing TERM, KILL, disconnect.
+        Forces a process to stop by doing INT, TERM, KILL, disconnect.
         """
-        proc.kill(signal.SIGTERM)
-        yield twisted_sleep(2)
 
-        if proc.stopped:
-            return
-        proc.kill(signal.SIGKILL)
-        yield twisted_sleep(2)
+        signals=[signal.SIGINT, signal.SIGTERM, signal.SIGKILL]
 
-        if proc.stopped:
-            return
+        for sig in signals:
+            warn("command: %s timed out, sending signal %s" %(proc.getCommand(), sig))
+            proc.kill(sig)
+            yield twisted_sleep(1)
+            if proc.stopped:
+                return
+       
+        warn("command: %s still running disconnecting..." %proc.getCommand())
         proc.disconnect()
 
     def _name2sig(self, signame):
@@ -378,7 +383,7 @@ class _Connection(connection.SSHConnection):
         ch = CommandChannel(command, conn=self, fd_out=fd_out, fd_err=fd_err)
         self.openChannel(ch)
 
-        proc = SSHProc(ch)
+        proc = SSHProc(ch, command)
         return proc
 
     def serviceStarted(self):
@@ -395,11 +400,12 @@ class SSHProc:
     Remote process object.
     """
 
-    def __init__(self, chan):
+    def __init__(self, chan, command):
         self._chan = chan
         self._d = defer.Deferred()
         self._chan.d.chainDeferred(self._d)
         self.stopped = False
+        self._command = command
 
     def deferred(self):
         """
@@ -436,6 +442,8 @@ class SSHProc:
         """
         self._chan.kill(self._sig2name(signal))
 
+    def getCommand(self):
+        return self._command
 
 class ChanExitStruct(StrictStruct):
     """ CommandChannel exit status struct """
