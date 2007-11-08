@@ -194,13 +194,11 @@ class Measurement(Application):
         log_path = os.path.join(self.options.log_dir, log_name)
         log_file = file(log_path, 'w')
 
-        # write labels into logfile
-        if kwargs.has_key('run_label'):
-            log_file.write("run_label:%s\n" %kwargs['run_label'])
-            log_file.flush()
-        if kwargs.has_key('scenario_label'):
-            log_file.write("scenario_label:%s\n" %kwargs['scenario_label'])
-            log_file.flush()
+        # write config into logfile
+        for item in kwargs:
+            log_file.write("%s=%s" %item)
+        log_file.write("BEGIN_TEST_OUTPUT")
+        log_file.flush()
 
         # actually run test
         info("Starting test %s with: %s", test.func_name, kwargs)
