@@ -164,9 +164,10 @@ class Measurement(Application):
             yield self._scf.connect([host])
 
         debug("%s: running %s" %(host,cmd))
-        yield self._scf.remoteExecute(host, cmd,
-                                      out_fd=log_file,
-                                      err_fd=sys.stderr, **kwargs)
+        res = yield self._scf.remoteExecute(host, cmd,
+                                            out_fd=log_file,
+                                            err_fd=sys.stderr, **kwargs)
+        defer.returnValue(res)
 
     def _update_stats(self, test, rc):
         """ This function updates internal statistics """
