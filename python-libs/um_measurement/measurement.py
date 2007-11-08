@@ -195,9 +195,9 @@ class Measurement(Application):
         log_file = file(log_path, 'w')
 
         # write config into logfile
-        for item in kwargs:
-            log_file.write("%s=%s" %item)
-        log_file.write("BEGIN_TEST_OUTPUT")
+        for item in kwargs.iteritems():
+            log_file.write("%s=%s\n" %item)
+        log_file.write("BEGIN_TEST_OUTPUT\n")
         log_file.flush()
 
         # actually run test
