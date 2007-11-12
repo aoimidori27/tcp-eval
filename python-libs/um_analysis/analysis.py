@@ -52,11 +52,18 @@ class Analysis(Application):
         self.parser.add_option('-D', '--input-directory', metavar="InDir",
                         action = 'store', type = 'string', dest = 'indir',
                         help = 'Set directory which contains the measurement results [default: %default]')
+        self.parser.add_option('-O', '--output', metavar="OutDir",
+                        action = 'store', type = 'string', dest = 'outdir',
+                        help = 'Set outputdirectory [default: %default]')
 
 
     def set_option(self):
         "Set options"
         Application.set_option(self)
+
+        if not os.path.exists(self.options.outdir):
+            info("%s does not exist, creating. " % self.options.outdir)
+            os.mkdir(self.options.out_dir)
 
 
     def process(self):
