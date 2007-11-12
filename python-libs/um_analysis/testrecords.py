@@ -109,7 +109,7 @@ class TestRecordFactory:
         debug("Initializing test record factory for %s..." %test)
         if test=="ping":
             factory = PingRecordFactory()
-        else if test=="fping":
+        elif test=="fping":
             factory = FpingRecordFactory()
         else:
             error("No factory found for:%s" %test)
@@ -237,7 +237,7 @@ class FpingRecordFactory(TestRecordFactory):
             "min/avg/max = (?P<rtt_min>\d+\.\d+)/(?P<rtt_avg>\d+\.\d+)/(?P<rtt_max>\d+\.\d+)",
 
             # 169.254.9.1 : [8], 128 bytes, 3.98 ms (3.98 avg, 88% loss)
-            "[(?P<ppt_seq>\d+)], .+, (?P<ppt_rtt>\d+\.\d+) ms"            
+            "\[(?P<ppt_seq>\d+)\], .+, (?P<ppt_rtt>\d+\.\d+) ms"            
         
         ]
         # compile regexes

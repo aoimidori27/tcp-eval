@@ -85,7 +85,7 @@ def test_fping(mrs,
     src = Node(ping_src, type_="meshrouter")
     dst = Node(ping_dst, type_="meshrouter")
 
-    cmd = "fping -A -p %u -c %u -b %u %s %s 2>&1" % ((ping_interval*100), ping_count,
+    cmd = "fping -A -p %u -c %u -b %u %s %s 2>&1" % ((ping_interval*1000), ping_count,
                                              ping_size, fping_opts,
                                              dst.ipaddress())
     return mrs.remote_execute(src.hostname(),

@@ -63,7 +63,7 @@ class Analysis(Application):
 
         if not os.path.exists(self.options.outdir):
             info("%s does not exist, creating. " % self.options.outdir)
-            os.mkdir(self.options.out_dir)
+            os.mkdir(self.options.outdir)
 
 
     def process(self):

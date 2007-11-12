@@ -5,7 +5,6 @@
 import sys, os, os.path, subprocess, re, time, signal, socket, optparse, time
 from logging import info, debug, warn, error
 from datetime import timedelta, datetime
-from pysqlite2 import dbapi2 as sqlite 
 
 import numpy
 
@@ -96,7 +95,7 @@ class RttAnalysis(Analysis):
         "Main Method"
 
         # only load ping test records
-        self.loadRecords(tests=["ping"])
+        self.loadRecords(tests=["ping","fping"])
 
         # for each pair generate an graph
         for pair in self.nodepairs:
