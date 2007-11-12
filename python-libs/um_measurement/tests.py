@@ -66,7 +66,7 @@ def test_fping(mrs,
               **kwargs ):
     """
 
-    This test performs a simple ping from src to dst.
+    This test performs a simple ping from src to dst. Drop in replacement for ping.
         
     required arguments:
         mrs        : reference to parent measurement class
@@ -85,7 +85,7 @@ def test_fping(mrs,
     src = Node(ping_src, type_="meshrouter")
     dst = Node(ping_dst, type_="meshrouter")
 
-    cmd = "fping -p %u -c %u -s %u %s %s" % ((ping_interval*100), ping_count,
+    cmd = "fping -p %u -c %u -b %u %s %s" % ((ping_interval*100), ping_count,
                                              ping_size, fping_opts,
                                              dst.ipaddress())
     return mrs.remote_execute(src.hostname(),
