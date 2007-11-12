@@ -22,12 +22,15 @@ class NeighborAnalysis(Analysis):
     def __init__(self):
 
         Analysis.__init__(self)
-        self.parser.set_defaults(outprefix= "neighbors", quality = 100, indir = "./",
+        self.parser.set_defaults(outprefix= "neighbors", quality = 100,
+                                 indir  = "./",
+                                 outdir = "./",
                                  digraph=False);
         
-        self.parser.add_option('-O', '--output', metavar="OutPrefix",
+        self.parser.add_option('-P', '--prefix', metavar="PREFIX",
                         action = 'store', type = 'string', dest = 'outprefix',
-                        help = 'Set directory which contains the measurement results [default: %default]')
+                        help = 'Set prefix of output files [default: %default]')
+
 
         self.parser.add_option('-Q', '--quality', metavar="QUAL",
                                action = 'store', type = 'int', dest = 'quality',
@@ -42,11 +45,6 @@ class NeighborAnalysis(Analysis):
     def set_option(self):
         "Set options"
         Analysis.set_option(self)
-
-
-    def process(self):
-        "Processing of the gathered data"
-        pass
 
 
     def onLoad(self, record, iterationNo, scenarioNo, test):
