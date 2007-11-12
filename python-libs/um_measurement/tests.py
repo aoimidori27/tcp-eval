@@ -39,6 +39,7 @@ def test_ping(mrs,
         ping_size    : size in bytes of the packets send out
         ping_count   : how many packets should be send out
         ping_interval: time between to pings in seconds
+        ping_opts    : additional ping options
         
     """
     # for convenience accept numbers as src and dst
@@ -48,6 +49,45 @@ def test_ping(mrs,
     cmd = "ping -i %.3f -c %u -s %u %s %s" % (ping_interval, ping_count,
                                               ping_size, ping_opts,
                                               dst.ipaddress())
+    return mrs.remote_execute(src.hostname(),
+                              cmd,
+                              log_file,
+                              timeout=(ping_interval*ping_count)+5)
+
+
+def test_fping(mrs,
+              log_file,
+              ping_src,
+              ping_dst,
+              ping_size     = 56,
+              ping_interval = 1,
+              ping_count    = 10,
+              fping_opts     = "",
+              **kwargs ):
+    """
+
+    This test performs a simple ping from src to dst.
+        
+    required arguments:
+        mrs        : reference to parent measurement class
+        log_file   : file descriptor where the results are written to
+        ping_src   : sender of the pings
+        ping_dst   : receiver of the pings
+
+    optional arguments:
+        ping_size    : size in bytes of the packets send out
+        ping_count   : how many packets should be send out
+        ping_interval: time between to pings in seconds
+        fping_opts   : additional fping options
+        
+    """
+    # for convenience accept numbers as src and dst
+    src = Node(ping_src, type_="meshrouter")
+    dst = Node(ping_dst, type_="meshrouter")
+
+    cmd = "fping -p %u -c %u -s %u %s %s" % ((ping_interval*100), ping_count,
+                                             ping_size, fping_opts,
+                                             dst.ipaddress())
     return mrs.remote_execute(src.hostname(),
                               cmd,
                               log_file,
