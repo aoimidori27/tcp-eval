@@ -13,8 +13,7 @@ import numpy
 from um_application import Application
 from um_config import *
 from um_functions import call
-from testrecords import TestRecordFactory
-
+from um_analysis.testrecords import TestRecordFactory
 from um_analysis.analysis import Analysis
 
 class NeighborAnalysis(Analysis):
