@@ -100,10 +100,8 @@ class SSHConnectionFactory:
         """
         Creates master connections.
 
-        Returns a deferred. callback(None) if all connections could be
-        successfully established, errback(reason), if at least one connection
-        fails. reason is then the errback value from the first failed
-        connection.
+        Returns a deferred. callback(failed) with a list of errors.
+
         """
 
         deferreds = []
@@ -115,17 +113,21 @@ class SSHConnectionFactory:
             lost_d.addErrback(self._lostHandler, n)
             self._lost_ds.append(lost_d)
 
-        dl = defer.DeferredList(deferreds, fireOnOneErrback = True)
+        dl = defer.DeferredList(deferreds, consumeErrors = True)
 
         def addConnections(resList):
+            failed = list()
             for res in resList:
-                conn = res[1]
-                host = conn.transport.transport.getPeer().host
-                self._connections[host] = conn
-            return None
+                if res[0] == defer.SUCCESS:
+                    conn = res[1]
+                    host = conn.transport.transport.getPeer().host
+                    self._connections[host] = conn
+                else:
+                    failed.append(res[1])
+ 
+            return failed
 
         dl.addCallback(addConnections)
-        dl.addErrback(lambda reason: reason)
 
         return dl
 

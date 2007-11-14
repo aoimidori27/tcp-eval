@@ -161,7 +161,10 @@ class Measurement(Application):
 
         if not self._scf.isConnected(host):
             info("no master connection to %s found creating one..." % host)
-            yield self._scf.connect([host])
+            rc = yield self._scf.connect([host])
+            if len(rc) !=0:
+                error("failed to connect to %s: %s" %(host, rc[-1].getErrorMessage()))
+                defer.returnValue(-1)
 
         debug("%s: running %s" %(host,cmd))
         res = yield self._scf.remoteExecute(host, cmd,
