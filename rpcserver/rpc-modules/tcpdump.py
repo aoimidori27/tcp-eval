@@ -58,7 +58,7 @@ class Tcpdump(xmlrpc.XMLRPC):
         # Fail if there is already a tcpdump instance (started by us) running.
         if self._proc is not None and self._proc.active():
             error("Tcpdump already started!")
-            defer.returnValue((False, ""))
+            defer.returnValue(None)
 
         # FIXME: -Z?
         cmd = [self._daemon, "-i", iface, "-w", "-", expr]
@@ -71,14 +71,14 @@ class Tcpdump(xmlrpc.XMLRPC):
         except OSError, inst:
             if inst.errno != errno.EEXIST:
                 error(inst)
-                defer.returnValue("")
+                defer.returnValue(None)
 
         try:
             temp_fd, temp_file = mkstemp(suffix=".pcap", dir=dir)
             os.chmod(temp_file, 0777)
         except OSError, inst:
             error(inst)
-            defer.returnValue("")
+            defer.returnValue(None)
 
         self._proc = _TcpdumpProtocol()
         reactor.spawnProcess(self._proc, self._daemon, args = cmd, path='/',
@@ -91,7 +91,7 @@ class Tcpdump(xmlrpc.XMLRPC):
             error("Tcpdump failed (exit status: %s):" % status)
             error(stderr)
             os.unlink(temp_file)
-            defer.returnValue("")
+            defer.returnValue(None)
         else:
             defer.returnValue(temp_file)
 
