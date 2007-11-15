@@ -46,6 +46,8 @@ class NeighborAnalysis(Analysis):
         "Set options"
         Analysis.set_option(self)
 
+        
+
 
     def onLoad(self, record, iterationNo, scenarioNo, test):
         dbcur = self.dbcon.cursor()
@@ -128,8 +130,11 @@ class NeighborAnalysis(Analysis):
         # writing dotfile
         fileprefix = "%s_%u" %(self.options.outprefix, self.options.quality)
 
-        dotfilename = fileprefix+".dot"
-        pdffilename = fileprefix+".pdf"
+        outdir = self.options.outdir
+        dotfilename = os.path.join(outdir,fileprefix+".dot")
+        pdffilename = os.path.join(outdir,fileprefix+".pdf")
+        lstfilename = os.path.join(outdir,fileprefix+".lst")
+
         info("Generating %s..." %dotfilename)
         dotfile = file(dotfilename, "w")
 
@@ -150,19 +155,21 @@ class NeighborAnalysis(Analysis):
         # print edges
         if self.options.digraph:
             for key,val in edges.iteritems():
-                
                 # for each direction one entry
-                quality = val[FORWARD]
-                if quality >= threshold:
-                    line = "n%s -> n%s [label=%.1f];\n" %(key[0],key[1],quality)
-                    dotfile.write(line)
+                if val.has_key[FORWARD]:
+                    quality = val[FORWARD]
+                    if quality >= threshold:
+                        line = "n%s -> n%s [label=%.1f];\n" %(key[0], key[1], quality)
+                        dotfile.write(line)
+                if not val.has_key[BACKWARD]:
+                    continue
                 quality = val[BACKWARD]
                 if quality >= threshold:
                     line = "n%s -> n%s [label=%.1f];\n" %(key[1],key[0],val[BACKWARD])
                     dotfile.write(line)
         else:
             for key,val in edges.iteritems():
-                # only consider links if both qualities are over threshold
+                # only consider links if both qualities are over threshold and valid
                 if not val.has_key(FORWARD):
                     warn("no forward result for %s to %s: ignoring pair" %key)
                     continue
@@ -180,6 +187,18 @@ class NeighborAnalysis(Analysis):
         dotfile.write("}\n")
 
         dotfile.close()
+
+        info("Generating %s ..." %lstfilename)
+        lstfile = file(lstfilename, "w")
+
+        for key,val in edges.iteritems():
+                if val.has_key(FORWARD) and val[FORWARD] >= threshold:
+                    lstfile.write("%s %s\n" %key)
+                if val.has_key(BACKWARD) and val[BACKWARD] >= threshold:
+                    lstfile.write("%s %s\n" %(key[1],key[0]))
+
+        lstfile.close()
+
 
         # generate pdf
         info("Generating %s..." %pdffilename)
