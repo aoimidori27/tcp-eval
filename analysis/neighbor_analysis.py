@@ -25,7 +25,7 @@ class NeighborAnalysis(Analysis):
         self.parser.set_defaults(outprefix= "neighbors", quality = 100,
                                  indir  = "./",
                                  outdir = "./",
-                                 digraph=False);
+                                 digraph=False)
         
         self.parser.add_option('-P', '--prefix', metavar="PREFIX",
                         action = 'store', type = 'string', dest = 'outprefix',
