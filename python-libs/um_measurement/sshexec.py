@@ -169,7 +169,7 @@ class SSHConnectionFactory:
         try:
             if timeout is not None:
                 cl = reactor.callLater(timeout, self._stop, proc)
-#                proc.deferred().addBoth(self._cancelTimeout, cl)
+                proc.deferred().addBoth(self._cancelTimeout, cl)
             result = yield proc.deferred()
             proc.stopped = True
             if result.type == "exit-status":
