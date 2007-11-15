@@ -2,8 +2,12 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os, re
-from socket import gethostname, gethostbyname
+import os
+import re
+
+from logging import error
+
+from socket import gethostname, gethostbyname, gaierror
 
 # umic-mesh imports
 from um_config import *
@@ -98,7 +102,13 @@ class Node(object):
     def ipaddress(self, device = 'ath0'):
         "Get the IP of a specific device without the netmask of the node"
 
-        raw_address = gethostbyname("%s.%s" %(device, self._hostname))
+        name = "%s.%s" %(device, self._hostname)
+    
+        try:
+            raw_address = gethostbyname(name)
+        except gaierror, inst:
+            error("node.ipaddress() -> Failed to lookup %s:%s "% (name, inst.args[0]))
+            raise
 
         return raw_address
 
