@@ -31,21 +31,22 @@ class NeighborsEvaluationMeasurement(measurement.Measurement):
 
         # common options used for all tests
         opts = dict( ping_size        = 100,
-                     ping_interval    = 0.2,
-                     ping_count       = 30
+                     ping_interval    = 0.07,
+                     ping_count       = 200,
                     )
 
-        # test nodes 30-39
-        runs = self.generate_pair_permutations(range(1,40))
+        # test nodes 1-45
+        testnodes = range(1,46)
+
+        runs = self.generate_pair_permutations(testnodes)
 
         # repeat loop
-        iterations  = range(1,10)
+        iterations  = range(3)
 
         # inner loop with different scenario settings
-        scenarios   = [ dict( scenario_label = "Neighbor", tprofile = "minimum"  )
-                        ]
+        scenario   =  dict( scenario_label = "Neighbor", tprofile = "minimum"  )
 
-        yield self.switchTestbedProfile("minimum")
+        yield self.switchTestbedProfile(scenario["tprofile"])
 
         for it in iterations:
             for run_no in range(len(runs)):
@@ -55,11 +56,10 @@ class NeighborsEvaluationMeasurement(measurement.Measurement):
                 kwargs['ping_src'] = kwargs['src']
                 kwargs['ping_dst'] = kwargs['dst']
 
-                for scenario_no in range(len(scenarios)):
-                    kwargs.update(scenarios[scenario_no])
+                kwargs.update(scenario)
 
-                    self.logprefix="i%03u_s%u_r%u" % (it, scenario_no, run_no)
-                    yield self.run_test(tests.test_ping, **kwargs)
+                self.logprefix="i%03u_s%u_r%u" % (it, 0, run_no)
+                yield self.run_test(tests.test_fping, **kwargs)
 
         yield self.tear_down()
         reactor.stop()
