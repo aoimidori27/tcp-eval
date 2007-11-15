@@ -137,6 +137,9 @@ class _TcpdumpProtocol(protocol.ProcessProtocol):
     def connectionMade(self):
         self.transport.closeStdin()
 
+    def active(self):
+        return not self._ended
+
     def errReceived(self, data):
         """
         Accumulates stderr output, till a whole line was collected. Iff this
