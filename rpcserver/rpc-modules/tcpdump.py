@@ -75,6 +75,7 @@ class Tcpdump(xmlrpc.XMLRPC):
 
         try:
             temp_fd, temp_file = mkstemp(suffix=".pcap", dir=dir)
+            os.chmod(temp_file, 0777)
         except OSError, inst:
             error(inst)
             defer.returnValue("")
