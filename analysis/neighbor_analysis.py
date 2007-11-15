@@ -55,7 +55,10 @@ class NeighborAnalysis(Analysis):
         dst = recordHeader["ping_dst"]
         
         pkt_tx = record.calculate("pkt_tx")
-        pkt_rx = record.calculate("pkt_rx")        
+        pkt_rx = record.calculate("pkt_rx")
+        
+        if not pkt_tx:
+            return
 
         dbcur.execute("""
                       INSERT INTO tests VALUES (%u, %u, %s, %s, %u, %u, "%s")
@@ -81,7 +84,7 @@ class NeighborAnalysis(Analysis):
         """)
 
         # only load ping test records
-        self.loadRecords(tests=["ping"])
+        self.loadRecords(tests=["ping","fping"])
 
         self.dbcon.commit()
                 
@@ -121,8 +124,6 @@ class NeighborAnalysis(Analysis):
 
             edges[key][idx] = quality
             
-#            if  quality >= self.options.quality:
-#                edges.append("n%s -> n%s [label=%.1f];" %(src,dst,quality))
 
         # writing dotfile
         fileprefix = "%s_%u" %(self.options.outprefix, self.options.quality)
@@ -162,6 +163,13 @@ class NeighborAnalysis(Analysis):
         else:
             for key,val in edges.iteritems():
                 # only consider links if both qualities are over threshold
+                if not val.has_key(FORWARD):
+                    warn("no forward result for %s to %s: ignoring pair" %key)
+                    continue
+                if not val.has_key(BACKWARD):
+                    warn("no backward result for %s to %s: ignoring pair" %key)
+                    continue
+
                 if val[FORWARD] < threshold or val[BACKWARD] < threshold:
                     continue
 
