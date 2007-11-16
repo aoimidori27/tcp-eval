@@ -4,11 +4,13 @@
 import sys
 import os
 import pwd
+from logging import debug
 
 from twisted.internet import defer, error, reactor
 from twisted.python import failure
 
 from um_node import Node
+from um_twisted_functions import twisted_call
 
 """
 
@@ -135,30 +137,38 @@ def test_thrulay(mrs,
                              timeout=thrulay_duration+5)
 
 
-
+@defer.inlineCallbacks
 def test_flowgrind(mrs,
-                 log_file, 
-                 flowgrind_src,
-                 flowgrind_dst,
-                 flowgrind_duration = 15,
-                 flowgrind_cc     = "reno",
-                 flowgrind_opts   = "",
-                 **kwargs ):
+                   log_file, 
+                   flowgrind_src,
+                   flowgrind_dst,
+                   flowgrind_duration = 15,
+                   flowgrind_cc     = "reno",
+                   flowgrind_dump   = False,
+                   flowgrind_iface  = "ath0",
+                   flowgrind_bport  = 20000,
+                   flowgrind_opts   = "",
+                   gzip_dumps       = True,
+                   **kwargs ):
     """
 
     This test performs a simple flowgrind test with one tcp
     flow from src to dst.
 
     required arguments:
-         log_file   : file descriptor where the results are written to
-         mrs        : reference to parent measurement class
-         flowgrind_src: sender of the flow
-         flowgrind_dst: receiver of the flow
+         log_file      : file descriptor where the results are written to
+         mrs           : reference to parent measurement class
+         flowgrind_src : sender of the flow
+         flowgrind_dst : receiver of the flow
 
     optional arguments:
-         flowgrind_duration: duration of the flow in seconds
-         flowgrind_cc      : congestion control method to use
-         flowgrind_opts    : additional command line arguments
+         flowgrind_duration : duration of the flow in seconds
+         flowgrind_cc       : congestion control method to use
+         flowgrind_dump     : turn on tcpdump on src and sender
+         flowgrind_iface    : iface to get ipaddress
+         flowgrind_bport    : flowgrind base port
+         flowgrind_opts     : additional command line arguments
+         gzip_dumps         : gzip dumps to save space
 
     """
 
@@ -166,14 +176,59 @@ def test_flowgrind(mrs,
     src = Node(flowgrind_src, type_="meshrouter")
     dst = Node(flowgrind_dst, type_="meshrouter")
 
-    cmd = "flowgrind -Q -c %s -t %.3f -H %s/%s" % (flowgrind_cc,
-                                               flowgrind_duration,
-                                               dst.ipaddress(),
-                                               dst.hostname())
+    cmd = "flowgrind -Q -c %s -t %.3f -O %u -H %s/%s" % (flowgrind_cc,
+                                                         flowgrind_duration,
+                                                         flowgrind_bport,
+                                                         dst.ipaddress(flowgrind_iface),
+                                                         dst.hostname())
 
-    return mrs.remote_execute(src.hostname(),
-                             cmd,
-                             log_file,
-                             timeout=flowgrind_duration+5)
+    if flowgrind_dump:
+        dumpfile_src = None
+        dumpfile_dst = None
+        results = yield mrs.xmlrpc_many([src.hostname(),dst.hostname()],
+                                       "tcpdump.start",
+                                       flowgrind_iface,
+                                       "port %u" %flowgrind_bport )
+        debug(results)
+        # shortcuts
+        sres = results[0]
+        dres = results[1]
+        if sres[0]:
+            dumpfile_src = sres[1]
+        else:
+            warn("Failed to start tcpdump on %s: %s" %(src.hostname(),
+                                                       sres[1].getErrorMessage()))
+        if dres[0]:
+            dumpfile_dst = dres[1]
+        else:
+            warn("Failed to start tcpdump on %s: %s" %(dst.hostname(),
+                                                       dres[1].getErrorMessage()))
+                                                       
+
+    result = yield  mrs.remote_execute(src.hostname(),
+                                       cmd,
+                                       log_file,
+                                       timeout=flowgrind_duration+5)
+    if flowgrind_dump:
+        yield mrs.xmlrpc_many([src.hostname(),dst.hostname()],
+                              "tcpdump.stop")
+
+        dl = []
+        if dumpfile_src:
+            # just append .hostname.pcap to logfilename
+            dfile = "%s.%s.pcap" %(log_file.name, src.hostname())
+            cmd = ["mv",dumpfile_src, dfile]
+            twisted_call(cmd, shell=False)
+        if dumpfile_dst:
+            # just append .hostname.pcap to logfilename
+            dfile = "%s.%s.pcap" %(log_file.name, dst.hostname())
+            cmd = ["mv",dumpfile_dst, dfile]
+            twisted_call(cmd, shell=False)
+        if dl:
+            rlist = yield defer.DeferredList(dl)
+                                          
+
+    defer.returnValue(result)
+    
 
 
