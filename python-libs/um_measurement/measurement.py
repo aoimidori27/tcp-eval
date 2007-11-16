@@ -250,3 +250,23 @@ class Measurement(Application):
                                      src=source,
                                      dst=target, **kwargs))
         return res
+
+    def load_pairs_from_file(self, filename,
+                                   label_= lambda src, dst: r"%s\\sra%s" %(src,dst),
+                                   **kwargs):
+        """returns a list of dicts
+
+        Loads pairs from the given filename. The dicts
+        generated have the keys src, dst, run_label and all keys out of kwargs.
+
+        """
+
+        fh = file(filename)
+
+        res = list()
+        for line in fh.readlines():
+            (source, target) = line.split()
+            res.append(dict( run_label=label_(source,target),
+                             src=int(source),
+                             dst=int(target), **kwargs))        
+        return res
