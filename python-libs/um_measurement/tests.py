@@ -4,7 +4,7 @@
 import sys
 import os
 import pwd
-from logging import debug
+from logging import info, warn, error, debug
 
 from twisted.internet import defer, error, reactor
 from twisted.python import failure
@@ -213,20 +213,32 @@ def test_flowgrind(mrs,
         yield mrs.xmlrpc_many([src.hostname(),dst.hostname()],
                               "tcpdump.stop")
 
-        dl = []
         if dumpfile_src:
             # just append .hostname.pcap to logfilename
-            dfile = "%s.%s.pcap" %(log_file.name, src.hostname())
-            cmd = ["mv",dumpfile_src, dfile]
-            twisted_call(cmd, shell=False)
+            sfile = "%s.%s.pcap" %(log_file.name, src.hostname())
+            cmd = ["mv",dumpfile_src, sfile]
+            d=twisted_call(cmd, shell=False)
+            if gzip_dumps:
+                def callback(rc):
+                    if rc != 0:
+                        return
+                    cmd = ["gzip", sfile]
+                    twisted_call(cmd, shell=False)
+                    
+                d.addCallback(callback)
         if dumpfile_dst:
             # just append .hostname.pcap to logfilename
             dfile = "%s.%s.pcap" %(log_file.name, dst.hostname())
-            cmd = ["mv",dumpfile_dst, dfile]
-            twisted_call(cmd, shell=False)
-        if dl:
-            rlist = yield defer.DeferredList(dl)
-                                          
+            cmd = ["mv",dumpfile_dst, dfile]            
+            d=twisted_call(cmd, shell=False)
+            if gzip_dumps:
+                def callback(rc):
+                    if rc != 0:
+                        return
+                    cmd = ["gzip", dfile]
+                    twisted_call(cmd, shell=False)
+                    
+                d.addCallback(callback)                                         
 
     defer.returnValue(result)
     
