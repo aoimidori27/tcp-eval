@@ -47,7 +47,7 @@ class TcpEvaluationMeasurement(measurement.Measurement):
         runs = self.load_pairs_from_file(self.options.pairfile)
 
         # repeat loop
-        iterations  = range(1)
+        iterations  = range(6)
 
         # inner loop with different scenario settings
         scenarios   = [ dict( scenario_label = "New Reno",  flowgrind_cc="reno" ),
@@ -56,6 +56,9 @@ class TcpEvaluationMeasurement(measurement.Measurement):
                         dict( scenario_label = "New Reno2", flowgrind_cc="reno") ]
 
         yield self.switchTestbedProfile(testbed_profile)
+
+        # due to a flaw in flowgrindd restart it before measurement
+        yield self.xmlrpc_many(range(1,46),"flowgrindd.restart")
 
         for it in iterations:
             for run_no in range(len(runs)):
@@ -67,8 +70,11 @@ class TcpEvaluationMeasurement(measurement.Measurement):
                 kwargs['flowgrind_src'] = kwargs['src']
                 kwargs['flowgrind_dst'] = kwargs['dst']
 
-
                 for scenario_no in range(len(scenarios)):
+                    # use a different port for every test 
+                    kwargs['flowgrind_bport'] = int("%u%u%03u" %(scenario_no+1,it, run_no))
+
+
                     # set logging prefix, tests append _testname
                     self.logprefix="i%03u_s%u_r%u" % (it, scenario_no, run_no)
                     
