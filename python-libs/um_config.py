@@ -98,7 +98,7 @@ imageinfos = dict(
                         '/routing/olsr/branches/um-version-olsr5' : 'routing/olsr5',
                         '/drivers/madwifi-ng/branches/um-version' : 'drivers/madwifi-ng',
                         '/drivers/madwifi-ng/branches/um-version-elcn' : 'drivers/madwifi-ng-elcn',
-                        '/projects/meshconf/net-snmp/branches/um-version' : 'projects/meshconf/net-snmp',
+                        '/tools/net-snmp/branches/um-version' : 'tools/net-snmp',
                         '/tools/set-elcn/trunk' : 'tools/set-elcn',
                         '/tools/nuttcp/branches/um-version-tcp_info' : 'tools/nuttcp',
                         '/tools/flowgrind/trunk' : 'tools/flowgrind',
