@@ -87,7 +87,8 @@ class Analysis(Application):
         
         factory = TestRecordFactory()
 
-        regex = re.compile("^i(\d+)_s(\d+)_r(\d+)_test_(.+)")
+        # testnames are only valid with plaint text and numbers
+        regex = re.compile("^i(\d+)_s(\d+)_r(\d+)_test_([a-z,0-9,A-Z]+)$")
         count = 0
         failed = []
 
