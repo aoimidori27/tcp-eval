@@ -111,6 +111,8 @@ class TestRecordFactory:
             factory = PingRecordFactory()
         elif test=="fping":
             factory = FpingRecordFactory()
+        elif test=="flowgrind":
+            factory = FlowgrindRecordFactory()
         else:
             error("No factory found for:%s" %test)
             return None
@@ -276,3 +278,46 @@ class FpingRecordFactory(TestRecordFactory):
 
     def createRecord(self, filename, test):
         return FpingRecord(filename, self.regexes, self.whats)
+
+
+
+########## Flowgrind Parsing #############
+
+class FlowgrindRecord(TestRecord):
+
+
+
+    def __init__(self, filename, regexes, whats):
+        TestRecord.__init__(self, filename, regexes, whats)
+
+    
+class FlowgrindRecordFactory(TestRecordFactory):
+
+    def __init__(self):
+        # phase 1 data gathering
+        regexes = [
+            #0: 169.254.9.1/mrouter1, MSS = 536, ws = 16384/16384 (0/0), bs = 8192/8192, delay = 0.00s/0.00s, duration = 15.00s/0.00s, thruput = 0.607300Mb/s (139 blocks), cc = cubic
+            "thruput = (?P<thruput>\d+\.\d+)Mb/s",
+            
+            #after_source_TX:804
+            #"after_source_TX:(?P<pkt_TX>\d+)",
+
+            #after_target_RX:769
+            #"after_target_RX:(?P<pkt_RX>\d+)"
+        
+        ]
+        # compile regexes
+        self.regexes = self.regCompile(regexes)
+
+
+        # phase 2 result calculation
+        self.whats = dict(
+            # average thruput just take parsed value
+            thruput = lambda r: float(r['thruput'][0]),
+
+         )
+
+        
+
+    def createRecord(self, filename, test):
+        return FlowgrindRecord(filename, self.regexes, self.whats)
