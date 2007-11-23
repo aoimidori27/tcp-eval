@@ -56,14 +56,25 @@ class Analysis(Application):
                         action = 'store', type = 'string', dest = 'outdir',
                         help = 'Set outputdirectory [default: %default]')
 
+        self.parser.add_option("-c", "--cfg", metavar = "FILE",
+                        action = "store", dest = "cfgfile",
+                        help = "use the file as config file for LaTeX. "\
+                               "No default packages will be loaded.")
+
 
     def set_option(self):
         "Set options"
         Application.set_option(self)
 
+        if not os.path.exists(self.options.indir):
+            error("%s does not exist, stop." %self.options.indir)
+            sys.exit(1)
+            
+
         if not os.path.exists(self.options.outdir):
             info("%s does not exist, creating. " % self.options.outdir)
             os.mkdir(self.options.outdir)
+
 
 
     def process(self):
