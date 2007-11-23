@@ -2,7 +2,17 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys, os, os.path, subprocess, re, time, signal, socket, optparse, time
+import sys
+import os
+import os.path
+import subprocess
+import re
+import time
+import signal
+import socket
+import optparse
+import time
+import gc
 from logging import info, debug, warn, error
 from datetime import timedelta, datetime
 
@@ -14,6 +24,8 @@ from um_config import *
 from um_functions import call
 from um_analysis.testrecords import TestRecordFactory
 from um_analysis.analysis import Analysis
+
+from um_gnuplot import UmPointPlot
 
 class RttAnalysis(Analysis):
     "Application for rtt analysis"
@@ -59,7 +71,7 @@ class RttAnalysis(Analysis):
         # only map rtts of packets available
         for i in range(len(seqs)):
             # add for every iteration ping_count
-            seq = seqs[i]+(iterationNo-1)*count
+            seq = seqs[i]+(iterationNo)*count
             rtt = rtts[i]
             assoc[seq] = rtt
         
@@ -88,6 +100,30 @@ class RttAnalysis(Analysis):
             fh.write("%u %f\n" %(key,data[key]))
 
         fh.close()
+
+        info("Generating %s" %valfilename)
+
+        p = UmPointPlot()
+        p.setYLabel("RTT in ms")
+        p.setXLabel("ICMP sequence number")
+        p.setOutput(prefix+".tex")
+
+        p.plot(valfilename, "RTT")
+        # workaround to flush plot to disk
+        p = None
+        gc.collect()
+
+
+        # workaround for bug in gnuplot2pdf
+        # os.chdir(self.options.outdir)
+        info("Generating %s.pdf" % prefix)
+        cmd = ["gnuplot2pdf.py", "-f", "-p","pdf"]
+        if self.options.cfgfile:
+            cmd.extend(["-c", self.options.cfgfile])
+        if self.options.debug:
+            cmd.append("--debug")
+        cmd.append(prefix)
+        call(cmd, shell=False)
         
 
 
