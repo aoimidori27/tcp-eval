@@ -37,9 +37,32 @@ class MeshDbPool(adbapi.ConnectionPool):
                 res[key] = row[i]                
         return res    
 
+
     def fetchAssoc(self, query):
-        """ Fetches an associative array from the database, returns a defered """
+        """ Fetches an associative array from the first row, returns a deferred """
         return self.runInteraction(self._getAssoc, query)
+
+    def _getAssocList(self, txn, query):
+        """ This function returns a list of associative arrays """
+
+        txn.execute(query)
+        res_list = list()
+        if txn.rowcount > 0:
+            while (1):
+                row = txn.fetchone()
+                if not row:
+                    break
+                res = dict()
+                for i in xrange(len(row)):                
+                    key = txn.description[i][0]
+                    res[key] = row[i]
+                res_list.append(res)
+                
+        return res_list
+
+    def fetchAssocList(self, query):
+        """ Fetches a list of associative arrays, returns a deferred """
+        return self.runInteraction(self._getAssocList, query)
 
     def _fetchColumnAsList(self, txn, query, column):
         """ This function returns a list of the specified column """
@@ -61,11 +84,10 @@ class MeshDbPool(adbapi.ConnectionPool):
 
         # store record in database
         query = """INSERT INTO current_service_status (nodeID,servID,flavorID,version,prio,returncode,message) 
-                   SELECT nodeID, %u, %u, %u, %u, %d,'%s' FROM nodes WHERE nodes.name='%s';
-                """ %(config['servID'], config['flavorID'], config['version'], config['prio'],
-                      rc, message, hostname)
+                   SELECT nodeID, %s, %s, %s, %s, %s,%s FROM nodes WHERE nodes.name=%s;
+                """
         debug(query)
-        result = yield self.runQuery(query)
+        result = yield self.runQuery(query, (config['servID'], config['flavorID'], config['version'], config['prio'], rc, message, hostname))
 
     @defer.inlineCallbacks
     def stoppedService(self, config, rc, message, hostname = socket.gethostname()):
@@ -78,21 +100,95 @@ class MeshDbPool(adbapi.ConnectionPool):
 
         debug(query)
         result = yield self.runQuery(query)
-                                           
+
+
+    @defer.inlineCallbacks
+    def getServiceInfo(self, servicename):
+        """ Returns the serviceID and the service Table as a tuple """
+
+        # first get serviceID and the service table
+        query = "SELECT servID, servTable FROM services WHERE servName = %s" 
+        debug(query)
+        result = yield self.runQuery(query, (servicename))
+        debug(result)
+        if len(result) is not 1:
+            warn("Service %s not found." %servicename)
+            defer.returnValue(None)
+
+        # (servID, servTable) = result[0]
+        defer.returnValue(result[0])
+
+    @defer.inlineCallbacks
+    def getStaticRouting(self, hostname = socket.gethostname()):
+        """ Returns a list of dicts which have a version field and a list of routing table entries """
+
+        servicename = "static_routing"
+    
+        # first get serviceID and the service table
+        servInfo = yield self.getServiceInfo(servicename)
+        if not servInfo:
+            defer.returnValue(None)
+        (servID, servTable) = servInfo
+        
+        
+        # look which flavors are selected in current config for this host
+        query = "SELECT flavorID,prio,version FROM current_service_conf AS c, nodes " \
+                "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID "\
+                "AND c.servID='%s';" % (hostname, servID)
+        debug(query)
+        result = yield self.runQuery(query)
+        debug(result)
+        if len(result) < 1:
+            info("No flavors of service %s activated for this host" %servicename)
+            defer.returnValue(None)
+
+        final_result = list()
+
+        for row in result:
+            (flavorID,prio,version) = row
+            # get configuration out of service table
+            # convert packed ip adresses to strings
+            query = """ SELECT services_flavors.*,
+                        INET_NTOA(gw) AS gw,
+                        INET_NTOA(dest) AS dest,
+                        metric, nic, prefix
+                        FROM services_flavors
+                        LEFT JOIN %s USING (flavorID)
+                        WHERE flavorID=%d
+                        AND nodeID=
+                        (SELECT nodeID FROM nodes WHERE name='%s');
+                        """ % (servTable, flavorID, hostname)
+            debug(query)
+            res = yield self.fetchAssocList(query)
+
+            debug(res)
+            tmp = dict()
+            tmp["version"]  = version
+            tmp["flavorID"] = flavorID
+            tmp["prio"]     = prio
+            tmp["servID"]   = servID
+            tmp["rentries"] = res
+            final_result.append(tmp)
+            if len(res) is 0:
+                error("Database error: no flavor %u in %s!") %(flavorID, servTable)
+                defer.returnValue(None)
+                
+
+        defer.returnValue(final_result)
+
+
+    
+        
 
     @defer.inlineCallbacks
     def getCurrentServiceConfigMany(self, servicename, hostname = socket.gethostname()):
         """ Returns the current configs as an list of dictionary if available, else None """
 
         # first get serviceID and the service table
-        query = "SELECT servID, servTable FROM services WHERE servName = '%s'" %servicename
-        debug(query)
-        result = yield self.runQuery(query)
-        debug(result)
-        if len(result) is not 1:
-            warn("Service %s not found." %servicename)
+        servInfo = yield self.getServiceInfo(servicename)
+        if not servInfo:
             defer.returnValue(None)
-        (servID, servTable) = result[0]
+        (servID, servTable) = servInfo
 
         # look which flavors are selected in current config for this host
         query = "SELECT flavorID,prio FROM current_service_conf AS c, nodes " \
@@ -131,14 +227,10 @@ class MeshDbPool(adbapi.ConnectionPool):
         """ Returns the current config as an dictionary if available, else None """
 
         # first get serviceID and the service table
-        query = "SELECT servID, servTable FROM services WHERE servName = '%s'" %servicename
-        debug(query)
-        result = yield self.runQuery(query)
-        debug(result)
-        if len(result) is not 1:
-            warn("Service %s not found." %servicename)
+        servInfo = yield self.getServiceInfo(servicename)
+        if not servInfo:
             defer.returnValue(None)
-        (servID, servTable) = result[0]
+        (servID, servTable) = servInfo
 
         # look which flavor is selected in current config for this host
         query = "SELECT flavorID, prio FROM current_service_conf AS c, nodes " \
