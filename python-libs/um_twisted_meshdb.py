@@ -170,8 +170,7 @@ class MeshDbPool(adbapi.ConnectionPool):
             tmp["rentries"] = res
             final_result.append(tmp)
             if len(res) is 0:
-                error("Database error: no flavor %u in %s!") %(flavorID, servTable)
-                defer.returnValue(None)
+                warn("No rentries for %s in flavor %u!" %(hostname, flavorID))
                 
 
         defer.returnValue(final_result)
@@ -213,7 +212,7 @@ class MeshDbPool(adbapi.ConnectionPool):
             res["prio"] = prio
             debug(res)
             if len(res) is 0:
-                error("Database error: no flavor %u in %s!") %(flavorID, servTable)
+                error("Database error: no flavor %u in %s!" %(flavorID, servTable))
                 defer.returnValue(None)
                 
             final_result.append(res)
@@ -251,7 +250,7 @@ class MeshDbPool(adbapi.ConnectionPool):
         result["prio"] = prio;
         debug(result)
         if len(result) is 0:
-            error("Database error: no flavor %u in %s!") %(flavorID, servTable)
+            error("Database error: no flavor %u in %s!" %(flavorID, servTable))
             defer.returnValue(None)
         defer.returnValue(result)
 
