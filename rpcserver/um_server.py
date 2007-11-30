@@ -109,7 +109,12 @@ class RPCServer(xmlrpc.XMLRPC):
                 shell=False)
             yield self._services[service].xmlrpc_stop()
 
-        info("Starting services...")
+        text = "Starting services..."
+        info(text)
+        yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
+                shell=False)
+
+
         services = yield self._dbpool.getServicesToStart()
 
         for service in services:
