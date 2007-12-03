@@ -79,13 +79,19 @@ class MeshDbPool(adbapi.ConnectionPool):
         return self.runInteraction(self._fetchColumnAsList, query, column)
 
     @defer.inlineCallbacks
-    def startedService(self, config, rc, message, hostname = socket.gethostname()):
+    def startedService(self, config, rc, message, hostname = socket.gethostname(), ignoreDups=False):
         """ Updates the Database on startup of a service flavor. """
 
+        if ignoreDups:
+            tmp = "INSERT IGNORE"
+        else: 
+            tmp = "INSERT"
+
         # store record in database
-        query = """INSERT INTO current_service_status (nodeID,servID,flavorID,version,prio,returncode,message) 
+        query = tmp + """
+                   INTO current_service_status (nodeID,servID,flavorID,version,prio,returncode,message) 
                    SELECT nodeID, %s, %s, %s, %s, %s,%s FROM nodes WHERE nodes.name=%s;
-                """
+                """ 
         debug(query)
         result = yield self.runQuery(query, (config['servID'], config['flavorID'], config['version'], config['prio'], rc, message, hostname))
 
