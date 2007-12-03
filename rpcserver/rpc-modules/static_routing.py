@@ -152,7 +152,7 @@ class Static_routing(RPCService):
             if (tmp_rc != 0):
                 final_rc = tmp_rc
             yield self._parent._dbpool.stoppedService(config,
-                                                          rc, message=errmsg)
+                                                      tmp_rc, message=errmsg)
     
         defer.returnValue(final_rc)
         
