@@ -44,13 +44,11 @@ class TcpAnalysis(Analysis):
 
 
 
-
     def set_option(self):
         "Set options"
         Analysis.set_option(self)
 
         
-
 
     def onLoad(self, record, iterationNo, scenarioNo, test):
         dbcur = self.dbcon.cursor()
@@ -146,29 +144,34 @@ class TcpAnalysis(Analysis):
 
 
     def generateHistogram(self):
-        """ Generates a histogram of the 10 best pairs (avg_thruput). With scenario labels.
+        """ Generates a histogram with scenario labels.
         """
 
         dbcur = self.dbcon.cursor()
 
-        # accumulate all scenarios and just distinct via run, limit to 10
-        limit = 10
-        sortby = "avg_thruput"
-
-        # get unique "runs" and sum up thruput
+        # get all scenario labels
         dbcur.execute('''
-        SELECT run_label, scenario_label,
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests ORDER BY scenarioNo'''
+        )
+        scenarios = dict()
+        for row in dbcur:
+            (key,val) = row
+            scenarios[key] = val
+
+        # average thruput and sort by it and scenario_no
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
         MIN(thruput) as min_thruput,
         MAX(thruput) as max_thruput,
-        SUM(thruput)/SUM(1) as 
+        SUM(thruput)/SUM(1) as avg_thruput,
         SUM(1)
-        FROM tests GROUP BY src, dst, scenario_no ORDER BY %s DESC LIMIT %d
-        ''' %(sortby, limit) )
-
+        FROM tests GROUP BY run_label, scenarioNo ORDER BY avg_thruput DESC, scenarioNo ASC
+        ''')
 
         # outfile
         outdir = self.options.outdir
-        plotname = "best_%d_pairs" %limit
+        plotname = "scenario_compare" 
         bestfilename = os.path.join(outdir, plotname+".values")
         texfilename = os.path.join(outdir, plotname+".tex")
         
@@ -177,26 +180,67 @@ class TcpAnalysis(Analysis):
         fh = file(bestfilename, "w")
 
         # print header
-        fh.write("# run_label no_of_thruputs no_of_failed\n")
+        fh.write("# run_label no_of_thruputs no_of_failed ")
 
+        # one line per runlabel
+        data = dict()
+
+        # columns
+        keys = scenarios.keys()
+        keys.sort()
+        for key in scenarios.keys():
+            val = scenarios[key]
+            fh.write("min_tput_%(v)s max_tput_%(v)s avg_tput_%(v)s notests_%(v)s" %{ "v" : val })
+
+            
+        fh.write("\n")
+
+        alt_sno = 0
+        sorted_labels = list()
         for row in dbcur:
-            (label,min_thruput,max_thruput,avg_thruput,notests) = row
-            if self.failed.has_key(label):
-                nofailed = self.failed[label]
-            else:
-                nofailed = 0
-            fh.write('"%s" %f %f %f %d' % row)
-            fh.write(' %d\n' % nofailed)
+            (rlabel,slabel,sno,min_thruput,max_thruput,avg_thruput,notests) = row
+            if not data.has_key(rlabel):
+                tmp = list()
+                for key in keys:
+                    tmp.append("0.0 0.0 0.0 0")
+                data[rlabel] = tmp
+                sorted_labels.append(rlabel)
 
+            data[rlabel][sno] = "%s %s %s %s" %(min_thruput,max_thruput,avg_thruput,notests)
+            debug(row)
+
+
+        i = 0
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s" %key)
+            for val in value:
+                fh.write(" %s" %val)
+            fh.write("\n")
+            i += 1
+            if i>10:
+                break
+        
         fh.close()
 
         info("Generating %s..." %texfilename)
         g = UmHistogram()
 
         g.setYLabel(r"Throughput in $\\Mbps$")
-        g.setBars(limit)
+        g.setBars(10)
         g.setOutput(texfilename)
-        g('plot "%s" using 4:xtic(1) title "Thruput" ls 1' % bestfilename)
+
+        plotcmd = ""
+        for i in range(len(keys)):
+            key = keys[i]
+            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(bestfilename, (i+1)*4, scenarios[key],i+1)
+            if i == 0:
+                plotcmd = "plot %s" %buf
+            else:
+                plotcmd = "%s, %s" %(plotcmd, buf)
+            debug(plotcmd)
+        
+        g(plotcmd)
         
 
         g = None
@@ -210,6 +254,7 @@ class TcpAnalysis(Analysis):
             cmd.append("--debug")
         cmd.append(plotname)
         call(cmd, shell=False)
+
 
 
     def generateCumulativeFractionOfPairs(self):
@@ -303,9 +348,12 @@ class TcpAnalysis(Analysis):
 
         self.dbcon.commit()
 
-        self.generateAccHistogram()
+        self.generateHistogram()
+
+#        self.generateAccHistogram()
         
-        self.generateCumulativeFractionOfPairs()
+        
+#        self.generateCumulativeFractionOfPairs()
         
         
                     
