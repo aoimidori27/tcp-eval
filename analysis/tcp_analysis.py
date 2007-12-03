@@ -15,7 +15,8 @@ import time
 import gc
 from logging import info, debug, warn, error
 from datetime import timedelta, datetime
-from pysqlite2 import dbapi2 as sqlite 
+#from pysqlite2 import dbapi2 as sqlite 
+from sqlite3 import dbapi2 as sqlite
 
 import numpy
 
@@ -142,6 +143,25 @@ class TcpAnalysis(Analysis):
         cmd.append(plotname)
         call(cmd, shell=False)
 
+    def calculateStdDev(self, rlabel, slabel):
+        """
+        Calculates the standarddeviation of all values of the same rlabel
+        and scenarioNo
+        """
+
+        dbcur = self.dbcon.cursor()
+
+        query = '''
+        SELECT thruput FROM tests WHERE
+        scenario_label="%s" AND run_label="%s";
+        ''' %(slabel,rlabel)
+
+        dbcur.execute(query)
+
+        ary = numpy.array(dbcur.fetchall())
+
+        return ary.std()
+
 
     def generateHistogram(self):
         """ Generates a histogram with scenario labels.
@@ -164,16 +184,17 @@ class TcpAnalysis(Analysis):
         SELECT run_label, scenario_label, scenarioNo,
         MIN(thruput) as min_thruput,
         MAX(thruput) as max_thruput,
-        SUM(thruput)/SUM(1) as avg_thruput,
+        AVG(thruput) as avg_thruput,
         SUM(1)
         FROM tests GROUP BY run_label, scenarioNo ORDER BY avg_thruput DESC, scenarioNo ASC
         ''')
 
         # outfile
-        outdir = self.options.outdir
-        plotname = "scenario_compare" 
-        bestfilename = os.path.join(outdir, plotname+".values")
-        texfilename = os.path.join(outdir, plotname+".tex")
+        outdir        = self.options.outdir
+        plotname      = "scenario_compare" 
+        bestfilename  = os.path.join(outdir, plotname+".values")
+        texfilename   = os.path.join(outdir, plotname+".tex")
+        gplotfilename = os.path.join(outdir, plotname+".gplot")
         
         info("Generating %s..." % bestfilename)
 
@@ -190,7 +211,7 @@ class TcpAnalysis(Analysis):
         keys.sort()
         for key in scenarios.keys():
             val = scenarios[key]
-            fh.write("min_tput_%(v)s max_tput_%(v)s avg_tput_%(v)s notests_%(v)s" %{ "v" : val })
+            fh.write("min_tput_%(v)s max_tput_%(v)s avg_tput_%(v)s std_tput_%(v)s notests_%(v)s" %{ "v" : val })
 
             
         fh.write("\n")
@@ -199,18 +220,22 @@ class TcpAnalysis(Analysis):
         sorted_labels = list()
         for row in dbcur:
             (rlabel,slabel,sno,min_thruput,max_thruput,avg_thruput,notests) = row
+            std_thruput = self.calculateStdDev(rlabel, slabel)
             if not data.has_key(rlabel):
                 tmp = list()
                 for key in keys:
-                    tmp.append("0.0 0.0 0.0 0")
+                    tmp.append("0.0 0.0 0.0 0.0 0")
                 data[rlabel] = tmp
                 sorted_labels.append(rlabel)
 
-            data[rlabel][sno] = "%s %s %s %s" %(min_thruput,max_thruput,avg_thruput,notests)
+            data[rlabel][sno] = "%s %s %s %s %s" %(min_thruput,max_thruput,avg_thruput,std_thruput,notests)
             debug(row)
 
 
         i = 0
+        # only display first LIMIT scenarios
+        limit = 10
+        
         for key in sorted_labels:
             value = data[key]
             fh.write("%s" %key)
@@ -218,7 +243,7 @@ class TcpAnalysis(Analysis):
                 fh.write(" %s" %val)
             fh.write("\n")
             i += 1
-            if i>10:
+            if i>limit:
                 break
         
         fh.close()
@@ -227,22 +252,44 @@ class TcpAnalysis(Analysis):
         g = UmHistogram()
 
         g.setYLabel(r"Throughput in $\\Mbps$")
-        g.setBars(10)
+        g.setScenarios(len(scenarios))
+        g.setBars(limit)
+        g.setYRange("[ 0 : * ]")
         g.setOutput(texfilename)
 
         plotcmd = ""
+        # bars
         for i in range(len(keys)):
             key = keys[i]
-            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(bestfilename, (i+1)*4, scenarios[key],i+1)
+            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(bestfilename, 4+(i*5), scenarios[key],i+1)
             if i == 0:
                 plotcmd = "plot %s" %buf
             else:
                 plotcmd = "%s, %s" %(plotcmd, buf)
             debug(plotcmd)
+
+        # errobars
+        for i in range(len(keys)):
+            title = "notitle"
+            # TODO: calculate offset with scenarios and gap
+            if i == 0:
+                title = 'title "Standard Deviation"'
+                off = -0.3
+            elif i == 1:
+                off = -0.1
+            elif i == 2:
+                off = 0.1
+            elif i == 3:
+                off = 0.3
+            
+            buf = '"%s" using ($0+%f):%u:%u %s with errorbars ls 2' %(bestfilename, off, 4+(i*5), 5+(i*5), title)
+
+            plotcmd = '%s, %s' %(plotcmd, buf)
         
         g(plotcmd)
-        
 
+        info("Generating %s" %gplotfilename)
+        g.save(gplotfilename)        
         g = None
         gc.collect()
 
@@ -307,6 +354,7 @@ class TcpAnalysis(Analysis):
         
         g.setOutput(texfilename)
         g('plot "%s" using 1:2 title "1-Hop" ls 1 with steps' % bestfilename)
+
 
         g = None
         gc.collect()

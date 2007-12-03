@@ -37,6 +37,13 @@ class UmGnuplot(Gnuplot.Gnuplot):
 
     def setOutput(self, output):
         self('set output "%s"' %output)
+
+    def setYRange(self, *args):
+        self.set_range("yrange",*args)
+
+    def setXRange(self, *args):
+        self.set_range("xrange",*args)
+    
     
 
 class UmHistogram(UmGnuplot):
@@ -68,21 +75,38 @@ class UmHistogram(UmGnuplot):
         set boxwidth 0.9 relative
         set style fill solid 1.00 border -1
         """)
+
+        # gap in bars between bar clusters
+        self._gap = 1
         
         self('set style data histogram')
-        self('set style histogram clustered gap 1 title offset character 0,0,0')
+        self('set style histogram clustered gap %u title offset character 0,0,0' %self._gap)
 
-
-
+        self._bars = None
+        self._scenarios = None
 
     def setBars(self, bars):
         """ How many bars to plot """
-        self.set_range("xrange",(-1,bars))
+        right = bars+0.5
+        left  = -0.5
+        
+        self.set_range("xrange",(left,right))
         
         # background rect
-        self('set object 2 rect from -1, graph 0, 0 to %u, graph 1, 0 behind lw 1.0 fc rgb "#98E2E7" fillstyle solid 0.15 border -1' % bars)
+        self('set object 2 rect from %f, graph 0, 0 to %f, graph 1, 0 behind lw 1.0 fc rgb "#98E2E7" fillstyle solid 0.15 border -1' %(left,right))
 
+        self._bars = bars
 
+    def setScenarios(self, scenarios):
+        """ How many values per row to plot. """
+        self._scenarios = scenarios
+
+    def getGap(self):
+        return self._gap
+
+    
+    def getBarWidth():
+        return 1.0 / (self._scenarios + self._gap)
 
 class UmPointPlot(UmGnuplot):
     """ Represents a plot with points """
