@@ -110,8 +110,9 @@ class Sysctl(RPCService):
 
 
         for config in self._configs:
+            # ignore already started configs
             yield self._parent._dbpool.startedService(config,
-                                                      rc, message=stderr)
+                                                      rc, message=stderr, ignoreDups=True)
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
@@ -125,9 +126,3 @@ class Sysctl(RPCService):
         defer.returnValue(0)
 
 
-
-
-
-
-        
-        
