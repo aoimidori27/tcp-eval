@@ -10,7 +10,6 @@ import re
 
 from logging import info, debug, warn, error
 from datetime import timedelta, datetime
-from pysqlite2 import dbapi2 as sqlite 
 
 import numpy
 
