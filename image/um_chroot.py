@@ -12,10 +12,10 @@ from um_node import *
 
 
 class Chroot(Application):
-    "Class to chroot into the images"
+    """Class to chroot into the images"""
 
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the object"""
 
         Application.__init__(self)
 
@@ -41,7 +41,7 @@ class Chroot(Application):
                                help = "set the node type for chroot [default: %default]")
 
     def set_option(self):
-        "Set options"
+        """Set options"""
 
         Application.set_option(self)
 
@@ -53,7 +53,7 @@ class Chroot(Application):
 
 
     def chroot_exec(self):
-        "Chroot and execute the command"
+        """Chroot and execute the command"""
 
         # must be root
         requireroot()
@@ -101,7 +101,7 @@ class Chroot(Application):
 
 
     def main(self):
-        "Main method of the chroot object"
+        """Main method of the chroot object"""
 
         self.parse_option()
         self.set_option()
