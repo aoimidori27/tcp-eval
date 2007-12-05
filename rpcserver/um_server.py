@@ -88,13 +88,6 @@ class RPCServer(xmlrpc.XMLRPC):
         reactor.callLater(1,reactor.stop)
         return 'OK'
 
-    def xmlrpc_test(self):
-        return self._dbpool.getServicesToStart();
-
-    def xmlrpc_test2(self):
-        return self._dbpool.getServicesToStop();
-
-
     @defer.inlineCallbacks
     def xmlrpc_apply(self):
         info("Applying configuration changes...")
