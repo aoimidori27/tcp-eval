@@ -47,13 +47,13 @@ class TcpEvaluationMeasurement(measurement.Measurement):
         runs = self.load_pairs_from_file(self.options.pairfile)
 
         # repeat loop
-        iterations  = range(6)
+        iterations  = range(50)
 
         # inner loop with different scenario settings
-        scenarios   = [ dict( scenario_label = "New Reno",  flowgrind_cc="reno" ),
-                        dict( scenario_label = "Vegas",     flowgrind_cc="vegas" ),
-                        dict( scenario_label = "Westwood+", flowgrind_cc="westwood"),
-                        dict( scenario_label = "New Reno2", flowgrind_cc="reno") ]
+        scenarios   = [ dict( scenario_label = "New Reno 1", flowgrind_cc="reno" ),
+                        dict( scenario_label = "Westwood+",  flowgrind_cc="westwood" ),
+                        dict( scenario_label = "Vegas",      flowgrind_cc="vegas"),
+                        dict( scenario_label = "New Reno 2", flowgrind_cc="reno") ]
 
         yield self.switchTestbedProfile(testbed_profile)
 
@@ -72,7 +72,7 @@ class TcpEvaluationMeasurement(measurement.Measurement):
 
                 for scenario_no in range(len(scenarios)):
                     # use a different port for every test 
-                    kwargs['flowgrind_bport'] = int("%u%u%03u" %(scenario_no+1,it, run_no))
+                    kwargs['flowgrind_bport'] = int("%u%u%02u" %(scenario_no+1,it, run_no))
 
 
                     # set logging prefix, tests append _testname
@@ -85,7 +85,8 @@ class TcpEvaluationMeasurement(measurement.Measurement):
                     # actually run tests
                     yield self.run_test(tests.test_flowgrind, **kwargs)
 
-
+        # switch back to minimum when done
+        yield self.switchTestbedProfile("minimum")
         yield self.tear_down()
         reactor.stop()
 
