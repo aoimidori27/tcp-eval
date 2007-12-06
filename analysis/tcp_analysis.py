@@ -10,7 +10,7 @@ import re
 import optparse
 import gc
 from logging import info, debug, warn, error
-from datetime import timedelta, datetime
+
 #from pysqlite2 import dbapi2 as sqlite 
 from sqlite3 import dbapi2 as sqlite
 
@@ -18,7 +18,6 @@ import numpy
 
 # umic-mesh imports
 from um_application import Application
-from um_config import *
 from um_functions import call
 
 from um_analysis.analysis import Analysis
@@ -98,7 +97,6 @@ class TcpAnalysis(Analysis):
         outdir = self.options.outdir
         plotname = "best_%d_pairs_acc" %limit
         bestfilename = os.path.join(outdir, plotname+".values")
-        texfilename  = os.path.join(outdir, plotname+".tex")
         
         info("Generating %s..." % bestfilename)
 
@@ -118,26 +116,14 @@ class TcpAnalysis(Analysis):
 
         fh.close()
 
-        info("Generating %s..." %texfilename)
-        g = UmHistogram()
+        g = UmHistogram(plotname)
 
         g.setYLabel(r"Throughput in $\\Mbps$")
         g.setBars(limit)
-        g.setOutput(texfilename)
-        g('plot "%s" using 4:xtic(1) title "Thruput" ls 1' % bestfilename)
+        g.plot('"%s" using 4:xtic(1) title "Thruput" ls 1' % bestfilename)
         
-
-        g = None
-        gc.collect()
-
-        info("Generating %s.pdf" % plotname)
-        cmd = ["gnuplot2pdf.py", "-f", "-p","pdf"]
-        if self.options.cfgfile:
-            cmd.extend(["-c", self.options.cfgfile])
-        if self.options.debug:
-            cmd.append("--debug")
-        cmd.append(plotname)
-        call(cmd, shell=False)
+        g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        
 
     def calculateStdDev(self, rlabel, slabel):
         """
@@ -188,14 +174,12 @@ class TcpAnalysis(Analysis):
         # outfile
         outdir        = self.options.outdir
         plotname      = "scenario_compare" 
-        bestfilename  = os.path.join(outdir, plotname+".values")
-        texfilename   = os.path.join(outdir, plotname+".tex")
-        gplotfilename = os.path.join(outdir, plotname+".gplot")
-        pdffilename   = os.path.join(outdir, plotname+".pdf")
-        
-        info("Generating %s..." % bestfilename)
+        valfilename  = os.path.join(outdir, plotname+".values")
 
-        fh = file(bestfilename, "w")
+        
+        info("Generating %s..." % valfilename)
+
+        fh = file(valfilename, "w")
 
         # print header
         fh.write("# run_label no_of_thruputs no_of_failed ")
@@ -212,7 +196,6 @@ class TcpAnalysis(Analysis):
 
             
         fh.write("\n")
-
 
         sorted_labels = list()
         for row in dbcur:
@@ -245,25 +228,19 @@ class TcpAnalysis(Analysis):
         
         fh.close()
 
-        info("Generating %s..." %texfilename)
-        g = UmHistogram()
+        g = UmHistogram(plotname)
 
         g.setYLabel(r"Throughput in $\\Mbps$")
         g.setScenarios(len(scenarios))
         g.setBars(limit)
         g.setYRange("[ 0 : * ]")
-        g.setOutput(texfilename)
 
-        plotcmd = ""
         # bars
         for i in range(len(keys)):
             key = keys[i]
-            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(bestfilename, 4+(i*5), scenarios[key],i+1)
-            if i == 0:
-                plotcmd = "plot %s" %buf
-            else:
-                plotcmd = "%s, %s" %(plotcmd, buf)
-            debug(plotcmd)
+            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key],i+1)
+            g.plot(buf)
+        
 
         # errobars
         for i in range(len(keys)):
@@ -278,26 +255,15 @@ class TcpAnalysis(Analysis):
                 off = 0.1
             elif i == 3:
                 off = 0.3
-            
-            buf = '"%s" using ($0+%f):%u:%u %s with errorbars ls 2' %(bestfilename, off, 4+(i*5), 5+(i*5), title)
 
-            plotcmd = '%s, %s' %(plotcmd, buf)
+            buf = '"%s" using ($0+%f):%u:%u %s with errorbars ls 2' %(valfilename, off, 4+(i*5), 5+(i*5), title)
+            g.plot(buf)
+
         
-        g(plotcmd)
 
-        info("Generating %s" %gplotfilename)
-        g.save(gplotfilename)        
-        g = None
-        gc.collect()
+        # output plot
+        g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
-        info("Generating %s" %pdffilename)
-        cmd = ["gnuplot2pdf.py", "-f", "-p",pdffilename]
-        if self.options.cfgfile:
-            cmd.extend(["-c", self.options.cfgfile])
-        if self.options.debug:
-            cmd.append("--debug")
-        cmd.append(plotname)
-        call(cmd, shell=False)
 
 
 
@@ -322,11 +288,10 @@ class TcpAnalysis(Analysis):
 
         outdir = self.options.outdir
         plotname = "fraction_of_pairs" 
-        bestfilename = os.path.join(outdir, plotname+".values")
-        texfilename = os.path.join(outdir, plotname+".tex")
+        valfilename = os.path.join(outdir, plotname+".values")
         
-        info("Generating %s..." % bestfilename)
-        fh = file(bestfilename, "w")
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
 
         # header
         fh.write("# fraction of pairs\n")
@@ -342,30 +307,16 @@ class TcpAnalysis(Analysis):
 
         fh.close()
 
-
-        info("Generating %s..." %texfilename)
-        g = UmGnuplot()
+        g = UmGnuplot(plotname)
 
         g.setXLabel(r"Throughput in $\\Mbps$")
         g.setYLabel("Fraction of Pairs")
         
-        g.setOutput(texfilename)
-        g('plot "%s" using 1:2 title "1-Hop" ls 1 with steps' % bestfilename)
+        g.plot('"%s" using 1:2 title "1-Hop" ls 1 with steps' % valfilename)
 
 
-        g = None
-        gc.collect()
-
-        info("Generating %s.pdf" % plotname)
-        cmd = ["gnuplot2pdf.py", "-f", "-p","pdf"]
-        if self.options.cfgfile:
-            cmd.extend(["-c", self.options.cfgfile])
-        if self.options.debug:
-            cmd.append("--debug")
-        cmd.append(plotname)
-        call(cmd, shell=False)
-
-
+        # output plot
+        g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
 
     def run(self):
@@ -392,13 +343,9 @@ class TcpAnalysis(Analysis):
         self.loadRecords(tests=["flowgrind"])
 
         self.dbcon.commit()
-
         self.generateHistogram()
-
-#        self.generateAccHistogram()
-        
-        
-#        self.generateCumulativeFractionOfPairs()
+        self.generateAccHistogram()
+        self.generateCumulativeFractionOfPairs()
         
         
                     

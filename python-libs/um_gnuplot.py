@@ -9,53 +9,122 @@
 """
 
 # python imports
+import gc
+import os.path
+
 from logging import info, debug, warn, error
 
 import Gnuplot
 
+# umic-mesh imports
+from um_functions import call
+        
 
-class UmGnuplot(Gnuplot.Gnuplot):
+
+class UmGnuplot():
     """ A specific umic-mesh plot with convenience functions """
 
-    def __init__(self):
-        Gnuplot.Gnuplot.__init__(self)
+    def __init__(self, plotname):
+        """ Plotname is for filename generation """
 
-        # always epslatex output
-        self('set terminal epslatex color solid "default" 9')
+        self.gplot = Gnuplot.Gnuplot()
+
 
         # turn on math environment for axis
-        self('set format "$%g$"')
+        self.gplot('set format "$%g$"')
 
         # empty title use caption instead
-        self('set title ""')
+        self.gplot('set title ""')
+
+        # name of the plot (for building filenames)
+        self._plotname = plotname
+
+        # actual plotcmd
+        self._plotcmd = None
+
+
 
     def setYLabel(self, *args, **kwargs):
-        self.set_label("ylabel", *args, **kwargs)
+        self.gplot.set_label("ylabel", *args, **kwargs)
 
     def setXLabel(self, *args, **kwargs):
-        self.set_label("xlabel", *args, **kwargs)
+        self.gplot.set_label("xlabel", *args, **kwargs)
 
     def setOutput(self, output):
-        self('set output "%s"' %output)
+        self.gplot('set output "%s"' %output)
 
     def setYRange(self, *args):
-        self.set_range("yrange",*args)
+        self.gplot.set_range("yrange",*args)
 
     def setXRange(self, *args):
-        self.set_range("xrange",*args)
+        self.gplot.set_range("xrange",*args)
+
+    def setPlotname(self, plotname):
+        self._plotname = plotname
+
+
+    def plot(self, cmd):
+        """ Extends plotcmd with cmd """
+        if not self._plotcmd:
+            self._plotcmd = "plot %s" %cmd
+        else:
+            self._plotcmd = "%s, %s" %(self._plotcmd, cmd)
+
+
+    def save(self, outdir, verbose=False, cfgfile=None):
+        """ Generates .gplot and .pdf file of this plot.
+            After this this object is not usable anymore,
+            because the underlying Gnuplot instance is destroyed.
+        """
+        plotname = self._plotname
+        
+        texfilename   = os.path.join(outdir, plotname+".tex")
+        gplotfilename = os.path.join(outdir, plotname+".gplot")
+        pdffilename   = os.path.join(outdir, plotname+".pdf")
+
+
+        info("Generating %s" %texfilename)
+        # always epslatex output
+        self.gplot('set terminal epslatex color solid "default" 9')
+        self.setOutput(texfilename)
+
+        # do the actual plotting
+        debug(self._plotcmd)
+        self.gplot(self._plotcmd)
+        
+        info("Generating %s" %gplotfilename)
+        self.gplot.save(gplotfilename)
+        
+
+        # make sure gplot output is flushed
+        self.gplot = None
+        gc.collect()
+
+
+        
+        info("Generating %s" %pdffilename)
+        cmd = ["gnuplot2pdf.py", "-f", "-p", pdffilename]
+        if cfgfile:
+            cmd.extend(["-c", cfgfile])
+        if verbose:
+            cmd.append("--debug")
+        cmd.append(os.path.join(outdir,plotname))
+        call(cmd, shell=False)
+                    
     
+        
+        
     
 
 class UmHistogram(UmGnuplot):
     """ Represents a Histogram plot """
 
-    def __init__(self):
-        UmGnuplot.__init__(self)
-
+    def __init__(self, *args, **kwargs):
+        UmGnuplot.__init__(self, *args, **kwargs)
 
 
         # colors and line styles
-        self(
+        self.gplot(
         """
         set style line 1 lt rgb "#F593A1" lw 1 pt 6
         set style line 2 lt rgb "dark-green" lw 1.5 pt 1
@@ -68,7 +137,7 @@ class UmHistogram(UmGnuplot):
         
 
         # grid and other styles
-        self(
+        self.gplot(
         """
         set border 31 front linetype -1 linewidth 1.000
         set grid noxtics ytics nopolar back
@@ -79,8 +148,8 @@ class UmHistogram(UmGnuplot):
         # gap in bars between bar clusters
         self._gap = 1
         
-        self('set style data histogram')
-        self('set style histogram clustered gap %u title offset character 0,0,0' %self._gap)
+        self.gplot('set style data histogram')
+        self.gplot('set style histogram clustered gap %u title offset character 0,0,0' %self._gap)
 
         self._bars = None
         self._scenarios = None
@@ -90,10 +159,10 @@ class UmHistogram(UmGnuplot):
         right = bars+0.5
         left  = -0.5
         
-        self.set_range("xrange",(left,right))
+        self.setXRange((left,right))
         
         # background rect
-        self('set object 2 rect from %f, graph 0, 0 to %f, graph 1, 0 behind lw 1.0 fc rgb "#98E2E7" fillstyle solid 0.15 border -1' %(left,right))
+        self.gplot('set object 2 rect from %f, graph 0, 0 to %f, graph 1, 0 behind lw 1.0 fc rgb "#98E2E7" fillstyle solid 0.15 border -1' %(left,right))
 
         self._bars = bars
 
@@ -111,12 +180,14 @@ class UmHistogram(UmGnuplot):
 class UmPointPlot(UmGnuplot):
     """ Represents a plot with points """
 
-    def __init__(self):
-        UmGnuplot.__init__(self)
+
+
+    def __init__(self, *args, **kwargs):
+        UmGnuplot.__init__(self, *args, **kwargs)
 
 
         # colors and line styles
-        self(
+        self.gplot(
         """
         set style line 1 lt rgb "#F593A1" lw 1 pt 6
         set style line 2 lt rgb "dark-green" lw 1.5 pt 1
@@ -128,7 +199,7 @@ class UmPointPlot(UmGnuplot):
         """)
         
         # grid and other styles
-        self(
+        self.gplot(
         """
         set border 31 front linetype -1 linewidth 1.000
         set grid noxtics ytics nopolar back
@@ -142,4 +213,5 @@ class UmPointPlot(UmGnuplot):
         usingstr = ""
         if using:
             usingstr = "using %s" %using
-        self('plot "%s" %s title "%s" with points ls %u' %(values, usingstr, title, linestyle))
+        cmd = '"%s" %s title "%s" with points ls %u' %(values, usingstr, title, linestyle)
+        UmGnuplot.plot(self, cmd)

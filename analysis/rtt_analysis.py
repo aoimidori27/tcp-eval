@@ -22,9 +22,7 @@ import numpy
 from um_application import Application
 from um_config import *
 from um_functions import call
-from um_analysis.testrecords import TestRecordFactory
 from um_analysis.analysis import Analysis
-
 from um_gnuplot import UmPointPlot
 
 class RttAnalysis(Analysis):
@@ -82,8 +80,10 @@ class RttAnalysis(Analysis):
         which maps sequence numbers to rtt
         """
 
-        prefix = self.options.outdir+"/rtt_%s_%s" %pair
-        valfilename = prefix+".values"
+        plotname = "rtt_%s_%s" %pair
+        outdir   = self.options.outdir
+
+        valfilename = os.path.join(outdir, plotname+".values")
 
         info("Generating %s" %valfilename)
         fh = file(valfilename, "w")
@@ -101,29 +101,15 @@ class RttAnalysis(Analysis):
 
         fh.close()
 
-        info("Generating %s" %valfilename)
 
-        p = UmPointPlot()
+        p = UmPointPlot(plotname)
         p.setYLabel("RTT in ms")
         p.setXLabel("ICMP sequence number")
-        p.setOutput(prefix+".tex")
-
+        
         p.plot(valfilename, "RTT")
-        # workaround to flush plot to disk
-        p = None
-        gc.collect()
 
-
-        # workaround for bug in gnuplot2pdf
-        # os.chdir(self.options.outdir)
-        info("Generating %s.pdf" % prefix)
-        cmd = ["gnuplot2pdf.py", "-f", "-p","pdf"]
-        if self.options.cfgfile:
-            cmd.extend(["-c", self.options.cfgfile])
-        if self.options.debug:
-            cmd.append("--debug")
-        cmd.append(prefix)
-        call(cmd, shell=False)
+        # output plot
+        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
         
 
 
