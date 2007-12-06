@@ -11,14 +11,13 @@ import re
 from logging import info, debug, warn, error
 from datetime import timedelta, datetime
 
-import numpy
 
 # umic-mesh imports
 from um_application import Application
 from um_config import *
 from um_functions import call
-from testrecords import TestRecordFactory
-
+from testrecordfactory import TestRecordFactory
+    
 
 class Analysis(Application):
     "Framework for UMIC-Mesh analysis"
@@ -95,7 +94,6 @@ class Analysis(Application):
         
         info("Loading records...")
         
-        factory = TestRecordFactory()
 
         # testnames are only valid with plaint text and numbers
         regex = re.compile("^i(\d+)_s(\d+)_r(\d+)_test_([a-z,0-9,A-Z]+)$")
