@@ -107,6 +107,7 @@ class Analysis(Application):
                 groups = match.groups()
                 iterationNo = int(groups[0])
                 scenarioNo  = int(groups[1])
+                runNo       = int(groups[2])
                 test = groups[3]
 
                 # filter tests
@@ -119,7 +120,7 @@ class Analysis(Application):
                 record = self.factory.createRecord(entry,test)
 
                 # call hook
-                onLoad(record, iterationNo, scenarioNo, test)
+                onLoad(record, iterationNo, scenarioNo, runNo, test)
 
         if (count == 0):
             warn('Found no log records in "%s" Stop.' %self.options.indir)

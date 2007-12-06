@@ -43,7 +43,7 @@ class RttAnalysis(Analysis):
         Analysis.set_option(self)
 
 
-    def onLoad(self, record, iterationNo, scenarioNo, test):
+    def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
     
         recordHeader = record.getHeader()
         src = recordHeader["ping_src"]

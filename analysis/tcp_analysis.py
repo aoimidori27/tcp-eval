@@ -46,7 +46,7 @@ class TcpAnalysis(Analysis):
 
         
 
-    def onLoad(self, record, iterationNo, scenarioNo, test):
+    def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
         dbcur = self.dbcon.cursor()
     
         recordHeader = record.getHeader()
@@ -67,8 +67,8 @@ class TcpAnalysis(Analysis):
             return
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES (%u, %u, %s, %s, %f, "%s", "%s", "%s")
-                      """ % (iterationNo,scenarioNo,src,dst, thruput, run_label, scenario_label, test))
+                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, "%s", "%s", "%s")
+                      """ % (iterationNo,scenarioNo,runNo,src,dst, thruput, run_label, scenario_label, test))
 
 
 
@@ -319,6 +319,74 @@ class TcpAnalysis(Analysis):
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
 
+
+
+    def generateTputDistributions(self):
+        """ Generate a tput histogram """
+        dbcur = self.dbcon.cursor()
+
+        # get scenarios 
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests ORDER BY scenarioNo'''
+        )
+        scenarios = dict()
+        for row in dbcur:
+            (key,val) = row
+            scenarios[key] = val
+
+        # and runs
+        dbcur.execute('''
+        SELECT DISTINCT runNo, run_label
+        FROM tests ORDER BY runNo'''
+        )
+        runs = dict()
+        for row in dbcur:
+            (key,val) = row
+            runs[key] = val
+
+
+        # iterate over every scenario and run an generate a grahic
+        for run in runs.iteritems():
+            for scenario in scenarios.iteritems():
+                self.generateTputDistribution(run, scenario, 10)
+        
+
+    def generateTputDistribution(self, run, scenario, noBins):
+        (runNo, run_label) = run
+        (scenarioNo, scenario_label) = scenario
+
+        dbcur = self.dbcon.cursor()
+        # load data into a numpy array
+        dbcur.execute('''
+        SELECT thruput
+        FROM tests
+        WHERE runNo=%u AND scenarioNo=%u;
+        ''' %(runNo, scenarioNo))
+
+        ary = numpy.array(dbcur.fetchall())
+
+        plotname = "tput_distribution_s%u_r%u_b%u" %(scenarioNo, runNo, noBins)
+
+        outdir = self.options.outdir
+        valfilename = os.path.join(outdir, plotname+".values")
+
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # header
+        fh.write("# %s\n" %plotname)
+        fh.write("# lower_edge_of_bin tput\n")
+
+        (n, bins) = numpy.histogram(ary, bins=noBins, normed=1)
+
+        for i in range(len(n)):
+            fh.write("%f %f\n" %(bins[i], n[i]))
+
+        fh.close()
+
+
     def run(self):
         "Main Method"
 
@@ -328,6 +396,7 @@ class TcpAnalysis(Analysis):
         dbcur.execute("""
         CREATE TABLE tests (iterationNo INTEGER,
                             scenarioNo  INTEGER,
+                            runNo       INTEGER,
                             src         INTEGER,
                             dst         INTEGER,                            
                             thruput     DOUBLE,
@@ -343,9 +412,10 @@ class TcpAnalysis(Analysis):
         self.loadRecords(tests=["flowgrind"])
 
         self.dbcon.commit()
-        self.generateHistogram()
-        self.generateAccHistogram()
-        self.generateCumulativeFractionOfPairs()
+        self.generateTputDistributions()
+#        self.generateHistogram()
+#        self.generateAccHistogram()
+#        self.generateCumulativeFractionOfPairs()
         
         
                     

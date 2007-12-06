@@ -52,7 +52,7 @@ class NeighborAnalysis(Analysis):
         
 
 
-    def onLoad(self, record, iterationNo, scenarioNo, test):
+    def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
         dbcur = self.dbcon.cursor()
     
         recordHeader = record.getHeader()
