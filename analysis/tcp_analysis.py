@@ -7,11 +7,7 @@ import os
 import os.path
 import subprocess
 import re
-import time
-import signal
-import socket
 import optparse
-import time
 import gc
 from logging import info, debug, warn, error
 from datetime import timedelta, datetime
@@ -24,7 +20,7 @@ import numpy
 from um_application import Application
 from um_config import *
 from um_functions import call
-from um_analysis.testrecords import TestRecordFactory
+
 from um_analysis.analysis import Analysis
 from um_gnuplot import UmHistogram, UmGnuplot
 
@@ -102,7 +98,7 @@ class TcpAnalysis(Analysis):
         outdir = self.options.outdir
         plotname = "best_%d_pairs_acc" %limit
         bestfilename = os.path.join(outdir, plotname+".values")
-        texfilename = os.path.join(outdir, plotname+".tex")
+        texfilename  = os.path.join(outdir, plotname+".tex")
         
         info("Generating %s..." % bestfilename)
 
@@ -195,6 +191,7 @@ class TcpAnalysis(Analysis):
         bestfilename  = os.path.join(outdir, plotname+".values")
         texfilename   = os.path.join(outdir, plotname+".tex")
         gplotfilename = os.path.join(outdir, plotname+".gplot")
+        pdffilename   = os.path.join(outdir, plotname+".pdf")
         
         info("Generating %s..." % bestfilename)
 
@@ -216,7 +213,7 @@ class TcpAnalysis(Analysis):
             
         fh.write("\n")
 
-        alt_sno = 0
+
         sorted_labels = list()
         for row in dbcur:
             (rlabel,slabel,sno,min_thruput,max_thruput,avg_thruput,notests) = row
@@ -293,8 +290,8 @@ class TcpAnalysis(Analysis):
         g = None
         gc.collect()
 
-        info("Generating %s.pdf" % plotname)
-        cmd = ["gnuplot2pdf.py", "-f", "-p","pdf"]
+        info("Generating %s" %pdffilename)
+        cmd = ["gnuplot2pdf.py", "-f", "-p",pdffilename]
         if self.options.cfgfile:
             cmd.extend(["-c", self.options.cfgfile])
         if self.options.debug:
