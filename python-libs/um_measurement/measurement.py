@@ -270,3 +270,42 @@ class Measurement(Application):
                              src=int(source),
                              dst=int(target), **kwargs))        
         return res
+
+    @defer.inlineCallbacks
+    def get_next_hop(self, src, dst):
+        """ Get the next hop for the given destination.
+            Destination must be an ip adress or prefix """
+
+        cmd = "ip route get %s" %dst
+        stdout = os.tmpfile()
+        result = yield self.mrs.remote_execute(src,
+                                               cmd,
+                                               stdout,
+                                               timeout=flowgrind_duration+5)
+        
+        stdout.seek(0)
+        # get first word of the first line
+        nexthop = stdout.readlines()[0].split(" ",1)[0]
+
+        stdout.close()
+
+        defer.returnValue(nexthop)
+
+    @defer.inlineCallbacks
+    def get_mac(self, dst, interface):
+        """ Returns the mac address for the destination address"
+
+        cmd = "sudo arping -c 1 -r %s" %dst
+                stdout = os.tmpfile()
+        result = yield self.mrs.remote_execute(src,
+                                               cmd,
+                                               stdout,
+                                               timeout=flowgrind_duration+5)
+        
+        stdout.seek(0)
+        # get first word of the first line
+        mac = stdout.readlines()[0].split(" ",1)[0]
+
+        stdout.close()
+
+        defer.returnValue(mac)
