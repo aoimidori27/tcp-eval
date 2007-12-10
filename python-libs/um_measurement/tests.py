@@ -18,6 +18,32 @@ This module should collect standard test methods.
 
 """
 
+@defer.inlineCallbacks
+def test_rate(mrs,
+              log_file,
+              rate_src,
+              rate_dst,
+              rate_iface = "ath0",
+              rate_size  = 1600,
+              **kwargs ):
+
+    # for convenience accept numbers as src and dst
+    src = Node(rate_src, type_="meshrouter")
+    dst = Node(rate_dst, type_="meshrouter")
+
+    nexthop = yield mrs.get_next_hop(src.hostname(), dst.ipaddress(rate_iface))
+    debug("nexthop: "+nexthop)
+    mac = yield mrs.get_mac(src.hostname(), nexthop, rate_iface)
+    debug("mac    : "+mac)
+
+    cmd = 'grep -A 13 "%s" /proc/net/madwifi/%s/ratestats_%u' %(mac, rate_iface, rate_size)
+    
+    result = yield mrs.remote_execute(src.hostname(),
+                                      cmd,
+                                      log_file,
+                                      timeout=2)
+              
+
 def test_ping(mrs,
               log_file,
               ping_src,

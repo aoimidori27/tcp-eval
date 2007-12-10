@@ -187,7 +187,7 @@ class Measurement(Application):
             test_stats[rc] += 1
 
     @defer.inlineCallbacks
-    def run_test(self, test, **kwargs):
+    def run_test(self, test, append=False, **kwargs):
         """Runs a test method with arguments self, logfile, args"""
 
         if not os.path.exists(self.options.log_dir):
@@ -196,13 +196,17 @@ class Measurement(Application):
 
         log_name = "%s_%s" %(self.logprefix, test.func_name)
         log_path = os.path.join(self.options.log_dir, log_name)
-        log_file = file(log_path, 'w')
 
-        # write config into logfile
-        for item in kwargs.iteritems():
-            log_file.write("%s=%s\n" %item)
-        log_file.write("BEGIN_TEST_OUTPUT\n")
-        log_file.flush()
+        if append:
+            log_file = open(log_path, 'a')
+        else:
+            log_file = open(log_path, 'w')
+
+            # write config into logfile
+            for item in kwargs.iteritems():
+                log_file.write("%s=%s\n" %item)
+            log_file.write("BEGIN_TEST_OUTPUT\n")
+            log_file.flush()
 
         # actually run test
         info("Starting test %s with: %s", test.func_name, kwargs)
@@ -274,38 +278,39 @@ class Measurement(Application):
     @defer.inlineCallbacks
     def get_next_hop(self, src, dst):
         """ Get the next hop for the given destination.
-            Destination must be an ip adress or prefix """
+            Destination must be an ip address or prefix """
 
         cmd = "ip route get %s" %dst
         stdout = os.tmpfile()
-        result = yield self.mrs.remote_execute(src,
-                                               cmd,
-                                               stdout,
-                                               timeout=flowgrind_duration+5)
+        result = yield self.remote_execute(src,
+                                           cmd,
+                                           stdout,
+                                           timeout=2)
         
         stdout.seek(0)
         # get first word of the first line
         nexthop = stdout.readlines()[0].split(" ",1)[0]
+        nexthop = nexthop.strip()
 
         stdout.close()
 
         defer.returnValue(nexthop)
 
     @defer.inlineCallbacks
-    def get_mac(self, dst, interface):
-        """ Returns the mac address for the destination address"
+    def get_mac(self, src, dst, interface):
+        """ Returns the mac address for the destination address """
 
-        cmd = "sudo arping -c 1 -r %s" %dst
-                stdout = os.tmpfile()
-        result = yield self.mrs.remote_execute(src,
-                                               cmd,
-                                               stdout,
-                                               timeout=flowgrind_duration+5)
+        cmd = "sudo arping -c 1 -i %s -r %s " %(interface,dst)
+        stdout = os.tmpfile()
+        result = yield self.remote_execute(src,                                           
+                                           cmd,
+                                           stdout,
+                                           timeout=2)
         
         stdout.seek(0)
         # get first word of the first line
         mac = stdout.readlines()[0].split(" ",1)[0]
-
+        mac = mac.strip()
         stdout.close()
 
         defer.returnValue(mac)
