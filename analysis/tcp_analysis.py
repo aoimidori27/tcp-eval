@@ -67,7 +67,7 @@ class TcpAnalysis(Analysis):
             return
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, "%s", "%s", "%s")
+                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, "$%s$", "%s", "%s")
                       """ % (iterationNo,scenarioNo,runNo,src,dst, thruput, run_label, scenario_label, test))
 
 
@@ -386,6 +386,37 @@ class TcpAnalysis(Analysis):
 
         fh.close()
 
+    def generateAccTputDistribution(self, noBins):
+
+        dbcur = self.dbcon.cursor()
+        # load data into a numpy array
+        dbcur.execute('''
+        SELECT thruput
+        FROM tests;
+        ''')
+
+        ary = numpy.array(dbcur.fetchall())
+
+        plotname = "tput_distribution_acc_b%u" %(noBins)
+
+        outdir = self.options.outdir
+        valfilename = os.path.join(outdir, plotname+".values")
+
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # header
+        fh.write("# %s\n" %plotname)
+        fh.write("# lower_edge_of_bin tput\n")
+
+        (n, bins) = numpy.histogram(ary, bins=noBins, normed=1)
+
+        for i in range(len(n)):
+            fh.write("%f %f\n" %(bins[i], n[i]))
+
+        fh.close()
+
 
     def run(self):
         "Main Method"
@@ -413,9 +444,10 @@ class TcpAnalysis(Analysis):
 
         self.dbcon.commit()
         self.generateTputDistributions()
-#        self.generateHistogram()
-#        self.generateAccHistogram()
-#        self.generateCumulativeFractionOfPairs()
+        self.generateAccTputDistribution(50)
+        self.generateHistogram()
+        self.generateAccHistogram()
+        self.generateCumulativeFractionOfPairs()
         
         
                     
