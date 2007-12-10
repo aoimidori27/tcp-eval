@@ -213,6 +213,7 @@ def test_flowgrind(mrs,
         yield mrs.xmlrpc_many([src.hostname(),dst.hostname()],
                               "tcpdump.stop")
 
+        # just schedule moving and compressing for later execution
         if dumpfile_src:
             # just append .hostname.pcap to logfilename
             sfile = "%s.%s.pcap" %(log_file.name, src.hostname())
