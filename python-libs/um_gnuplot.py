@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-#g -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 """
 
   Module for gnuplot scripting.
  
-
 """
 
 # python imports
@@ -19,7 +18,6 @@ import Gnuplot
 # umic-mesh imports
 from um_functions import call
         
-
 
 class UmGnuplot():
     """ A specific umic-mesh plot with convenience functions """
