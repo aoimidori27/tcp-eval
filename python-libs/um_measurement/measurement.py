@@ -39,6 +39,10 @@ class Measurement(Application):
         self._dbpool = MeshDbPool(username = "measurement",
                                   password = "XaNU7X84BQJveYQX")
 
+
+        # caches mac addresses
+        self._maccache = dict()
+
         self.xmlrpc_port = 7080
 
         self._stats = dict()
@@ -285,12 +289,17 @@ class Measurement(Application):
         result = yield self.remote_execute(src,
                                            cmd,
                                            stdout,
-                                           timeout=2)
+                                           timeout=3)
         
         stdout.seek(0)
         # get first word of the first line
-        nexthop = stdout.readlines()[0].split(" ",1)[0]
-        nexthop = nexthop.strip()
+        lines = stdout.readlines()
+        debug(lines)
+        if len(lines)>0:            
+            nexthop = lines[0].split(" ",1)[0]
+            nexthop = nexthop.strip()
+        else:
+            nexthop = None
 
         stdout.close()
 
@@ -299,6 +308,12 @@ class Measurement(Application):
     @defer.inlineCallbacks
     def get_mac(self, src, dst, interface):
         """ Returns the mac address for the destination address """
+
+        try:
+            mac = self._maccache[dst]
+            defer.returnValue(mac)
+        except KeyError:
+            debug("Trying to determine mac of %s..." %dst)
 
         cmd = "sudo arping -c 1 -i %s -r %s " %(interface,dst)
         stdout = os.tmpfile()
@@ -309,8 +324,26 @@ class Measurement(Application):
         
         stdout.seek(0)
         # get first word of the first line
-        mac = stdout.readlines()[0].split(" ",1)[0]
-        mac = mac.strip()
+        lines = stdout.readlines()
+        debug(lines)
+        if len(lines)>0:
+            mac = lines[0].split(" ",1)[0]
+            mac = mac.strip()
+            self._maccache[dst] = mac
+        else:
+            mac = None
         stdout.close()
 
         defer.returnValue(mac)
+
+
+    @defer.inlineCallbacks
+    def preInit(self, nodes, ssh_master=True):
+        """ Does some pre init of the nodes (creating ssh master connection etc... """
+
+        if ssh_master:
+            rc = yield self._scf.connect(nodes)
+
+        defer.returnValue(rc)
+            
+            
