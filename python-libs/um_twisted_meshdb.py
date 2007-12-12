@@ -198,7 +198,7 @@ class MeshDbPool(adbapi.ConnectionPool):
         # look which flavors are selected in current config for this host
         query = "SELECT flavorID,prio FROM current_service_conf AS c, nodes " \
                 "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID "\
-                "AND c.servID='%s';" % (hostname, servID)
+                "AND c.servID='%s' ORDER BY prio ASC;" % (hostname, servID)
         debug(query)
         result = yield self.runQuery(query)
         debug(result)
