@@ -86,8 +86,10 @@ class Sysctl(RPCService):
             info("Created new configfile: %s", self._configfile)
             tempfile = os.fdopen(temp_fd, 'w')
 
-        for row in list_of_assoc:                    
+        for row in list_of_assoc:
+            tempfile.write("# values loaded from %s\n " %flavorName)
             tempfile.write(row['config'])
+            tempfile.write("\n")
             
         tempfile.close()
 
