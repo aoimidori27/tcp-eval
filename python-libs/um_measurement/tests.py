@@ -31,9 +31,14 @@ def test_rate(mrs,
     src = Node(rate_src, type_="meshrouter")
     dst = Node(rate_dst, type_="meshrouter")
 
-    nexthop = yield mrs.get_next_hop(src.hostname(), dst.ipaddress(rate_iface))
+    dst_ip = yield mrs.getIp(dst.hostname(), rate_iface)
+
+    nexthop = yield mrs.get_next_hop(src.hostname(), dst_ip)
     debug("nexthop: "+nexthop)
     mac = yield mrs.get_mac(src.hostname(), nexthop, rate_iface)
+    if not mac:
+        error("Failed to get mac for: "+nexthop)
+        defer.returnValue("-1")
     debug("mac    : "+mac)
 
     cmd = 'grep -A 13 "%s" /proc/net/madwifi/%s/ratestats_%u' %(mac, rate_iface, rate_size)
@@ -43,7 +48,7 @@ def test_rate(mrs,
                                       log_file,
                                       timeout=2)
               
-
+@defer.inlineCallbacks
 def test_ping(mrs,
               log_file,
               ping_src,
@@ -52,6 +57,7 @@ def test_ping(mrs,
               ping_interval = 1,
               ping_count    = 10,
               ping_opts     = "",
+              ping_iface    = "ath0",
               **kwargs ):
     """
 
@@ -74,13 +80,19 @@ def test_ping(mrs,
     src = Node(ping_src, type_="meshrouter")
     dst = Node(ping_dst, type_="meshrouter")
 
+    dst_ip = yield mrs.getIp(dst.hostname(), ping_iface)
+
     cmd = "ping -i %.3f -c %u -s %u %s %s" % (ping_interval, ping_count,
                                               ping_size, ping_opts,
-                                              dst.ipaddress())
-    return mrs.remote_execute(src.hostname(),
-                              cmd,
-                              log_file,
-                              timeout=(ping_interval*ping_count)+5)
+                                              dst_ip)
+
+    
+    rc = mrs.remote_execute(src.hostname(),
+                            cmd,
+                            log_file,
+                            timeout=(ping_interval*ping_count)+5)
+
+    defer.returnValue(rc)
 
 
 def test_fping(mrs,
@@ -90,7 +102,8 @@ def test_fping(mrs,
               ping_size     = 56,
               ping_interval = 1,
               ping_count    = 10,
-              fping_opts     = "",
+              ping_iface    = "ath0",
+              fping_opts    = "",
               **kwargs ):
     """
 
@@ -113,15 +126,20 @@ def test_fping(mrs,
     src = Node(ping_src, type_="meshrouter")
     dst = Node(ping_dst, type_="meshrouter")
 
+    dst_ip = yield mrs.getIp(dst.hostname(), ping_iface)
+
     cmd = "fping -A -p %u -c %u -b %u %s %s 2>&1" % ((ping_interval*1000), ping_count,
                                              ping_size, fping_opts,
-                                             dst.ipaddress())
-    return mrs.remote_execute(src.hostname(),
-                              cmd,
-                              log_file,
-                              timeout=(ping_interval*ping_count)+5)
+                                             dst_ip)
+    rc = mrs.remote_execute(src.hostname(),
+                            cmd,
+                            log_file,
+                            timeout=(ping_interval*ping_count)+5)
+
+    defer.returnValue(rc)
 
 
+@defer.inlineCallbacks
 def test_thrulay(mrs,
                  log_file, 
                  thrulay_src,
@@ -152,15 +170,19 @@ def test_thrulay(mrs,
     src = Node(thrulay_src, type_="meshrouter")
     dst = Node(thrulay_dst, type_="meshrouter")
 
+    dst_ip = yield mrs.getIp(dst.hostname(), "ath0")
+
     cmd = "thrulay -Q -c %s -t %.3f -H %s/%s" % (thrulay_cc,
                                                thrulay_duration,
-                                               dst.ipaddress(),
+                                               dst_ip,
                                                dst.hostname())
 
-    return mrs.remote_execute(src.hostname(),
-                             cmd,
-                             log_file,
-                             timeout=thrulay_duration+5)
+    rc = mrs.remote_execute(src.hostname(),
+                            cmd,
+                            log_file,
+                            timeout=thrulay_duration+5)
+
+    defer.returnValue(rc)
 
 
 @defer.inlineCallbacks
@@ -202,10 +224,12 @@ def test_flowgrind(mrs,
     src = Node(flowgrind_src, type_="meshrouter")
     dst = Node(flowgrind_dst, type_="meshrouter")
 
+    dst_ip = yield mrs.getIp(dst.hostname(), flowgrind_iface)
+
     cmd = "flowgrind -Q -c %s -t %.3f -O %u -H %s/%s" % (flowgrind_cc,
                                                          flowgrind_duration,
                                                          flowgrind_bport,
-                                                         dst.ipaddress(flowgrind_iface),
+                                                         dst_ip,
                                                          dst.hostname())
 
     if flowgrind_dump:

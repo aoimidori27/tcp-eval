@@ -9,10 +9,12 @@ from logging import info, debug, warn, error, critical
 from twisted.web.xmlrpc import Proxy
 from twisted.internet import defer, reactor
 from twisted.python import log
+import twisted.names.client
 
 from um_application import Application
 from um_measurement.sshexec import SSHConnectionFactory
 from um_twisted_meshdb import MeshDbPool
+
 
 
 class Measurement(Application):
@@ -345,5 +347,21 @@ class Measurement(Application):
             rc = yield self._scf.connect(nodes)
 
         defer.returnValue(rc)
-            
-            
+
+
+    def getIp(self, hostname, interface = None):
+        if interface:
+            name = "%s.%s" %(interface, hostname)
+        else:
+            name = hostname
+        deferred = reactor.resolve(name)
+
+        def errorHandler(inst):
+            error("Failed to resolve %s: %s"%(name, inst.getErrorMessage()))
+            # re-raise error
+            return inst
+
+        deferred.addErrback(errorHandler)
+        
+        return deferred
+        
