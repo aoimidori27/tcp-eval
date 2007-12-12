@@ -87,7 +87,7 @@ class Sysctl(RPCService):
             tempfile = os.fdopen(temp_fd, 'w')
 
         for row in list_of_assoc:
-            tempfile.write("# values loaded from %s\n " %flavorName)
+            tempfile.write("# values loaded from %s\n" %row['flavorName'])
             tempfile.write(row['config'])
             tempfile.write("\n")
             
