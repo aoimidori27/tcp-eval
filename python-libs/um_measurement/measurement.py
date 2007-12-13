@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
 import os.path
 import os
+import sys
+import time
 from logging import info, debug, warn, error, critical
 
 from twisted.web.xmlrpc import Proxy
@@ -211,6 +212,7 @@ class Measurement(Application):
             # write config into logfile
             for item in kwargs.iteritems():
                 log_file.write("%s=%s\n" %item)
+            log_file.write("test_start_time=%s\n" %time.time())
             log_file.write("BEGIN_TEST_OUTPUT\n")
             log_file.flush()
 
