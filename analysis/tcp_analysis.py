@@ -21,10 +21,10 @@ from um_application import Application
 from um_functions import call
 
 from um_analysis.analysis import Analysis
-from um_gnuplot import UmHistogram, UmGnuplot
+from um_gnuplot import UmHistogram, UmGnuplot, UmPointPlot
 
 class TcpAnalysis(Analysis):
-    "Application for analysis of flowgrind results"
+    """ Application for analysis of flowgrind results """
 
     def __init__(self):
 
@@ -43,9 +43,7 @@ class TcpAnalysis(Analysis):
     def set_option(self):
         "Set options"
         Analysis.set_option(self)
-
         
-
     def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
         dbcur = self.dbcon.cursor()
     
@@ -56,8 +54,6 @@ class TcpAnalysis(Analysis):
         scenario_label = recordHeader["scenario_label"]
         
         thruput = record.calculate("thruput")
-
-
         
         if not thruput:
             if not self.failed.has_key(run_label):
@@ -70,7 +66,175 @@ class TcpAnalysis(Analysis):
                       INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, "$%s$", "%s", "%s")
                       """ % (iterationNo,scenarioNo,runNo,src,dst, thruput, run_label, scenario_label, test))
 
+    def onLoadRate(self, record, iterationNo, scenarioNo, runNo, test):
+        dbcur = self.dbcon.cursor()
 
+        recordHeader = record.getHeader()
+        src = recordHeader["rate_src"]
+        dst = recordHeader["rate_dst"]
+        run_label = recordHeader["run_label"]
+        scenario_label = recordHeader["scenario_label"]
+
+        rates = record.calculate("pkt_rates_tx")
+        avg_rate = record.calculate("average_rate")
+
+        dbcur.execute("""
+                      INSERT INTO tests_rate VALUES (%u, %u, %u, %f)
+                      """ % (iterationNo,scenarioNo,runNo,avg_rate))
+
+
+    def generateTputOverIterations(self):
+        """ Generate a tput histogram """
+        dbcur = self.dbcon.cursor()
+
+
+        # get runs
+        dbcur.execute('''
+        SELECT DISTINCT runNo, run_label
+        FROM tests ORDER BY runNo'''
+        )
+        runs = dict()
+        for row in dbcur:
+            (key,val) = row
+            runs[key] = val
+
+
+        for runNo in runs.keys():
+            self.generateTputOverIteration(runNo)
+
+
+    def generateTputOverTime(self, orderby="iterationNo, runNo, scenarioNo ASC"):
+
+        dbcur = self.dbcon.cursor()
+
+        thruputs = dict()
+        dbcur.execute('''
+        SELECT iterationNo, runNo, scenarioNo, thruput
+        FROM tests 
+        ORDER by %s
+        ''' %orderby )
+
+        sorted_keys = list()
+        for row in dbcur:
+            (iterationNo, runNo, scenarioNo,val) = row
+            key = (iterationNo,runNo,scenarioNo)        
+            thruputs[key] = val
+            sorted_keys.append(key)
+
+        rates = dict()        
+        dbcur.execute('''
+        SELECT iterationNo, runNo, scenarioNo, avg_rate
+        FROM tests_rate
+        ORDER by %s
+        ''' %orderby )
+
+        for row in dbcur:
+            (iterationNo, runNo, scenarioNo,val) = row
+            key = (iterationNo,runNo,scenarioNo)
+            rates[key] = val
+
+        plotname = "tput_over_time" 
+        outdir = self.options.outdir
+        valfilename = os.path.join(outdir, plotname+".values")
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # header
+        fh.write("# thruput rate\n")
+
+        for key in sorted_keys:
+            thruput = thruputs[key]
+            try:
+                rate = rates[key]
+            except KeyError:
+                if rates:
+                    warn("Oops: no rate for %u,%u,%u" %key)
+                rate = 0
+
+            fh.write("%f %f\n" %(thruput,rate))
+
+        fh.close()
+
+        p = UmPointPlot(plotname)
+        p.setYLabel(r"$\\Mbps$")
+        p.setXLabel("test")
+        
+        p.plot(valfilename, "Thruput", using=1, linestyle=2)
+
+        if rates:
+            p.plot(valfilename, "Avg. Rate", using=2, linestyle=9)
+    
+        # output plot
+        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        
+
+    def generateTputOverIteration(self, runNo):
+        dbcur = self.dbcon.cursor()
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests ORDER BY scenarioNo'''
+        )
+        scenarios = dict()
+        for row in dbcur:
+            (key,val) = row
+            scenarios[key] = val
+
+        thruputs = dict()
+        rates    = dict()
+        scenarioNo = 0
+        
+        dbcur.execute('''
+        SELECT iterationNo, thruput
+        FROM tests 
+        WHERE runNo=%u AND scenarioNo=%u
+        ORDER by iterationNo ASC
+        ''' %(runNo, scenarioNo) )
+
+        for row in dbcur:
+            (key,val) = row
+            thruputs[key] = val
+
+        debug(thruputs)
+
+        dbcur.execute('''
+        SELECT iterationNo, avg_rate
+        FROM tests_rate
+        WHERE runNo=%u AND scenarioNo=%u
+        ORDER by iterationNo ASC
+        ''' %(runNo, scenarioNo) )
+
+        for row in dbcur:
+            (key,val) = row
+            rates[key] = val
+
+        plotname = "tput_over_iteration_s%u_r%u" %(scenarioNo, runNo)
+        outdir = self.options.outdir
+        valfilename = os.path.join(outdir, plotname+".values")
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # header
+        fh.write("# iteration thruput rate\n")
+
+        keys = thruputs.keys()
+        keys.sort()
+        # generate values file
+        for key in keys:
+            thruput = thruputs[key]
+            try:
+                rate = rates[key]
+            except KeyError:
+                rate = 0
+
+            fh.write("%s %f %f\n" %(key,thruput,rate))
+
+        fh.close()            
+        
+    
 
     def generateAccHistogram(self):
         """ Generates a histogram of the 10 best pairs (avg_thruput).
@@ -436,19 +600,28 @@ class TcpAnalysis(Analysis):
                             test        VARCHAR(50))
         """)
 
+        dbcur.execute("""
+        CREATE TABLE tests_rate (iterationNo INTEGER,
+                                 scenarioNo  INTEGER,
+                                 runNo       INTEGER,
+                                 avg_rate    DOUBLE
+                            )
+        """)
+
         # store failed test as a mapping from run_label to number
         self.failed = dict()
 
-        # only load ping test records
+        # only load flowgrind test records    
+        self.loadRecords(tests=["rate"],onLoad=self.onLoadRate)
         self.loadRecords(tests=["flowgrind"])
-
+                        
         self.dbcon.commit()
+        self.generateTputOverTime()
         self.generateTputDistributions()
         self.generateAccTputDistribution(50)
         self.generateHistogram()
         self.generateAccHistogram()
-        self.generateCumulativeFractionOfPairs()
-        
+        self.generateCumulativeFractionOfPairs()        
         
                     
     def main(self):
