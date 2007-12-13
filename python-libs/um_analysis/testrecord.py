@@ -84,8 +84,8 @@ class TestRecord:
            
         try:
             return self.whats[what](self.results);
-        except KeyError:
-            warn("Failed get %s out of %s" %(what, self.filename))
+        except KeyError, inst:
+            warn("Failed get %s out of %s: KeyError:%s" %(what, self.filename, inst))
             self.valid = False
             return None
 

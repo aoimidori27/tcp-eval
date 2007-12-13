@@ -9,7 +9,6 @@ import subprocess
 import re
 
 from logging import info, debug, warn, error
-from datetime import timedelta, datetime
 
 
 # umic-mesh imports
@@ -95,7 +94,7 @@ class Analysis(Application):
         info("Loading records...")
         
 
-        # testnames are only valid with plaint text and numbers
+        # testnames are only valid with plain text and numbers
         regex = re.compile("^i(\d+)_s(\d+)_r(\d+)_test_([a-z,0-9,A-Z]+)$")
         count = 0
         failed = []
