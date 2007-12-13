@@ -1,17 +1,18 @@
 #!/usr/bin/env python
-#g -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*
 
 # python imports
-import subprocess, os, sys, re
+import os
+import sys
+import subprocess
 from logging import info, debug, warn, error
-from socket import gethostname
 
 # umic-mesh imports
 from um_config import *
 
 
 class CommandFailed(Exception):
-    "Convenience function to handle returncodes"
+    """Convenience function to handle return/exit codes"""
 
     def __init__(self, cmd, rc, stderr = None):
         self.cmd = cmd
@@ -23,7 +24,7 @@ class CommandFailed(Exception):
 
 
 def execute(cmd, shell, raiseError = True):
-    "Excecute a shell command, "
+    """Execute a shell command, wait for command to complete and return stdout/stderr"""
 
     debug("Executing: %s" % cmd.__str__())
     prog = subprocess.Popen(cmd, shell = shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -36,7 +37,7 @@ def execute(cmd, shell, raiseError = True):
 
 
 def call(cmd, shell, raiseError=True):
-    "Call a shell command, wait for command to complete."
+    """Call a shell command, wait for command to complete and return exit code"""
 
     debug("Executing: %s" % cmd.__str__())
     rc = subprocess.call(cmd, shell = shell)
@@ -46,16 +47,16 @@ def call(cmd, shell, raiseError=True):
 
 
 def execpy(arguments = []):
-    "Function to execute a python script with arguments"
+    """ Function to execute a python script with arguments """
 
     class SystemExitException(Exception):
-        "Private exception for execpy"
+        """Private exception for execpy"""
 
         def __init__(self, status):
             self.status = status
 
     def raiseException(status):
-        "Just to raise the exception with status"
+        """Just to raise the exception with status"""
 
         raise SystemExitException(status)
 
@@ -103,19 +104,10 @@ def execpy(arguments = []):
     return rc
 
 
-def requireroot():
-    "Check if user is root"
-
-    if not os.getuid() == 0:
-        error("You must be root. Operation not permitted.")
-        sys.exit(1)
-
 class StrictStruct:
-    """
-    Imitiate a struct/record
-    """
+    """Imitiate a struct/record"""
 
-    def __init__(self, list=None, **kwargs):
+    def __init__(self, list = None, **kwargs):
         """
         Takes two parameters:
 
@@ -137,12 +129,14 @@ class StrictStruct:
             for i in list:
                 if i not in self.__dict__:
                     self._items[i] = None
+            
             for (k,v) in kwargs.iteritems():
                 if k in self._items:
                     self._items[k] = v
                 else:
                     raise AttributeError("'%s' instance has no attribute '%s'"
                             % (self.__class__, k))
+
 
     def __getattr__(self, name):
         try:
