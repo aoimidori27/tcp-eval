@@ -95,6 +95,7 @@ class RateRecordFactory():
 
             # if there weren't any packets return 0 as average rate
             if denom==0:
+                warn("No packets")
                 return 0
             return (nominator/denom)
 
