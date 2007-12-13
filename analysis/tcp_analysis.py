@@ -45,6 +45,9 @@ class TcpAnalysis(Analysis):
         Analysis.set_option(self)
         
     def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
+        if test == "rate":
+            return self.onLoadRate(record, iterationNo, scenarioNo, runNo, test)
+        
         dbcur = self.dbcon.cursor()
     
         recordHeader = record.getHeader()
@@ -612,8 +615,7 @@ class TcpAnalysis(Analysis):
         self.failed = dict()
 
         # only load flowgrind test records    
-        self.loadRecords(tests=["rate"],onLoad=self.onLoadRate)
-        self.loadRecords(tests=["flowgrind"])
+        self.loadRecords(tests=["flowgrind","rate"])
                         
         self.dbcon.commit()
         self.generateTputOverTime()
