@@ -34,10 +34,10 @@ def test_rate(mrs,
     dst_ip = yield mrs.getIp(dst.hostname(), rate_iface)
 
     nexthop = yield mrs.get_next_hop(src.hostname(), dst_ip)
-    debug("nexthop: "+nexthop)
+    debug("nexthop: %s" %nexthop)
     mac = yield mrs.get_mac(src.hostname(), nexthop, rate_iface)
     if not mac:
-        error("Failed to get mac for: "+nexthop)
+        error("Failed to get mac for: %s" %nexthop)
         defer.returnValue("-1")
     debug("mac    : "+mac)
 
