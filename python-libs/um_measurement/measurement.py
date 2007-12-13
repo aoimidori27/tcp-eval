@@ -299,9 +299,16 @@ class Measurement(Application):
         # get first word of the first line
         lines = stdout.readlines()
         debug(lines)
-        if len(lines)>0:            
-            nexthop = lines[0].split(" ",1)[0]
-            nexthop = nexthop.strip()
+        if len(lines)>0:
+            firstline = lines[0]
+            # direct neihbor
+            if firstline.find("via") == -1:
+                nexthop = lines[0].split(" ",1)[0]
+                nexthop = nexthop.strip()
+            # there is an explict gateway
+            else:
+                nexthop = lines[0].split(" ",3)[2]
+                nexthop = nexthop.strip()
         else:
             nexthop = None
 
