@@ -47,7 +47,7 @@ def call(cmd, shell, raiseError=True):
 
 
 def execpy(arguments = []):
-    """ Function to execute a python script with arguments """
+    """Function to execute a python script with arguments"""
 
     class SystemExitException(Exception):
         """Private exception for execpy"""
