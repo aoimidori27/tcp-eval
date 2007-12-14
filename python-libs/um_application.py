@@ -2,16 +2,17 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import optparse, logging, logging.handlers
-from logging import info, debug, warning, error
+import optparse
+import logging
+import logging.handlers
 
 
 class Application(object):
-    "Framework for UMIC-Mesh applications"
+    """Framework for UMIC-Mesh applications"""
 
 
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the generic Application object"""
 
         # object variables
         self.parser = optparse.OptionParser()
@@ -36,14 +37,14 @@ class Application(object):
 
 
     def parse_option(self):
-        "Parse options"
+        """Parse the options for generic Application object"""
 
         # parse options
         (self.options, self.args) = self.parser.parse_args()
 
 
     def set_option(self):
-        "Set options"
+        """Set the options for generic Application object"""
 
         # being verbose?
         if self.options.debug:
