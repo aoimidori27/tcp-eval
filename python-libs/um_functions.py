@@ -145,6 +145,7 @@ class StrictStruct:
             raise AttributeError("'%s' instance has no attribute '%s'"
                     % (self.__class__, name))
 
+
     def __setattr__(self, name, value):
         if name in self.__dict__:
             self.__dict__[name] = value
@@ -153,6 +154,7 @@ class StrictStruct:
         else:
             raise AttributeError("'%s' instance has no attribute '%s'"
                     % (self.__class__, name))
+
 
     def __str__(self):
 
