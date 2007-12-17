@@ -38,8 +38,6 @@ class TcpAnalysis(Analysis):
                         action = 'store', type = 'string', dest = 'outprefix',
                         help = 'Set prefix of output files [default: %default]')
 
-
-
     def set_option(self):
         "Set options"
         Analysis.set_option(self)
@@ -55,6 +53,13 @@ class TcpAnalysis(Analysis):
         dst = recordHeader["flowgrind_dst"]
         run_label = recordHeader["run_label"]
         scenario_label = recordHeader["scenario_label"]
+
+        # test_start_time was introduced later in the header, so its not in old test logs
+        try:
+            start_time = int(float(recordHeader["test_start_time"]))
+        except KeyError:
+            start_time = 0
+        
         
         thruput = record.calculate("thruput")
         
@@ -66,8 +71,9 @@ class TcpAnalysis(Analysis):
             return
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, "$%s$", "%s", "%s")
-                      """ % (iterationNo,scenarioNo,runNo,src,dst, thruput, run_label, scenario_label, test))
+                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, %u, "$%s$", "%s", "%s")
+                      """ % (iterationNo,scenarioNo,runNo,src,dst, thruput, start_time,
+                             run_label, scenario_label, test))
 
     def onLoadRate(self, record, iterationNo, scenarioNo, runNo, test):
         dbcur = self.dbcon.cursor()
@@ -81,6 +87,9 @@ class TcpAnalysis(Analysis):
         rates = record.calculate("pkt_rates_tx")
         avg_rate = record.calculate("average_rate")
 
+        if not avg_rate:
+            return
+        
         dbcur.execute("""
                       INSERT INTO tests_rate VALUES (%u, %u, %u, %f)
                       """ % (iterationNo,scenarioNo,runNo,avg_rate))
@@ -111,17 +120,20 @@ class TcpAnalysis(Analysis):
         dbcur = self.dbcon.cursor()
 
         thruputs = dict()
+        times    = dict()
         dbcur.execute('''
-        SELECT iterationNo, runNo, scenarioNo, thruput
+        SELECT iterationNo, runNo, scenarioNo, thruput, start_time
         FROM tests 
         ORDER by %s
         ''' %orderby )
 
         sorted_keys = list()
         for row in dbcur:
-            (iterationNo, runNo, scenarioNo,val) = row
+            (iterationNo, runNo, scenarioNo, thruput, time) = row
             key = (iterationNo,runNo,scenarioNo)        
-            thruputs[key] = val
+            thruputs[key] = thruput
+            if time != 0:
+                times[key] = time
             sorted_keys.append(key)
 
         rates = dict()        
@@ -144,7 +156,10 @@ class TcpAnalysis(Analysis):
         fh = file(valfilename, "w")
 
         # header
-        fh.write("# thruput rate\n")
+        if times:
+            fh.write("# thruput rate start_time\n")
+        else:
+            fh.write("# thruput rate\n")
 
         for key in sorted_keys:
             thruput = thruputs[key]
@@ -154,14 +169,20 @@ class TcpAnalysis(Analysis):
                 if rates:
                     warn("Oops: no rate for %u,%u,%u" %key)
                 rate = 0
-
-            fh.write("%f %f\n" %(thruput,rate))
+            if times:
+                fh.write("%f %f %u\n" %(thruput,rate,times[key]))
+            else:
+                fh.write("%f %f\n" %(thruput,rate,times[key]))
 
         fh.close()
 
         p = UmPointPlot(plotname)
         p.setYLabel(r"$\\Mbps$")
-        p.setXLabel("test")
+        if times:
+            p.setXLabel("time")
+            p.setXData("time")
+        else:
+            p.setXLabel("test")
         
         p.plot(valfilename, "Thruput", using=1, linestyle=2)
 
@@ -598,6 +619,7 @@ class TcpAnalysis(Analysis):
                             src         INTEGER,
                             dst         INTEGER,                            
                             thruput     DOUBLE,
+                            start_time  INTEGER,
                             run_label   VARCHAR(70),
                             scenario_label VARCHAR(70),
                             test        VARCHAR(50))
