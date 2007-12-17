@@ -40,8 +40,6 @@ class UmGnuplot():
         # actual plotcmd
         self._plotcmd = None
 
-
-
     def setYLabel(self, *args, **kwargs):
         self.gplot.set_label("ylabel", *args, **kwargs)
 
@@ -60,6 +58,8 @@ class UmGnuplot():
     def setPlotname(self, plotname):
         self._plotname = plotname
 
+    def setXData(self, spec):
+        self.gplot.set
 
     def plot(self, cmd):
         """ Extends plotcmd with cmd """
@@ -97,8 +97,6 @@ class UmGnuplot():
         # make sure gplot output is flushed
         self.gplot = None
         gc.collect()
-
-
         
         info("Generating %s" %pdffilename)
         cmd = ["gnuplot2pdf.py", "-f", "-p", pdffilename]
@@ -109,11 +107,7 @@ class UmGnuplot():
         cmd.append(os.path.join(outdir,plotname))
         call(cmd, shell=False)
                     
-    
-        
-        
-    
-
+                
 class UmHistogram(UmGnuplot):
     """ Represents a Histogram plot """
 
@@ -177,7 +171,6 @@ class UmHistogram(UmGnuplot):
 
 class UmPointPlot(UmGnuplot):
     """ Represents a plot with points """
-
 
 
     def __init__(self, *args, **kwargs):
