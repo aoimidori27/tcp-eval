@@ -47,7 +47,7 @@ class Tcpdump(xmlrpc.XMLRPC):
 
 
     @defer.inlineCallbacks
-    def xmlrpc_start(self, iface, expr):
+    def xmlrpc_start(self, iface, expr, promisc=False):
         """
         Start tcpdump instance for interface iface with filter expr.
 
@@ -61,8 +61,12 @@ class Tcpdump(xmlrpc.XMLRPC):
             defer.returnValue(None)
 
         # FIXME: -Z?
-        cmd = [self._daemon, "-i", iface, "-w", "-", expr]
+        cmd = [self._daemon, "-i", iface, "-w", "-"]
+        
+        if not promisc:
+            cmd.append("-p")
 
+        cmd.append(expr)
         dir = "/mnt/scratch/%s/tcpdump" % Node().hostname()
 
         try:
