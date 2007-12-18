@@ -79,8 +79,13 @@ class UmGnuplot():
     def setPlotname(self, plotname):
         self._plotname = plotname
 
-    def setXData(self, spec):
-        self.gplot.set
+    def setXDataTime(self, timefmt="%s", format="$%H:%M$"):
+        self.gplot("set xdata time")
+        self.gplot('set timefmt "%s"' %timefmt)
+        self.gplot('set format x "%s"' %format)
+
+    def setTimeFmt(self, timefmt):
+        self.gplot("set timefmt %s" %timefmt)
 
     def plot(self, cmd):
         """ Extends plotcmd with cmd """

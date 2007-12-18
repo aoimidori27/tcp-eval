@@ -21,7 +21,7 @@ from um_application import Application
 from um_functions import call
 
 from um_analysis.analysis import Analysis
-from um_gnuplot import UmHistogram, UmGnuplot, UmPointPlot
+from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot
 
 class TcpAnalysis(Analysis):
     """ Application for analysis of flowgrind results """
@@ -95,26 +95,6 @@ class TcpAnalysis(Analysis):
                       """ % (iterationNo,scenarioNo,runNo,avg_rate))
 
 
-    def generateTputOverIterations(self):
-        """ Generate a tput histogram """
-        dbcur = self.dbcon.cursor()
-
-
-        # get runs
-        dbcur.execute('''
-        SELECT DISTINCT runNo, run_label
-        FROM tests ORDER BY runNo'''
-        )
-        runs = dict()
-        for row in dbcur:
-            (key,val) = row
-            runs[key] = val
-
-
-        for runNo in runs.keys():
-            self.generateTputOverIteration(runNo)
-
-
     def generateTputOverTime(self, orderby="iterationNo, runNo, scenarioNo ASC"):
 
         dbcur = self.dbcon.cursor()
@@ -176,25 +156,39 @@ class TcpAnalysis(Analysis):
 
         fh.close()
 
-        p = UmPointPlot(plotname)
+        p = UmLinePlot(plotname)
         p.setYLabel(r"$\\Mbps$")
         if times:
             p.setXLabel("time")
-            p.setXData("time")
+            p.setXDataTime()
+            # +1 hour offset to GMT
+            time_offset = "+3600"
+            using_str = "($3%s):" %time_offset
         else:
+            using_str = ""
             p.setXLabel("test")
-        
-        p.plot(valfilename, "Thruput", using=1, linestyle=2)
+
+        p.plot(valfilename, "Thruput", using=using_str+"1", linestyle=2)
 
         if rates:
-            p.plot(valfilename, "Avg. Rate", using=2, linestyle=9)
+            p.plot(valfilename, "Avg. Rate", using=using_str+"2", linestyle=9)
     
         # output plot
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
         
 
-    def generateTputOverIteration(self, runNo):
+    def generateTputOverTimePerRun(self):
         dbcur = self.dbcon.cursor()
+
+        # get runs
+        dbcur.execute('''
+        SELECT DISTINCT runNo, run_label
+        FROM tests ORDER BY runNo'''
+        )
+        runs = dict()
+        for row in dbcur:
+            (key,val) = row
+            runs[key] = val
 
         # get all scenario labels
         dbcur.execute('''
@@ -206,59 +200,93 @@ class TcpAnalysis(Analysis):
             (key,val) = row
             scenarios[key] = val
 
-        thruputs = dict()
-        rates    = dict()
-        scenarioNo = 0
-        
-        dbcur.execute('''
-        SELECT iterationNo, thruput
-        FROM tests 
-        WHERE runNo=%u AND scenarioNo=%u
-        ORDER by iterationNo ASC
-        ''' %(runNo, scenarioNo) )
-
-        for row in dbcur:
-            (key,val) = row
-            thruputs[key] = val
-
-        debug(thruputs)
-
-        dbcur.execute('''
-        SELECT iterationNo, avg_rate
-        FROM tests_rate
-        WHERE runNo=%u AND scenarioNo=%u
-        ORDER by iterationNo ASC
-        ''' %(runNo, scenarioNo) )
-
-        for row in dbcur:
-            (key,val) = row
-            rates[key] = val
-
-        plotname = "tput_over_iteration_s%u_r%u" %(scenarioNo, runNo)
         outdir = self.options.outdir
-        valfilename = os.path.join(outdir, plotname+".values")
+        p = UmLinePlot("tput_over_time_per_run")
+        p.setYLabel(r"$\\Mbps$")
 
-        info("Generating %s..." % valfilename)
-        fh = file(valfilename, "w")
 
-        # header
-        fh.write("# iteration thruput rate\n")
+        for runNo in runs.keys():
 
-        keys = thruputs.keys()
-        keys.sort()
-        # generate values file
-        for key in keys:
-            thruput = thruputs[key]
-            try:
-                rate = rates[key]
-            except KeyError:
-                rate = 0
-
-            fh.write("%s %f %f\n" %(key,thruput,rate))
-
-        fh.close()            
+            thruputs = dict()
+            rates    = dict()
+            times    = dict()
         
-    
+            dbcur.execute('''
+            SELECT iterationNo, scenarioNo, thruput, start_time
+            FROM tests 
+            WHERE runNo=%u
+            ORDER by iterationNo ASC
+            ''' %(runNo))
+
+            sorted_keys = list()
+
+            for row in dbcur:                
+                (iterationNo, scenarioNo, thruput, time) = row
+                key = (iterationNo,runNo,scenarioNo)        
+                thruputs[key] = thruput
+                if time != 0:
+                    times[key] = time
+                sorted_keys.append(key)
+
+            dbcur.execute('''
+            SELECT iterationNo, scenarioNo, avg_rate
+            FROM tests_rate
+            WHERE runNo=%u
+            ORDER by iterationNo ASC
+            ''' %(runNo) )
+
+            for row in dbcur:
+                (iterationNo, scenarioNo, avg_rate) = row
+                key = (iterationNo,runNo,scenarioNo)        
+                rates[key] = avg_rate
+
+            plotname = "tput_over_time_per_run_r%u" %(runNo)
+            valfilename = os.path.join(outdir, plotname+".values")
+
+            info("Generating %s..." % valfilename)
+            fh = file(valfilename, "w")
+            
+            # header
+            if times:
+                fh.write("# thruput rate start_time\n")
+            else:
+                fh.write("# thruput rate\n")
+
+
+            
+            # generate values file
+            for key in sorted_keys:
+                thruput = thruputs[key]
+                try:
+                    rate = rates[key]
+                except KeyError:
+                    rate = 0
+
+                if times:
+                    fh.write("%f %f %u\n" %(thruput,rate,times[key]))
+                else:
+                    fh.write("%f %f\n" %(thruput,rate))
+                    
+            fh.close()
+
+                
+            if runNo == 0 and times:
+                p.setXLabel("time")
+                p.setXDataTime()
+                # +1 hour offset to GMT
+                time_offset = "+3600"
+                using_str = "($3%s):" %time_offset
+            elif runNo == 0 and not times:
+                p.setXLabel("test")
+                using_str = ""
+
+            p.plot(valfilename, "thruput "+runs[runNo], linestyle=runNo+1, using=using_str+"1")
+
+            if rates:
+                p.plot(valfilename, "rate "+runs[runNo], linestyle=runNo+1, using=using_str+"2")
+        
+
+        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
     def generateAccHistogram(self):
         """ Generates a histogram of the 10 best pairs (avg_thruput).
@@ -539,7 +567,6 @@ class TcpAnalysis(Analysis):
             for scenario in scenarios.iteritems():
                 self.generateTputDistribution(run, scenario, 10)
         
-
     def generateTputDistribution(self, run, scenario, noBins):
         (runNo, run_label) = run
         (scenarioNo, scenario_label) = scenario
@@ -640,6 +667,7 @@ class TcpAnalysis(Analysis):
         self.loadRecords(tests=["flowgrind","rate"])
                         
         self.dbcon.commit()
+        self.generateTputOverTimePerRun()
         self.generateTputOverTime()
         self.generateTputDistributions()
         self.generateAccTputDistribution(50)
