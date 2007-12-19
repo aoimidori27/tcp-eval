@@ -85,6 +85,7 @@ class Tcpdump(xmlrpc.XMLRPC):
             defer.returnValue(None)
 
         self._proc = _TcpdumpProtocol()
+        debug("spawnProcess: cmd=%s args=%s" %(self._proc, args))
         reactor.spawnProcess(self._proc, self._daemon, args = cmd, path='/',
                 childFDs = {1: temp_fd, 2: "r"})
         os.close(temp_fd)
