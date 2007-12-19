@@ -98,6 +98,7 @@ class Tcpdump(xmlrpc.XMLRPC):
             os.unlink(temp_file)
             defer.returnValue(None)
         else:
+            info("Tcpdump started.")
             defer.returnValue(temp_file)
 
     @defer.inlineCallbacks
@@ -112,8 +113,10 @@ class Tcpdump(xmlrpc.XMLRPC):
         rc =  yield self._proc.kill()
         self._proc = None
         if rc:
+            info("Tcpdump stopped.")
             defer.returnValue(Tcpdump.STOPPED)
         else:
+            warning("Stopping of tcpdump failed RC=%s" %rc)
             defer.returnValue(Tcpdump.STOPPING_FAILED)
 
 
