@@ -205,3 +205,18 @@ class UmLinePlot(UmGnuplot):
             usingstr = "using %s" %using
         cmd = '"%s" %s title "%s" with lines ls %u' %(values, usingstr, title, linestyle)
         UmGnuplot.plot(self, cmd)
+
+class UmBoxPlot(UmGnuplot):
+    """ Plots a histogram representing the distribution of a dataset """
+
+    def __init__(self, *args, **kwargs):
+        UmGnuplot.__init__(self, *args, **kwargs)
+
+    def plot(self, values, title, using=None, linestyle=3):
+        usingstr = ""
+        if using:
+            usingstr = "using %s" %using
+        cmd = '"%s" %s title "%s" with boxes ls %u' %(values, usingstr, title, linestyle)
+        UmGnuplot.plot(self, cmd)
+
+        
