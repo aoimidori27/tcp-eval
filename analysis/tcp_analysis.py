@@ -21,7 +21,7 @@ from um_application import Application
 from um_functions import call
 
 from um_analysis.analysis import Analysis
-from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot
+from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot
 
 class TcpAnalysis(Analysis):
     """ Application for analysis of flowgrind results """
@@ -168,7 +168,7 @@ class TcpAnalysis(Analysis):
             using_str = ""
             p.setXLabel("test")
 
-        p.plot(valfilename, "Thruput", using=using_str+"1", linestyle=2)
+        p.plot(valfilename, "Throughput", using=using_str+"1", linestyle=2)
 
         if rates:
             p.plot(valfilename, "Avg. Rate", using=using_str+"2", linestyle=9)
@@ -319,7 +319,7 @@ class TcpAnalysis(Analysis):
         fh = file(bestfilename, "w")
 
         # print header
-        fh.write("# label MIN(thruput) MAX(thruput) avg_thruput no_of_thruputs no_of_failed\n")
+        fh.write("# label MIN(thruput) MAX(thruput) avg_thruput no_of_tests\n")
 
         for row in dbcur:
             (label,min_thruput,max_thruput,avg_thruput,notests) = row
@@ -336,7 +336,7 @@ class TcpAnalysis(Analysis):
 
         g.setYLabel(r"Throughput in $\\Mbps$")
         g.setBars(limit)
-        g.plot('"%s" using 4:xtic(1) title "Thruput" ls 1' % bestfilename)
+        g.plot('"%s" using 4:xtic(1) title "Throughput" ls 1' % bestfilename)
         
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
         
@@ -564,28 +564,25 @@ class TcpAnalysis(Analysis):
 
         # iterate over every scenario and run an generate a grahic
         for run in runs.iteritems():
-            for scenario in scenarios.iteritems():
-                self.generateTputDistribution(run, scenario, 10)
+            self.generateTputDistribution(run, 100)
         
-    def generateTputDistribution(self, run, scenario, noBins):
+    def generateTputDistribution(self, run, noBins):
         (runNo, run_label) = run
-        (scenarioNo, scenario_label) = scenario
 
         dbcur = self.dbcon.cursor()
         # load data into a numpy array
         dbcur.execute('''
         SELECT thruput
         FROM tests
-        WHERE runNo=%u AND scenarioNo=%u;
-        ''' %(runNo, scenarioNo))
+        WHERE runNo=%u;
+        ''' %runNo)
 
         ary = numpy.array(dbcur.fetchall())
 
-        plotname = "tput_distribution_s%u_r%u_b%u" %(scenarioNo, runNo, noBins)
+        plotname = "tput_distribution_r%u_b%u" %(runNo, noBins)
 
         outdir = self.options.outdir
         valfilename = os.path.join(outdir, plotname+".values")
-
 
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
@@ -594,12 +591,20 @@ class TcpAnalysis(Analysis):
         fh.write("# %s\n" %plotname)
         fh.write("# lower_edge_of_bin tput\n")
 
-        (n, bins) = numpy.histogram(ary, bins=noBins, normed=1)
+        (n, bins) = numpy.histogram(ary, bins=noBins, normed=0, range=(0.0,20))
 
         for i in range(len(n)):
-            fh.write("%f %f\n" %(bins[i], n[i]))
+            fh.write("%0.2f %f\n" %(bins[i], n[i]))
 
         fh.close()
+
+        p = UmBoxPlot(plotname)
+        p.setXLabel(r"Throughput in $\\Mbps$")
+        p.setYLabel("Frequency")
+        p.plot(valfilename,"Frequency", using="1:2")
+        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        
+        
 
     def generateAccTputDistribution(self, noBins):
 
