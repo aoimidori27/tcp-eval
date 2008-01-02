@@ -1,13 +1,13 @@
 #!/bin/bash
 
 ALIVE=0
-NODES=40
+NODES=48
 
-for ((i=1; i<=$NODES; i++)); do
+for (( i=1; i<=$NODES; i++ )); do
     echo -en "\033[00m mrouter$i:"
     if ping -q -c 1 mrouter$i >/dev/null 2>/dev/null; then
         echo -e "\033[01;32m online"
-        ((ALIVE++));
+        (( ALIVE++ ));
     else
         echo -e "\033[01;31m offline"
     fi
