@@ -4,10 +4,11 @@
 # python imports
 import ldap
 import re
+from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_application import Application
-from um_functions import execute
+from um_functions import execute, CommandFailed
 
 
 class SetQuota(Application):
@@ -23,7 +24,7 @@ class SetQuota(Application):
         self.parser.set_defaults(server = "accountserver",
                                  baseDN = "ou=People,dc=umic-mesh,dc=net")
 
-        self.parser.add_option("-s", "--server", metavar = "SERVER",
+        self.parser.add_option("-l", "--ldap-server", metavar = "SERVER",
                                action = "store", dest = "server",
                                help = "The server at which the LDAP directory is located [default: %default]")
         self.parser.add_option("-d", "--baseDN", metavar = "baseDN",
