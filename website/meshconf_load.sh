@@ -13,8 +13,6 @@ Loads the specified revision into the tomcat server.
 options:
       -h        Print this help summary and exit.
       -v        Be more verbose.
-example:
-     $this 3069
 
 !EOF!
 }
