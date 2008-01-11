@@ -53,4 +53,3 @@ done
 
 dcop konsole-$kpid $ctrl renameSession "Master"
 dcop konsole-$kpid $ctrl sendSession "exec $( type -p $0 ) --sendtoall $kpid ${v[*]}"
-

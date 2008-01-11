@@ -1,16 +1,21 @@
-#!/bin/sh
+#!/bin/bash
 
 # script to load and initialize netconsole module
 
 LOGSERVER=bootserver
 LOGPORT=515 # syslog
 
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    echo "Usage: `basename $0` [LOGSERVER LOGPORT]"
+    exit 1
+fi
+
 if [ -n "$1" ]; then
-  LOGSERVER=$1
+    LOGSERVER=$1
 fi;
 
 if [ -n "$2" ]; then
-  LOGPORT=$2
+    LOGPORT=$2
 fi;
 
 # fill arp cache
