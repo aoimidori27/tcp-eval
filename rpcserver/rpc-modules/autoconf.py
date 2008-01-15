@@ -213,7 +213,7 @@ class Autoconf(RPCService):
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
-    def deleteipv4assignment(interface)
+    def deleteipv4assignment(interface):
         """ This function invokes ip to delete current ip assignment an ath0 and ath1 """
 
         cmd = [ "ip addr| grep " + interface + "| grep inet| cut -d\  -f6" ]
