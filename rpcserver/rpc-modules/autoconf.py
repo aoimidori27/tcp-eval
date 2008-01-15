@@ -54,7 +54,7 @@ class Autoconf(RPCService):
 
     @defer.inlineCallbacks
     def xmlrpc_killall(self, arg):
-        rc = yield self.killall(self, arg)
+        rc = yield self.killall(arg)
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
