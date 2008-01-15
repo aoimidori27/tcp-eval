@@ -216,9 +216,9 @@ class Autoconf(RPCService):
     def deleteipv4assignment(self, interface):
         """ This function invokes ip to delete current ip assignment an ath0 and ath1 """
 
-        args = [ "addr| grep " + interface + "| grep inet| cut -d\\  -f6" ]
-        cmd = [ "ip" ]
-        cmd.extend(args)
+#        args = [ "addr| grep " + interface + "| grep inet| cut -d\\  -f6" ]
+        cmd = [ "ip addr| grep " + interface + "| grep inet| cut -d\  -f6" ]
+#        cmd.extend(args)
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=True)
         if len(stdout):
             debug(stdout)
