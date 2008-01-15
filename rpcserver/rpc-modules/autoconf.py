@@ -219,7 +219,7 @@ class Autoconf(RPCService):
         args = [ "addr| grep " + interface + "| grep inet| cut -d\\  -f6" ]
         cmd = [ "ip" ]
         cmd.extend(args)
-        (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
+        (stdout, stderr, rc) = yield twisted_execute(cmd, shell=True)
         if len(stdout):
             debug(stdout)
         if (rc != 0):
