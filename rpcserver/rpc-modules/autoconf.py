@@ -53,6 +53,11 @@ class Autoconf(RPCService):
             defer.returnValue(False)
 
     @defer.inlineCallbacks
+    def xmlrpc_killall(self, arg):
+        rc = yield self.killall(self, arg)
+        defer.returnValue(rc)
+
+    @defer.inlineCallbacks
     def xmlrpc_killalldhclient(self):
         rc = yield self.killalldhclient()
         defer.returnValue(rc)
@@ -150,6 +155,27 @@ class Autoconf(RPCService):
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
+    def killall(self, arg):
+        """ This function invokes killall to stop all running \"arg\" """
+        
+        cmd = [ "killall" ]
+        cmd.append(arg)
+        (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
+        if len(stdout):
+            debug(stdout)
+        if (rc != 0):
+            error("autoconf.killall(): Command failed with RC=%s", rc)
+            for line in stderr.splitlines():
+                error(" %s" %line)
+                # when an error occurs stdout is important too
+                if len(stdout):
+                    stderr = stderr+stdout
+                    
+        #yield self._parent._dbpool.startedService(self._config,rc, message=stderr)
+        defer.returnValue(rc)
+
+
+    @defer.inlineCallbacks
     def killalldhclient(self):
         """ This function invokes killall to stop all running dhclients which were not shutdown correctly by autoconf """
         
@@ -216,9 +242,7 @@ class Autoconf(RPCService):
     def deleteipv4assignment(self, interface):
         """ This function invokes ip to delete current ip assignment an ath0 and ath1 """
 
-#        args = [ "addr| grep " + interface + "| grep inet| cut -d\\  -f6" ]
         cmd = "ip addr del `ip addr | grep " + interface + " | grep inet| cut -d\   -f6` dev " + interface
-#        cmd.extend(args)
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=True)
         if len(stdout):
             debug(stdout)
