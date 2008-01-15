@@ -68,7 +68,7 @@ class Autoconf(RPCService):
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
-    def xmlrpc_deleteipvv4assignment(interface):
+    def xmlrpc_deleteipv4assignment(self, interface):
         rc = yield self.deleteipv4assignment(interface)
         defer.returnValue(rc)
 
@@ -213,7 +213,7 @@ class Autoconf(RPCService):
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
-    def deleteipv4assignment(interface):
+    def deleteipv4assignment(self, interface):
         """ This function invokes ip to delete current ip assignment an ath0 and ath1 """
 
         cmd = [ "ip addr| grep " + interface + "| grep inet| cut -d\  -f6" ]
