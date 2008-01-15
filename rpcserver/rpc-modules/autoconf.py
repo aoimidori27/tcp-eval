@@ -67,6 +67,11 @@ class Autoconf(RPCService):
         rc = yield self.killalldhcrelay()
         defer.returnValue(rc)
 
+    @defer.inlineCallbacks
+    def xmlrpc_deleteipvv4assignment(interface):
+        rc = yield self.deleteipv4assignment(interface)
+        defer.returnValue(rc)
+
     #
     # Internal stuff
     #
@@ -206,6 +211,26 @@ class Autoconf(RPCService):
                     
         #yield self._parent._dbpool.startedService(self._config,rc, message=stderr)
         defer.returnValue(rc)
+
+    @defer.inlineCallbacks
+    def deleteipv4assignment(interface)
+        """ This function invokes ip to delete current ip assignment an ath0 and ath1 """
+
+        cmd = [ "ip addr| grep " + interface + "| grep inet| cut -d\  -f6" ]
+        (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
+        if len(stdout):
+            debug(stdout)
+        if (rc != 0):
+            error("autoconf.killalldhcrelay(): Command failed with RC=%s", rc)
+            for line in stderr.splitlines():
+                error(" %s" %line)
+                # when an error occurs stdout is important too
+                if len(stdout):
+                    stderr = stderr+stdout
+
+        #yield self._parent._dbpool.startedService(self._config,rc, message=stderr)
+        defer.returnValue(rc)
+                                                                                                                                                    
 
 
 
