@@ -57,6 +57,16 @@ class Autoconf(RPCService):
         rc = yield self.killalldhclient()
         defer.returnValue(rc)
 
+    @defer.inlineCallbacks
+    def xmlrpc_killalldhcpd(self):
+        rc = yield self.killalldhcpd()
+        defer.returnValue(rc)
+
+    @defer.inlineCallbacks
+    def xmlrpc_killalldhcrelay(self):
+        rc = yield self.killalldhcrelay()
+        defer.returnValue(rc)
+
     #
     # Internal stuff
     #
