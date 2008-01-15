@@ -138,7 +138,7 @@ class Autoconf(RPCService):
     def killalldhclient(self):
         """ This function invokes killall to stop all running dhclients which were not shutdown correctly by autoconf """
         
-        args = "dhclient"
+        args = [ "dhclient" ]
         cmd = [ "killall" ]
         cmd.extend(args)
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
