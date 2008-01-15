@@ -154,7 +154,51 @@ class Autoconf(RPCService):
                     
         #yield self._parent._dbpool.startedService(self._config,rc, message=stderr)
         defer.returnValue(rc)
-                        
+
+    @defer.inlineCallbacks
+    def killalldhcpd(self):
+        """ This function invokes killall to stop all running dhcpd servers which were not shutdown correctly by autoconf """
+        
+        args = [ "dhcpd" ]
+        cmd = [ "killall" ]
+        cmd.extend(args)
+        (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
+        if len(stdout):
+            debug(stdout)
+        if (rc != 0):
+            error("autoconf.killalldhcpd(): Command failed with RC=%s", rc)
+            for line in stderr.splitlines():
+                error(" %s" %line)
+                # when an error occurs stdout is important too
+                if len(stdout):
+                    stderr = stderr+stdout
+                    
+        #yield self._parent._dbpool.startedService(self._config,rc, message=stderr)
+        defer.returnValue(rc)
+
+    @defer.inlineCallbacks
+    def killalldhcrelay(self):
+        """ This function invokes killall to stop all running dhcrelay which were not shutdown correctly by autoconf """
+        
+        args = [ "dhcrelay" ]
+        cmd = [ "killall" ]
+        cmd.extend(args)
+        (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
+        if len(stdout):
+            debug(stdout)
+        if (rc != 0):
+            error("autoconf.killalldhcrelay(): Command failed with RC=%s", rc)
+            for line in stderr.splitlines():
+                error(" %s" %line)
+                # when an error occurs stdout is important too
+                if len(stdout):
+                    stderr = stderr+stdout
+                    
+        #yield self._parent._dbpool.startedService(self._config,rc, message=stderr)
+        defer.returnValue(rc)
+
+
+
 
 
 
