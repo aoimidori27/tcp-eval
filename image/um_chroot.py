@@ -118,8 +118,7 @@ class Chroot(Application):
 
         # execute command
         try:
-            call(cmd, shell = True)
-            
+            call(cmd, shell = True)          
         except CommandFailed, exception:
             error(exception)
         
@@ -127,7 +126,10 @@ class Chroot(Application):
             mount_dst  = os.path.join(image.getimagepath(), mount["dst"])
             cmd = "%s %s" % (self.umount, mount_dst)
             info(cmd)
-            call(cmd, shell = True)            
+            try:
+                call(cmd, shell = True)    
+            except CommandFailed, exception:
+                error(exception)        
 
 
     def main(self):
