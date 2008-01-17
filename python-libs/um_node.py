@@ -2,133 +2,158 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os
 import re
-
-from logging import error
-
-from socket import gethostname, gethostbyname, gaierror
+import socket
+from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_config import *
 
+
 class Node(object):
-    "Provides access to configuration infos about a certain host (or a node type)"
-
-    def __init__(self, hostname = None, type_ = None):
-        """ Creates a new Node object.
-
-        If hostname is None, gethostname() is used. The "NODETYPE" will
-        derived from the hostname and can be overriden by setting the
-        parameter nodetype.
-
-        If hostname is an int the nodetype will be used to determine the
-        correct hostname. 
-
-        If no nodetype can be derived, a NodeTypeException is raised.
+    """Provides access to information about a certain UMIC-Mesh.net node."""
+    
+    def __init__(self, hostname = None, nodetype = None):
+        """
+        Creates a new Node object with two following parameters: hostname and
+        nodetype.
+            
+        1. If the hostname is None, socket.gethostname() will be used to determine
+        the hostname. The nodetype will be derived from the hostname and can be
+        overriden by setting the parameter nodetype.
+             
+        2. If the hostname is a string, the string will be used to set the hostname.
+        The nodetype will be derived from the hostname and can be overriden by
+        setting the parameter nodetype.
+        
+        3. If the hostname is an integer, the nodetype is mandatory. Both parameter
+        will be used used to determine the correct hostname.
         """
 
         # object variables
-        self._hostname = ''
-        self._type = ''
-        self.msg = ''
-
-        # if type is given check for validity
-        if type_:
-            if type_ in nodeinfos:
-                self._type = type_
-            else:
-                raise NodeTypeException('Invalid value for NODETYPE'
-                        'Please set it to one of %s.'% nodeinfos.keys())
-
-        # if hostname is a number and type is set, generate hostname
-        if type(hostname) is int and type_:
-            hostname = nodeinfos[type_]['hostnameprefix']+str(hostname)            
+        self._hostname = None
+        self._type = None
+        self._info = None
         
-        if hostname:                
-            self._hostname = hostname
-        else:
-            self._hostname = gethostname()
-
-        if not type_:
-            # Compute list of nodetypes which match for hostname
-            type_list = []
-            for (nodetype, nodeinfo) in nodeinfos.iteritems():
-                if re.match(nodeinfo['hostnameprefix'], self._hostname):
-                    type_list.append(nodetype)
-
-            if len(type_list) == 1:
-                self._type = type_list[0]
-            elif len(type_list) == 0:
-                raise NodeTypeException('Cannot derive NODETYPE from'
-                        ' hostname, as there are no types with fitting'
-                        ' "hostnameprefix" entries.')
+        # if the nodetype is set, we need validity check
+        if nodetype:
+            if nodetype in nodeinfos:
+                self._type = nodetype
+                self._info = nodeinfos[self._type]
             else:
-                raise NodeTypeException('Cannot derive NODETYPE from'
-                        ' hostname, as there are multiple types with fitting'
-                        ' hostnameprefix" entries: %s' % type_list)
+                raise NodeException('Invalid "nodetype". Please set it to one of %s.'
+                                    % Node.types())
+        # first case
+        if not hostname:
+            self._hostname = self.gethostname()
+        
+        # third case
+        elif type(hostname) is int:
+            if not nodetype:
+                raise NodeException('If the hostname is an integer, the "nodetype" '
+                                    'is mandatory.')
+            else:
+                self._hostname = "%s%s" %(self._info["hostnameprefix"], str(hostname))
+
+        # second case
+        else:     
+            self._hostname = hostname
+        
+        # if the nodetype is not set, we can now derive the nodetype from the hostname
+        if not nodetype:           
+            nodetypelist = []
+            for (nodetype, nodeinfo) in nodeinfos.iteritems():
+                if re.match(nodeinfo["hostnameprefix"], self._hostname):
+                    nodetypelist.append(nodetype)
+
+            if len(nodetypelist) == 1:
+                self._type = nodetypelist[0]
+                self._info = nodeinfos[self._type]
+            elif len(nodetypelist) == 0:
+                raise NodeException('Cannot derive "nodetype" from '
+                        'hostname, as there are no types with fitting '
+                        '"hostnameprefix" entries.')
+            else:
+                raise NodeException('Cannot derive "nodetype" from '
+                        'hostname, as there are multiple types with fitting '
+                        '"hostnameprefix" entries: %s' % nodetypelist)
 
 
-    def type(self):
-        "Returns the nodetype of the node"
+    @staticmethod
+    def types():
+        """Return the names of the possible node types"""
+        
+        return imageinfos.keys() 
+
+
+    def gettype(self):
+        """Return the nodetype of the node"""
 
         return self._type
 
 
-    def hostname(self):
-        "Returns the hostname of the node"
+    def getinfo(self):
+        """Return the nodeinfos of the node"""
 
+        return self._info
+
+
+    def gethostname(self):
+        """Return the hostname of the node"""
+    
+        if not self._hostname:
+            self._hostname = socket.gethostname()
         return self._hostname
+ 
+
+    def gethostnameprefix(self):
+        """Return the hostnameprefix of thee node"""
+
+        return self._info["hostnameprefix"]
 
 
-    def info(self):
-        "Returns the nodeinfos of the node"
+    def getnumber(self):
+        """Derives the nodenumber from the hostname"""
 
-        return nodeinfos[self._type]
-
-
-    def hostnameprefix(self):
-        "Derives the hostnameprefix from the hostname"
-
-        return self.info()['hostnameprefix']
+        return int(re.sub(self.gethostnameprefix(), "", self._hostname))
 
 
-    def number(self):
-        "Derives the nodenumber from the hostname"
-
-        return int(re.sub(self.hostnameprefix(), '', self.hostname()))
-
-
-    def ipaddress(self, device = 'ath0'):
-        "Get the IP of a specific device without the netmask of the node"
+    def getipaddress(self, device = "ath0"):
+        """Get the IP address of a specific device without the netmask"""
 
         name = "%s.%s" %(device, self._hostname)
     
         try:
-            raw_address = gethostbyname(name)
-        except gaierror, inst:
-            error("node.ipaddress() -> Failed to lookup %s:%s "% (name, inst.args[0]))
+            address = socket.gethostbyname(name)
+        except socket.gaierror, inst:
+            error("Failed to lookup %s:%s "% (name, inst.args[0]))
             raise
 
-        return raw_address
-
-
-    def imageinfo(self):
-        "Returns the imageinfos for the node"
-
-        return imageinfos[self.info()['imagetype']]
-
-
-    def imagepath(self):
-        "Returns the imagepath for the node"
-
-        nodeinfo = self.info()
-        return "%s/%s" % (imageprefix, nodeinfo['imagetype'])
+        return address
 
 
 
-class NodeTypeException(Exception):
+class VMeshHost(Node):
+    def __init__(self, hostname = None):
+        Node.__init__(self, hostname, "vmeshhost")
+
+
+
+class VMeshRouter(Node):
+    def __init__(self, hostname = None):
+        Node.__init__(self, hostname, "vmeshrouter")
+
+
+
+class MeshRouter(Node):
+    def __init__(self, hostname = None):
+        Node.__init__(self, hostname, "meshrouter")
+
+
+
+class NodeException(Exception):
     def __init__(self, msg):
+        Exception.__init__(self)
         self.msg = msg
 
     def __str__(self):

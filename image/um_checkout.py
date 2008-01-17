@@ -11,8 +11,8 @@ from um_config import *
 from um_functions import *
 
 
-class Image(Application):
-    "Class to manage/update the images"
+class Checkout(Application):
+    "Class to update the checkout"
 
 
     def __init__(self):
@@ -51,14 +51,14 @@ class Image(Application):
 
         # correct numbers of arguments?
         if len(self.args) != 1:
-            self.parser.error("incorrect number of arguments")
+            self.parser.error("Incorrect number of arguments")
 
         # set arguments
         self.action = self.args[0]
 
         # does the command exists?
         if not self.action in self.commands:
-            self.parser.error('unkown COMMAND %s' %(self.action))
+            self.parser.error('Unkown COMMAND %s' %(self.action))
 
 
     def update_checkout(self):
@@ -195,4 +195,4 @@ class Image(Application):
 
 
 if __name__ == '__main__':
-    Image().main()
+    Checkout().main()

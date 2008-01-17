@@ -13,7 +13,7 @@ class Application(object):
 
     def __init__(self):
         """Constructor of the generic Application object"""
-
+        
         # object variables
         self.parser = optparse.OptionParser()
 

@@ -2,32 +2,27 @@
 # -*- coding: utf-8 -*
 
 # python imports
-import os
 import sys
+import os
 import subprocess
 from logging import info, debug, warn, error
 
-# umic-mesh imports
-from um_config import *
+
+def requireroot(stop = True):
+    """Test if the current user is root."""
+    
+    if not os.getuid() == 0:
+        error("You must be root. Command failed.")
+            
+        if stop:
+            sys.exit(1)
 
 
-class CommandFailed(Exception):
-    """Convenience function to handle return/exit codes"""
-
-    def __init__(self, cmd, rc, stderr = None):
-        self.cmd = cmd
-        self.rc  = rc
-        self.stderr = stderr
-
-    def __str__(self):
-        return "Command %s failed with return code %d." %(self.cmd, self.rc)
-
-
-def execute(cmd, shell, raiseError = True):
+def execute(cmd, shell = True, raiseError = True):
     """Execute a shell command, wait for command to complete and return stdout/stderr"""
 
     debug("Executing: %s" % cmd.__str__())
-    prog = subprocess.Popen(cmd, shell = shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    prog = subprocess.Popen(cmd, shell = shell, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
     (stdout, stderr) = prog.communicate()
     rc = prog.returncode
     if raiseError and rc != 0:
@@ -36,18 +31,19 @@ def execute(cmd, shell, raiseError = True):
     return (stdout, stderr)
 
 
-def call(cmd, shell, raiseError=True):
+def call(cmd, shell = True, raiseError = True):
     """Call a shell command, wait for command to complete and return exit code"""
 
     debug("Executing: %s" % cmd.__str__())
     rc = subprocess.call(cmd, shell = shell)
     if raiseError and rc != 0:
         raise CommandFailed(cmd, rc)
+    
     return rc
 
 
 def execpy(arguments = []):
-    """Function to execute a python script with arguments"""
+    """Function to execute a python script within python"""
 
     class SystemExitException(Exception):
         """Private exception for execpy"""
@@ -104,25 +100,43 @@ def execpy(arguments = []):
     return rc
 
 
+
+class CommandFailed(Exception):
+    """Convenience function to handle return/exit codes"""
+
+    def __init__(self, cmd, rc, stderr = None):
+        Exception.__init__(self)
+        self.cmd = cmd
+        self.rc  = rc
+        self.stderr = stderr
+
+    def __str__(self):
+        return 'Command "%s" failed with return code %d.' %(self.cmd, self.rc)
+
+
+
 class StrictStruct:
     """Imitiate a struct/record"""
 
     def __init__(self, list = None, **kwargs):
         """
-        Takes two parameters:
+        The StrictStruct constructor takes two parameters:
 
         If "list" is not None, it gives the allowed entries in the struct.
-        Else, the list of allowed entries will be extracted from the **kwargs argument:
+        Otherwise, the list of allowed entries will be extracted from the **kwargs argument.
 
-        Usage examples:
+        Examples:
             StrictStruct(['foo', 'bar'])
-            StrictStruct(['foo', 'bar'], foo=1, bar=3)
-            StrictStruct(foo=1, bar=3)
+            StrictStruct(['foo', 'bar'], foo = 1, bar = 3)
+            StrictStruct(foo = 1, bar = 3)
         """
+        
+        # object variables
+        self._items = None
 
         self.__dict__["_items"] = {}
         if list is None:
-            for (k,v) in kwargs.iteritems():
+            for (k, v) in kwargs.iteritems():
                 if k not in self.__dict__:
                     self._items[k] = v
         else:
@@ -130,7 +144,7 @@ class StrictStruct:
                 if i not in self.__dict__:
                     self._items[i] = None
             
-            for (k,v) in kwargs.iteritems():
+            for (k, v) in kwargs.iteritems():
                 if k in self._items:
                     self._items[k] = v
                 else:
@@ -141,7 +155,7 @@ class StrictStruct:
     def __getattr__(self, name):
         try:
             return self._items[name]
-        except KeyError, inst:
+        except KeyError:
             raise AttributeError("'%s' instance has no attribute '%s'"
                     % (self.__class__, name))
 
@@ -157,5 +171,4 @@ class StrictStruct:
 
 
     def __str__(self):
-
         return "<%s: %r>" % (self.__class__, self._items)
