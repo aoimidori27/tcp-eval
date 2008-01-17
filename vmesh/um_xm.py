@@ -2,115 +2,149 @@
 # -*- coding: utf-8 -*-
 
 # python imports
+import os
+import tempfile
 from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_application import Application
-from um_config import *
-from um_util import *
+from um_node import VMeshHost, VMeshRouter
+from um_image import Image
+from um_functions import requireroot, execute, CommandFailed
 
 
-class Init(Application):
-    "Class to start vmrouters."
-
+class Xen(Application):
+    """Class to start vmrouters on the basis of Xen"""
 
     def __init__(self):
-        "Constructor of the object"
+        """Creates a new Xen object"""
 
         Application.__init__(self)
 
-        # Object variables
-        self.range = ''
+        # object variables
+        self.range = None
 
         # initialization of the option parser
-        usage = "usage: %prog [OPTIONS] FROM TO"
+        usage = "usage: %prog [options] FROM [TO] \n" \
+                "where FROM, TO are node IDs (integers) greater than zero"
         self.parser.set_usage(usage)
-        self.parser.set_defaults(
-                ramdisk = None,
-                kernel = None,
-                memory = None,
-                console = False)
+        self.parser.set_defaults(kernel = "linux/default/vmeshnode-vmlinuz",
+                                 ramdisk = "initrd/vmeshnode-initrd",
+                                 memory = 40, console = False)
 
+        self.parser.add_option("-c", "--console",
+                action = "store_true", dest = "console",
+                help = "Attaches to domU console (xm -c)")
         self.parser.add_option("-k", "--kernel", metavar = "KERNEL",
                 action = "store", dest = "kernel",
-                help = "Kernel to use instead of the default one.")
+                help = "The kernel image for the domain [default: %default]")
         self.parser.add_option("-m", "--memory", metavar = "MEMORY",
                 action = "store", dest = "memory", type = "int",
-                help = "Amount of memory to allocate to the domain (in megabytes).")
+                help = "The amount of RAM, in megabytes, to allocate to the "\
+                       "domain when it starts [default: %default]")
         self.parser.add_option("-r", "--ramdisk", metavar = "RAMDISK",
                 action = "store", dest = "ramdisk",
-                help = "Initial ramdisk to use instead of the default one.")
-        self.parser.add_option("-c", "--config", metavar = "CONFIG",
-                action = "store", dest = "config",
-                help = "Configuration from um_config.py's xenconfig.")
-        self.parser.add_option("-C", "--console",
-                action = "store_true", dest = "console",
-                help = "Attaches to dom-U console (xm -c)")
+                help = "The initial ramdisk for the domain [default: %default]")
 
 
     def set_option(self):
-        "Set options"
+        """Set the options for the Xen object"""
 
         Application.set_option(self)
 
         # correct numbers of arguments?
-        if len(self.args) == 0:
-            self.parser.error("incorrect number of arguments")
-        elif len(self.args) == 1:
-            self.range = range(int(self.args[0]), int(self.args[0])+1)
-        else:
-            self.range = range(int(self.args[0]), int(self.args[1])+1)
+        # arguments are integers greater than zero?
+        try:
+            begin = int(self.args[0])
+            
+            if len(self.args) == 1:
+                end = begin + 1
+            elif len(self.args) == 2:     
+                end = int(self.args[1]) + 1
+            else:
+                raise IndexError
+            
+            if begin > 0 and end > 0:
+                self.range = range(begin, end)
+            else:
+                raise ValueError
+        
+        except IndexError:
+            error("Incorrect number of arguments")                
+        except ValueError:
+            error("Arguments are not integers greater than zero")
 
 
-    def append(self, list, item):
-        tmp = list[:]
-        tmp.append(item)
-        return tmp
+    def run(self):
+        """Start the desired number of vmrouters"""
 
+        # must be root
+        requireroot()
 
-    def start_xen(self):
-        cmd = ['sudo', 'xm', 'create', '/etc/xen/guests/vmeshrouter']
+        # gather information form localhost (e.g. hostname)
+        vmeshhost = VMeshHost()
+        
+        # some temp variables
+        ramdisk = os.path.join(Image.getbootprefix(), self.options.ramdisk)
+        kernel = os.path.join(Image.getbootprefix(), self.options.kernel)
 
-        # These options are optional ...
-        if self.options.kernel != None:
-            cmd.append('kernel=%s' % self.options.kernel)
-        if self.options.memory != None:
-            cmd.append('memory=%s' % self.options.memory)
-        if self.options.ramdisk != None:
-            cmd.append('ramdisk=%s' % self.options.ramdisk)
-        if self.options.config != None:
-            cmd.append('config=%s' % self.options.config)
-        if self.options.console:
-            cmd.append('-c')
-
+        # create the desired number of vmrouters    
         for number in self.range:
-            # Test if the hostname vmrouter%s was already requested by someone else
+        
+             # create a vmeshrouter object
+            vmeshrouter = VMeshRouter(number)
+
+            # Test if vmeshrouter is already running
             try:
-                execute(["ping", "-c1", "vmrouter%s" % number], shell=False, raiseError=True)
-                warn("vmrouter%s seems to be already running." % number)
+                cmd = ["ping", "-c1", vmeshrouter.gethostname()]
+                execute(cmd, shell = False)
+                warn("%s seems to be already running." % vmeshrouter.gethostname())
                 continue
             except CommandFailed:
                 pass
 
-            # Try to start vmrouter%s
-            try:
-                info("starting vmrouter%s" % number)
-                call(self.append(cmd, 'vmid=%s' % number), shell=False, raiseError=True)
-            except CommandFailed, inst:
-                error("Error while starting vmrouter%s" % number)
-                error(inst)
+            # create XEN config file
+            fd, cfgfile = tempfile.mkstemp()
+            os.write(fd,
+                     "name = '%s' \n"\
+                     "ramdisk = '%s' \n"\
+                     "kernel = '%s' \n"\
+                     "memory = %s \n"\
+                     "root = '/dev/ram0' \n"\
+                     "vif = ['mac=00:16:3E:00:%d:%d', 'bridge=br0'] \n"\
+                     "extra = 'id=default image=vmeshnode.img/um_edgy " \
+                     "nodetype=%s hostname=%s init=/linuxrc' \n"
+                     %(vmeshrouter.gethostname(), ramdisk, kernel,
+                       self.options.memory, vmeshhost.getnumber(),
+                       vmeshrouter.getnumber(), vmeshrouter.gettype(),
+                       vmeshrouter.gethostname()))
 
-        print ("Done.")
+            # create XEN command
+            if self.options.console:
+                cmd = "xm create -c %s" % cfgfile
+            else:
+                cmd = "xm create %s" % cfgfile
+
+            # start vmrouter
+            try:
+                info("Starting %s" % vmeshrouter.gethostname())
+                execute(cmd, shell = True)
+            except CommandFailed, exception:
+                error("Error while starting vmrouter%s" % number)
+                error(exception)
+
+            # remove config file
+            os.remove(cfgfile)
 
 
     def main(self):
-        "Main method of the Init object"
+        """Main method of the Xen object"""
 
         self.parse_option()
         self.set_option()
-        self.start_xen()
+        self.run()
 
 
 
 if __name__ == "__main__":
-    Init().main()
+    Xen().main()
