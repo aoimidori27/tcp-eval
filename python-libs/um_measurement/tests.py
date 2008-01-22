@@ -28,14 +28,14 @@ def test_rate(mrs,
               **kwargs ):
 
     # for convenience accept numbers as src and dst
-    src = Node(rate_src, type_="meshrouter")
-    dst = Node(rate_dst, type_="meshrouter")
+    src = Node(rate_src, nodetype="meshrouter")
+    dst = Node(rate_dst, nodetype="meshrouter")
 
-    dst_ip = yield mrs.getIp(dst.hostname(), rate_iface)
+    dst_ip = yield mrs.getIp(dst.gethostname(), rate_iface)
 
-    nexthop = yield mrs.get_next_hop(src.hostname(), dst_ip)
+    nexthop = yield mrs.get_next_hop(src.gethostname(), dst_ip)
     debug("nexthop: %s" %nexthop)
-    mac = yield mrs.get_mac(src.hostname(), nexthop, rate_iface)
+    mac = yield mrs.get_mac(src.gethostname(), nexthop, rate_iface)
     if not mac:
         error("Failed to get mac for: %s" %nexthop)
         defer.returnValue("-1")
@@ -43,7 +43,7 @@ def test_rate(mrs,
 
     cmd = 'grep -A 13 "%s" /proc/net/madwifi/%s/ratestats_%u' %(mac, rate_iface, rate_size)
     
-    result = yield mrs.remote_execute(src.hostname(),
+    result = yield mrs.remote_execute(src.gethostname(),
                                       cmd,
                                       log_file,
                                       timeout=2)
@@ -77,17 +77,17 @@ def test_ping(mrs,
         
     """
     # for convenience accept numbers as src and dst
-    src = Node(ping_src, type_="meshrouter")
-    dst = Node(ping_dst, type_="meshrouter")
+    src = Node(ping_src, nodetype="meshrouter")
+    dst = Node(ping_dst, nodetype="meshrouter")
 
-    dst_ip = yield mrs.getIp(dst.hostname(), ping_iface)
+    dst_ip = yield mrs.getIp(dst.gethostname(), ping_iface)
 
     cmd = "ping -i %.3f -c %u -s %u %s %s" % (ping_interval, ping_count,
                                               ping_size, ping_opts,
                                               dst_ip)
 
     
-    rc = mrs.remote_execute(src.hostname(),
+    rc = mrs.remote_execute(src.gethostname(),
                             cmd,
                             log_file,
                             timeout=(ping_interval*ping_count)+5)
@@ -123,15 +123,15 @@ def test_fping(mrs,
         
     """
     # for convenience accept numbers as src and dst
-    src = Node(ping_src, type_="meshrouter")
-    dst = Node(ping_dst, type_="meshrouter")
+    src = Node(ping_src, nodetype="meshrouter")
+    dst = Node(ping_dst, nodetype="meshrouter")
 
-    dst_ip = yield mrs.getIp(dst.hostname(), ping_iface)
+    dst_ip = yield mrs.getIp(dst.gethostname(), ping_iface)
 
     cmd = "fping -A -p %u -c %u -b %u %s %s 2>&1" % ((ping_interval*1000), ping_count,
                                              ping_size, fping_opts,
                                              dst_ip)
-    rc = mrs.remote_execute(src.hostname(),
+    rc = mrs.remote_execute(src.gethostname(),
                             cmd,
                             log_file,
                             timeout=(ping_interval*ping_count)+5)
@@ -167,17 +167,17 @@ def test_thrulay(mrs,
     """
 
     # for convenience accept numbers as src and dst
-    src = Node(thrulay_src, type_="meshrouter")
-    dst = Node(thrulay_dst, type_="meshrouter")
+    src = Node(thrulay_src, nodetype="meshrouter")
+    dst = Node(thrulay_dst, nodetype="meshrouter")
 
-    dst_ip = yield mrs.getIp(dst.hostname(), "ath0")
+    dst_ip = yield mrs.getIp(dst.gethostname(), "ath0")
 
     cmd = "thrulay -Q -c %s -t %.3f -H %s/%s" % (thrulay_cc,
                                                thrulay_duration,
                                                dst_ip,
-                                               dst.hostname())
+                                               dst.gethostname())
 
-    rc = mrs.remote_execute(src.hostname(),
+    rc = mrs.remote_execute(src.gethostname(),
                             cmd,
                             log_file,
                             timeout=thrulay_duration+5)
@@ -221,21 +221,21 @@ def test_flowgrind(mrs,
     """
 
     # for convenience accept numbers as src and dst
-    src = Node(flowgrind_src, type_="meshrouter")
-    dst = Node(flowgrind_dst, type_="meshrouter")
+    src = Node(flowgrind_src, nodetype="meshrouter")
+    dst = Node(flowgrind_dst, nodetype="meshrouter")
 
-    dst_ip = yield mrs.getIp(dst.hostname(), flowgrind_iface)
+    dst_ip = yield mrs.getIp(dst.gethostname(), flowgrind_iface)
 
     cmd = "flowgrind -Q -c %s -t %.3f -O %u -H %s/%s" % (flowgrind_cc,
                                                          flowgrind_duration,
                                                          flowgrind_bport,
                                                          dst_ip,
-                                                         dst.hostname())
+                                                         dst.gethostname())
 
     if flowgrind_dump:
         dumpfile_src = None
         dumpfile_dst = None
-        results = yield mrs.xmlrpc_many([src.hostname(),dst.hostname()],
+        results = yield mrs.xmlrpc_many([src.gethostname(),dst.gethostname()],
                                        "tcpdump.start",
                                        flowgrind_iface,
                                        "port %u" %flowgrind_bport )
@@ -246,27 +246,27 @@ def test_flowgrind(mrs,
         if sres[0]:
             dumpfile_src = sres[1]
         else:
-            warn("Failed to start tcpdump on %s: %s" %(src.hostname(),
+            warn("Failed to start tcpdump on %s: %s" %(src.gethostname(),
                                                        sres[1].getErrorMessage()))
         if dres[0]:
             dumpfile_dst = dres[1]
         else:
-            warn("Failed to start tcpdump on %s: %s" %(dst.hostname(),
+            warn("Failed to start tcpdump on %s: %s" %(dst.gethostname(),
                                                        dres[1].getErrorMessage()))
                                                        
 
-    result = yield  mrs.remote_execute(src.hostname(),
+    result = yield  mrs.remote_execute(src.gethostname(),
                                        cmd,
                                        log_file,
                                        timeout=flowgrind_duration+5)
     if flowgrind_dump:
-        yield mrs.xmlrpc_many([src.hostname(),dst.hostname()],
+        yield mrs.xmlrpc_many([src.gethostname(),dst.gethostname()],
                               "tcpdump.stop")
 
         # just schedule moving and compressing for later execution
         if dumpfile_src:
             # just append .hostname.pcap to logfilename
-            sfile = "%s.%s.pcap" %(log_file.name, src.hostname())
+            sfile = "%s.%s.pcap" %(log_file.name, src.gethostname())
             cmd = ["mv",dumpfile_src, sfile]
             d=twisted_call(cmd, shell=False)
             if gzip_dumps:
@@ -279,7 +279,7 @@ def test_flowgrind(mrs,
                 d.addCallback(callback)
         if dumpfile_dst:
             # just append .hostname.pcap to logfilename
-            dfile = "%s.%s.pcap" %(log_file.name, dst.hostname())
+            dfile = "%s.%s.pcap" %(log_file.name, dst.gethostname())
             cmd = ["mv",dumpfile_dst, dfile]            
             d=twisted_call(cmd, shell=False)
             if gzip_dumps:
