@@ -131,9 +131,6 @@ class StrictStruct:
             StrictStruct(foo = 1, bar = 3)
         """
         
-        # object variables
-        self._items = None
-
         self.__dict__["_items"] = {}
         if list is None:
             for (k, v) in kwargs.iteritems():
