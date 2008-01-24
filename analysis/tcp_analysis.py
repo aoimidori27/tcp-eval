@@ -591,7 +591,7 @@ class TcpAnalysis(Analysis):
         fh.write("# %s\n" %plotname)
         fh.write("# lower_edge_of_bin tput\n")
 
-        (n, bins) = numpy.histogram(ary, bins=noBins, normed=0, range=(0.0,20))
+        (n, bins) = numpy.histogram(ary, bins=noBins, normed=1)
 
         for i in range(len(n)):
             fh.write("%0.2f %f\n" %(bins[i], n[i]))
@@ -601,7 +601,12 @@ class TcpAnalysis(Analysis):
         p = UmBoxPlot(plotname)
         p.setXLabel(r"Throughput in $\\Mbps$")
         p.setYLabel("Frequency")
-        p.plot(valfilename,"Frequency", using="1:2")
+        p.plot(valfilename,"Frequency", using="1:2", linestyle=1)
+
+        mu  = ary.mean()
+        std = ary.std()
+        f = "exp(-0.5*((x-%f)/%f)**2)/(%f*sqrt(2*pi))" %(mu,std,std)
+        p.rawPlot('%s with lines title "Normal Distribution"' %f)
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
         
         

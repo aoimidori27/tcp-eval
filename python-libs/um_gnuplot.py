@@ -219,4 +219,7 @@ class UmBoxPlot(UmGnuplot):
         cmd = '"%s" %s title "%s" with boxes ls %u' %(values, usingstr, title, linestyle)
         UmGnuplot.plot(self, cmd)
 
+    def rawPlot(self, *args, **kwargs):
+        UmGnuplot.plot(self, *args, **kwargs)
+
         
