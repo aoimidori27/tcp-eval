@@ -40,7 +40,7 @@ imageinfos = dict(
         scriptmappings = { "scripts/image" : "/usr/local/sbin",
                            "scripts/vmesh" : "/usr/local/sbin",
                            "scripts/image" : "/usr/local/sbin",
-                           "scripts/measurement" : "/usr/local/bin"  }
+                           "scripts/measurement" : "/usr/local/bin" }
     ),
     vmeshnode = dict(
         svnmappings = { "/config/vmeshnode/trunk" : "config",
