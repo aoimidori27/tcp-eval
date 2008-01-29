@@ -7,7 +7,7 @@ import socket
 from logging import info, debug, warn, error
 
 # umic-mesh imports
-from um_config import *
+import um_config as config
 
 
 class Node(object):
@@ -37,12 +37,12 @@ class Node(object):
         
         # if the nodetype is set, we need validity check
         if nodetype:
-            if nodetype in nodeinfos:
+            if nodetype in config.nodeinfos:
                 self._type = nodetype
-                self._info = nodeinfos[self._type]
+                self._info = config.nodeinfos[self._type]
             else:
-                raise NodeException('Invalid "nodetype". Please set it to one of %s.'
-                                    % Node.types())
+                raise NodeException('Invalid "nodetype". Please set it to one of '\
+                                    'the following: %s' % Node.gettypes())
         # first case
         if not hostname:
             self._hostname = self.gethostname()
@@ -62,13 +62,13 @@ class Node(object):
         # if the nodetype is not set, we can now derive the nodetype from the hostname
         if not nodetype:           
             nodetypelist = []
-            for (nodetype, nodeinfo) in nodeinfos.iteritems():
+            for (nodetype, nodeinfo) in config.nodeinfos.iteritems():
                 if re.match(nodeinfo["hostnameprefix"], self._hostname):
                     nodetypelist.append(nodetype)
 
             if len(nodetypelist) == 1:
                 self._type = nodetypelist[0]
-                self._info = nodeinfos[self._type]
+                self._info = config.nodeinfos[self._type]
             elif len(nodetypelist) == 0:
                 raise NodeException('Cannot derive "nodetype" from '
                         'hostname, as there are no types with fitting '
@@ -80,10 +80,10 @@ class Node(object):
 
 
     @staticmethod
-    def types():
+    def gettypes():
         """Return the names of the possible node types"""
         
-        return imageinfos.keys() 
+        return config.imageinfos.keys() 
 
 
     def gettype(self):
