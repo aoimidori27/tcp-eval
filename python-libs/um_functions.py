@@ -8,14 +8,17 @@ import subprocess
 from logging import info, debug, warn, error
 
 
-def requireroot(stop = True):
-    """Test if the current user is root."""
+def requireroot():
+    """
+    Check whether the current user is root or not. If the user is not root
+    sys.exit() will be called. The sys.exit() function will raise the build-in
+    exception "SystemExit". When it is not handled, the Python interpreter will
+    exit
+    """
     
     if not os.getuid() == 0:
         error("You must be root. Command failed.")
-            
-        if stop:
-            sys.exit(1)
+        sys.exit(1)
 
 
 def execute(cmd, shell = True, raiseError = True):
