@@ -20,11 +20,16 @@ class Application(object):
         # initialization of the option parser
         usage = "usage: %prog [options]"
         self.parser.set_usage(usage)
-        self.parser.set_defaults(verbose = True, syslog = False, debug = False)
+        self.parser.set_defaults(syslog = False, server = "logserver",
+                                 verbose = True, debug = False)
         
-        self.parser.add_option("-s", "--syslog",
+        self.parser.add_option("--syslog",
                                action = "store_true", dest = "syslog",
                                help = "log to syslog")
+        self.parser.add_option("--syslog-server", type="string", metavar = "HOST",
+                               action = "callback", callback=self.check_option,
+                               dest = "server",
+                               help = "sends log to a specific server [default: %default]")                               
         self.parser.add_option("-v", "--verbose",
                                action = "store_true", dest = "verbose",
                                help = "being more verbose [default]")
@@ -36,11 +41,19 @@ class Application(object):
                                help = "being even more verbose")
 
 
-    def parse_option(self):
+    def check_option(self, option, opt_str, value, parser):
+        """Check the options for generic Application object"""
+
+        # if this option is set, the "--syslog" option is also enabled
+        if opt_str == "--syslog-server":
+            parser.values.syslog = True
+        
+
+    def parse_option(self, args = None):
         """Parse the options for generic Application object"""
 
         # parse options
-        (self.options, self.args) = self.parser.parse_args()
+        (self.options, self.args) = self.parser.parse_args(args)
 
 
     def set_option(self):
@@ -56,7 +69,7 @@ class Application(object):
 
         # using syslog?
         if self.options.syslog:
-            syslog_host = ("logserver", 514)
+            syslog_host = (self.options.server, 514)
             syslog_facility = logging.handlers.SysLogHandler.LOG_DAEMON
             syslog_format = self.parser.get_prog_name() + \
                             "%(levelname)s: %(message)s"
