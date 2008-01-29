@@ -17,23 +17,32 @@ class Chroot(Application):
     """Class to chroot into a UMIC-Mesh.net image"""
     
 
-    def __init__(self, su = "/bin/su", command = "/bin/bash", mount = "/bin/mount",
-                 umount = "/bin/umount", chroot = "/usr/sbin/chroot",
-                 linux32 = "/usr/bin/linux32"):
+    def __init__(self):
         """Creates a new Chroot object"""
 
         Application.__init__(self)
 
-        # object variables
-        self.su = su
-        self.command = command
-        self.mount = mount
-        self.umount = umount
-        self.chroot = chroot
-        self.linux32 = linux32
-        self.mount_list = [{"args" : "-o bind", "src" : "/dev", "dst" : "dev"},
-                           {"args" : "-t proc", "src" : "/proc", "dst" : "proc"}]
+        # object variables   
+        self.mtab = None
+        self.image = None
+        self.command = None
+        self.executables = {"su" : "/bin/su",
+                            "bash" : "/bin/bash",
+                            "mount" : "/bin/mount",
+                            "umount" : "/bin/umount",
+                            "automount" : "/usr/sbin/automount",
+                            "chroot" : "/usr/sbin/chroot",
+                            "linux32" : "/usr/bin/linux32"}
+        
+        self.mount_map = [{"device" : "/dev", "mountpoint" : "dev", "args" : "-o bind"},
+                          {"device" : "/proc", "mountpoint" : "proc", "args" : "-t proc"}]
+       
+        self.automount_map = [{"mountpoint" : "home",
+                               "mapfile" : "ldap ou=auto.home,ou=automount,"\
+                                           "ou=admin,dc=umic-mesh,dc=net",
+                               "args" : "--timeout=60 --ghost"}]
 
+        # get the current user name
         if os.environ.has_key("SUDO_USER"):
             default_user = os.environ["SUDO_USER"]
         else:
@@ -41,21 +50,25 @@ class Chroot(Application):
 
         # initialization of the option parser
         usage = "usage: %prog [options] [COMMAND] \n" \
-                "where COMMAND is a command to execute within chroot"
+                "where COMMAND is a command which is execute in chroot"
         self.parser.set_usage(usage)
         self.parser.set_defaults(user = default_user, prompt = "debian_chroot",
-                                 imagetype = "meshnode")
+                                 imagetype = "meshnode", imageversion = "default")
 
-        self.parser.add_option("-i", "--imagetype", metavar = "TYPE",
-                               action = "store", dest = "imagetype",
-                               help = "set the imagetype for chroot [default: %default]")
-        self.parser.add_option("-p", "--prompt", metavar = "VAR",
+        self.parser.add_option("-p", "--prompt", metavar = "VAR", type="string",
                                action = "store", dest = "prompt",
                                help = "set variable identifying the chroot " \
                                       "(used in the prompt) [default: %default]")
-        self.parser.add_option("-u", "--user", metavar = "NAME",
+        self.parser.add_option("-T", "--imagetype", metavar = "TYPE",
+                               action = "store", dest = "imagetype",
+                               choices = Image.gettypes(),
+                               help = 'set the "imagetype" for chroot [default: %default]')
+        self.parser.add_option("-u", "--user", metavar = "NAME", type="string",
                                action = "store", dest = "user",
                                help = "set the user to be in the chroot [default: %default]")
+        self.parser.add_option("-V", "--imageversion", metavar = "VERSION",
+                               action = "store", dest = "imageversion",
+                               help = 'set the "imageversion" for chroot [default: %default]')
 
 
     def set_option(self):
@@ -65,81 +78,128 @@ class Chroot(Application):
 
         # set arguments
         if len(self.args) > 0:
-            self.command = self.args[0]
-            for arg in self.args[1:]:
-                self.command = "%s%s" %(self.command, arg)
+            self.command = " ".join(self.args)
+        else:
+            self.command = self.executables["bash"]
 
 
-    def run(self):
-        """Chroot and execute the command"""
-
-        # must be root
-        requireroot()
-
-        # create a new image object   
-        try:
-            image = Image(self.options.imagetype)  
-        except ImageException, exception:
-            error(exception.msg)
-            sys.exit(1)
-        
-        info("Imagetype: %s" %image.gettype())
+    def checkmount(self, mountpoint):
+        """Return true if the mountpoint is already mounted, otherwise return false """
         
         # get all mount points
-        mtab = execute(self.mount, shell = True)[0]
-        mtab = mtab.split('\n')
+        if not self.mtab:
+            self.mtab = execute(self.executables["mount"], shell = True)[0]
+            self.mtab = self.mtab.split('\n')
 
-        # mount
-        for mount in self.mount_list:
-            mount_args = mount["args"]
-            mount_src  = mount["src"]
-            mount_dst  = os.path.join(image.getimagepath(), mount["dst"])
-                       
-            # check if directory is already mounted  
-            regex = re.compile(mount_dst)
-            for line in mtab:
-                result = regex.search(line)
-                if result:
-                    break
+        # check mountpoint
+        regex = re.compile(mountpoint)
+        for line in self.mtab:
+            if regex.search(line):
+                return True
+
+        return False
+
+
+    def automount(self):
+        """
+        Starts the automounter for all mount points that are denoted in the
+        object variable "automount_map"
+        """
+
+        # for all entries in the automount map
+        for automount in self.automount_map:
+            mountpoint  = os.path.join(self.image.getimagepath(), automount["mountpoint"])
+            mapfile  = automount["mapfile"]
+            args = automount["args"]
             
-            if not result:
-                cmd = "%s %s %s %s" % (self.mount, mount_args, mount_src, mount_dst)
+            # check mountpoint            
+            if not self.checkmount(mountpoint):
+                cmd = "%s %s %s %s" % (self.executables["automount"], mountpoint, mapfile, args)
                 info(cmd)
+
                 call(cmd, shell = True)
-        
+
+    def mount(self, ):
+        """Mount all devices that are denoted in the object variable "mount_map" """        
+
+        # for all entries in the mount map
+        for mount in self.mount_map:
+            device  = mount["device"]
+            mountpoint  = os.path.join(self.image.getimagepath(), mount["mountpoint"])
+            args = mount["args"]
+            
+            # check mountpoint            
+            if not self.checkmount(mountpoint):
+                cmd = "%s %s %s %s" % (self.executables["mount"], args, device, mountpoint)
+                info(cmd)
+
+                call(cmd, shell = True)
+
+
+    def umount(self):
+        """Unmount all devices that are denoted in the object variable "mount_map" """        
+
+        # for all entries in the mount map
+        for mount in self.mount_map:
+            mountpoint  = os.path.join(self.image.getimagepath(), mount["mountpoint"])
+            
+            # check mountpoint
+            if not self.checkmount(mountpoint):           
+                cmd = "%s %s" % (self.executables["umount"], mountpoint)
+                info(cmd)
+                call(cmd, shell = True)    
+
+ 
+    def chroot(self):
+        """Chroot into the image and execute the command"""
+       
         # build chroot command
         cmd = "%s %s %s %s -c 'export %s=%s && %s'" \
-              %(self.chroot, image.getimagepath(), self.su, self.options.user, \
-                self.options.prompt, image.gettype(), self.command)
+              %(self.executables["chroot"], self.image.getimagepath(),
+                self.executables["su"], self.options.user,
+                self.options.prompt, self.image.gettype(), self.command)
 
         # on a 64bit linux machine, we need the 32bit userland wrapper
         if os.uname()[4] == "x86_64":
-            cmd = "%s %s " %(self.linux32, cmd)
+            cmd = "%s %s " %(self.executables["linux32"], cmd)
 
         # execute command
+        call(cmd, shell = True)          
+
+
+    def run(self):
+        """
+        Main method of the Chroot object. Mount all devices and chroot into
+        the image. After the chroot is terminated all devices are proper unmouted
+        """
+        
         try:
-            call(cmd, shell = True)          
+            # must be root
+            requireroot()
+
+            # create a new Image object   
+            self.image = Image(self.options.imagetype, self.options.imageversion) 
+            info("Imagetype: %s" % self.image.gettype())
+
+            # mount the file system and start automounter
+            self.mount()
+            self.automount()
+
+            # chroot into the image
+            self.chroot()
+
+            # unmount the file system
+            self.umount()
+        
+        except ImageException, exception:
+            error(exception.msg)
         except CommandFailed, exception:
             error(exception)
-        
-        for mount in self.mount_list:
-            mount_dst  = os.path.join(image.getimagepath(), mount["dst"])
-            cmd = "%s %s" % (self.umount, mount_dst)
-            info(cmd)
-            try:
-                call(cmd, shell = True)    
-            except CommandFailed, exception:
-                error(exception)        
-
-
-    def main(self):
-        """Main method of the Chroot object"""
-
-        self.parse_option()
-        self.set_option()
-        self.run()
 
 
 
 if __name__ == "__main__":
-    Chroot().main()
+    inst = Chroot()
+    inst.parse_option()
+    inst.set_option()
+    inst.run()
