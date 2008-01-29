@@ -6,62 +6,74 @@ import os
 from logging import info, debug, warn, error
 
 # umic-mesh imports
-from um_config import *
+import um_config as config
 
 
 class Image(object):
     """Provides access to information about a certain UMIC-Mesh.net image."""
     
-    def __init__(self, imagetype):
-        """Creates a new Image object on the basis of the imagetype"""
+    def __init__(self, imagetype, imageversion = "default"):
+        """
+        Creates a new Image object on the basis of the imagetype and the
+        optional parameter imageversion.
+        """
 
         # object variables
         self._type = None
         self._info = None
+        self._version = None
         
         # validity check of the imagetype
-        if imagetype and imagetype in imageinfos:
-            self._type = imagetype
-            self._info = imageinfos[self._type]
-        else:
-            raise ImageException('Invalid "imagetype". Please set it to one of %s.'
-                                 % Image.types())                     
-
-
-    @staticmethod
-    def types():
-        """Return the names of the possible image types"""
+        if imagetype not in Image.gettypes():
+            raise ImageException('Invalid "imagetype". Please set it to one of '\
+                                 'the following: %s' % Image.gettypes())
         
-        types = imageinfos.keys()
-        return list(set(types).difference(["common"]))
+        self._type = imagetype
+        self._info = config.imageinfos[self._type]
 
+        # validity check of the imageversion        
+        if not imageversion in self.getversions():
+            raise ImageException('Invalid "imageversion". Please set it to one of '\
+                                 'the following: %s' % self.getversions())
+        
+        self._version = imageversion
+                   
 
     @staticmethod
     def getrepository():
-        """Return the common repository url"""
+        """Return the url of UMIC-Mesh.net repository"""
 
-        return imageinfos["common"]["repository"]
+        return config.imageinfos["common"]["repository"]
 
 
     @staticmethod
     def getimageprefix():
         """Return the path prefix where the image is located"""
 
-        return imageinfos["common"]["imageprefix"]
+        return config.imageinfos["common"]["imageprefix"]
+
 
     @staticmethod
     def getbootprefix():
-        """Return the path prefix where the boot files is located"""
+        """Return the path prefix where the boot files are located"""
 
-        return imageinfos["common"]["bootprefix"]
+        return config.imageinfos["common"]["bootprefix"]
 
 
     @staticmethod
     def getsvnprefix():
-        """Return the path prefix where the boot checkout is located"""
+        """Return the path prefix where the checkout is located"""
 
-        return imageinfos["common"]["svnprefix"]
+        return config.imageinfos["common"]["svnprefix"]
 
+
+    @staticmethod
+    def gettypes():
+        """Return the names of the possible image types"""
+        
+        types = config.imageinfos.keys()
+        return list(set(types).difference(["common"]))
+        
 
     def gettype(self):
         """Return the type of the image"""
@@ -70,15 +82,35 @@ class Image(object):
 
 
     def getinfo(self):
-        """Return the information about the image"""
+        """Return all information about the image"""
 
         return self._info
 
 
-    def getimagepath(self):
-        """Return the imagepath of the image"""
+    def getversion(self):
+        """Return the current version of the image"""
+        
+        return self._version
 
-        imagepath = os.path.join(Image.getimageprefix(), self._type)
+
+    def getversions(self):
+        """Return all possible versions for the image"""
+         
+        versions = []
+        directory = os.path.join(Image.getimageprefix(), self._type)
+        
+        for name in os.listdir(directory):
+            file = os.path.join(directory, name)
+            if os.path.isdir(file):
+                versions.append(name)
+        
+        return versions
+
+
+    def getimagepath(self):
+        """Return the full link free path of the image"""
+
+        imagepath = os.path.join(Image.getimageprefix(), self._type, self._version)
         return os.path.realpath(imagepath)
 
 
