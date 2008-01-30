@@ -35,7 +35,7 @@ class Chroot(Application):
                             "linux32" : "/usr/bin/linux32"}
         
         self.mount_map = [{"device" : "/dev", "mountpoint" : "dev", "args" : "-o bind"},
-                          {"device" : "/proc", "mountpoint" : "proc", "args" : "-t proc"}]
+                          {"device" : "/proc", "mountpoint" : "proc", "args" : "-o bind"}]
        
         self.automount_map = [{"mountpoint" : "home",
                                "mapfile" : "ldap ou=auto.home,ou=automount,"\
