@@ -22,29 +22,29 @@ class Xen(Application):
         Application.__init__(self)
 
         # object variables
-        self.range = None
+        self.range = []
 
         # initialization of the option parser
-        usage = "usage: %prog [options] FROM [TO] \n" \
-                "where FROM, TO are node IDs (integers) greater than zero"
+        usage = "usage: %prog [options] ID | FROM TO \n" \
+                "where ID, FROM, TO are node IDs (integers) greater than zero"
         self.parser.set_usage(usage)
-        self.parser.set_defaults(kernel = "linux/default/vmeshnode-vmlinuz",
-                                 ramdisk = "initrd/vmeshnode-initrd",
+        self.parser.set_defaults(kernel = "default/vmeshnode-vmlinuz",
+                                 ramdisk = "vmeshnode-initrd",
                                  memory = 40, console = False)
 
         self.parser.add_option("-c", "--console",
                 action = "store_true", dest = "console",
-                help = "Attaches to domU console (xm -c)")
+                help = "attaches to domU console (xm -c)")
         self.parser.add_option("-k", "--kernel", metavar = "KERNEL",
-                action = "store", dest = "kernel",
-                help = "The kernel image for the domain [default: %default]")
+                action = "store", dest = "kernel", type="string",
+                help = "kernel image for the domain [default: %default]")            
         self.parser.add_option("-m", "--memory", metavar = "MEMORY",
                 action = "store", dest = "memory", type = "int",
-                help = "The amount of RAM, in megabytes, to allocate to the "\
+                help = "amount of RAM, in megabytes, to allocate to the "\
                        "domain when it starts [default: %default]")
         self.parser.add_option("-r", "--ramdisk", metavar = "RAMDISK",
-                action = "store", dest = "ramdisk",
-                help = "The initial ramdisk for the domain [default: %default]")
+                action = "store", dest = "ramdisk", type="string",
+                help = "initial ramdisk for the domain [default: %default]")
 
 
     def set_option(self):
@@ -52,8 +52,7 @@ class Xen(Application):
 
         Application.set_option(self)
 
-        # correct numbers of arguments?
-        # arguments are integers greater than zero?
+        # correct numbers of arguments? Integers greater than zero?
         try:
             begin = int(self.args[0])
             
@@ -85,8 +84,8 @@ class Xen(Application):
         vmeshhost = VMeshHost()
         
         # some temp variables
-        ramdisk = os.path.join(Image.getbootprefix(), self.options.ramdisk)
-        kernel = os.path.join(Image.getbootprefix(), self.options.kernel)
+        ramdisk = os.path.join(Image.getinitrdprefix(), self.options.ramdisk)
+        kernel = os.path.join(Image.getkernelprefix(), self.options.kernel)
 
         # create the desired number of vmrouters    
         for number in self.range:
@@ -137,14 +136,10 @@ class Xen(Application):
             os.remove(cfgfile)
 
 
-    def main(self):
-        """Main method of the Xen object"""
-
-        self.parse_option()
-        self.set_option()
-        self.run()
-
-
 
 if __name__ == "__main__":
-    Xen().main()
+    inst = Xen()
+    inst.parse_option()
+    inst.set_option()
+    inst.run()
+    

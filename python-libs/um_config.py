@@ -19,7 +19,8 @@ imageinfos = dict(
     common = dict(
         repository  = "svn://mesh.umic.rwth-aachen.de/umic-mesh",
         imageprefix = "/opt/umic-mesh/images",
-        bootprefix  = "/opt/umic-mesh/boot",
+        kernelprefix  = "/opt/umic-mesh/boot/linux",
+        initrdprefix  = "/opt/umic-mesh/boot/initrd",
         svnprefix   = "/opt/checkout"
     ),
     vmeshhost = dict(

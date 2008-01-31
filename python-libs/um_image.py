@@ -48,16 +48,23 @@ class Image(object):
 
     @staticmethod
     def getimageprefix():
-        """Return the path prefix where the image is located"""
+        """Return the path prefix where the images are located"""
 
         return config.imageinfos["common"]["imageprefix"]
 
 
     @staticmethod
-    def getbootprefix():
-        """Return the path prefix where the boot files are located"""
+    def getkernelprefix():
+        """Return the path prefix where the kernels are located"""
 
-        return config.imageinfos["common"]["bootprefix"]
+        return config.imageinfos["common"]["kernelprefix"]
+
+
+    @staticmethod
+    def getinitrdprefix():
+        """Return the path prefix where the initrd images are located"""
+
+        return config.imageinfos["common"]["initrdprefix"]
 
 
     @staticmethod
@@ -100,8 +107,8 @@ class Image(object):
         directory = os.path.join(Image.getimageprefix(), self._type)
         
         for name in os.listdir(directory):
-            file = os.path.join(directory, name)
-            if os.path.isdir(file):
+            path = os.path.join(directory, name)
+            if os.path.isdir(path):
                 versions.append(name)
         
         return versions
