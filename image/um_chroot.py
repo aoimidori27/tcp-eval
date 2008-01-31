@@ -170,7 +170,7 @@ class Chroot(Application):
     def run(self):
         """
         Main method of the Chroot object. Mount all devices and chroot into
-        the image. After the chroot is terminated all devices are proper unmouted
+        the image. After chroot is terminated all devices are proper unmouted
         """
         
         try:
