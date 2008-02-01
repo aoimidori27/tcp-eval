@@ -24,21 +24,20 @@ class Application(object):
                                  verbose = True, debug = False)
         
         self.parser.add_option("--syslog",
-                               action = "store_true", dest = "syslog",
-                               help = "log to syslog")
+                action = "store_true", dest = "syslog",
+                help = "log to syslog")
         self.parser.add_option("--syslog-server", type="string", metavar = "HOST",
-                               action = "callback", callback=self.check_option,
-                               dest = "server",
-                               help = "sends log to a specific server [default: %default]")                               
+                action = "callback", callback=self.check_option, dest = "server",
+                help = "sends log to a specific server [default: %default]")                               
         self.parser.add_option("-v", "--verbose",
-                               action = "store_true", dest = "verbose",
-                               help = "being more verbose [default]")
+                action = "store_true", dest = "verbose",
+                help = "being more verbose [default]")
         self.parser.add_option("-q", "--quiet",
-                               action = "store_false", dest = "verbose",
-                               help = "being more quiet")
+                action = "store_false", dest = "verbose",
+                help = "being more quiet")
         self.parser.add_option("--debug",
-                               action = "store_true", dest = "debug",
-                               help = "being even more verbose")
+                action = "store_true", dest = "debug",
+                help = "being even more verbose")
 
 
     def check_option(self, option, opt_str, value, parser):
