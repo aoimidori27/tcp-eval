@@ -34,12 +34,15 @@ class FlowgrindRecordFactory():
         regexes = [
             #0: 169.254.9.1/mrouter1, MSS = 536, ws = 16384/16384 (0/0), bs = 8192/8192, delay = 0.00s/0.00s, duration = 15.00s/0.00s, thruput = 0.607300Mb/s (139 blocks), cc = cubic
             "thruput = (?P<thruput>\d+\.\d+)Mb/s",
-            
-            #after_source_TX:804
-            #"after_source_TX:(?P<pkt_TX>\d+)",
 
-            #after_target_RX:769
-            #"after_target_RX:(?P<pkt_RX>\d+)"
+            # ID   begin     end   c/s Mb/s   s/c Mb/s RTT, ms: min        avg        max IAT, ms: min        avg        max    cwnd  ssth #uack #sack #lost #retr #fack #reor     rtt  rttvar      rto
+            " +(?P<flow_id>\d+) +(?P<begin>\d+\.\d+) +(?P<end>\d+\.\d+)"\
+            " +(?P<forward_tput>\d+\.\d+) +(?P<reverse_tput>\d+\.\d+)"\
+            " +(?P<rtt_min>\d+\.\d+) +(?P<rtt_avg>\d+\.\d+) +(?P<rtt_max>\d+\.\d+)"\
+            " +(?P<iat_min>\d+\.\d+) +(?P<iat_avg>\d+\.\d+) +(?P<iat_max>\d+\.\d+)"\           
+            " +(?P<cwnd>\d+) +(?P<ssth>\d+) +(?P<uack>\d+) +(?P<sack>\d+)"\
+            " +(?P<lost>\d+) +(?P<retr>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
+            " +(?P<krtt>\d+\.\d+) +(?P<krttvar>\d+\.\d+) +(?P<krto>\d+\.\d+)"
         
         ]
         # compile regexes
