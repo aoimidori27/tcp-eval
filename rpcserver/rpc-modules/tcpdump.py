@@ -67,7 +67,7 @@ class Tcpdump(xmlrpc.XMLRPC):
             cmd.append("-p")
 
         cmd.append(expr)
-        dir = "/mnt/scratch/%s/tcpdump" % Node().hostname()
+        dir = "/mnt/scratch/%s/tcpdump" % Node().gethostname()
 
         try:
             os.mkdir(dir)
