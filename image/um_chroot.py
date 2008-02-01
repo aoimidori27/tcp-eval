@@ -52,23 +52,22 @@ class Chroot(Application):
         usage = "usage: %prog [options] [COMMAND] \n" \
                 "where COMMAND is a command which is execute in chroot"
         self.parser.set_usage(usage)
-        self.parser.set_defaults(user = default_user, prompt = "debian_chroot",
-                                 imagetype = "meshnode", imageversion = "default")
+        self.parser.set_defaults(imagetype = "meshnode", prompt = "debian_chroot",
+                user = default_user, imageversion = "default")
 
+        self.parser.add_option("-I", "--imagetype", metavar = "TYPE",
+                action = "store", dest = "imagetype", choices = Image.gettypes(),
+                help = 'set the "imagetype" for chroot [default: %default]')
         self.parser.add_option("-p", "--prompt", metavar = "VAR", type="string",
-                               action = "store", dest = "prompt",
-                               help = "set variable identifying the chroot " \
-                                      "(used in the prompt) [default: %default]")
-        self.parser.add_option("-T", "--imagetype", metavar = "TYPE",
-                               action = "store", dest = "imagetype",
-                               choices = Image.gettypes(),
-                               help = 'set the "imagetype" for chroot [default: %default]')
+                action = "store", dest = "prompt",
+                help = "set variable identifying the chroot (used in the prompt) "\
+                       " [default: %default]")
         self.parser.add_option("-u", "--user", metavar = "NAME", type="string",
-                               action = "store", dest = "user",
-                               help = "set the user to be in the chroot [default: %default]")
+                action = "store", dest = "user",
+                help = "set the user to be in the chroot [default: %default]")
         self.parser.add_option("-V", "--imageversion", metavar = "VERSION",
-                               action = "store", dest = "imageversion",
-                               help = 'set the "imageversion" for chroot [default: %default]')
+                action = "store", dest = "imageversion", type="string",
+                help = 'set the "imageversion" for chroot [default: %default]')
 
 
     def set_option(self):
