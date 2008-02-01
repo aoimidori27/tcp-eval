@@ -15,6 +15,7 @@ from logging import info, debug, warn, error
 from sqlite3 import dbapi2 as sqlite
 
 import numpy
+import scipy.stats
 
 # umic-mesh imports
 from um_application import Application
@@ -565,6 +566,70 @@ class TcpAnalysis(Analysis):
         # iterate over every scenario and run an generate a grahic
         for run in runs.iteritems():
             self.generateTputDistribution(run, 100)
+    
+
+    def normaltest(self, data, m):
+        ary = numpy.array(data)        
+        (hist, bins) = numpy.histogram(ary, bins=m)
+
+        # number of observations
+        n = len(data)
+
+        # parameter estimation for the normal distribution
+        mu  = ary.mean()
+        std = ary.std()
+
+        # create normal distribution with these values
+        norm = scipy.stats.norm(loc=mu, scale=std)
+
+        # literature recommends at least non zero frequency for each bin
+        if (hist.min() == 0):
+            warn("chisquaretonormal: there are empty bins! Please lower classes!")
+
+
+        chi_square = 0
+
+        # expected frequencies
+        exp = list()
+        for i in range(m):
+            left = bins[i]
+            if (m-1)==i:
+                right = ary.max()
+            else:
+                right = bins[i+1]            
+            
+            # compute the expected 0-hyptohesis count for bin i
+            hyp = (norm.cdf(right) - norm.cdf(left)) * n
+            exp.append(hyp)
+
+            # observed value for bin i
+            obs = hist[i]
+
+            # update chi square score
+            chi_square += (obs-hyp)**2/hyp
+
+        # degrees of freedom (2 parameters were estimated for normal distribution)
+        df = m-2-1
+
+#        info("Chi-Square-Test score (mine) : %f" %chi_square)
+        #(chi_square_score, p_value) = scipy.stats.chisquare(hist, numpy.array(exp))
+        chi_p_value = scipy.stats.chisqprob(chi_square, df)
+        info("Chi-square test score     : %f" %chi_square)
+        info("Chi-square deg. of freed. : %d" %df)
+        info("Chi-square test p-value   : %f" %chi_p_value)
+        info("Chi-square test passed    : %s" %(chi_p_value > 0.05))
+
+
+        # omnibus test
+        (omnibus_score, omnibus_tail) = scipy.stats.normaltest(data)
+        omnibus_p_value = scipy.stats.chisqprob(omnibus_score, 2)[0]
+        info("Omnibus test score        : %f" %omnibus_score)
+        info("Omnibus test p-value      : %f" %omnibus_p_value)
+        info("Omnibus test 2-tail       : %f" %omnibus_tail)
+        info("Omnibus test passed       : %s" %(omnibus_p_value > 0.05))
+        
+    
+        
         
     def generateTputDistribution(self, run, noBins):
         (runNo, run_label) = run
@@ -605,6 +670,8 @@ class TcpAnalysis(Analysis):
 
         mu  = ary.mean()
         std = ary.std()
+        self.normaltest(ary,noBins)
+        
         f = "exp(-0.5*((x-%f)/%f)**2)/(%f*sqrt(2*pi))" %(mu,std,std)
         p.rawPlot('%s with lines title "Normal Distribution"' %f)
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
