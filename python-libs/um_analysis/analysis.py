@@ -34,7 +34,7 @@ class Analysis(Application):
         usage = "usage: %prog [options]" 
 
         self.parser.set_usage(usage)
-        self.parser.set_defaults(outdir = "stdout", indir = "./");
+        self.parser.set_defaults(outdir = "./", indir = "./");
         
 
         self.parser.add_option('-N', '--nodes', metavar="Nodes",

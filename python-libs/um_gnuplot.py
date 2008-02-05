@@ -87,8 +87,10 @@ class UmGnuplot():
     def setTimeFmt(self, timefmt):
         self.gplot("set timefmt %s" %timefmt)
 
-    def plot(self, cmd):
+    def plot(self, cmd):        
         """ Extends plotcmd with cmd """
+
+        debug("plot(): %s", cmd)
         if not self._plotcmd:
             self._plotcmd = "plot %s" %cmd
         else:
@@ -148,12 +150,13 @@ class UmHistogram(UmGnuplot):
         self.gplot('set style data histogram')
         self.gplot('set style histogram clustered gap %u title offset character 0,0,0' %self._gap)
 
-        self._bars = None
+        self._clusters = None
+        self._barspercluster = 0
         self._scenarios = None
 
-    def setBars(self, bars):
-        """ How many bars to plot """
-        right = bars+0.5
+    def setClusters(self, clusters):
+        """ How many clusters to plot """
+        right = clusters+0.5
         left  = -0.5
         
         self.setXRange((left,right))
@@ -161,18 +164,58 @@ class UmHistogram(UmGnuplot):
         # background rect
         self.gplot('set object 2 rect from %f, graph 0, 0 to %f, graph 1, 0 behind lw 1.0 fc rgb "#98E2E7" fillstyle solid 0.15 border -1' %(left,right))
 
-        self._bars = bars
+        self._clusters = clusters
 
-    def setScenarios(self, scenarios):
+    def setBarsPerCluster(self, barspercluster):
         """ How many values per row to plot. """
-        self._scenarios = scenarios
+        self._barspercluster = barspercluster
 
     def getGap(self):
         return self._gap
 
+    def setGap(self, gap):
+        self._gap = gap
+
+    def plotBar(self, values, title, using=None, linestyle=3):
+        # autoupdate barspercluster
+        self._barspercluster += 1
+
+        usingstr = ""
+        if using:
+            usingstr = "using %s" %using
+        cmd = '"%s" %s title "%s" ls %u' %(values, usingstr, title, linestyle)
+        UmGnuplot.plot(self, cmd)
+        
+    def plotErrorbar(self, values, barNo, valColumn, errColumn, title=None, linestyle=2):
+        """
+        
+            plot errorbars, barNo identifies the bar the errobar should be plotted on
+            counting starts with 0
+            
+        """
+
+        if title is None:
+            titlestr='notitle'
+        else:
+            titlestr='title "%s"' %title
+
+        # calculate middle of cluster
+        middle = self._barspercluster*self.getBarWidth()/2
+
+        # calculate left edge of bar
+        left_edge = barNo*self.getBarWidth()-middle
+
+        # calculate actual offset by moving to the middle of the bar
+        off = left_edge+self.getBarWidth()/2
+
+        usingstr = "($0+%f):%s:%s" %(off, valColumn, errColumn)
+
+        cmd = '"%s" using %s %s with errorbars ls %u' %(values,usingstr,titlestr,linestyle)
+
+        UmGnuplot.plot(self, cmd)
     
-    def getBarWidth():
-        return 1.0 / (self._scenarios + self._gap)
+    def getBarWidth(self):
+        return 1.0 / (self._barspercluster + self._gap)
 
 
 class UmPointPlot(UmGnuplot):

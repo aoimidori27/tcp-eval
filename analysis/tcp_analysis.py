@@ -8,7 +8,6 @@ import os.path
 import subprocess
 import re
 import optparse
-import gc
 from logging import info, debug, warn, error
 
 #from pysqlite2 import dbapi2 as sqlite 
@@ -336,7 +335,7 @@ class TcpAnalysis(Analysis):
         g = UmHistogram(plotname)
 
         g.setYLabel(r"Throughput in $\\Mbps$")
-        g.setBars(limit)
+        g.setBarsPerCluster(limit)
         g.plot('"%s" using 4:xtic(1) title "Throughput" ls 1' % bestfilename)
         
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
@@ -410,7 +409,6 @@ class TcpAnalysis(Analysis):
         for key in scenarios.keys():
             val = scenarios[key]
             fh.write("min_tput_%(v)s max_tput_%(v)s avg_tput_%(v)s std_tput_%(v)s notests_%(v)s" %{ "v" : val })
-
             
         fh.write("\n")
 
@@ -448,34 +446,23 @@ class TcpAnalysis(Analysis):
         g = UmHistogram(plotname)
 
         g.setYLabel(r"Throughput in $\\Mbps$")
-        g.setScenarios(len(scenarios))
-        g.setBars(limit)
+        g.setClusters(limit)
         g.setYRange("[ 0 : * ]")
 
         # bars
         for i in range(len(keys)):
             key = keys[i]
-            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key],i+1)
-            g.plot(buf)
+#            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
+            g.plotBar(valfilename, title=scenarios[key], using="%u:xtic(1)" %(4+(i*5)), linestyle=(i+1))
         
 
         # errobars
         for i in range(len(keys)):
-            title = "notitle"
             # TODO: calculate offset with scenarios and gap
             if i == 0:
-                title = 'title "Standard Deviation"'
-                off = -0.3
-            elif i == 1:
-                off = -0.1
-            elif i == 2:
-                off = 0.1
-            elif i == 3:
-                off = 0.3
-
-            buf = '"%s" using ($0+%f):%u:%u %s with errorbars ls 2' %(valfilename, off, 4+(i*5), 5+(i*5), title)
-            g.plot(buf)
-
+                g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5), "Standard Deviation")
+            else:            
+                g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5))
         
 
         # output plot
@@ -744,11 +731,11 @@ class TcpAnalysis(Analysis):
         self.loadRecords(tests=["flowgrind","rate"])
                         
         self.dbcon.commit()
+        self.generateHistogram()
         self.generateTputOverTimePerRun()
         self.generateTputOverTime()
         self.generateTputDistributions()
         self.generateAccTputDistribution(50)
-        self.generateHistogram()
         self.generateAccHistogram()
         self.generateCumulativeFractionOfPairs()        
         

@@ -17,6 +17,7 @@ import traceback
 
 # um imports
 from testrecord import TestRecord
+from um_functions import StrictStruct
 
 ########## Flowgrind Parsing #############
 
@@ -39,7 +40,7 @@ class FlowgrindRecordFactory():
             " +(?P<flow_id>\d+) +(?P<begin>\d+\.\d+) +(?P<end>\d+\.\d+)"\
             " +(?P<forward_tput>\d+\.\d+) +(?P<reverse_tput>\d+\.\d+)"\
             " +(?P<rtt_min>\d+\.\d+) +(?P<rtt_avg>\d+\.\d+) +(?P<rtt_max>\d+\.\d+)"\
-            " +(?P<iat_min>\d+\.\d+) +(?P<iat_avg>\d+\.\d+) +(?P<iat_max>\d+\.\d+)"\           
+            " +(?P<iat_min>\d+\.\d+) +(?P<iat_avg>\d+\.\d+) +(?P<iat_max>\d+\.\d+)"\
             " +(?P<cwnd>\d+) +(?P<ssth>\d+) +(?P<uack>\d+) +(?P<sack>\d+)"\
             " +(?P<lost>\d+) +(?P<retr>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
             " +(?P<krtt>\d+\.\d+) +(?P<krttvar>\d+\.\d+) +(?P<krto>\d+\.\d+)"
@@ -49,10 +50,26 @@ class FlowgrindRecordFactory():
         self.regexes = map(re.compile, regexes)
 
 
+        # convenience function to group flows
+        def group_flows(self, r):
+            flow_ids = map(int, set(r['flow_id']))
+
+            flow_map = dict()
+
+            # initialize value records
+            for flow in flow_ids:
+                flow_map[flow] = dict()
+
         # phase 2 result calculation
         self.whats = dict(
             # average thruput just take parsed value
             thruput = lambda r: float(r['thruput'][0]),
+
+            flow_ids          = lambda r: map(int, set(r['flow_id'])),
+#            flows             = self.group_flows,
+            flow_id_list      = lambda r: map(int, r['flow_id']),
+            forward_tput_list = lambda r: map(float, r['forward_tput_list']),
+            reverse_tput_list = lambda r: map(float, r['reverse_tput_list'])                        
 
          )
 
