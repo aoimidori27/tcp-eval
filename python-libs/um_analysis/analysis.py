@@ -78,7 +78,7 @@ class Analysis(Application):
         "Processing of the gathered data"
         pass
 
-    def onLoad(self, record, iterationNo, scenarioNo, test):
+    def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
         pass
 
     def loadRecords(self, onLoad = None, tests = None):
