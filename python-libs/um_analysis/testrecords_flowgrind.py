@@ -9,11 +9,9 @@ import subprocess
 import re
 import time
 import signal
-import socket
 from logging import info, debug, warn, error
 
 from numpy import array
-import traceback
 
 # um imports
 from testrecord import TestRecord
@@ -49,16 +47,56 @@ class FlowgrindRecordFactory():
         # compile regexes
         self.regexes = map(re.compile, regexes)
 
-
         # convenience function to group flows
-        def group_flows(self, r):
-            flow_ids = map(int, set(r['flow_id']))
+        def group_flows(r):
 
+            # raw_values and there convert function
+            keys = { 'begin' : float,
+                     'end'   : float,
+                     'forward_tput' : float,
+                     'reverse_tput' : float,
+                     'rtt_min' : float,
+                     'rtt_avg' : float,
+                     'rtt_max' : float,
+                     'iat_min' : float,
+                     'iat_avg' : float,
+                     'iat_max' : float,
+                     'cwnd'    : int,
+                     'ssth'    : int,
+                     'uack'    : int,
+                     'sack'    : int,
+                     'lost'    : int,
+                     'retr'    : int,
+                     'fack'    : int,
+                     'reor'    : int,
+                     'krtt'    : float,
+                     'krttvar' : float,
+                     'krto'    : float }
+            
+            flow_ids = map(int, set(r['flow_id']))
             flow_map = dict()
 
+            debug("hmm")
+
             # initialize value records
-            for flow in flow_ids:
-                flow_map[flow] = dict()
+            for flow_id in flow_ids:
+                flow_map[flow_id] = StrictStruct(id=flow_id, size=0, **keys)
+                for key in keys.iterkeys():
+                    setattr(flow_map[flow_id],key,list())
+
+            # iterate over all entries, shuffle and convert
+            for i in range(len(r['flow_id'])):
+                flow = flow_map[int(r['flow_id'][i])]
+
+                for (key, convert) in keys.iteritems():
+                    try:
+                        getattr(flow,key).append(convert(r[key][i]))
+                    except KeyError, inst:
+                        warn('Failed to get r["%s"][%u]' %(key,i))
+                        raise inst
+                flow.size += 1
+
+            return flow_map.values()
 
         # phase 2 result calculation
         self.whats = dict(
@@ -66,7 +104,7 @@ class FlowgrindRecordFactory():
             thruput = lambda r: float(r['thruput'][0]),
 
             flow_ids          = lambda r: map(int, set(r['flow_id'])),
-#            flows             = self.group_flows,
+            flows             = group_flows,
             flow_id_list      = lambda r: map(int, r['flow_id']),
             forward_tput_list = lambda r: map(float, r['forward_tput_list']),
             reverse_tput_list = lambda r: map(float, r['reverse_tput_list'])                        
