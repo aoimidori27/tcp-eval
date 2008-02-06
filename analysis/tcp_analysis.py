@@ -152,7 +152,7 @@ class TcpAnalysis(Analysis):
             if times:
                 fh.write("%f %f %u\n" %(thruput,rate,times[key]))
             else:
-                fh.write("%f %f\n" %(thruput,rate,times[key]))
+                fh.write("%f %f\n" %(thruput,rate))
 
         fh.close()
 
@@ -455,7 +455,6 @@ class TcpAnalysis(Analysis):
 #            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
             g.plotBar(valfilename, title=scenarios[key], using="%u:xtic(1)" %(4+(i*5)), linestyle=(i+1))
         
-
         # errobars
         for i in range(len(keys)):
             # TODO: calculate offset with scenarios and gap
@@ -463,12 +462,9 @@ class TcpAnalysis(Analysis):
                 g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5), "Standard Deviation")
             else:            
                 g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5))
-        
 
         # output plot
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
-
-
 
 
     def generateCumulativeFractionOfPairs(self):
@@ -508,7 +504,6 @@ class TcpAnalysis(Analysis):
             fh.write("%f %f\n" %(avg_thruput, fraction))
             i = i+1
 
-
         fh.close()
 
         g = UmGnuplot(plotname)
@@ -518,11 +513,8 @@ class TcpAnalysis(Analysis):
         
         g.plot('"%s" using 1:2 title "1-Hop" ls 1 with steps' % valfilename)
 
-
         # output plot
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
-
-
 
 
     def generateTputDistributions(self):
@@ -573,7 +565,6 @@ class TcpAnalysis(Analysis):
         if (hist.min() == 0):
             warn("chisquaretonormal: there are empty bins! Please lower classes!")
 
-
         chi_square = 0
 
         # expected frequencies
@@ -606,7 +597,6 @@ class TcpAnalysis(Analysis):
         info("Chi-square test p-value   : %f" %chi_p_value)
         info("Chi-square test passed    : %s" %(chi_p_value > 0.05))
 
-
         # omnibus test
         (omnibus_score, omnibus_tail) = scipy.stats.normaltest(data)
         omnibus_p_value = scipy.stats.chisqprob(omnibus_score, 2)[0]
@@ -616,8 +606,7 @@ class TcpAnalysis(Analysis):
         info("Omnibus test passed       : %s" %(omnibus_p_value > 0.05))
         
     
-        
-        
+               
     def generateTputDistribution(self, run, noBins):
         (runNo, run_label) = run
 
