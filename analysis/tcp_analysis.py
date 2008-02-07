@@ -16,6 +16,7 @@ from sqlite3 import dbapi2 as sqlite
 import numpy
 import scipy.stats
 
+
 # umic-mesh imports
 from um_application import Application
 from um_functions import call
@@ -215,7 +216,7 @@ class TcpAnalysis(Analysis):
             SELECT iterationNo, scenarioNo, thruput, start_time
             FROM tests 
             WHERE runNo=%u
-            ORDER by iterationNo ASC
+            ORDER by iterationNo, scenarioNo ASC
             ''' %(runNo))
 
             sorted_keys = list()
