@@ -71,11 +71,18 @@ class RateRecordFactory():
             keys = [ "1", "2", "5_5", "11", "6", "9", "12", "18", "24", "36", "48", "54" ]
 
             for key in keys:
+
+                # ignore empty rates because some may not be present (for instance in 802.11a mode)
+                try:
+                    rate_list = r['rate_%s_pkts' %key]
+                except KeyError:
+                    continue
+                    
                 # raise a KeyError because this is what the calling class expects
                 if len(r['rate_%s_pkts' %key])<2:
                     raise KeyError("len(rate_%s_pkts)<2" %key)
                 res[key] = int(r['rate_%s_pkts' %key][1])-int(r['rate_%s_pkts' %key][0])
-                
+            
             return res
 
         def calcAverageRate(r):
