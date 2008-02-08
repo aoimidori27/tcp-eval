@@ -12,6 +12,7 @@ from twisted.web import xmlrpc, server
 from twisted.internet import reactor, defer
 from twisted.enterprise import adbapi
 
+# umic-mesh imports
 from um_application import Application
 from um_twisted_functions import twisted_call
 from um_twisted_meshdb import MeshDbPool
@@ -21,11 +22,10 @@ class RPCServer(xmlrpc.XMLRPC):
     """RPC Server"""
 
     def __init__(self, module_path = None, parent = None):
+        
         info("Starting up RPCServer...")
         self._module_path = module_path
-
         self._parent = parent
-
         self._services = dict()
 
         # Call super constructor
@@ -43,7 +43,7 @@ class RPCServer(xmlrpc.XMLRPC):
                                       password='2PZrfjNXYNBxwru')
             
         except Exception, inst:
-            error("Failed to establish database connection: ", inst )
+            error("Failed to establish database connection: ", inst)
     
             
         # find and load rpc modules

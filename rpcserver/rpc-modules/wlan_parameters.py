@@ -119,7 +119,7 @@ class Wlan_parameters(RPCService):
         """ This function sets up vaps. """
 
         final_rc = 0
-        nodenr = Node().getnumber()
+        nodenr = Node().getNumber()
 
         for config in self._configs:
             interface  = config["interface"]
@@ -167,7 +167,7 @@ class Wlan_parameters(RPCService):
         """ This function resets vaps to reasonable defaults. """
 
         final_rc = 0
-        nodenr = Node().getnumber()
+        nodenr = Node().getNumber()
 
         for config in self._configs:
             interface  = config["interface"]

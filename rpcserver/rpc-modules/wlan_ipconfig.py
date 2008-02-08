@@ -92,7 +92,7 @@ class Wlan_ipconfig(RPCService):
         """ This function brings up the interfaces. """
 
         final_rc = 0
-        nodenr = Node().getnumber()
+        nodenr = Node().getNumber()
 
         for config in self._configs:
             address = "%s%u" %(config["ipprefix"], nodenr)

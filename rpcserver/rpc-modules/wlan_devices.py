@@ -155,12 +155,3 @@ class Wlan_devices(RPCService):
                                                       rc, message=stderr)
                 
         defer.returnValue(final_rc)
-
-
-
-
-
-
-
-        
-        
