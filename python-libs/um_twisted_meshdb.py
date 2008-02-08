@@ -14,6 +14,11 @@ class MeshDbPool(adbapi.ConnectionPool):
     """This class handles the database connection pool, for the mesh database"""
 
     def __init__(self, username, password):
+
+        def initConnection(conn):
+            # turn on autocommit
+            conn.autocommit(True)
+        
         adbapi.ConnectionPool.__init__(self, "MySQLdb",
                                        user   = username,
                                        host   = "www.umic-mesh.net",
@@ -21,6 +26,7 @@ class MeshDbPool(adbapi.ConnectionPool):
                                        db     = "umic-mesh", 
                                        cp_min = 1,
                                        cp_max = 3,
+                                       cp_openfun = initConnection,
                                        cp_reconnect = True)
 
     def _getAssoc(self, txn, query):
