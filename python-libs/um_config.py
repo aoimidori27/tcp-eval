@@ -2,99 +2,105 @@
 # -*- coding: utf-8 -*-
 
 # information about the all UMIC-Mesh.net nodes
-nodeinfos = dict(
+node_info = dict(
     vmeshhost = dict(
-        hostnameprefix = "vmeshhost"
+        hostname_prefix = "vmhost",
+        image_names = ["vmeshhost"],
+        virtual = False
     ),
     vmeshrouter = dict(
-        hostnameprefix = "vmrouter"
+        hostname_prefix = "vmrouter",
+        image_names = ["vmeshnode"],
+        virtual = True
     ),
     meshrouter = dict(
-        hostnameprefix = "mrouter"
+        hostname_prefix = "mrouter",
+        image_names = ["meshnode"],
+        virtual = False
     )
 )
 
 # information about the images
-imageinfos = dict(
+image_info = dict(
     common = dict(
-        repository  = "svn://mesh.umic.rwth-aachen.de/umic-mesh",
-        imageprefix = "/opt/umic-mesh/images",
-        kernelprefix  = "/opt/umic-mesh/boot/linux",
-        initrdprefix  = "/opt/umic-mesh/boot/initrd",
-        svnprefix   = "/opt/checkout"
+        repository    = "svn://mesh.umic.rwth-aachen.de/umic-mesh",
+        image_prefix  = "/opt/umic-mesh/images",
+        kernel_prefix = "/opt/umic-mesh/boot/linux",
+        initrd_prefix = "/opt/umic-mesh/boot/initrd",
+        svn_prefix    = "/opt/checkout"
     ),
     vmeshhost = dict(
-        svnmappings = { "/config/vmeshhost/trunk" : "config",
-                        "/linux/xen/trunk" : "linux/default",
-                        "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
-                        "/tools/flowgrind/trunk" : "tools/flowgrind",
-                        "/tools/twisted/branches/um-version" : "tools/twisted",
-                        "/tools/net-snmp/branches/um-version" : "tools/net-snmp",
-                        "/boot/bios/trunk" : "boot/bios",
-                        "/boot/etherboot/trunk" : "boot/etherboot",
-                        "/scripts/python-libs" : "scripts/python-libs",
-                        "/scripts/image" : "scripts/image",
-                        "/scripts/vmesh" : "scripts/vmesh",
-                        "/scripts/util" : "scripts/util",
-                        "/scripts/measurement" : "scripts/measurement",
-                        "/scripts/analysis" : "scripts/analysis" },
-        scriptmappings = { "scripts/image" : "/usr/local/sbin",
-                           "scripts/vmesh" : "/usr/local/sbin",
-                           "scripts/image" : "/usr/local/sbin",
-                           "scripts/measurement" : "/usr/local/bin" }
+        svn_mappings = { "/config/vmeshhost/trunk" : "config",
+                         "/linux/xen/trunk" : "linux/default",
+                         "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
+                         "/tools/flowgrind/trunk" : "tools/flowgrind",
+                         "/tools/twisted/branches/um-version" : "tools/twisted",
+                         "/tools/net-snmp/branches/um-version" : "tools/net-snmp",
+                         "/boot/bios/trunk" : "boot/bios",
+                         "/boot/etherboot/trunk" : "boot/etherboot",
+                         "/scripts/python-libs" : "scripts/python-libs",
+                         "/scripts/image" : "scripts/image",
+                         "/scripts/vmesh" : "scripts/vmesh",
+                         "/scripts/util" : "scripts/util",
+                         "/scripts/measurement" : "scripts/measurement",
+                         "/scripts/analysis" : "scripts/analysis" },
+        script_mappings = { "scripts/image" : "/usr/local/sbin",
+                            "scripts/vmesh" : "/usr/local/sbin",
+                            "scripts/image" : "/usr/local/sbin",
+                            "scripts/measurement" : "/usr/local/bin" }
     ),
     vmeshnode = dict(
-        svnmappings = { "/config/vmeshnode/trunk" : "config",
-                        "/linux/xen/trunk" : "linux/default",
-                        "/linux/xen/branches/linux-2.6.16.29-xen-elcn" : "linux/elcn",
-                        "/routing/olsr/branches/um-version-olsr4" : "routing/olsr4",
-                        "/routing/olsr/branches/um-version-olsr5" : "routing/olsr5",
-                        "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
-                        "/tools/flowgrind/trunk" : "tools/flowgrind",
-                        "/tools/tcpdump/branches/um-version-elcn" : "tools/tcpdump",
-                        "/tools/set-elcn/trunk" : "tools/set-elcn",
-                        "/scripts/python-libs" : "scripts/python-libs",
-                        "/scripts/vmesh" : "scripts/vmesh",
-                        "/scripts/util" : "scripts/util" },
-        scriptmappings = { "scripts/vmesh" : "/usr/local/sbin",
-                           "scripts/util" : "/usr/local/bin" }
+        svn_mappings = { "/config/vmeshnode/trunk" : "config",
+                         "/linux/xen/trunk" : "linux/default",
+                         "/linux/xen/branches/linux-2.6.16.29-xen-elcn" : "linux/elcn",
+                         "/routing/olsr/branches/um-version-olsr4" : "routing/olsr4",
+                         "/routing/olsr/branches/um-version-olsr5" : "routing/olsr5",
+                         "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
+                         "/tools/flowgrind/trunk" : "tools/flowgrind",
+                         "/tools/tcpdump/branches/um-version-elcn" : "tools/tcpdump",
+                         "/tools/set-elcn/trunk" : "tools/set-elcn",
+                         "/scripts/python-libs" : "scripts/python-libs",
+                         "/scripts/vmesh" : "scripts/vmesh",
+                         "/scripts/util" : "scripts/util" },
+        script_mappings = { "scripts/vmesh" : "/usr/local/sbin",
+                            "scripts/util" : "/usr/local/bin" }
     ),
     meshnode = dict(
-        svnmappings = { "/config/vmeshnode/trunk" : "config",
-                        "/linux/vanilla/trunk" : "linux/default",
-                        "/linux/vanilla/branches/linux-2.6.16.29-ring3" : "linux/ring3",
-                        "/linux/vanilla/branches/linux-2.6.16.29-elcn" : "linux/elcn",
-                        "/routing/olsr/branches/um-version-olsr4" : "routing/olsr4",
-                        "/routing/olsr/branches/um-version-olsr5" : "routing/olsr5",
-                        "/drivers/madwifi-ng/branches/um-version" : "drivers/madwifi-ng",
-                        "/drivers/madwifi-ng/branches/um-version-elcn" : "drivers/madwifi-ng-elcn",
-                        "/tools/net-snmp/branches/um-version" : "tools/net-snmp",
-                        "/tools/set-elcn/trunk" : "tools/set-elcn",
-                        "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
-                        "/tools/flowgrind/trunk" : "tools/flowgrind",
-                        "/tools/tcpdump/branches/um-version-elcn" : "tools/tcpdump",
-                        "/tools/libpcap/branches/ring3" : "tools/libpcap",
-                        "/tools/libpfring/branches/um-version" : "tools/libpfring",
-                        "/tools/twisted/branches/um-version" : "tools/twisted",
-                        "/scripts/python-libs" : "scripts/python-libs",
-                        "/scripts/rpcserver" : "scripts/rpcserver",
-                        "/scripts/mesh" : "scripts/mesh",
-                        "/scripts/util" : "scripts/util" },
-        scriptmappings = { "scripts/mesh" : "/usr/local/sbin",
-                           "scripts/util" : "/usr/local/bin",
-                           "scripts/rpcserver" : "/usr/local/sbin" }
+        svn_mappings = { "/config/vmeshnode/trunk" : "config",
+                         "/linux/vanilla/trunk" : "linux/default",
+                         "/linux/vanilla/branches/linux-2.6.16.29-ring3" : "linux/ring3",
+                         "/linux/vanilla/branches/linux-2.6.16.29-elcn" : "linux/elcn",
+                         "/routing/olsr/branches/um-version-olsr4" : "routing/olsr4",
+                         "/routing/olsr/branches/um-version-olsr5" : "routing/olsr5",
+                         "/drivers/madwifi-ng/branches/um-version" : "drivers/madwifi-ng",
+                         "/drivers/madwifi-ng/branches/um-version-elcn" : "drivers/madwifi-ng-elcn",
+                         "/tools/net-snmp/branches/um-version" : "tools/net-snmp",
+                         "/tools/set-elcn/trunk" : "tools/set-elcn",
+                         "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
+                         "/tools/flowgrind/trunk" : "tools/flowgrind",
+                         "/tools/tcpdump/branches/um-version-elcn" : "tools/tcpdump",
+                         "/tools/libpcap/branches/ring3" : "tools/libpcap",
+                         "/tools/libpfring/branches/um-version" : "tools/libpfring",
+                         "/tools/twisted/branches/um-version" : "tools/twisted",
+                         "/scripts/python-libs" : "scripts/python-libs",
+                         "/scripts/rpcserver" : "scripts/rpcserver",
+                         "/scripts/mesh" : "scripts/mesh",
+                         "/scripts/util" : "scripts/util" },
+        script_mappings = { "scripts/mesh" : "/usr/local/sbin",
+                            "scripts/util" : "/usr/local/bin",
+                            "scripts/rpcserver" : "/usr/local/sbin" }
     )
 )
 
 # kernel information
-kernelinfos = dict(
-    mirror = "http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/",
+kernel_info = dict(
+    mirror  = "http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/",
     version = "2.6.16.29",
     srcpath = "/usr/src",
 )
 
 # olsr information
-olsrinfos = dict(
+olsr_info = dict(
     remote_repos    = ":pserver:anonymous@olsrd.cvs.sourceforge.net:/cvsroot/olsrd",
     remote_module   = "olsrd-current",
     remote_tag      = "OLSRD_0_5_4",
@@ -103,7 +109,7 @@ olsrinfos = dict(
 )
 
 # madwifi information
-madwifiinfos = dict(
+madwifi_info = dict(
     remote_repos    = "http://svn.madwifi.org",
     remote_module   = "/madwifi/tags",
     remote_tag      = "release-0.9.3.3",

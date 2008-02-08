@@ -13,20 +13,20 @@ import um_config as config
 class Node(object):
     """Provides access to information about a certain UMIC-Mesh.net node."""
     
-    def __init__(self, hostname = None, nodetype = None):
+    def __init__(self, hostname = None, node_type = None):
         """
         Creates a new Node object with two following parameters: hostname and
-        nodetype.
+        node_type.
             
         1. If the hostname is None, socket.gethostname() will be used to determine
-        the hostname. The nodetype will be derived from the hostname and can be
-        overriden by setting the parameter nodetype.
+        the hostname. The node type will be derived from the hostname and can be
+        overriden by setting the parameter node_type.
              
         2. If the hostname is a string, the string will be used to set the hostname.
-        The nodetype will be derived from the hostname and can be overriden by
-        setting the parameter nodetype.
+        The node type will be derived from the hostname and can be overriden by
+        setting the parameter node_type.
         
-        3. If the hostname is an integer, the nodetype is mandatory. Both parameter
+        3. If the hostname is an integer, the node type is mandatory. Both parameter
         will be used used to determine the correct hostname.
         """
 
@@ -35,90 +35,162 @@ class Node(object):
         self._type = None
         self._info = None
         
-        # if the nodetype is set, we need validity check
-        if nodetype:
-            if nodetype in config.nodeinfos:
-                self._type = nodetype
-                self._info = config.nodeinfos[self._type]
-            else:
-                raise NodeException('Invalid "nodetype". Please set it to one of '\
-                                    'the following: %s' % Node.gettypes())
+        # if the node_type is set, we need validity check
+        if node_type is not None and Node.isValidType(node_type):
+            self._type = node_type
+            self._info = config.node_info[self._type]
+            
         # first case
-        if not hostname:
-            self._hostname = self.gethostname()
+        if hostname is None:
+            self._hostname = self.getHostname()
         
         # third case
         elif type(hostname) is int:
-            if not nodetype:
-                raise NodeException('If the hostname is an integer, the "nodetype" '
-                                    'is mandatory.')
+            if node_type is not None:
+                self._hostname = "%s%s" %(Node.hostnamePrefix(node_type),
+                                          str(hostname))
             else:
-                self._hostname = "%s%s" %(self._info["hostnameprefix"], str(hostname))
+                raise NodeException("If the hostname is an integer, the "\
+                                    "parameter node_type is mandatory.")            
 
         # second case
         else:     
             self._hostname = hostname
         
-        # if the nodetype is not set, we can now derive the nodetype from the hostname
-        if not nodetype:           
-            nodetypelist = []
-            for (nodetype, nodeinfo) in config.nodeinfos.iteritems():
-                if re.match(nodeinfo["hostnameprefix"], self._hostname):
-                    nodetypelist.append(nodetype)
+        # if the node_type is not set, we can now derive the node_type from the hostname
+        if node_type is None:           
+            node_type_list = []
+            for node_type in Node.types():
+                if re.match(Node.hostnamePrefix(node_type), self._hostname):
+                    node_type_list.append(node_type)
 
-            if len(nodetypelist) == 1:
-                self._type = nodetypelist[0]
-                self._info = config.nodeinfos[self._type]
-            elif len(nodetypelist) == 0:
-                raise NodeException('Cannot derive "nodetype" from '
-                        'hostname, as there are no types with fitting '
-                        '"hostnameprefix" entries.')
+            if len(node_type_list) == 1:
+                self._type = node_type_list[0]
+                self._info = config.node_info[self._type]
+            elif len(node_type_list) == 0:
+                raise NodeException("Cannot derive node_type from "\
+                        "hostname, as there are no types with fitting "
+                        "hostname_prefix entries.")
             else:
-                raise NodeException('Cannot derive "nodetype" from '
-                        'hostname, as there are multiple types with fitting '
-                        '"hostnameprefix" entries: %s' % nodetypelist)
+                raise NodeException("Cannot derive node_type from "
+                        "hostname, as there are multiple types with fitting "
+                        "hostname_prefix entries: %s" % node_type_list)
 
 
     @staticmethod
-    def gettypes():
-        """Return the names of the possible node types"""
+    def types():
+        """Return the names of all possible node types"""
         
-        return config.imageinfos.keys() 
+        return config.node_info.keys() 
 
 
-    def gettype(self):
-        """Return the nodetype of the node"""
+    @staticmethod
+    def isValidType(node_type, raiseError = True):
+        """Return true if the node type is valid"""
+        
+        contained = node_type in Node.types()
 
-        return self._type
+        if not contained and raiseError:
+            raise NodeValidityException("node_type", Node.types())
+    
+        return contained
+
+    
+    @staticmethod
+    def vtypes():
+        """Return the names of all node types that are virtualizable"""
+        
+        return filter(lambda key: config.node_info[key]["virtual"],
+                      config.node_info.keys())
 
 
-    def getinfo(self):
-        """Return the nodeinfos of the node"""
+    @staticmethod
+    def isValidVtype(node_type, raiseError = True):
+        """Return true if the node type is valid and virtualizable"""
+        
+        contained = node_type in Node.vtypes()
 
-        return self._info
+        if not contained and raiseError:
+            raise NodeValidityException("node_type", Node.vtypes())
+    
+        return contained   
 
 
-    def gethostname(self):
+    @staticmethod
+    def hostnamePrefix(node_type):
+        """Return the hostname prefix of the node type"""
+
+        Node.isValidType(node_type)
+        return config.node_info[node_type]["hostname_prefix"]
+
+
+    @staticmethod
+    def images(node_type):
+        """Return a list of all possible images names for the node type"""
+
+        Node.isValidType(node_type)
+        return config.node_info[node_type]["image_names"]
+
+
+    @staticmethod
+    def isValidImage(image_name, node_type, raiseError = True):
+        """Return true if the image name is valid for the node type"""
+        
+        contained = image_name in Node.images(node_type)
+
+        if not contained and raiseError:
+            raise NodeValidityException("image_name", Node.images(node_type))
+    
+        return contained
+
+
+    @staticmethod
+    def virtualizable(node_type):
+        """Return true if the node type virtualizable"""
+
+        Node.isValidType(node_type)
+        return config.node_info[node_type]["virtual"]
+
+
+    def getHostname(self):
         """Return the hostname of the node"""
     
         if not self._hostname:
             self._hostname = socket.gethostname()
         return self._hostname
- 
+           
 
-    def gethostnameprefix(self):
-        """Return the hostnameprefix of thee node"""
+    def getType(self):
+        """Return the node type of the node"""
 
-        return self._info["hostnameprefix"]
-
-
-    def getnumber(self):
-        """Derives the nodenumber from the hostname"""
-
-        return int(re.sub(self.gethostnameprefix(), "", self._hostname))
+        return self._type
 
 
-    def getipaddress(self, device = "ath0"):
+    def getHostnamePrefix(self):
+        """Return the hostname prefix of the node"""
+
+        return self._info["hostname_prefix"]
+
+
+    def getImages(self):
+        """Return the list of all possible images names for the node"""
+
+        return self._info["image_names"]
+
+
+    def isVirtual(self):
+        """Return true if the node is virtualizable"""
+
+        return self._info["virtual"]
+
+        
+    def getNumber(self):
+        """Derives the node number from the hostname"""
+
+        return int(re.sub(self.getHostnamePrefix(), "", self._hostname))
+
+
+    def getIPaddress(self, device = "ath0"):
         """Get the IP address of a specific device without the netmask"""
 
         name = "%s.%s" %(device, self._hostname)
@@ -126,8 +198,7 @@ class Node(object):
         try:
             address = socket.gethostbyname(name)
         except socket.gaierror, inst:
-            error("Failed to lookup %s:%s "% (name, inst.args[0]))
-            raise
+            raise NodeException("Failed to lookup %s:%s "% (name, inst.args[0]))
 
         return address
 
@@ -152,9 +223,20 @@ class MeshRouter(Node):
 
 
 class NodeException(Exception):
-    def __init__(self, msg):
+    def __init__(self, value):
         Exception.__init__(self)
-        self.msg = msg
+        self._value = value
 
     def __str__(self):
-        return repr(self.msg)
+        return repr(self._value)
+
+
+
+class NodeValidityException(NodeException):
+    def __init__(self, value, choices):
+        NodeException.__init__(self, value)
+        self._choices = choices
+
+    def __str__(self):
+        return 'Invalid "%s". Please set it to one of the following: %s' \
+                % (self._value, self._choices)
