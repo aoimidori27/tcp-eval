@@ -3,18 +3,20 @@
 
 # python imports
 import os
+import sys
 import tempfile
 from logging import info, debug, warn, error
+from optparse import OptionValueError
 
 # umic-mesh imports
 from um_application import Application
-from um_node import VMeshHost, VMeshRouter
-from um_image import Image
-from um_functions import requireroot, execute, CommandFailed
+from um_image import Image, ImageValidityException
+from um_node import Node, VMeshHost, NodeValidityException
+from um_functions import requireroot, call, execute, CommandFailed
 
 
 class Xen(Application):
-    """Class to start vmrouters on the basis of Xen"""
+    """Class to start virtual nodes on the basis of Xen"""
 
     def __init__(self):
         """Creates a new Xen object"""
@@ -22,29 +24,43 @@ class Xen(Application):
         Application.__init__(self)
 
         # object variables
-        self.range = []
+        self._range = []
 
         # initialization of the option parser
         usage = "usage: %prog [options] ID | FROM TO \n" \
                 "where ID, FROM, TO are node IDs (integers) greater than zero"
         self.parser.set_usage(usage)
-        self.parser.set_defaults(kernel = "default/vmeshnode-vmlinuz",
-                                 ramdisk = "vmeshnode-initrd",
-                                 memory = 40, console = False)
+        self.parser.set_defaults(console = False, dry_run = False,
+                image_type = "vmeshnode", kernel = "default/vmeshnode-vmlinuz",
+                memory = 40, node_type = "vmeshrouter",
+                ramdisk = "vmeshnode-initrd", image_version = "default")
 
         self.parser.add_option("-c", "--console",
                 action = "store_true", dest = "console",
                 help = "attaches to domU console (xm -c)")
-        self.parser.add_option("-k", "--kernel", metavar = "KERNEL",
+        self.parser.add_option("-d", "--dry-run",
+                action = "store_true", dest = "dry_run",
+                help = "do not start the domain automatically; create only the "\
+                       "start file (XEN config file) for domain")
+        self.parser.add_option("-I", "--image_type", metavar = "TYPE",
+                action = "store", dest = "image_type", choices = Image.types(),
+                help = "the image type for the domain [default: %default]")               
+        self.parser.add_option("-k", "--kernel", metavar = "FILE",
                 action = "store", dest = "kernel", type="string",
                 help = "kernel image for the domain [default: %default]")            
         self.parser.add_option("-m", "--memory", metavar = "MEMORY",
                 action = "store", dest = "memory", type = "int",
-                help = "amount of RAM, in megabytes, to allocate to the "\
+                help = "amount of RAM in MB to allocate to the "\
                        "domain when it starts [default: %default]")
-        self.parser.add_option("-r", "--ramdisk", metavar = "RAMDISK",
+        self.parser.add_option("-N", "--node_type", metavar = "TYPE",
+                action = "store", dest = "node_type", choices = Node.vtypes(),
+                help = "the node type for the domain [default: %default]")               
+        self.parser.add_option("-r", "--ramdisk", metavar = "DISK",
                 action = "store", dest = "ramdisk", type="string",
                 help = "initial ramdisk for the domain [default: %default]")
+        self.parser.add_option("-V", "--image_version", metavar = "VERSION",
+                action = "store", dest = "image_version", type="string",
+                help = 'the image version for the domain [default: %default]')
 
 
     def set_option(self):
@@ -52,8 +68,11 @@ class Xen(Application):
 
         Application.set_option(self)
 
-        # correct numbers of arguments? Integers greater than zero?
         try:
+            # check if imagetype fit to nodetype
+            Node.isValidImage(self.options.image_type, self.options.node_type)
+        
+            # correct numbers of arguments?
             begin = int(self.args[0])
             
             if len(self.args) == 1:
@@ -63,77 +82,116 @@ class Xen(Application):
             else:
                 raise IndexError
             
+            # Integers greater than zero?
             if begin > 0 and end > 0:
-                self.range = range(begin, end)
+                self._range = range(begin, end)
             else:
                 raise ValueError
-        
+            
+            # everthing is OK, we can leave the method
+            return
+                  
+        except NodeValidityException, exception:
+            error("Invalid combination of node type and image type")
+            error(exception)
         except IndexError:
-            error("Incorrect number of arguments")                
+            error("Incorrect number of arguments")
         except ValueError:
             error("Arguments are not integers greater than zero")
+       
+        # if we come to this point we got an exception and we want to terminate
+        # the program
+        sys.exit(1)
 
 
     def run(self):
-        """Start the desired number of vmrouters"""
+        """Start the desired number of vmeshnodes"""
 
         # must be root
         requireroot()
 
         # gather information form localhost (e.g. hostname)
         vmeshhost = VMeshHost()
+
+        # create an Image object
+        try:
+            image = Image(self.options.image_type, self.options.image_version)        
+        
+        except ImageValidityException, exception:
+            error(exception)
+            sys.exit(1)
         
         # some temp variables
-        ramdisk = os.path.join(Image.getinitrdprefix(), self.options.ramdisk)
-        kernel = os.path.join(Image.getkernelprefix(), self.options.kernel)
+        ramdisk = os.path.join(Image.initrdPrefix(), self.options.ramdisk)
+        kernel = os.path.join(Image.kernelPrefix(), self.options.kernel)
 
-        # create the desired number of vmrouters    
-        for number in self.range:
+        # create the desired number of vmeshnodes    
+        for number in self._range:
         
-             # create a vmeshrouter object
-            vmeshrouter = VMeshRouter(number)
+            # create a vmeshnode object
+            try:       
+                vmeshnode = Node(number, self.options.node_type)        
+            
+            except ImageValidityException, exception:
+                error(exception)
+                sys.exit(1)             
 
-            # Test if vmeshrouter is already running
+            # Test if vmeshnode is already running
             try:
-                cmd = ["ping", "-c1", vmeshrouter.gethostname()]
+                cmd = ["ping", "-c1", vmeshnode.getHostname()]
                 execute(cmd, shell = False)
-                warn("%s seems to be already running." % vmeshrouter.gethostname())
+                warn("%s seems to be already running." % vmeshnode.getHostname())
                 continue
+            
             except CommandFailed:
                 pass
 
             # create XEN config file
-            fd, cfgfile = tempfile.mkstemp()
-            os.write(fd,
-                     "name = '%s' \n"\
-                     "ramdisk = '%s' \n"\
-                     "kernel = '%s' \n"\
-                     "memory = %s \n"\
-                     "root = '/dev/ram0' \n"\
-                     "vif = ['mac=00:16:3E:00:%d:%d', 'bridge=br0'] \n"\
-                     "extra = 'id=default image=vmeshnode.img/um_edgy " \
-                     "nodetype=%s hostname=%s init=/linuxrc' \n"
-                     %(vmeshrouter.gethostname(), ramdisk, kernel,
-                       self.options.memory, vmeshhost.getnumber(),
-                       vmeshrouter.getnumber(), vmeshrouter.gettype(),
-                       vmeshrouter.gethostname()))
+            cfg_fd, cfg_file = tempfile.mkstemp(suffix = "-%s.cfg"
+                                                % vmeshnode.getHostname())
+            
+            info("Creating Domain config file %s" % cfg_file)
 
-            # create XEN command
-            if self.options.console:
-                cmd = "xm create -c %s" % cfgfile
+            f = os.fdopen(cfg_fd, "w+b")            
+            f.write("name = '%s' \n"\
+                    "ramdisk = '%s' \n"\
+                    "kernel = '%s' \n"\
+                    "memory = %s \n"\
+                    "root = '/dev/ram0' \n"\
+                    "vif = ['mac=00:16:3E:00:%02x:%02x', 'bridge=br0'] \n"\
+                    "extra = 'id=default image=%s nodetype=%s hostname=%s "\
+                             "init=/linuxrc'\n"
+                    %(vmeshnode.getHostname(), ramdisk, kernel,
+                      self.options.memory, vmeshhost.getNumber(),
+                      vmeshnode.getNumber(), image.getImagePath(canonical_path = False),                     
+                      vmeshnode.getType(), vmeshnode.getHostname()))
+            f.flush()
+
+            # if this is only a dry run, we do not have to start the XENs
+            if self.options.dry_run:
+                f.seek(0)
+                print f.read()
+
             else:
-                cmd = "xm create %s" % cfgfile
-
-            # start vmrouter
-            try:
-                info("Starting %s" % vmeshrouter.gethostname())
-                execute(cmd, shell = True)
-            except CommandFailed, exception:
-                error("Error while starting vmrouter%s" % number)
-                error(exception)
-
-            # remove config file
-            os.remove(cfgfile)
+                # create XEN command
+                if self.options.console:
+                    cmd = "xm create -c %s" % cfg_file
+                else:
+                    cmd = "xm create %s" % cfg_file
+    
+                # start vmeshnode
+                try:                           
+                    info("Starting %s" % vmeshnode.getHostname())
+                    call(cmd, shell = True)
+               
+                except CommandFailed, exception:
+                    error("Error while starting %s" % vmeshnode.getHostname())
+                    error(exception)
+    
+    
+            # close and remove config file
+            f.close()
+            os.remove(cfg_file)
 
 
 
