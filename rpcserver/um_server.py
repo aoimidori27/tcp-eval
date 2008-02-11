@@ -119,11 +119,12 @@ class RPCServer(xmlrpc.XMLRPC):
             yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
                 shell=False)
             if self._services.has_key(service):
-                rc = yield self._services[service].xmlrpc_start()            
+                rc = yield self._services[service].xmlrpc_start() 
+                info("RC=%s" %rc)      
             else:
                 error("I'm supposed to start %s, which is not there!" %service)
+               
 
-            info("RC=%s" %rc)      
 
         text = "Done."
         yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
