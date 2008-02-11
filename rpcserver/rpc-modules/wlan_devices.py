@@ -47,6 +47,16 @@ class Wlan_devices(RPCService):
         """ returns always true """
         defer.returnValue(True)
 
+    def xmlrpc_resetrate(self, device):
+        try:
+            fh=file("/proc/net/madwifi/%s/reset" %device, "w")
+            fh.write("reset\n")
+            fh.close()
+            info("Resetting rate of %s successful" % device)
+            return 0
+        except IOError, inst:
+            error("Resetting rate of %s failed: %s" %(device, inst))
+            return 66
 
     #
     # Internal stuff
