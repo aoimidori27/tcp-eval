@@ -28,8 +28,8 @@ def test_rate(mrs,
               **kwargs ):
 
     # for convenience accept numbers as src and dst
-    src = Node(rate_src, nodetype="meshrouter")
-    dst = Node(rate_dst, nodetype="meshrouter")
+    src = Node(rate_src, node_type="meshrouter")
+    dst = Node(rate_dst, node_type="meshrouter")
 
     dst_ip = yield mrs.getIp(dst.getHostname(), rate_iface)
 
@@ -77,8 +77,8 @@ def test_ping(mrs,
         
     """
     # for convenience accept numbers as src and dst
-    src = Node(ping_src, nodetype="meshrouter")
-    dst = Node(ping_dst, nodetype="meshrouter")
+    src = Node(ping_src, node_type="meshrouter")
+    dst = Node(ping_dst, node_type="meshrouter")
 
     dst_ip = yield mrs.getIp(dst.getHostname(), ping_iface)
 
@@ -123,8 +123,8 @@ def test_fping(mrs,
         
     """
     # for convenience accept numbers as src and dst
-    src = Node(ping_src, nodetype="meshrouter")
-    dst = Node(ping_dst, nodetype="meshrouter")
+    src = Node(ping_src, node_type="meshrouter")
+    dst = Node(ping_dst, node_type="meshrouter")
 
     dst_ip = yield mrs.getIp(dst.getHostname(), ping_iface)
 
@@ -167,8 +167,8 @@ def test_thrulay(mrs,
     """
 
     # for convenience accept numbers as src and dst
-    src = Node(thrulay_src, nodetype="meshrouter")
-    dst = Node(thrulay_dst, nodetype="meshrouter")
+    src = Node(thrulay_src, node_type="meshrouter")
+    dst = Node(thrulay_dst, node_type="meshrouter")
 
     dst_ip = yield mrs.getIp(dst.getHostname(), "ath0")
 
@@ -221,8 +221,8 @@ def test_flowgrind(mrs,
     """
 
     # for convenience accept numbers as src and dst
-    src = Node(flowgrind_src, nodetype="meshrouter")
-    dst = Node(flowgrind_dst, nodetype="meshrouter")
+    src = Node(flowgrind_src, node_type="meshrouter")
+    dst = Node(flowgrind_dst, node_type="meshrouter")
 
     dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
 
