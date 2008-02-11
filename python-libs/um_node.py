@@ -191,9 +191,15 @@ class Node(object):
 
 
     def getIPaddress(self, device = "ath0"):
-        """Get the IP address of a specific device without the netmask"""
+        """
+        Get the IP address of a specific device without the netmask. If device
+        is None only the hostname will be looked up. 
+        """
 
-        name = "%s.%s" %(device, self._hostname)
+        if device is None:
+            name = self._hostname
+        else:
+            name = "%s.%s" %(device, self._hostname)
     
         try:
             address = socket.gethostbyname(name)
