@@ -10,39 +10,36 @@ import subprocess
 # umic-mesh imports
 from um_application import Application
 from um_functions import *
-from um_node import Node, NodeTypeException
+from um_node import Node, NodeException
 
-class Buildmesh(Application):
-    """ Setup GRE tunnels and iptables rules to simulate a mesh network with vmeshrouters.
 
-     This script has to be executed on each vmeshrouter, which shall be part of the simulated network.
+class BuildVmesh(Application):
+    """
+    Setup GRE tunnels and iptables rules to simulate a mesh network with
+    vmeshrouters. This script has to be executed on each vmeshrouter, which
+    shall be part of the simulated network.
     """
 
     def __init__(self):
+        """Creates a new BuildVmesh object"""
 
         Application.__init__(self)
 
+        # object variables
         self.node = None
-
         self.conf = None
-
-        usage = """usage: %prog [options] [CONFIGFILE]
-
-CONFIGFILE syntax: A line looks like the following:
-    1: 2 3 5-6
-
-vmrouter1 reaches all vmrouters listed after the colon, every vmrouter listed
-after the colon reaches vmrouter1. Empty lines and lines starting with # are
-ignored.
-"""
-
+        
+        # initialization of the option parser
+        usage = "usage: %prog [options] [CONFIGFILE] \n" \
+                "where the CONFIGFILE systax looks like the following \n" \
+                "   1: 2 3 5-6 \n" \
+                "   2: ... \n\n" \
+                "vmrouter1 reaches all vmrouters listed after the colon, every \n "\
+                "vmrouter listed after the colon reaches vmrouter1. Empty lines \n "\
+                "and lines starting with # are ignored."
         self.parser.set_usage(usage)
-
-        self.parser.set_defaults(
-                remote = True,
-                interface = "ath0",
-                multicast="224.66.66.66",
-                offset = 0)
+        self.parser.set_defaults(remote = True, interface = "ath0",
+                                 multicast = "224.66.66.66", offset = 0)
 
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
@@ -52,50 +49,68 @@ ignored.
                                help = "Apply just the settings for the local host")
         self.parser.add_option("-i", "--interface",
                                action = "store", dest = "interface", metavar="IFACE",
-                               help = "Interface to use for the GRE tunnel (default: %default)")
+                               help = "Interface to use for the GRE tunnel "\
+                                      "(default: %default)")
         self.parser.add_option("-m", "--multicast",
                                action = "store", dest = "multicast", metavar="IP",
-                               help = "Multicast IP to use for GRE tunnel (default: %default)")
+                               help = "Multicast IP to use for GRE tunnel "\
+                                      "(default: %default)")
         self.parser.add_option("-o", "--offset",
-                               action = "store", dest = "offset", metavar="OFFSET", type = int,
-                               help = "Add this offset to all hosts in the config (default: %default)")
+                               action = "store", dest = "offset", metavar="OFFSET",
+                               type = int,
+                               help = "Add this offset to all hosts in the config "\
+                                      "(default: %default)")
+
+
+    def set_option(self):
+        """Set the options for the BuildVmesh object"""
+
+        Application.set_option(self)
+
+        if len(self.args) == 0:
+            error("Config file must be given!")
+            sys.exit(1)
+        else:
+            self.conf = self.parse_config(self.args[0])
+
 
     def parse_config(self, file):
-        """ returns an hash which maps
-                host number -> set of reachable host numbers
+        """
+        Returns an hash which maps host number -> set of reachable host numbers
 
-            Config file syntax: Each line either begins with a # (comment)
-            or has a form like
+        Config file syntax: Each line either begins with a # (comment)
+        or has a form like
 
-                host1: host2 host3 host5-host6
+             host1: host2 host3 host5-host6
 
-            where host* are numbers.
+        where host* are numbers.
 
-                host1: host2
+             host1: host2
 
-            means, that host1 reaches host2 and vice versa.
+        means, that host1 reaches host2 and vice versa.
 
-                host1: host2 host3
+             host1: host2 host3
 
-            is equivalent to
+        is equivalent to
 
-                host1: host2
-                host1: host3
+            host1: host2
+            host1: host3
 
-            and
+        and
 
-                host1: host2-host4
+            host1: host2-host4
 
-            is equivalent to
+        is equivalent to
 
-                host1: host2, host3, host4
+            host1: host2, host3, host4
 
-            Note that the reachability relation defined by the config file is
-            always symmetric.
+        Note that the reachability relation defined by the config file is
+        always symmetric.
         """
 
-        # comment
+        # mach comments
         comment_re = re.compile('^\s*#')
+        
         # line syntax:
         # LINE = HOST ":" REACHES
         # HOST = DIGITS
@@ -112,12 +127,13 @@ ignored.
         split_re = re.compile(' +')
         range_re = re.compile('([0-9]+)-([0-9]+)')
 
-        ## read (asymmetric) reachability information from the config file
+        # read (asymmetric) reachability information from the config file
         asym_map = {}
         if file == "-":
             fd = sys.stdin
         else:
             fd = open(file, 'r')
+        
         for line in fd:
             # strip trailing spaces
             line = line.strip()
@@ -144,14 +160,14 @@ ignored.
 
             asym_map[int(host)] = reaches
 
-        ## Add offset
+        # Add offset
         asym_map2 = {}
         offset = self.options.offset
         for (host, reaches) in asym_map.iteritems():
             asym_map2[host+offset] = map(lambda x: x+offset, reaches)
         asym_map = asym_map2
 
-        ## Compute symmetric hull
+        # Compute symmetric hull
         hosts = set(asym_map.keys()).union(reduce(lambda u,v: u.union(v), asym_map.values(), set()))
         reachability_map = dict(map(lambda x: (x, set()), hosts))
         for (host, reaches) in asym_map.iteritems():
@@ -161,6 +177,7 @@ ignored.
 
         return reachability_map
 
+
     def gre_ip(self, hostnum, mask=False):
         """ Gets the gre ip for host with number "hostnum" """
 
@@ -168,6 +185,7 @@ ignored.
             return "192.168.0.%s/24" % hostnum # FIXME - do not hardcode this.
         else:
             return "192.168.0.%s" % hostnum
+
 
     def gre_net(self, mask = True):
         """ Gets the gre network address """
@@ -178,13 +196,9 @@ ignored.
             return "192.168.0.0"
 
 
-    def public_ip(self):
-        """ Gets the local public ip """
-        return socket.gethostbyname(gethostname())
-
     def setup_gre(self):
-        hostnum = self.node.number()
-        public_ip = self.public_ip()
+        hostnum = self.node.getNumber()
+        public_ip = self.node.getIPaddress(device = None)
         gre_ip = self.gre_ip(hostnum, mask=True)
 
         try:
@@ -200,10 +214,11 @@ ignored.
             error("Setting up GRE tunnel %s (%s, %s) failed." % (hostnum, public_ip, gre_ip))
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
 
+
     def setup_iptables(self):
-        hostnum = self.node.number()
+        hostnum = self.node.getNumber()
         peers = self.conf.get(hostnum, set())
-        prefix = self.node.hostnameprefix()
+        prefix = self.node.getHostnamePrefix()
         mcast = self.options.multicast
 
         try:
@@ -233,43 +248,36 @@ ignored.
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
             raise
 
-    def main(self):
 
-        self.parse_option()
-        self.set_option()
+    def run(self):
+        """Main method of the Buildmesh object"""
 
-        if len(self.args) == 0:
-            error("Config file must be given!")
-            sys.exit(1)
-            pass # FIXME error
-        else:
-            self.conf = self.parse_config(self.args[0])
-
+        # Apply settings on remote hosts
         if self.options.remote:
-            # Apply settings on remote hosts
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                proc =subprocess.Popen(["ssh", h, "sudo", "um_vmesh", "-i", "wldev", "-l", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                proc =subprocess.Popen(["ssh", h, "sudo", " /home/zimmermann/checkout/scripts/vmesh/um_vmesh.py", "-i", "wldev", "-l", "-"],
+                                       stdin=subprocess.PIPE)
                 neigh = " ".join(map(lambda x: x.__str__(), self.conf.get(host)))
-                proc.communicate("%s: %s" % (host, neigh))
+                rc = proc.communicate("%s: %s" % (host, neigh))
                 if proc.returncode != 0:
                     error("Configuring host %s FAILED (%s)" % (h, proc.returncode))
+        
+        # Apply settings on local host
         else:
-            # Apply settings on local host
             self.node = Node()
-            if self.node.type() != 'vmeshrouter':
-                raise NodeTypeException("Only vmeshrouters are supported")
 
             info("Setting up GRE tunnel ...")
             self.setup_gre()
+            
             info("Setting up iptables rules ... ")
             self.setup_iptables()
 
+
+
 if __name__ == "__main__":
-    try:
-        Buildmesh().main()
-    except NodeTypeException, inst:
-        error(inst)
-    except CommandFailed:
-        error("Applying mesh rules failed. For reason see above.")
+    inst = BuildVmesh()
+    inst.parse_option()
+    inst.set_option()
+    inst.run()
