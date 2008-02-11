@@ -142,7 +142,7 @@ class Chroot(Application):
             mountpoint  = os.path.join(self._image.getImagePath(), mount["mountpoint"])
             
             # check mountpoint
-            if not self.checkmount(mountpoint):           
+            if self.checkmount(mountpoint):           
                 cmd = "%s %s" % (self._executables["umount"], mountpoint)
                 info(cmd)
                 call(cmd, shell = True)    
