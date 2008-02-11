@@ -81,7 +81,7 @@ class Chroot(Application):
             self._command = self._executables["bash"]
 
 
-    def checkmount(self, mountpoint):
+    def checkMount(self, mountpoint):
         """Return true if the mountpoint is already mounted, otherwise return false"""
         
         # get all mount points
@@ -106,43 +106,50 @@ class Chroot(Application):
 
         # for all entries in the automount map
         for automount in self._automount_map:
-            mountpoint  = os.path.join(self._image.getImagePath(),
-                                       automount["mountpoint"])
-            mapfile  = automount["mapfile"]
+            mountpoint = os.path.join(self._image.getImagePath(),
+                                      automount["mountpoint"])
+            mapfile = automount["mapfile"]
             args = automount["args"]
             
             # check mountpoint            
-            if not self.checkmount(mountpoint):
+            if not self.checkMount(mountpoint):
                 cmd = "%s %s %s %s" % (self._executables["automount"],
                                        mountpoint, mapfile, args)
                 info(cmd)
                 call(cmd, shell = True)
 
-    def mount(self, ):
-        """Mount all devices that are denoted in the object variable "mount_map" """        
 
+    def mount(self):
+        """Mount all devices that are denoted in the object variable "mount_map" """
+        
         # for all entries in the mount map
         for mount in self._mount_map:
-            device  = mount["device"]
-            mountpoint  = os.path.join(self._image.getImagePath(), mount["mountpoint"])
+            device = mount["device"]
+            mountpoint = os.path.join(self._image.getImagePath(),
+                                      mount["mountpoint"])
             args = mount["args"]
             
             # check mountpoint            
-            if not self.checkmount(mountpoint):
+            if not self.checkMount(mountpoint):
                 cmd = "%s %s %s %s" % (self._executables["mount"], args, device, mountpoint)
                 info(cmd)
                 call(cmd, shell = True)
 
+        # since we probably add manualy some mountpoints, we have to reset
+        # the cache variable self._mtab
+        self._mtab = None
+
 
     def umount(self):
-        """Unmount all devices that are denoted in the object variable "mount_map" """        
+        """Unmount all devices that are denoted in the object variable "mount_map" """
 
         # for all entries in the mount map
         for mount in self._mount_map:
-            mountpoint  = os.path.join(self._image.getImagePath(), mount["mountpoint"])
+            mountpoint = os.path.join(self._image.getImagePath(),
+                                      mount["mountpoint"])
             
             # check mountpoint
-            if self.checkmount(mountpoint):           
+            if self.checkMount(mountpoint):           
                 cmd = "%s %s" % (self._executables["umount"], mountpoint)
                 info(cmd)
                 call(cmd, shell = True)    
