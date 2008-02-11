@@ -21,20 +21,17 @@ def requireroot():
         sys.exit(1)
 
 
-
 def execute(cmd, shell = True, raiseError = True):
     """Execute a shell command, wait for command to complete and return stdout/stderr"""
 
     debug("Executing: %s" % cmd.__str__())
-    prog = subprocess.Popen(cmd, shell = shell, stdout = subprocess.PIPE,
-                            stderr = subprocess.PIPE)
+    prog = subprocess.Popen(cmd, shell = shell, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
     (stdout, stderr) = prog.communicate()
     rc = prog.returncode
     if raiseError and rc != 0:
         raise CommandFailed(cmd, rc, stderr)
 
     return (stdout, stderr)
-
 
 
 def call(cmd, shell = True, raiseError = True):
@@ -46,7 +43,6 @@ def call(cmd, shell = True, raiseError = True):
         raise CommandFailed(cmd, rc)
     
     return rc
-
 
 
 def execpy(arguments = []):
@@ -130,8 +126,7 @@ class StrictStruct:
         The StrictStruct constructor takes two parameters:
 
         If "list" is not None, it gives the allowed entries in the struct.
-        Otherwise, the list of allowed entries will be extracted from the
-        **kwargs argument.
+        Otherwise, the list of allowed entries will be extracted from the **kwargs argument.
 
         Examples:
             StrictStruct(['foo', 'bar'])
