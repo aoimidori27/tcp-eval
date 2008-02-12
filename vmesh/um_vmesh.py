@@ -257,7 +257,7 @@ class BuildVmesh(Application):
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                proc =subprocess.Popen(["ssh", h, "sudo", " /home/zimmermann/checkout/scripts/vmesh/um_vmesh.py", "-i", "wldev", "-l", "-"],
+                proc =subprocess.Popen(["ssh", h, "sudo", "/usr/local/sbin/um_vmesh", "-i", "wldev", "-l", "-"],
                                        stdin=subprocess.PIPE)
                 neigh = " ".join(map(lambda x: x.__str__(), self.conf.get(host)))
                 rc = proc.communicate("%s: %s" % (host, neigh))
