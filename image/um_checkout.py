@@ -2,14 +2,16 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os, os.path, sets, dircache
+import os
+import os.path
+import sets
+import dircache
 from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_application import Application
-from um_config import *
 from um_functions import *
-
+from um_image import Image
 
 class Checkout(Application):
     "Class to update the checkout"
@@ -66,10 +68,14 @@ class Checkout(Application):
 
         # allow group to write and exec files
         os.umask(0002)
-        
-        for image, imageinfo in imageinfos.iteritems():
-            svnmappings = imageinfo['svnmappings']
-            imagepath = "%s/%s" %(imageprefix, image)
+
+        for imagetype in Image.types():
+            image = Image(imagetype)
+            
+            svnmappings = image.getSvnMappings()
+            imagepath = image.getImagePath()
+            svnprefix = Image.svnPrefix()
+            svnrepos  = Image.repositoryUrl()
 
             info("Update checkout within the image: %s" %(imagepath))
 
@@ -94,9 +100,12 @@ class Checkout(Application):
         # allow group to write and exec files
         os.umask(0002)
 
-        for image, imageinfo in imageinfos.iteritems():
-            scriptmappings = imageinfo['scriptmappings']
-            imagepath = "%s/%s" %(imageprefix, image)       
+        for imagetype in Image.types():
+            image = Image(imagetype)
+            
+            scriptmappings = image.getScriptMappings()
+            imagepath = image.getImagePath()
+            svnprefix = Image.svnPrefix()
             pattern = "%s/scripts/*" %(svnprefix)       
 
             info("Update symbolic links within the image: %s" %(imagepath)) 
@@ -136,14 +145,20 @@ class Checkout(Application):
     def status_checkout(self):
         "Check the status of the checkout within the images"
 
-        for image, imageinfo in imageinfos.iteritems():
-            svnmappings = imageinfo['svnmappings']
-            imagepath = "%s/%s" %(imageprefix, image)
+        for imagetype in Image.types():
+            image = Image(imagetype)
+            
+            svnmappings = image.getSvnMappings()
+            imagepath = image.getImagePath()
+            svnprefix = Image.svnPrefix()
 
             info("Check the status of the checkout within the images: %s" %(imagepath))
             
             for src, dst in svnmappings.iteritems():
-                dst = "%s%s/%s" %(imagepath, svnprefix, dst)
+                dst = "%s%s/%s" %(imagepath, Image.svnPrefix(), dst)
+                if not os.path.exists(dst):
+                    warn("%s is missing" %dst)
+                    continue
                 cmd = ('svn', 'status', dst)
                 info("svn status %s" %(dst))
                 call(cmd, shell = False)
@@ -151,10 +166,12 @@ class Checkout(Application):
 
     def status_links(self):
         "Check the symbolic links within the images"
-        
-        for image, imageinfo in imageinfos.iteritems():
-            scriptmappings = imageinfo['scriptmappings']
-            imagepath = "%s/%s" %(imageprefix, image)       
+        for imagetype in Image.types():
+            image = Image(imagetype)
+            
+            scriptmappings = image.getScriptMappings()
+            imagepath = image.getImagePath()
+            svnprefix = Image.svnPrefix()
 
             info("Check the symbolic links within the image: %s" %(imagepath))
             
