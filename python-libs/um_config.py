@@ -31,11 +31,12 @@ image_info = dict(
     ),
     vmeshhost = dict(
         svn_mappings = { "/config/vmeshhost/trunk" : "config",
-                         "/linux/xen/trunk" : "linux/default",
+                         "/linux/xen/branches/linux-2.6.18-xen-um" : "linux/default",
                          "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
                          "/tools/flowgrind/trunk" : "tools/flowgrind",
                          "/tools/twisted/branches/um-version" : "tools/twisted",
                          "/tools/net-snmp/branches/um-version" : "tools/net-snmp",
+                         "/tools/xen/trunk" : "tools/xen",
                          "/boot/bios/trunk" : "boot/bios",
                          "/boot/etherboot/trunk" : "boot/etherboot",
                          "/scripts/python-libs" : "scripts/python-libs",
@@ -51,7 +52,7 @@ image_info = dict(
     ),
     vmeshnode = dict(
         svn_mappings = { "/config/vmeshnode/trunk" : "config",
-                         "/linux/xen/trunk" : "linux/default",
+#                         "/linux/xen/trunk" : "linux/default",
                          "/linux/xen/branches/linux-2.6.16.29-xen-elcn" : "linux/elcn",
                          "/routing/olsr/branches/um-version-olsr4" : "routing/olsr4",
                          "/routing/olsr/branches/um-version-olsr5" : "routing/olsr5",
