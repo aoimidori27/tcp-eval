@@ -32,7 +32,7 @@ class Xen(Application):
         self.parser.set_usage(usage)
         self.parser.set_defaults(console = False, dry_run = False,
                 image_type = "vmeshnode", kernel = "default/vmeshnode-vmlinuz",
-                memory = 40, node_type = "vmeshrouter",
+                memory = 50, node_type = "vmeshrouter",
                 ramdisk = "vmeshnode-initrd", image_version = "default")
 
         self.parser.add_option("-c", "--console",
@@ -157,7 +157,7 @@ class Xen(Application):
                     "ramdisk = '%s' \n"\
                     "kernel = '%s' \n"\
                     "memory = %s \n"\
-                    "root = '/dev/ram0' \n"\
+                    "root = '/dev/ram0 console=hvc0' \n"\
                     "vif = ['mac=00:16:3E:00:%02x:%02x', 'bridge=br0'] \n"\
                     "extra = 'id=default image=%s nodetype=%s hostname=%s "\
                              "init=/linuxrc'\n"
