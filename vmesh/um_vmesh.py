@@ -222,7 +222,7 @@ class BuildVmesh(Application):
         mcast = self.options.multicast
 
         try:
-            execute('iptables -D INPUT -j mesh_gre_in -d %s' % mcast
+            execute('iptables -D INPUT -j mesh_gre_in -d %s;' % mcast
                     + 'iptables -F mesh_gre_in;'
                     + 'iptables -X mesh_gre_in;'
                     + 'iptables -N mesh_gre_in', True)
