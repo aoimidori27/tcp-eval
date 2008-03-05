@@ -40,7 +40,7 @@ class BuildVmesh(Application):
                 "and lines starting with # are ignored."
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
-                                 multicast = "224.66.66.66", offset = 0)
+                                 multicast = "224.66.66.66", offset = 0, staticroutes=False)
 
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
@@ -61,6 +61,11 @@ class BuildVmesh(Application):
                                type = int,
                                help = "Add this offset to all hosts in the config "\
                                       "(default: %default)")
+        self.parser.add_option("-s", "--staticroutes",
+                               action = "store_true", dest = "staticroutes",
+                               help = "Setup static routing according to topology"\
+                                      "(default: %default)")
+
 
 
     def set_option(self):
@@ -252,6 +257,67 @@ class BuildVmesh(Application):
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
             raise
 
+    @staticmethod
+    def find_shortest_path(graph, start, end, path=[]):
+        path = path + [start]
+        if start == end:
+            return path
+        if not graph.has_key(start):
+            return None
+        shortest = None
+        for node in graph[start]:
+            if node not in path:
+                newpath = BuildVmesh.find_shortest_path(graph, node, end, path)
+                if newpath:
+                    if not shortest or len(newpath) < len(shortest):
+                        shortest = newpath
+        return shortest
+
+    def set_sysctl(self, key, val):
+        arg = "%s=%s" %(key,val)
+        cmd = ["sysctl","-w",arg]
+        try:
+            execute(cmd, shell=False)
+        except CommandFailed, inst:
+            error('Failed sysctl %s failed.' %arg)
+            error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+            raise
+
+    def setup_routing(self):
+        iface   = self.options.interface            
+        hostnum = self.node.getNumber()
+
+        # disable send_redirects and accept redirects
+        self.set_sysctl("net.ipv4.conf.%s.send_redirects" %iface,0)
+        self.set_sysctl("net.ipv4.conf.%s.accept_redirects" %iface,0)
+        self.set_sysctl("net.ipv4.conf.%s.forwarding" %iface, 1)
+
+        for host in self.conf.keys():
+            if host==hostnum:
+                continue        
+            shortest = BuildVmesh.find_shortest_path(self.conf, hostnum, host)
+            # not all hosts may be reachable from this hosts ignore them
+            if not shortest:
+                continue
+
+            # calculate distance
+            dist = len(shortest)-1
+
+            # ignore direct neighbors for now as network mask should cover them
+            if dist==1:
+                continue
+            
+            debug(shortest)
+            host_ip = self.gre_ip(host, mask=False)
+            gw_ip   = self.gre_ip(shortest[1], mask=False)
+
+            cmd = ["ip", "route", "replace", host_ip, "dev", iface, "via", gw_ip, "metric", str(dist)]
+            try:
+                execute(cmd, shell=False)
+            except CommandFailed, inst:
+                error('Adding routing entry for host %s failed.' % host_ip)
+                error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+                raise
 
     def run(self):
         """Main method of the Buildmesh object"""
@@ -265,6 +331,9 @@ class BuildVmesh(Application):
                                         self.options.interface, "-l", "-"]
                 if self.options.debug:
                     cmd.append("--debug")
+
+                if self.options.staticroutes:
+                    cmd.append("--staticroutes")
     
                 proc =subprocess.Popen(cmd, stdin=subprocess.PIPE)
                 rc = proc.communicate("".join(self.confstr))
@@ -280,6 +349,10 @@ class BuildVmesh(Application):
             
             info("Setting up iptables rules ... ")
             self.setup_iptables()
+
+            if self.options.staticroutes:
+                info("Setting up static routing...")
+                self.setup_routing()
 
 
 
