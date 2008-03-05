@@ -28,6 +28,7 @@ class BuildVmesh(Application):
         # object variables
         self.node = None
         self.conf = None
+        self.confstr = None
         
         # initialization of the option parser
         usage = "usage: %prog [options] [CONFIGFILE] \n" \
@@ -133,8 +134,11 @@ class BuildVmesh(Application):
             fd = sys.stdin
         else:
             fd = open(file, 'r')
-        
+
+        self.confstr = list()
         for line in fd:
+            self.confstr.append(line)
+            
             # strip trailing spaces
             line = line.strip()
 
@@ -257,10 +261,13 @@ class BuildVmesh(Application):
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                proc =subprocess.Popen(["ssh", h, "sudo", "/usr/local/sbin/um_vmesh", "-i", "wldev", "-l", "-"],
-                                       stdin=subprocess.PIPE)
-                neigh = " ".join(map(lambda x: x.__str__(), self.conf.get(host)))
-                rc = proc.communicate("%s: %s" % (host, neigh))
+                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh", "-i",
+                                        self.options.interface, "-l", "-"]
+                if self.options.debug:
+                    cmd.append("--debug")
+    
+                proc =subprocess.Popen(cmd, stdin=subprocess.PIPE)
+                rc = proc.communicate("".join(self.confstr))
                 if proc.returncode != 0:
                     error("Configuring host %s FAILED (%s)" % (h, proc.returncode))
         
