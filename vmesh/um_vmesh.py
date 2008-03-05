@@ -288,6 +288,8 @@ class BuildVmesh(Application):
         hostnum = self.node.getNumber()
 
         # disable send_redirects and accept redirects
+        self.set_sysctl("net.ipv4.conf.all.send_redirects",0)
+        self.set_sysctl("net.ipv4.conf.all.accept_redirects",0)
         self.set_sysctl("net.ipv4.conf.%s.send_redirects" %iface,0)
         self.set_sysctl("net.ipv4.conf.%s.accept_redirects" %iface,0)
         self.set_sysctl("net.ipv4.conf.%s.forwarding" %iface, 1)
