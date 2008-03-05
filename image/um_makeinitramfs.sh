@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # image path 
-IMAGEDIR_EDGY="/opt/umic-mesh/images/vmeshrouter"
+IMAGEDIR_EDGY="/opt/umic-mesh/images/vmeshnode/edgy"
 
 # destination -$IMAGE will be appended to this
 INITRD_DST=/opt/umic-mesh/boot/initrd/initramfs
