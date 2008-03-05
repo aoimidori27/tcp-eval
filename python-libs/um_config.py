@@ -52,7 +52,8 @@ image_info = dict(
     ),
     vmeshnode = dict(
         svn_mappings = { "/config/vmeshnode/trunk" : "config",
-#                         "/linux/xen/trunk" : "linux/default",
+                         "/linux/vanilla/branches/linux-2.6.24.2-um" : "linux/default",
+                         "/linux/vanilla/branches/linux-2.6.24.2-um-reorder" : "linux/reorder",
                          "/linux/xen/branches/linux-2.6.16.29-xen-elcn" : "linux/elcn",
                          "/routing/olsr/branches/um-version-olsr4" : "routing/olsr4",
                          "/routing/olsr/branches/um-version-olsr5" : "routing/olsr5",
@@ -68,7 +69,7 @@ image_info = dict(
     ),
     meshnode = dict(
         svn_mappings = { "/config/vmeshnode/trunk" : "config",
-                         "/linux/vanilla/trunk" : "linux/default",
+                         "/linux/vanilla/branches/linux-2.6.24.2-um" : "linux/default",
                          "/linux/vanilla/branches/linux-2.6.16.29-ring3" : "linux/ring3",
                          "/linux/vanilla/branches/linux-2.6.16.29-elcn" : "linux/elcn",
                          "/routing/olsr/branches/um-version-olsr4" : "routing/olsr4",
