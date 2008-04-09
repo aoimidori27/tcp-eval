@@ -2,6 +2,7 @@
 
 # image path 
 IMAGEDIR_EDGY="/opt/umic-mesh/images/vmeshnode/edgy"
+IMAGEDIR_HARDY="/opt/umic-mesh/images/vmeshnode/hardy"
 
 # destination -$IMAGE will be appended to this
 INITRD_DST=/opt/umic-mesh/boot/initrd/initramfs
@@ -24,7 +25,7 @@ BINFILES="$BINFILES,sh,sleep,umount,uname,run-init,chroot"
 
 # files which belong to /sbin
 SBINFILES="brctl,dhclient3,dhclient,hwclock,ifconfig,insmod,ip,losetup,usplash_write"
-SBINFILES="$SBINFILES,modprobe,ntpdate,portmap,route"
+SBINFILES="$SBINFILES,modprobe,ntpdate,portmap,route,iptables"
 SBINFILES="$SBINFILES,ethtool,syslog-ng,strace"
 
 # some static files, which are copied only for ubuntu
@@ -37,26 +38,14 @@ BIN_SEARCHPATH="/bin,/usr/bin,/sbin,/usr/sbin,/usr/lib/klibc/bin"
 # librarys which are copied for ubuntu edgy initramfs
 LIBS_EDGY="ld-2.4.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.4.so,libcap.so.1,libcap.so.1.10,libcrypto.so.0.9.8,libc.so.6,libdl-2.4.so,libdl.so.2,liblzo.so.1,liblzo.so.1.0.0,libncurses.so.5,libncurses.so.5.5,libnsl.so.1,libnss_dns.so.2,libnss_dns-2.4.so,libnss_files.so.2,libnss_files-2.4.so,libproc-3.2.7.so,libpthread-2.4.so,libpthread.so.0,libresolv-2.4.so,libresolv.so.2,librt-2.4.so,librt.so.1,libssl.so.0.9.8,libutil-2.4.so,libutil.so.1,libuuid.so.1,libuuid.so.1.2,libwrap.so.0,libwrap.so.0.7.6,libz.so.1,libz.so.1.2.3,libacl.so.1,libacl.so.1.1.0,libselinux.so.1,libattr.so.1,libattr.so.1.1.0,libsepol.so.1,libnsl.so.1,libnsl-2.4.so,libnss_compat.so.2,libnss_compat-2.4.so,libsysfs.so.2,libsysfs.so.2.0.0,klibc-gk2XW_qpdO7ELQ5NYkvZBbv1VsI.so"
 
+# ... for hardy initramfs
+
+
+LIBS_HARDY="ld-2.7.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.7.so,libcap.so.1,libcap.so.1.10,libcrypto.so.0.9.8,libc.so.6,libdl-2.7.so,libdl.so.2,liblzo.so.1,liblzo.so.1.0.0,libncurses.so.5,libncurses.so.5.6,libnsl.so.1,libnss_dns.so.2,libnss_dns-2.7.so,libnss_files.so.2,libnss_files-2.7.so,libproc-3.2.7.so,libpthread-2.7.so,libpthread.so.0,libresolv-2.7.so,libresolv.so.2,librt-2.7.so,librt.so.1,libssl.so.0.9.8,libutil-2.7.so,libutil.so.1,libuuid.so.1,libuuid.so.1.2,libwrap.so.0,libwrap.so.0.7.6,libz.so.1,libz.so.1.2.3.3,libacl.so.1,libacl.so.1.1.0,libselinux.so.1,libattr.so.1,libattr.so.1.1.0,libsepol.so.1,libnsl.so.1,libnsl-2.7.so,libnss_compat.so.2,libnss_compat-2.7.so,libsysfs.so.2,libsysfs.so.2.0.1,klibc-B9LS-Gjx2D7BYcbQig0RlgHKO9Y.so"
 
 function makedev() {
-   # loop devices
-   for i in 0 1 2 3 4 5 6 7; do
-       mknod $INITRD_TMP/dev/loop$i b 7 $i
-   done;
-  
-   # console, null, random, urandom, tty12
-   mknod $INITRD_TMP/dev/console c 5 1
-   mknod $INITRD_TMP/dev/null    c 1 3
-   mknod $INITRD_TMP/dev/random  c 1 8
-   mknod $INITRD_TMP/dev/urandom c 1 9
-   mknod $INITRD_TMP/dev/tty12   c 4 12
-   
-   # net tun
-   mknod $INITRD_TMP/dev/net/tun c 10 200
- 
-   # watchdog
-   mknod $INITRD_TMP/dev/watchdog c 10 130
-   
+   cd $INITRD_TMP/dev
+   MAKEDEV  
 }
 
 # filecopy "$files" "$searchpath" "$dstdir"
@@ -87,7 +76,7 @@ options:
   -h        Print this help summary and exit.
   -v        Be more verbose.
 
-image should be edgy.
+image should be edgy or hardy.
 !EOF!
 }
 
@@ -125,6 +114,9 @@ case $IMAGE in
     edgy)
         LIBS=$LIBS_EDGY
         IMAGEDIR=$IMAGEDIR_EDGY ;;
+    hardy)
+	LIBS=$LIBS_HARDY
+	IMAGEDIR=$IMAGEDIR_HARDY ;;
     *)
         echo "Unknown image type: $IMAGE"; usage; exit 2; ;;
 esac
@@ -172,10 +164,8 @@ for file in ${STATIC//,/ }; do
 done;
 
 
-# make a dhcp client link for ubuntu edgy eft
-if [ "$IMAGE" = "edgy" ]; then
+# make a dhcp client link for ubuntu 
     ln -vs /etc/dhcp/dhclient-script $INITRD_TMP/sbin
-fi;
 
 # make /dev nodes
 makedev;
@@ -190,7 +180,7 @@ cp -a $FILE_DIR/initrd $INITRD_TMP/
 # build initramfs
 (cd $INITRD_TMP && find . | cpio --quiet -o -H newc | gzip -9 > $INITRD_DST.gz)
 
-# celanup
+# clean up
 rm -rf $INITRD_TMP
 
 echo "Done."
