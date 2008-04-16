@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ALIVE=0
-NODES=48
+NODES=51
 
 for (( i=1; i<=$NODES; i++ )); do
     echo -en "\033[00m mrouter$i:"
