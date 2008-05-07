@@ -231,6 +231,8 @@ def test_flowgrind(mrs,
                                                          flowgrind_bport,
                                                          dst_ip,
                                                          dst.getHostname())
+    if flowgrind_opts:
+	cmd = " ".join([cmd, flowgrind_opts])
 
     if flowgrind_dump:
         dumpfile_src = None
