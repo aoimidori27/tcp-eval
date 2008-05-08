@@ -100,8 +100,10 @@ class FlowgrindRecordFactory():
 
         # phase 2 result calculation
         self.whats = dict(
-            # average thruput just take parsed value
-            thruput = lambda r: float(r['thruput'][0]),
+            # average thruput: just sum up all summary lines 
+            thruput = lambda r: sum(map(float, r['thruput'])),
+            # list of summary lines
+            thruput_list = lambda r: map(float, r['thruput']),
 
             flow_ids          = lambda r: map(int, set(r['flow_id'])),
             flows             = group_flows,
