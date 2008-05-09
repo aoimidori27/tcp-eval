@@ -70,11 +70,20 @@ class TcpAnalysis(Analysis):
             else:
                 self.failed[run_label] = self.failed[run_label]+1            
             return
+    
+        # hack to support two parallel flows 
+        thruput_list = record.calculate("thruput_list")
+        if len(thruput_list) == 2:
+            thruput_0 = thruput_list[0]
+            thruput_1 = thruput_list[1]
+        else:
+            thruput_0 = 0.0
+            thruput_1 = 0.0
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, %u, "$%s$", "%s", "%s")
-                      """ % (iterationNo,scenarioNo,runNo,src,dst, thruput, start_time,
-                             run_label, scenario_label, test))
+                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, %f, %f, %u, "$%s$", "%s", "%s")
+                      """ % (iterationNo, scenarioNo, runNo, src, dst, thruput, thruput_0, thruput_1,
+                             start_time, run_label, scenario_label, test))
 
     def onLoadRate(self, record, iterationNo, scenarioNo, runNo, test):
         dbcur = self.dbcon.cursor()
@@ -342,7 +351,7 @@ class TcpAnalysis(Analysis):
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
         
 
-    def calculateStdDev(self, rlabel, slabel):
+    def calculateStdDev(self, rlabel, slabel, key="thruput"):
         """
         Calculates the standarddeviation of all values of the same rlabel
         and scenarioNo
@@ -351,15 +360,146 @@ class TcpAnalysis(Analysis):
         dbcur = self.dbcon.cursor()
 
         query = '''
-        SELECT thruput FROM tests WHERE
+        SELECT %s FROM tests WHERE
         scenario_label="%s" AND run_label="%s";
-        ''' %(slabel,rlabel)
+        ''' %(key,slabel,rlabel)
 
         dbcur.execute(query)
 
         ary = numpy.array(dbcur.fetchall())
 
         return ary.std()
+
+
+
+    def generateHistogram2Flows(self):
+        """ Generates a histogram with scenario labels for two parallel flows
+        """
+
+        dbcur = self.dbcon.cursor()
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests ORDER BY scenarioNo'''
+        )
+        scenarios = dict()
+        for row in dbcur:
+            (key,val) = row
+            scenarios[key] = val
+
+        # average thruput and sort by it and scenario_no
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
+        MIN(thruput) as min_thruput,
+        MAX(thruput) as max_thruput,
+        AVG(thruput) as avg_thruput,
+        MIN(thruput_0) as min_thruput_0,
+        MAX(thruput_0) as max_thruput_0,
+        AVG(thruput_0) as avg_thruput_0,
+        MIN(thruput_1) as min_thruput_1,
+        MAX(thruput_1) as max_thruput_1,
+        AVG(thruput_1) as avg_thruput_1,
+        SUM(1)
+        FROM tests GROUP BY run_label, scenarioNo ORDER BY avg_thruput DESC, scenarioNo ASC
+        ''')
+
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "scenario_compare_2flow" 
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        
+        info("Generating %s..." % valfilename)
+
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label no_of_thruputs no_of_failed ")
+
+        # one line per runlabel
+        data = dict()
+
+        # columns
+        keys = scenarios.keys()
+        keys.sort()
+        for key in scenarios.keys():
+            val = scenarios[key]
+            fh.write("min_tput_%(v)s max_tput_%(v)s avg_tput_%(v)s std_tput_%(v)s notests_%(v)s" %{ "v" : val })
+            fh.write("min_tput_0%(v)s max_tput_0%(v)s avg_tput_0%(v)s std_tput_0%(v)s notests_%(v)s" %{ "v" : val })
+            fh.write("min_tput_1%(v)s max_tput_1%(v)s avg_tput_1%(v)s std_tput_1%(v)s notests_%(v)s" %{ "v" : val })
+            
+        fh.write("\n")
+
+        sorted_labels = list()
+        for row in dbcur:
+            (rlabel,slabel,sno,
+             min_thruput,max_thruput,avg_thruput,
+             min_thruput_0,max_thruput_0,avg_thruput_0,
+             min_thruput_1,max_thruput_1,avg_thruput_1,
+             notests) = row
+
+            std_thruput  = self.calculateStdDev(rlabel, slabel, "thruput")
+            std_thruput_0 = self.calculateStdDev(rlabel, slabel, "thruput_0")
+            std_thruput_1 = self.calculateStdDev(rlabel, slabel, "thruput_1")
+
+            if not data.has_key(rlabel):
+                tmp = list()
+                for key in keys:
+                    tmp.append("0.0 0.0 0.0 0.0 0")
+                    tmp.append("0.0 0.0 0.0 0.0 0")
+                    tmp.append("0.0 0.0 0.0 0.0 0")
+                data[rlabel] = tmp
+                sorted_labels.append(rlabel)
+
+            data[rlabel][sno] = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (
+                                 min_thruput,max_thruput,avg_thruput,std_thruput,notests,
+                                 min_thruput_0,max_thruput_0,avg_thruput_0,std_thruput_0,notests,
+                                 min_thruput_1,max_thruput_1,avg_thruput_1,std_thruput_1,notests)
+                                
+            debug(row)
+
+
+        i = 0
+        # only display first LIMIT scenarios
+        limit = 10
+        
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s" %key)
+            for val in value:
+                fh.write(" %s" %val)
+            fh.write("\n")
+            i += 1
+            if i>limit:
+                break
+        
+        fh.close()
+
+        g = UmHistogram(plotname)
+
+        g.setYLabel(r"Throughput in $\\Mbps$")
+        g.setClusters(limit)
+        g.setYRange("[ 0 : * ]")
+
+        # bars
+        for i in range(len(keys)):
+            key = keys[i]
+#            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
+            g.plotBar(valfilename, title=scenarios[key], using="%u:xtic(1)" %(4+(i*15)), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" Flow 0", using="%u:xtic(1)" %(9+(i*15)), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" Flow 1", using="%u:xtic(1)" %(14+(i*15)), linestyle=(i+1))
+        
+        # errobars
+        for i in range(len(keys)):
+            # TODO: calculate offset with scenarios and gap
+            if i == 0:
+                g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5), "Standard Deviation")
+            else:            
+                g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5))
+
+        # output plot
+        g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
 
     def generateHistogram(self):
@@ -700,6 +840,8 @@ class TcpAnalysis(Analysis):
                             src         INTEGER,
                             dst         INTEGER,                            
                             thruput     DOUBLE,
+                            thruput_0   DOUBLE,
+                            thruput_1   DOUBLE,
                             start_time  INTEGER,
                             run_label   VARCHAR(70),
                             scenario_label VARCHAR(70),
@@ -722,6 +864,7 @@ class TcpAnalysis(Analysis):
                         
         self.dbcon.commit()
         self.generateHistogram()
+        self.generateHistogram2Flows()
         self.generateTputOverTimePerRun()
         self.generateTputOverTime()
         self.generateTputDistributions()
