@@ -87,10 +87,10 @@ def test_ping(mrs,
                                               dst_ip)
 
     
-    rc = mrs.remote_execute(src.getHostname(),
-                            cmd,
-                            log_file,
-                            timeout=int((ping_interval*ping_count)+5))
+    rc = yield mrs.remote_execute(src.getHostname(),
+              	                  cmd,
+                                  log_file,
+                                  timeout=int((ping_interval*ping_count)+5))
 
     defer.returnValue(rc)
 
@@ -131,10 +131,10 @@ def test_fping(mrs,
     cmd = "fping -A -p %u -c %u -b %u %s %s 2>&1" % ((ping_interval*1000), ping_count,
                                              ping_size, fping_opts,
                                              dst_ip)
-    rc = mrs.remote_execute(src.getHostname(),
-                            cmd,
-                            log_file,
-                            timeout=int((ping_interval*ping_count)+5))
+    rc = yield mrs.remote_execute(src.getHostname(),
+                                  cmd,
+                                  log_file,
+                                  timeout=int((ping_interval*ping_count)+5))
 
     defer.returnValue(rc)
 
