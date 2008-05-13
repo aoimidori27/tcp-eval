@@ -90,11 +90,11 @@ def test_ping(mrs,
     rc = mrs.remote_execute(src.getHostname(),
                             cmd,
                             log_file,
-                            timeout=(ping_interval*ping_count)+5)
+                            timeout=int((ping_interval*ping_count)+5))
 
     defer.returnValue(rc)
 
-
+@defer.inlineCallbacks
 def test_fping(mrs,
               log_file,
               ping_src,
@@ -134,7 +134,7 @@ def test_fping(mrs,
     rc = mrs.remote_execute(src.getHostname(),
                             cmd,
                             log_file,
-                            timeout=(ping_interval*ping_count)+5)
+                            timeout=int((ping_interval*ping_count)+5))
 
     defer.returnValue(rc)
 
