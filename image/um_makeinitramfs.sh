@@ -2,7 +2,7 @@
 
 # image path 
 IMAGEDIR_EDGY="/opt/umic-mesh/images/vmeshnode/edgy"
-IMAGEDIR_HARDY="/opt/umic-mesh/images/vmeshnode/hardy"
+IMAGEDIR_HARDY="/opt/umic-mesh/images/vmeshhost/hardy"
 
 # destination -$IMAGE will be appended to this
 INITRD_DST=/opt/umic-mesh/boot/initrd/initramfs
@@ -32,7 +32,7 @@ SBINFILES="$SBINFILES,ethtool,syslog-ng,strace"
 STATIC="/bin/ip,/lib/dhcp3-client/call-dhclient-script"
 
 # where to search for executables and librarys
-LIB_SEARCHPATH="/lib,/usr/lib,/usr/lib/i586"
+LIB_SEARCHPATH="/lib,/usr/lib,/usr/lib/i586,/lib/tls/i686/nosegneg"
 BIN_SEARCHPATH="/bin,/usr/bin,/sbin,/usr/sbin,/usr/lib/klibc/bin"
 
 # librarys which are copied for ubuntu edgy initramfs
@@ -45,7 +45,17 @@ LIBS_HARDY="ld-2.7.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.7.so,li
 
 function makedev() {
    cd $INITRD_TMP/dev
-   MAKEDEV  
+   MAKEDEV std
+
+   mknod $INITRD_TMP/dev/watchdog c 10 130
+   mknod $INITRD_TMP/dev/console c 5 1
+   mknod $INITRD_TMP/dev/tty12   c 4 12
+
+   # net tun
+   mknod $INITRD_TMP/dev/net/tun c 10 200
+
+   # watchdog
+   mknod $INITRD_TMP/dev/watchdog c 10 130 
 }
 
 # filecopy "$files" "$searchpath" "$dstdir"
