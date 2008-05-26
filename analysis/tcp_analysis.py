@@ -494,9 +494,13 @@ class TcpAnalysis(Analysis):
         for i in range(len(keys)):
             # TODO: calculate offset with scenarios and gap
             if i == 0:
-                g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5), "Standard Deviation")
+                g.plotErrorbar(valfilename, i, 4+(i*15),5+(i*15), "Standard Deviation")
+                g.plotErrorbar(valfilename, i+1, 9+(i*15),10+(i*15))
+                g.plotErrorbar(valfilename, i+2, 14+(i*15),15+(i*15))
             else:            
-                g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5))
+                g.plotErrorbar(valfilename, i*3, 4+(i*15),5+(i*15))
+                g.plotErrorbar(valfilename, i*3+1, 9+(i*15),10+(i*15))
+                g.plotErrorbar(valfilename, i*3+2, 14+(i*15),15+(i*15))
 
         # output plot
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
