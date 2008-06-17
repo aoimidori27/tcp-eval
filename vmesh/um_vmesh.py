@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vi:et:sw=4 ts=4
 
 # python imports
 import re
@@ -29,6 +30,13 @@ class BuildVmesh(Application):
         self.node = None
         self.conf = None
         self.confstr = None
+        self.linkinfo = dict()
+        self.shapecmd = """\
+tc class  add dev %(iface)s parent 1: classid 1:%(nr)d cbq rate %(rate)smbit allot 1500 prio 5 bounded isolated && \
+tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
+    match ip protocol 47 0xff flowid 1:%(nr)d \
+    match ip dst %(dst)s"""
+
         
         # initialization of the option parser
         usage = "usage: %prog [options] [CONFIGFILE] \n" \
@@ -65,6 +73,9 @@ class BuildVmesh(Application):
                                action = "store_true", dest = "staticroutes",
                                help = "Setup static routing according to topology"\
                                       "(default: %default)")
+        self.parser.add_option("-R", "--rate",
+                               action = "store", dest = "rate", metavar="RATE",
+                               help = "Rate limit in mbps")
 
 
 
@@ -120,19 +131,20 @@ class BuildVmesh(Application):
         # line syntax:
         # LINE = HOST ":" REACHES
         # HOST = DIGITS
-        # REACHES = DIGITS REACHES "|" DIGITS "-" DIGITS " " REACHES
+        # REACHES = DIGITS REACHES | DIGITS "-" DIGITS " " REACHES
         # additional spaces are allowed everywhere, except around the "-"
-        line_re = re.compile(r"""
+        line_str = r"""
                 ^([0-9]+)\ *:                   # HOST ":"
                 \ *                             # optional spaces
-                (
-                    ([0-9]+(-[0-9]+)?           # DIGITS | DIGITS "-" DIGITS
-                    \ *)                        # optional spaces
-                +)$
-                """, re.VERBOSE)
-        split_re = re.compile(' +')
-        range_re = re.compile('([0-9]+)-([0-9]+)')
-
+                ( ( %s )+ )                     # REACHES
+                $"""
+        reaches_str = r"""
+                ([0-9]+)(?:-([0-9]+))?          # DIGITS | DIGITS "-" DIGITS
+                (?:\[([0-9.]+)\])?               # [ "[" FLOAT "]" ]
+                (?:\ +|$)                       # optional spaces
+                """
+        line_re    = re.compile(line_str % reaches_str, re.VERBOSE)
+        reaches_re = re.compile(reaches_str, re.VERBOSE)
         # read (asymmetric) reachability information from the config file
         asym_map = {}
         if file == "-":
@@ -159,13 +171,21 @@ class BuildVmesh(Application):
 
             host = lm.group(1)
             reaches = set()
-            for r in split_re.split(lm.group(2)):
-                # expand ranges if necessary
-                rm = range_re.match(r)
-                if rm:
-                    reaches.update(range(int(rm.group(1)), int(rm.group(2))+1))
+            for m in reaches_re.findall(lm.group(2)):
+                first = int(m[0])
+                if m[1]: last = int(m[1])
+                else: last = first
+                info = m[2]
+                if last:
+                    reaches.update(range(first, last+1))
                 else:
-                    reaches.add(int(r))
+                    reaches.add(first)
+
+                if info:
+                    if not self.linkinfo.has_key(int(host)):
+                        self.linkinfo[int(host)] = dict()
+                    for i in range(first, last+1):
+                        self.linkinfo[int(host)][i] = info
 
             asym_map[int(host)] = reaches
 
@@ -223,6 +243,48 @@ class BuildVmesh(Application):
             error("Setting up GRE tunnel %s (%s, %s) failed." % (hostnum, public_ip, gre_ip))
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
 
+    def setup_trafficcontrol(self):
+        iface = "eth0"
+        hostnum = self.node.getNumber()
+        peers = self.conf.get(hostnum, set())
+        prefix = self.node.getHostnamePrefix()
+
+        # Add qdisc
+        try:
+            execute("tc qdisc del dev %s root &&" % iface +
+                    "tc qdisc add dev %s root handle 1: cbq avpkt 1000 bandwidth 100mbit" % iface
+                    ,True)
+        except CommandFailed, inst:
+            error('Couldnt install queuing discipline')
+            error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+            raise
+
+        # Add class and filter for each peer
+        i = 0
+        for p in peers:
+            try:
+                if self.linkinfo.has_key(hostnum) and self.linkinfo[hostnum].has_key(p):
+                    rate = self.linkinfo[hostnum][p]
+                elif self.options.rate:
+                    rate = self.options.rate
+                else:
+                    continue
+
+                i+=1
+
+                info("Limiting rate of link %s -> %s to %s mbit" % (hostnum,p,rate))
+
+                execute(self.shapecmd % { 
+                        'iface' : iface, 
+                        'nr' : i, 
+                        'dst' : socket.gethostbyname('%s%s' % (prefix,p)),
+                        'rate' : rate}, 
+                        True)
+
+            except CommandFailed, inst:
+                error('Failed to add tc classes and filters for link %s -> %s' % (hostnum, p))
+                error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+                raise
 
     def setup_iptables(self):
         hostnum = self.node.getNumber()
@@ -329,7 +391,7 @@ class BuildVmesh(Application):
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh", "-i",
+                cmd = ["ssh", h, "sudo", "./um_vmesh", "-i",
                                         self.options.interface, "-l", "-"]
                 if self.options.debug:
                     cmd.append("--debug")
@@ -337,6 +399,10 @@ class BuildVmesh(Application):
                 if self.options.staticroutes:
                     cmd.append("--staticroutes")
     
+                if self.options.rate:
+                    cmd.append("-R")
+                    cmd.append(self.options.rate)
+
                 proc =subprocess.Popen(cmd, stdin=subprocess.PIPE)
                 rc = proc.communicate("".join(self.confstr))
                 if proc.returncode != 0:
@@ -351,6 +417,9 @@ class BuildVmesh(Application):
             
             info("Setting up iptables rules ... ")
             self.setup_iptables()
+
+            info("Setting up traffic shaping ... ")
+            self.setup_trafficcontrol()
 
             if self.options.staticroutes:
                 info("Setting up static routing...")
