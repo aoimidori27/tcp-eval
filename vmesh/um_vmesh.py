@@ -223,7 +223,6 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         else:
             return "192.168.0.0"
 
-
     def setup_gre(self):
         hostnum = self.node.getNumber()
         public_ip = self.node.getIPaddress(device = None)
