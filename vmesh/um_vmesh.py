@@ -253,7 +253,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
                     "tc qdisc add dev %s root handle 1: cbq avpkt 1000 bandwidth 100mbit" % iface
                     ,True)
         except CommandFailed, inst:
-            error('Couldnt install queuing discipline')
+            error('Could not install queuing discipline')
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
             raise
 
