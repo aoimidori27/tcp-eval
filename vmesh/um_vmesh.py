@@ -249,7 +249,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
 
         # Add qdisc
         try:
-            execute("tc qdisc del dev %s root &&" % iface +
+            execute("tc qdisc del dev %s root; " % iface +
                     "tc qdisc add dev %s root handle 1: cbq avpkt 1000 bandwidth 100mbit" % iface
                     ,True)
         except CommandFailed, inst:
@@ -389,7 +389,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                cmd = ["ssh", h, "sudo", "./um_vmesh", "-i",
+                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh", "-i",
                                         self.options.interface, "-l", "-"]
                 if self.options.debug:
                     cmd.append("--debug")
