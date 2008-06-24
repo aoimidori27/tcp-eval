@@ -169,7 +169,7 @@ class TcpAnalysis(Analysis):
         p = UmLinePlot(plotname)
         p.setYLabel(r"$\\Mbps$")
         if times:
-            p.setXLabel("time")
+            p.setXLabel("Time")
             p.setXDataTime()
             # +1 hour offset to GMT
             time_offset = "+3600"
