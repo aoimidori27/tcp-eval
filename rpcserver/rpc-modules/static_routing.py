@@ -101,6 +101,9 @@ class Static_routing(RPCService):
                        "via",    rentry["gw"],
                        "dev",    rentry["nic"],
                        "metric", str(rentry["metric"])]
+                if rentry["rt_table"]:
+                    cmd.append("table")
+                    cmd.append(str(rentry["rt_table"]))
                 (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
                 if len(stdout):
                     debug(stdout)
@@ -122,7 +125,7 @@ class Static_routing(RPCService):
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function unloads the netconsole module """
+        """ This function removes static routing entries """
 
         final_rc = 0
 
@@ -138,6 +141,9 @@ class Static_routing(RPCService):
                        "via",    rentry["gw"],
                        "dev",    rentry["nic"],
                        "metric", str(rentry["metric"])]
+                if rentry["rt_table"]:
+                    cmd.append("table")
+                    cmd.append(str(rentry["rt_table"]))
                 (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
                 if len(stdout):
                     debug(stdout)
