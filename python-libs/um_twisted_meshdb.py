@@ -163,7 +163,7 @@ class MeshDbPool(adbapi.ConnectionPool):
             query = """ SELECT services_flavors.*,
                         INET_NTOA(gw) AS gw,
                         INET_NTOA(dest) AS dest,
-                        metric, nic, prefix
+                        metric, nic, prefix, rt_table
                         FROM services_flavors
                         LEFT JOIN %s USING (flavorID)
                         WHERE flavorID=%d
