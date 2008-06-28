@@ -4,7 +4,7 @@ VAULT=/mnt/backup
 MAILTO=root
 CONFIG=/etc/dirvish/master.conf
 
-YESTERDAY=`date -d "yesterday" +%Y-%m-%d`
+YESTERDAY=`date -d "today" +%Y-%m-%d`
 
 cd $VAULT || (echo "$0: ERROR: Please set the VAULT variable"; exit 1)
 
@@ -12,7 +12,7 @@ tmpfile=/tmp/dirvish.status.$$
 
 WARNINGS=""
 for machine in `ls|grep -v lost+found`; do
-    test ! -d $machine/dirvish continue;
+    test ! -d $machine/dirvish && continue;
     
     echo "================== $machine =================="
 
