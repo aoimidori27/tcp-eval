@@ -23,7 +23,7 @@ node_info = dict(
 # information about the images
 image_info = dict(
     common = dict(
-        repository    = "svn://mesh.umic.rwth-aachen.de/umic-mesh",
+        repository    = "svn+ssh://svn.umic-mesh.net/umic-mesh",
         image_prefix  = "/opt/umic-mesh/images",
         kernel_prefix = "/opt/umic-mesh/boot/linux",
         initrd_prefix = "/opt/umic-mesh/boot/initrd",
@@ -52,8 +52,9 @@ image_info = dict(
     ),
     vmeshnode = dict(
         svn_mappings = { "/config/vmeshnode/trunk" : "config",
-                         "/linux/vanilla/branches/linux-2.6.24.2-um" : "linux/default",
-                         "/linux/vanilla/branches/linux-2.6.24.2-um-reorder" : "linux/reorder",
+                         "/linux/vanilla/branches/linux-2.6.24.x-um" : "linux/default",
+                         "/linux/vanilla/branches/linux-2.6.24.x-um-reorder" : "linux/reorder",
+                         "/linux/vanilla/branches/linux-2.6.27.x-tcp-ncr" : "linux/tcp-ncr",
                          "/linux/xen/branches/linux-2.6.16.29-xen-elcn" : "linux/elcn",
                          "/routing/olsr/branches/um-version-olsr4" : "routing/olsr4",
                          "/routing/olsr/branches/um-version-olsr5" : "routing/olsr5",
@@ -69,9 +70,10 @@ image_info = dict(
     ),
     meshnode = dict(
         svn_mappings = { "/config/vmeshnode/trunk" : "config",
-                         "/linux/vanilla/branches/linux-2.6.24.2-um" : "linux/default",
-                         "/linux/vanilla/branches/linux-2.6.16.29-ring3" : "linux/ring3",
+                         "/linux/vanilla/branches/linux-2.6.24.x-um" : "linux/default",
+                         "/linux/vanilla/branches/linux-2.6.16.29-icmp" : "linux/icmp",
                          "/linux/vanilla/branches/linux-2.6.16.29-elcn" : "linux/elcn",
+                         "/linux/vanilla/branches/linux-2.6.27.x-tcp-ncr" : "linux/tcp-ncr",
                          "/routing/olsr/branches/um-version-olsr4" : "routing/olsr4",
                          "/routing/olsr/branches/um-version-olsr5" : "routing/olsr5",
                          "/drivers/madwifi-ng/branches/um-version" : "drivers/madwifi-ng",
