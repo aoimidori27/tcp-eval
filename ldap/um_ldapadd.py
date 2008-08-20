@@ -28,13 +28,13 @@ class LdapAdd(Application):
 
     def run(self):
 	# ----------> connect to ldap server
-	passwd = getpass.getpass()	#get the ldap admin password without displaying it
+	passwd = getpass.getpass(prompt="LDAP admin password:")	#get the ldap admin password without displaying it
 	try:
 		l = ldap.open(self.options.server)
         	l.simple_bind_s("cn=admin,dc=umic-mesh,dc=net", passwd)
-		print "Connected to server."
+		info("Connected to server.")
 	except ldap.LDAPError, error_message:
-		print "Couldn't connect. %s" % error_message
+		error("Couldn't connect. %s" % error_message)
 		exit()
 	
 	# ----------> finding the maximum uidNumber, so that the new user can get the next

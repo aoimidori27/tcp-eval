@@ -50,7 +50,7 @@ class LdapDelete(Application):
                         if (uid in gr):
                                 groups.append(entry[1]['cn'][0])
                 except:
-                        print "",
+                        pass
 
 	mod_attrs = [( ldap.MOD_DELETE, 'memberUid', uid )]
 	for gr in groups:
