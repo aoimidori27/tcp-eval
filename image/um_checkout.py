@@ -200,6 +200,8 @@ class Checkout(Application):
     def main(self):
         "Main method of image object"
 
+	requireNOroot()
+
         self.parse_option()
         self.set_option()
 
