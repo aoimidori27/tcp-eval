@@ -40,11 +40,12 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         # initialization of the option parser
         usage = "usage: %prog [options] [CONFIGFILE] \n" \
                 "where the CONFIGFILE systax looks like the following \n" \
-                "   1: 2 3 5-6 \n" \
+                "   1: 2 [10] 3 [5.3] 5-6 [0.74] \n" \
                 "   2: ... \n\n" \
                 "vmrouter1 reaches all vmrouters listed after the colon, every \n "\
-                "vmrouter listed after the colon reaches vmrouter1. Empty lines \n "\
-                "and lines starting with # are ignored."
+                "vmrouter listed after the colon reaches vmrouter1. \n "\
+                "Rate limits in mbps may be given in [] after every entry. \n "\
+                "Empty lines and lines starting with # are ignored."
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
                                  multicast = "224.66.66.66", offset = 0, staticroutes=False)
@@ -139,7 +140,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
                 $"""
         reaches_str = r"""
                 ([0-9]+)(?:-([0-9]+))?          # DIGITS | DIGITS "-" DIGITS
-                (?:\[([0-9.]+)\])?               # [ "[" FLOAT "]" ]
+                (?:\[([0-9]+\.[0-9]+)\])?               # [ "[" FLOAT "]" ]
                 (?:\ +|$)                       # optional spaces
                 """
         line_re    = re.compile(line_str % reaches_str, re.VERBOSE)
@@ -386,6 +387,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
 
         # Apply settings on remote hosts
         if self.options.remote:
+            requireNOroot()
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
