@@ -20,6 +20,17 @@ def requireroot():
         error("You must be root. Command failed.")
         sys.exit(1)
 
+def requireNOroot():
+    """
+    Check whether the current user is root or not. If the user is root
+    sys.exit() will be called. The sys.exit() function will raise the build-in
+    exception "SystemExit". When it is not handled, the Python interpreter will
+    exit
+    """
+    
+    if  os.getuid() == 0:
+        error("You can not be root. Command failed.")
+        sys.exit(1)
 
 def execute(cmd, shell = True, raiseError = True):
     """Execute a shell command, wait for command to complete and return stdout/stderr"""
