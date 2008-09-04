@@ -246,7 +246,7 @@ class MeshDbPool(adbapi.ConnectionPool):
 
 
     @defer.inlineCallbacks
-    def getNetbootProfileNames(self, servicename)
+    def getNetbootProfileNames(self, servicename):
         servInfo = yield self.getServiceInfo(servicename)
         if not servInfo:
             defer.returnValue(None)
