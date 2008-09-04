@@ -241,8 +241,19 @@ class MeshDbPool(adbapi.ConnectionPool):
 
         str_profid = "SELECT `flavorID` FROM `services_flavors` WHERE `flavorName`=\"%s\" AND `servID`=%s" % (profilename, servID)
         str_profdat = "SELECT `initrd`,`image`,`kernel`, `opt_args` FROM `service_netboot` WHERE `flavorID`=( %s )" % str_profid
-        profid = self.fetchAssoc(str_profdat)
+        profid = yield self.fetchAssoc(str_profdat)
         defer.returnValue(profid)
+
+
+    @defer.inlineCallbacks
+    def getNetbootProfileNames(self, servicename)
+        servInfo = yield self.getServiceInfo(servicename)
+        if not servInfo:
+            defer.returnValue(None)
+        (servID, servTable) = servInfo
+        str_profnames = "SELECT `flavorName` FROM `services_flavors` WHERE `servID` = %s" % servID
+        profnames = yield self.fetchAssoc(str_profnames)
+        defer.returnValue(profnames)
 
 
     @defer.inlineCallbacks
