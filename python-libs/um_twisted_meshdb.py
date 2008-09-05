@@ -252,7 +252,7 @@ class MeshDbPool(adbapi.ConnectionPool):
             defer.returnValue(None)
         (servID, servTable) = servInfo
         str_profnames = "SELECT `flavorName` FROM `services_flavors` WHERE `servID` = %s" % servID
-        profnames = yield self.fetchAssoc(str_profnames)
+        profnames = yield self.fetchAssocList(str_profnames)
         defer.returnValue(profnames)
 
 
