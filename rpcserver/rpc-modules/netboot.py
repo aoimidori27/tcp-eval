@@ -62,7 +62,7 @@ class Netboot(RPCService):
     def reread_config(self):
         """ Rereads the configuration
 
-            The netconsole service table has the following important columns
+            The netboot service table has the following important columns
                    logserver : the server to log to
                    logport   : the server port to use
 
@@ -88,8 +88,41 @@ class Netboot(RPCService):
     def start(self):
         """ This function just checks if the node has booted the correct profile. If not in initiates a reboot. """
         rc = 0
-        yield self._parent._dbpool.startedService(self._config,
-                                                  rc, message="")
+
+        # parse kernel cmdline
+        fh = file("/proc/cmdline")
+        cmdline = fh.readline()
+        fh.close()
+        assoc = dict()
+        for pair in cmdline.split():
+            tmpary = pair.split('=', 1)
+            key = tmpary[0]
+            if len(tmpary) == 2:
+                value = tmpary[1]
+            else:
+                value = None
+            assoc[key] = value
+		
+        # compare with current config (version and name should match)
+        restart = False
+        if not assoc.has_key("id"):
+            error("netboot: Oops, failed to extract pxe flavor from kernel cmdline")
+            defer.returnValue(-1)
+        else:
+            restart = restart or (assoc["id"] != self._config["flavorName"])
+
+        if not assoc.has_key("version"):
+            warn("netboot: Failed to extract version from kernel cmdline, ignoring...")
+        else:
+            restart = restart or (assoc["version"] != str(self._config["version"]))
+        
+        if restart:
+            info("I have to start another pxe configuration: flavor=%s id=%s" %(self._config["flavorName"], self._config["version"]))
+            yield twisted_execute(["/sbin/shutdown", "-r","now"], shell=False)
+        else:
+            info("Config and /proc/cmdline match, doing nothing.")
+            yield self._parent._dbpool.startedService(self._config,
+                                                      rc, message="")
  
         defer.returnValue(rc)
 
