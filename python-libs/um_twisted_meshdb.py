@@ -240,7 +240,7 @@ class MeshDbPool(adbapi.ConnectionPool):
         (servID, servTable) = servInfo
 
         str_profid = "SELECT `flavorID` FROM `services_flavors` WHERE `flavorName`=\"%s\" AND `servID`=%s" % (profilename, servID)
-        str_profdat = "SELECT `initrd`,`image`,`kernel`, `opt_args` FROM `service_netboot` WHERE `flavorID`=( %s )" % str_profid
+        str_profdat = "SELECT * FROM `service_netboot` WHERE `flavorID`=( %s )" % str_profid
         profid = yield self.fetchAssoc(str_profdat)
         defer.returnValue(profid)
 
