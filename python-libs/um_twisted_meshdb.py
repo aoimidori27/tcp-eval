@@ -242,9 +242,9 @@ class MeshDbPool(adbapi.ConnectionPool):
         str_profid = "SELECT `flavorID` FROM `services_flavors` WHERE `flavorName`=\"%s\" AND `servID`=%s" % (profilename, servID)
         str_profdat = "SELECT * FROM `%s` WHERE `flavorID`=( %s )" % (servTable, str_profid)
         profid = yield self.fetchAssoc(str_profdat)
-	str_version = "SELECT `version` FROM `services_flavors` WHERE `flavorID` =( %s )" % str_profid
-	version = yield self.fetchAssoc(str_version)
-	profid['version'] = version['version']
+        str_version = "SELECT `version` FROM `services_flavors` WHERE `flavorID` =( %s )" % str_profid
+        version = yield self.fetchAssoc(str_version)
+        profid['version'] = version['version']
         defer.returnValue(profid)
 
 
