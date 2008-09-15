@@ -6,8 +6,8 @@ from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_application import Application
-from um_util import *
-
+from um_functions import *
+from um_config import *
 
 class KernelUpdate(Application):
     "Class to handle kernel source update within images"
@@ -17,6 +17,19 @@ class KernelUpdate(Application):
 
         Application.__init__(self)
 
+        usage = "usage: %prog -k <kernelversion> [OPTIONS]"
+        self.parser.set_usage(usage)
+        
+        self.parser.set_defaults(mirror="http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/v2.6")
+        self.parser.add_option("-k", "--kernelversion",
+                               action = "store", dest = "kernelversion",
+                               help = "Set the kernel version to download")
+        self.parser.add_option("-t", "--testing",
+                               action = "store_true", dest = "testing",
+                               help = "If you want to get testing kernels")
+        self.parser.add_option("-m", "--mirror",
+                               action = "store", dest = "mirror",
+                               help = "Set the mirror to download from (default: %default)")
 
     def set_option(self):
         "Set options"
@@ -27,71 +40,40 @@ class KernelUpdate(Application):
     def kernelupdate(self):
         "Update Kernel source"
 
-        # get nodetype
-        nodetype = getnodetype()
+        # set parameter
+        kernelinfos = dict()
+        kernelinfos["mirror"] = self.options.mirror
+        kernelinfos["version"] = self.options.kernelversion
+        svninfos = dict()
+        svninfos["svnrepos"] = "svn+ssh://svn.umic-mesh.net/umic-mesh"
 
-        # for kernelupdate only works for meshnodes
-        if nodetype == "meshnode":
-            kernel = "linux-%s" %(kernelinfos["version"])
-            tmp = "/tmp/kernelupdate"
-            dst = "%s/%s" %(tmp, kernel)
-            cmd = "mkdir -p %s" %(dst)
-            execute(cmd, shell = True)
+        # create temp dir
+        if self.options.testing:
+            kernel = "testing/linux-%s" %(kernelinfos["version"])
         else:
-            raise NotImplementedError()
+            kernel = "linux-%s" %(kernelinfos["version"])
+        tmp = "/tmp/kernelupdate"
+        dst = "%s/%s" %(tmp, kernel)
+        cmd = "mkdir -p %s" %(dst)
+        execute(cmd, shell = True)
 
-        # check out upstream files
-        info("Check out kernel upstream")
-        cmd = ("svn",  "checkout", "%s/boot/linux/branches/upstream" \
+        # check out trunk files
+        info("Check out kernel trunk")
+        cmd = ("svn",  "checkout", "%s/linux/vanilla/trunk" \
               %(svninfos["svnrepos"]), dst)
         info(cmd)
         call(cmd, shell = False)
 
         # download kernel image and extract
-        cmd = "wget %s/v2.6/%s.tar.gz -O - | tar xz -C %s" \
+        cmd = "wget %s/%s.tar.gz -O - | tar xz -C %s" \
               %(kernelinfos["mirror"], kernel, tmp)
         info(cmd)
         call(cmd, shell = True)
 
-        # get revision
-        cmd = "svn info %s | grep Revision | awk '{print $2;}'" %(dst)
-        info(cmd)
-        (stdout, stderr) = execute(cmd, shell = True)
-        local_revision = stdout.splitlines()[0]
-        info(local_revision)
-
         # commit new versions of files to upstream repository
-        cmd = ("svn", "commit", dst, "-m","updated kernel to %s" %(kernel))
+        cmd = ("svn", "commit", dst, "-m","linux: updated trunk to %s" %(kernelinfos["version"]))
         info(cmd)
         call(cmd, shell = False)
-
-        # switch repository to trunk
-        cmd = ("svn", "switch", "%s/boot/linux/trunk" %(svninfos["svnrepos"]), dst)
-        info(cmd)
-        call(cmd, shell = False)
-
-        # merge upstream with trunk
-        cmd = ("svn", "merge", "-r", "%s:HEAD" %(local_revision),
-               "%s/boot/linux/branches/upstream" %(svninfos["svnrepos"]), dst)
-        info(cmd)
-        call(cmd, shell = False)
-
-        # remove modified files and svn infos
-        cmd = "rm -rf `find %s -name .svn`" %(dst)
-        info(cmd)
-        call(cmd, shell = True)
-        for i in kernelinfos["modifiedfiles"]:
-            cmd = "rm -v %s/%s" %(dst,i)
-            call(cmd, shell = True)
-
-        # copy other files to images
-        for img in imageinfos.iterkeys():
-            imgdst = "%s/%s/meshnode/opt/meshnode/linux" %(imageprefix, img)
-            cmd = "mkdir -vp %s" %(imgdst)
-            call(cmd, shell = True)
-            cmd = "cp -r %s/* %s" %(dst, imgdst)
-            info(cmd)
-            call(cmd, shell = True)
 
         # clean up
         info("Cleaning up %s..." %(tmp))
