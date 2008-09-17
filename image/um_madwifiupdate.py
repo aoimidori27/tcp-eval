@@ -20,6 +20,7 @@ class MadwifiUpdate(Application):
         usage = "usage: %prog [OPTIONS]"
         self.parser.set_usage(usage)
 
+        self.parser.set_defaults(usertmp = "tmp/madwifiupdate")
         self.parser.add_option("-p", "--tmp",
                                action = "store", dest = "usertmp",
                                help = "Set the temporary dir")
