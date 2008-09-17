@@ -76,12 +76,12 @@ class KernelUpdate(Application):
         # commit new versions of files to upstream repository
         cmd = ("svn", "commit", dst, "-m","linux: updated trunk to %s" %(kernelinfos["version"]))
         info(cmd)
-        #call(cmd, shell = False)
+        call(cmd, shell = False)
 
         # clean up
         info("Cleaning up %s..." %(tmp))
         cmd = "rm -rf %s" %(tmp)
-        #execute(cmd, shell = True)
+        execute(cmd, shell = True)
         info("Done.")
 
 
