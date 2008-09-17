@@ -27,9 +27,6 @@ class KernelUpdate(Application):
         self.parser.add_option("-k", "--kernelversion",
                                action = "store", dest = "kernelversion",
                                help = "Set the kernel version to download")
-        self.parser.add_option("-t", "--testing",
-                               action = "store_true", dest = "testing",
-                               help = "If you want to get testing kernels")
         self.parser.add_option("-m", "--mirror",
                                action = "store", dest = "mirror",
                                help = "Set the mirror to download from (default: %default)")
@@ -51,10 +48,7 @@ class KernelUpdate(Application):
         svninfos["svnrepos"] = "svn+ssh://svn.umic-mesh.net/umic-mesh"
 
         # create temp dir
-        if self.options.testing:
-            kernel = "testing/linux-%s" %(kernelinfos["version"])
-        else:
-            kernel = "linux-%s" %(kernelinfos["version"])
+        kernel = "linux-%s" %(kernelinfos["version"])
         tmp = self.options.usertmp
         dst = "%s/%s" %(tmp, kernel)
         cmd = "mkdir -p %s" %(dst)
@@ -72,6 +66,24 @@ class KernelUpdate(Application):
               %(kernelinfos["mirror"], kernel, tmp)
         info(cmd)
         call(cmd, shell = True)
+
+        # add new files
+        cmd = "echo `svn st %s | grep '?' | awk '{ print $2; }'`" %(dst)
+        (stdout,stderr) = execute(cmd, shell = True)
+        debug("Stdout: %s" %stdout)
+        if (stdout != "\n"):
+            info("Found new files. Adding them...")
+            cmd = "svn add %s" %(stdout)
+            call(cmd, shell = True)
+
+        # remove files, which were removed in upstream
+        cmd = "echo `svn st %s | grep '!' | awk '{ print $2; }'`" %(dst)
+        (stdout, stderr) = execute(cmd, shell = True)
+        debug("Stdout: %s" %stdout)
+        if (stdout != "\n"):
+            info("Found removed files. Deleting them...")
+            cmd = "svn rm %s" %(stdout)
+            call(cmd, shell = True)
 
         # commit new versions of files to upstream repository
         cmd = ("svn", "commit", dst, "-m","linux: updated trunk to %s" %(kernelinfos["version"]))

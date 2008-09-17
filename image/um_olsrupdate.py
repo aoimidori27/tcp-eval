@@ -23,7 +23,7 @@ class OlsrUpdate(Application):
         usage = "usage: %prog -o <olsrversion> [OPTIONS]"
         self.parser.set_usage(usage)
 
-        self.parser.set_defaults(usertmp = "tmp/olsrupdate")
+        self.parser.set_defaults(usertmp = "/tmp/olsrupdate")
         self.parser.add_option("-p", "--tmp",
                                action = "store", dest = "usertmp",
                                help = "Set the temporary dir")
