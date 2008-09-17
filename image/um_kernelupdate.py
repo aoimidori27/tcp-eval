@@ -20,7 +20,10 @@ class KernelUpdate(Application):
         usage = "usage: %prog -k <kernelversion> [OPTIONS]"
         self.parser.set_usage(usage)
         
-        self.parser.set_defaults(mirror="http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/v2.6")
+        self.parser.set_defaults(mirror="http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/v2.6", usertmp="/tmp/kernelupdate")
+        self.parser.add_option("-p", "--tmp",
+                               action = "store", dest = "usertmp",
+                               help = "Set the temporary dir")
         self.parser.add_option("-k", "--kernelversion",
                                action = "store", dest = "kernelversion",
                                help = "Set the kernel version to download")
@@ -52,7 +55,7 @@ class KernelUpdate(Application):
             kernel = "testing/linux-%s" %(kernelinfos["version"])
         else:
             kernel = "linux-%s" %(kernelinfos["version"])
-        tmp = "/tmp/kernelupdate"
+        tmp = self.options.usertmp
         dst = "%s/%s" %(tmp, kernel)
         cmd = "mkdir -p %s" %(dst)
         execute(cmd, shell = True)
@@ -73,12 +76,12 @@ class KernelUpdate(Application):
         # commit new versions of files to upstream repository
         cmd = ("svn", "commit", dst, "-m","linux: updated trunk to %s" %(kernelinfos["version"]))
         info(cmd)
-        call(cmd, shell = False)
+        #call(cmd, shell = False)
 
         # clean up
         info("Cleaning up %s..." %(tmp))
         cmd = "rm -rf %s" %(tmp)
-        execute(cmd, shell = True)
+        #execute(cmd, shell = True)
         info("Done.")
 
 

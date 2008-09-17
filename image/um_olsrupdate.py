@@ -20,6 +20,20 @@ class OlsrUpdate(Application):
 
         Application.__init__(self)
 
+        usage = "usage: %prog -o <olsrversion> [OPTIONS]"
+        self.parser.set_usage(usage)
+
+        self.parser.add_option("-p", "--tmp",
+                               action = "store", dest = "usertmp",
+                               help = "Set the temporary dir")
+        self.parser.set_defaults(mirror="http://www.olsr.org/releases/0.5")
+        self.parser.add_option("-o", "--olsrversion",
+                               action = "store", dest = "olsrversion",
+                               help = "Set the OLSR version to download")
+        self.parser.add_option("-m", "--mirror",
+                               action = "store", dest = "mirror",
+                               help = "Set mirror to download from (default: %default)")
+
 
     def set_option(self):
         "Set options"
@@ -31,47 +45,29 @@ class OlsrUpdate(Application):
         "Update OLSR source"
 
         # create temporary directory
-        tmp   = "/tmp/olsrupdate"
-        dst   = "%s/upstream" %(tmp)
-        trunk = "%s/trunk" %(tmp)
-        cmd   = "mkdir -p %s" %(tmp)
+        tmp   = self.options.usertmp
+        dst   = "%s/olsrd-%s" %(tmp, self.options.olsrversion)
+        cmd   = "mkdir -p %s" %(dst)
         call(cmd, shell = True)
 
-        remote_repos   = olsrinfos["remote_repos"]
-        remote_module  = olsrinfos["remote_module"]
-        remote_tag     = olsrinfos["remote_tag"]
-        local_repos    = svnrepos
-        local_upstream = olsrinfos["local_upstream"]
-        local_trunk    = olsrinfos["local_trunk"]
+        remote_repos   = self.options.mirror
+        remote_version = self.options.olsrversion
+        local_repos    = "svn+ssh://svn.umic-mesh.net/umic-mesh"
+        local_upstream = "routing/olsr/trunk"
 
-        # check out upstream files
+        # check out trunk files
         info("Checking out olsr local upstream...")
-        cmd = ("svn", "co", "-q", "%s%s" %(local_repos, local_upstream), dst)
+        cmd = ("svn", "co", "%s/%s" %(local_repos, local_upstream), dst)
+        debug(cmd)
         call(cmd, shell = False)
 
-        # get revision
-        cmd = "svn info %s | grep Revision | awk '{print $2;}'" %(dst)
-        (stdout, stderr) = execute(cmd, shell = True)
-        local_revision = stdout.splitlines()[0]
-        info("Revision of checkout is: %s" %(local_revision))
-
-        # clean up upstream
-        info("Cleaning up upstream checkouts...")
-        cmd = "find %s ! -path '*.svn*' -type f | xargs rm -f" %(dst)
+        # get new version from olsrd-page
+        info("Getting OLSR %s from %s..." %(remote_version, remote_repos) )
+        cmd = "wget %s/olsrd-%s.tar.gz -O - | tar xz -C %s" \
+              %(remote_repos, remote_version, tmp)
+        debug(cmd)
         call(cmd, shell = True)
 
-        # check out trunk from remote repos
-        info("Checking out olsr tag %s from remote...", remote_tag )
-        save_path = os.getcwd()
-        os.chdir(tmp)
-        cmd = ["cvs","-Q", "-d%s" %(remote_repos), "co","-r", remote_tag, "-d","upstream", remote_module]
-        call(cmd, shell = False)
-        os.chdir(save_path)
-
-        # clean up trunk from remote repos
-        info("Removing CVS folders...")
-        cmd = "find %s -name CVS | xargs rm -rf" %(dst)
-        call(cmd, shell = True)
 
         info("Searching updated files...")
 
@@ -95,27 +91,7 @@ class OlsrUpdate(Application):
 
         # commit changes
         info("Commiting changes...")
-        cmd = ("svn", "ci", dst, "-m", "new olsr version (cvs tag: %s)" %remote_tag)
-        call(cmd, shell = False)
-
-        # switch upstream to trunk
-        info("Switching local checkout to trunk...")
-        cmd = ("svn", "switch", "%s/%s" %(local_repos, local_trunk), dst)
-        call(cmd, shell = False)
-
-        # just for completeness rename it
-        cmd = "mv %s %s" %(dst, trunk)
-        call(cmd, shell = True)
-
-        # merging changes from upstream local trunk
-        info("Merging changes with local trunk...")
-        cmd = ("svn", "merge", "-r", "%s:HEAD" %(local_revision),
-               "%s/%s" %(local_repos, local_upstream), trunk)
-        call(cmd, shell = False)
-
-        # commiting changes to local trunk
-        info("Commiting these changes to repository...")
-        cmd = ("svn", "commit", trunk, "-m", "merged new olsr version (cvs tag: %s)" %remote_tag)
+        cmd = ("svn", "ci", dst, "-m", "olsr: updated olsr trunk to olsrd %s release" %remote_version)
         call(cmd, shell = False)
 
         # cleanup

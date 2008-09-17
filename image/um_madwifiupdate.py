@@ -17,6 +17,17 @@ class MadwifiUpdate(Application):
 
         Application.__init__(self)
 
+        usage = "usage: %prog [OPTIONS]"
+        self.parser.set_usage(usage)
+
+        self.parser.add_option("-p", "--tmp",
+                               action = "store", dest = "usertmp",
+                               help = "Set the temporary dir")
+        self.parser.set_defaults(repos="http://svn.madwifi.org/madwifi/trunk")
+        self.parser.add_option("-r", "--repos",
+                               action = "store", dest = "repos",
+                               help = "Set the repository to download from")
+
 
     def set_option(self):
         "Set options"
@@ -28,40 +39,25 @@ class MadwifiUpdate(Application):
         "Update Madwifi-ng source"
 
         # create temporary directory
-        tmp   = "/tmp/madwifiupdate"
+        tmp   = self.options.usertmp
         dst   = "%s/upstream" %(tmp)
-        trunk = "%s/trunk" %(tmp)
         cmd   = "mkdir -p %s" %(tmp)
         call(cmd, shell = True)
 
-        remote_repos   = madwifiinfos["remote_repos"]
-        remote_module  = madwifiinfos["remote_module"]
-        remote_tag     = madwifiinfos["remote_tag"]
-        local_repos    = svnrepos
-        local_upstream = madwifiinfos["local_upstream"]
-        local_trunk    = madwifiinfos["local_trunk"]
+        remote_repos   = self.options.repos
+        local_repos    = "svn+ssh://svn.umic-mesh.net/umic-mesh"
+        local_upstream = "drivers/madwifi-ng/trunk"
 
         # check out upstream files
         info("Checking out madwifi local upstream...")
-        cmd = ("svn", "co", "-q", "%s%s" %(local_repos, local_upstream), dst)
+        cmd = ("svn", "co", "%s/%s" %(local_repos, local_upstream), dst)
         call(cmd, shell = False)
-
-        # get revision
-        cmd = "svn info %s | grep Revision | awk '{print $2;}'" %(dst)
-        (stdout, stderr) = execute(cmd, shell = True)
-        local_revision = stdout.splitlines()[0]
-        info("Revision of checkout is: %s" %(local_revision))
-
-        # clean up upstream
-        info("Cleaning up upstream checkouts...")
-        cmd = "find %s ! -path '*.svn*' -type f | xargs rm -f" %(dst)
-        call(cmd, shell = True)
 
         # check out trunk from remote repos
         info("Checking out madwifi trunk from remote...")
         save_path = os.getcwd()
         os.chdir(tmp)
-        cmd = ("svn","export","--force","-q", "%s%s/%s" %(remote_repos, remote_module, remote_tag), dst)
+        cmd = ("svn","export","--force", "%s" % remote_repos, dst)
         call(cmd, shell = False)
         os.chdir(save_path)
 
@@ -88,27 +84,7 @@ class MadwifiUpdate(Application):
 
         # commit changes
         info("Commiting changes...")
-        cmd = ("svn", "ci", dst, "-m","new madwifi version (tag: %s)" %remote_tag)
-        call(cmd, shell = False)
-
-        # switch upstream to trunk
-        info("Switching local checkout to trunk...")
-        cmd = ("svn", "switch", "%s/%s" %(local_repos, local_trunk), dst)
-        call(cmd, shell = False)
-
-        # just for completeness rename it
-        cmd = "mv %s %s" %(dst, trunk)
-        call(cmd, shell = True)
-
-        # merging changes from upstream local trunk
-        info("Merging changes with local trunk...")
-        cmd = ("svn","merge","-r","%s:HEAD" %(local_revision),
-               "%s/%s" %(local_repos, local_upstream), trunk)
-        call(cmd, shell = False)
-
-        # commiting changes to local trunk
-        info("Commiting these changes to repository...")
-        cmd = ("svn","commit", trunk, "-m","merging new madwifi version (tag: %s)" %remote_tag)
+        cmd = ("svn", "ci", dst, "-m","madwifi: update trunk")
         call(cmd, shell = False)
 
         # cleanup
