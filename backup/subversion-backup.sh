@@ -16,7 +16,7 @@ for i in /srv/svn/*; do
     BACKUP_FILE_FULL_REV=$BACKUP_DIR/$(basename "$i")_FULL_REV
     LAST_FULL_CHANGE=0
     if [ -e "$BACKUP_FILE_FULL" -a -e "$BACKUP_FILE_FULL_REV" ]; then
-        LAST_FULL_CHANGE=$(stat --format="%X" $BACKUP_FILE_FULL);
+        LAST_FULL_CHANGE=$(stat --format="%Y" $BACKUP_FILE_FULL);
         LAST_FULL_REV=$(cat $BACKUP_FILE_FULL_REV)
     fi;
     EXPIRY=$(($LAST_FULL_CHANGE+$FULL_EXPIRE))
