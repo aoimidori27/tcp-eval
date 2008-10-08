@@ -123,8 +123,8 @@ class RPCServer(xmlrpc.XMLRPC):
                 info("RC=%s" %rc)      
             else:
                 error("I'm supposed to start %s, which is not there!" %service)
+                rc = -1
                
-
 
         text = "Done."
         yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
