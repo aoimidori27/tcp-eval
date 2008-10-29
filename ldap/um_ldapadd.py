@@ -22,7 +22,7 @@ class LdapAdd(Application):
 
         # initialization of the option parser
         requireroot()
-        usage = "usage: %prog"
+        usage = "usage: %prog\nUsername and all details will be asked at runtime.\nHome directory will be /home/<LASTNAME>"
         self.parser.set_usage(usage)
         self.parser.set_defaults(server = "accountserver",
                          baseDN = "ou=People,dc=umic-mesh,dc=net")

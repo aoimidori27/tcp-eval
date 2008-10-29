@@ -23,7 +23,11 @@ class LdapDelete(Application):
         usage = "usage: %prog"
         self.parser.set_usage(usage)
         self.parser.set_defaults(server = "accountserver",
-                         baseDN = "ou=People,dc=umic-mesh,dc=net")
+                                 baseDN = "ou=People,dc=umic-mesh,dc=net",
+                                 userid = "")
+        self.parser.add_option("-u", "--userid",
+                               action = "store", dest = "userid",
+                               help = "Set the user to remove")
 
     def run(self):
         # ----------> connect to ldap server
@@ -37,9 +41,12 @@ class LdapDelete(Application):
             exit()
 
         # ----------> get uid
-        while (1 == 1):     # if the user doesn't exist do not exit with an error but give if another try
-            print "username: ",
-            uid=sys.stdin.readline().strip()
+        while (1 == 1):     # if the user doesn't exist do not exit with an error but give it another try
+            if not (self.options.userid == ""):
+                uid = self.options.userid
+            else:
+                print "username: ",
+                uid = sys.stdin.readline().strip()
 
             # ----------> delete user from groups
             mid = l.search_s("ou=Group,dc=umic-mesh,dc=net", ldap.SCOPE_SUBTREE, "objectClass=*")
@@ -65,6 +72,7 @@ class LdapDelete(Application):
                 break   # get out of the loop if the user exists
             except ldap.NO_SUCH_OBJECT, error_message:
                 error("No such user. %s" % error_message)
+                self.options.userid = ""
         
         # ----------> delete user
         rid = l.delete('uid=%s,ou=People,dc=umic-mesh,dc=net' % uid)
