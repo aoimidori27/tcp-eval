@@ -226,7 +226,7 @@ def test_flowgrind(mrs,
 
     dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
 
-    cmd = "flowgrind -O s=TCP_CONG_MODULE=%s -T s=%.3f -p %u -H %s/%s" % (flowgrind_cc,
+    cmd = "flowgrind -Q -c %s -t %.3f -O %u -H %s/%s" % (flowgrind_cc,
                                                          flowgrind_duration,
                                                          flowgrind_bport,
                                                          dst_ip,
@@ -295,5 +295,113 @@ def test_flowgrind(mrs,
 
     defer.returnValue(result)
     
+@defer.inlineCallbacks
+def test_flowgrind_dd(mrs,
+                   log_file,
+                   flowgrind_src,
+                   flowgrind_dst,
+                   flowgrind_duration = 15,
+                   flowgrind_cc     = "reno",
+                   flowgrind_dump   = False,
+                   flowgrind_iface  = "ath0",
+                   flowgrind_bport  = 20000,
+                   flowgrind_opts   = "",
+                   gzip_dumps       = True,
+                   **kwargs ):
+    """
+
+    This test performs a simple flowgrind test with one tcp
+    flow from src to dst.
+    It uses the new flowgrind version flowgrind-distributed
+
+    required arguments:
+         log_file      : file descriptor where the results are written to
+         mrs           : reference to parent measurement class
+         flowgrind_src : sender of the flow
+         flowgrind_dst : receiver of the flow
+
+    optional arguments:
+         flowgrind_duration : duration of the flow in seconds
+         flowgrind_cc       : congestion control method to use
+         flowgrind_dump     : turn on tcpdump on src and sender
+         flowgrind_iface    : iface to get ipaddress
+         flowgrind_bport    : flowgrind base port
+         flowgrind_opts     : additional command line arguments
+         gzip_dumps         : gzip dumps to save space
+
+    """
+
+    # for convenience accept numbers as src and dst
+    src = Node(flowgrind_src, node_type="meshrouter")
+    dst = Node(flowgrind_dst, node_type="meshrouter")
+
+    dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
+
+    cmd = "flowgrind-dd -O s=TCP_CONG_MODULE=%s -T s=%.3f -p %u -H %s/%s" % (flowgrind_cc,
+                                                         flowgrind_duration,
+                                                         flowgrind_bport,
+                                                         dst_ip,
+                                                         dst.getHostname())
+    if flowgrind_opts:
+        cmd = " ".join([cmd, flowgrind_opts])
+
+    if flowgrind_dump:
+        dumpfile_src = None
+        dumpfile_dst = None
+        results = yield mrs.xmlrpc_many([src.getHostname(),dst.getHostname()],
+                                       "tcpdump.start",
+                                       flowgrind_iface,
+                                       "port %u" %flowgrind_bport )
+        debug(results)
+        # shortcuts
+        sres = results[0]
+        dres = results[1]
+        if sres[0]:
+            dumpfile_src = sres[1]
+        else:
+            warn("Failed to start tcpdump on %s: %s" %(src.getHostname(),
+                                                       sres[1].getErrorMessage()))
+        if dres[0]:
+            dumpfile_dst = dres[1]
+        else:
+            warn("Failed to start tcpdump on %s: %s" %(dst.getHostname(),
+                                                       dres[1].getErrorMessage()))
 
 
+    result = yield  mrs.remote_execute(src.getHostname(),
+                                       cmd,
+                                       log_file,
+                                       timeout=flowgrind_duration+5)
+    if flowgrind_dump:
+        yield mrs.xmlrpc_many([src.getHostname(),dst.getHostname()],
+                              "tcpdump.stop")
+
+        # just schedule moving and compressing for later execution
+        if dumpfile_src:
+            # just append .hostname.pcap to logfilename
+            sfile = "%s.%s.pcap" %(log_file.name, src.getHostname())
+            cmd = ["mv",dumpfile_src, sfile]
+            d=twisted_call(cmd, shell=False)
+            if gzip_dumps:
+                def callback(rc):
+                    if rc != 0:
+                        return
+                    cmd = ["gzip", sfile]
+                    twisted_call(cmd, shell=False)
+
+                d.addCallback(callback)
+        if dumpfile_dst:
+            # just append .hostname.pcap to logfilename
+            dfile = "%s.%s.pcap" %(log_file.name, dst.getHostname())
+            cmd = ["mv",dumpfile_dst, dfile]
+            d=twisted_call(cmd, shell=False)
+            if gzip_dumps:
+                def callback(rc):
+                    if rc != 0:
+                        return
+                    cmd = ["gzip", dfile]
+                    twisted_call(cmd, shell=False)
+
+                d.addCallback(callback)
+
+    defer.returnValue(result)
