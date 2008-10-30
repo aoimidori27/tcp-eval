@@ -34,6 +34,7 @@ image_info = dict(
                          "/linux/xen/branches/linux-2.6.18-xen-um" : "linux/default",
                          "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
                          "/tools/flowgrind/trunk" : "tools/flowgrind",
+                         "/tools/flowgrind/branches/flowgrind-distributed" : "tools/flowgrind-dd"
                          "/tools/twisted/branches/um-version" : "tools/twisted",
                          "/tools/net-snmp/branches/um-version" : "tools/net-snmp",
                          "/tools/xen/trunk" : "tools/xen",
