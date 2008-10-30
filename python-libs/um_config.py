@@ -34,7 +34,7 @@ image_info = dict(
                          "/linux/xen/branches/linux-2.6.18-xen-um" : "linux/default",
                          "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
                          "/tools/flowgrind/trunk" : "tools/flowgrind",
-                         "/tools/flowgrind/branches/flowgrind-distributed" : "tools/flowgrind-dd"
+                         "/tools/flowgrind/branches/flowgrind-distributed" : "tools/flowgrind-dd",
                          "/tools/twisted/branches/um-version" : "tools/twisted",
                          "/tools/net-snmp/branches/um-version" : "tools/net-snmp",
                          "/tools/xen/trunk" : "tools/xen",
@@ -61,7 +61,7 @@ image_info = dict(
                          "/routing/olsr/branches/um-version-olsr5" : "routing/olsr5",
                          "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
                          "/tools/flowgrind/trunk" : "tools/flowgrind",
-                         "/tools/flowgrind/branches/flowgrind-distributed" : "tools/flowgrind-dd"
+                         "/tools/flowgrind/branches/flowgrind-distributed" : "tools/flowgrind-dd",
                          "/tools/tcpdump/branches/um-version-elcn" : "tools/tcpdump",
                          "/tools/set-elcn/trunk" : "tools/set-elcn",
                          "/scripts/python-libs" : "scripts/python-libs",
@@ -84,7 +84,7 @@ image_info = dict(
                          "/tools/set-elcn/trunk" : "tools/set-elcn",
                          "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
                          "/tools/flowgrind/trunk" : "tools/flowgrind",
-                         "/tools/flowgrind/branches/flowgrind-distributed" : "tools/flowgrind-dd"
+                         "/tools/flowgrind/branches/flowgrind-distributed" : "tools/flowgrind-dd",
                          "/tools/tcpdump/branches/um-version-elcn" : "tools/tcpdump",
                          "/tools/libpcap/branches/ring3" : "tools/libpcap",
                          "/tools/libpfring/branches/um-version" : "tools/libpfring",
