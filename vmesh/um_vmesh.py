@@ -40,7 +40,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         # initialization of the option parser
         usage = "usage: %prog [options] [CONFIGFILE] \n" \
                 "where the CONFIGFILE systax looks like the following \n" \
-                "   1: 2 [10] 3 [5.3] 5-6 [0.74] \n" \
+                "   1: 2[10] 3[5.3] 5-6[0.74] \n" \
                 "   2: ... \n\n" \
                 "vmrouter1 reaches all vmrouters listed after the colon, every \n "\
                 "vmrouter listed after the colon reaches vmrouter1. \n "\
