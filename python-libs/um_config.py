@@ -76,6 +76,7 @@ image_info = dict(
                          "/linux/vanilla/branches/linux-2.6.16.29-icmp" : "linux/icmp",
                          "/linux/vanilla/branches/linux-2.6.16.29-elcn" : "linux/elcn",
                          "/linux/vanilla/branches/linux-2.6.27.x-tcp-ncr" : "linux/tcp-ncr",
+                         "/linux/vanilla/branches/linux-2.6.24.x-um-reorder" : "linux/reorder",
                          "/routing/olsr/branches/um-version-olsr4" : "routing/olsr4",
                          "/routing/olsr/branches/um-version-olsr5" : "routing/olsr5",
                          "/drivers/madwifi-ng/branches/um-version" : "drivers/madwifi-ng",
