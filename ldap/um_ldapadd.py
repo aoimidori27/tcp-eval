@@ -8,6 +8,8 @@ import os
 import sys
 import getpass
 import string
+import md5,base64
+from random import choice       # to generate a user password
 from logging import info, debug, warn, error
 
 # umic-mesh imports
@@ -68,6 +70,12 @@ class LdapAdd(Application):
         
         # ----------> create ldif files
         tmp = tempfile.NamedTemporaryFile()
+
+        size = 9
+        upasswd = ''.join([choice(string.letters + string.digits) for i in range(size)])
+        print "Password will be: %s" % upasswd
+        upasswd_md5 = base64.encodestring(md5.new(str(upasswd)).digest())
+
         str_tmp1 = """version: 1
 dn: uid=%s,ou=People,dc=umic-mesh,dc=net
 objectClass: top
@@ -80,6 +88,7 @@ cn: %s %s
 gecos: %s %s
 sn: %s
 givenName: %s
+shadowLastChange: 0
 shadowMax: 99999
 shadowWarning: 7
 loginShell: /bin/bash
@@ -88,9 +97,9 @@ mail: %s
 uidNumber: %u
 gidNumber: 100
 quota: /dev/hda3:20000000,30000000,0,0
-userPassword:
+userPassword: {MD5}%s
 shadowLastChange: 0
-""" % (llastname,llastname,name,llastname,name,llastname,llastname,name,llastname,mail,uidNumber)
+""" % (llastname,llastname,name,llastname,name,llastname,llastname,name,llastname,mail,uidNumber,upasswd_md5)
 
         tmp.write(str_tmp1)
         tmp.flush()        
