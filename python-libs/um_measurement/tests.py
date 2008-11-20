@@ -337,7 +337,7 @@ def test_flowgrind_dd(mrs,
 
     dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
 
-    cmd = "flowgrind-dd -O s=TCP_CONG_MODULE=%s -T s=%.3f -p %u -H %s/%s" % (flowgrind_cc,
+    cmd = "flowgrind_dd -O s=TCP_CONG_MODULE=%s -T s=%.3f -p %u -H %s/%s" % (flowgrind_cc,
                                                          flowgrind_duration,
                                                          flowgrind_bport,
                                                          dst_ip,
