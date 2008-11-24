@@ -296,7 +296,7 @@ def test_flowgrind(mrs,
     defer.returnValue(result)
     
 @defer.inlineCallbacks
-def test_flowgrind_dd(mrs,
+def test_flowgrinddd(mrs,
                    log_file,
                    flowgrind_src,
                    flowgrind_dst,
