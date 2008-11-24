@@ -19,14 +19,14 @@ from um_functions import StrictStruct
 
 ########## Flowgrind Parsing #############
 
-class FlowgrindRecord(TestRecord):
+class FlowgrindddRecord(TestRecord):
 
 
     def __init__(self, filename, regexes, whats):
         TestRecord.__init__(self, filename, regexes, whats)
 
     
-class FlowgrindRecordFactory():
+class FlowgrindddRecordFactory():
 
     def __init__(self):
         # phase 1 data gathering
@@ -119,4 +119,4 @@ class FlowgrindRecordFactory():
         
 
     def createRecord(self, filename, test):
-        return FlowgrindRecord(filename, self.regexes, self.whats)
+        return FlowgrindddRecord(filename, self.regexes, self.whats)
