@@ -466,7 +466,7 @@ class TcpAnalysis(Analysis):
         
         for key in sorted_labels:
             value = data[key]
-            fh.write("%s" %key)
+            fh.write('"%s"' %key)
             for val in value:
                 fh.write(" %s" %val)
             fh.write("\n")
@@ -578,7 +578,7 @@ class TcpAnalysis(Analysis):
         
         for key in sorted_labels:
             value = data[key]
-            fh.write("%s" %key)
+            fh.write('"%s"' %key)
             for val in value:
                 fh.write(" %s" %val)
             fh.write("\n")
