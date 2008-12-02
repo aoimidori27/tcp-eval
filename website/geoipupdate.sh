@@ -1,6 +1,6 @@
 #!/bin/sh
 
-URL="http://www.maxmind.com/download/geoip/database/GeoIP.dat.gz"
+URL="http://www.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz"
 DST=/usr/local/share/GeoIP/
 
 cd $DST
