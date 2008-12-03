@@ -35,15 +35,15 @@ class FlowgrindddRecordFactory():
             "thruput = (?P<thruput>\d+\.\d+)(\/(?P<thruput_back>\d+\.\d+))?Mb/s",
 
             # S ID   begin     end   tput Mb/s RTT, ms: min        avg        max IAT, ms: min        avg        max    cwnd  ssth #uack #sack #lost #retr #fack #reor     rtt  rttvar      rto    mss     mtu
-	    " +[S,R]"\
+	    " +(?P<direction>[S,R])"\
             " +(?P<flow_id>\d+) +(?P<begin>\d+\.\d+) +(?P<end>\d+\.\d+)"\
-            " +(?P<forward_tput>\d+\.\d+)"\
+            " +(?P<tput>\d+\.\d+)"\
             " +(?P<rtt_min>\d+\.\d+) +(?P<rtt_avg>\d+\.\d+) +(?P<rtt_max>\d+\.\d+)"\
             " +(?P<iat_min>\d+\.\d+) +(?P<iat_avg>\d+\.\d+) +(?P<iat_max>\d+\.\d+)"\
-            " +(?P<cwnd>\d+) +(?P<ssth>\d+) +(?P<uack>\d+) +(?P<sack>\d+)"\
+            " +(?P<cwnd>\d+\.\d+) +(?P<ssth>\d+) +(?P<uack>\d+) +(?P<sack>\d+)"\
             " +(?P<lost>\d+) +(?P<retr>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
             " +(?P<krtt>\d+\.\d+) +(?P<krttvar>\d+\.\d+) +(?P<krto>\d+\.\d+)"\
-	    " +(?P<mss>\d+) +(?P<mtu>\d+)",
+	    " +(?P<mss>\d+) +(?P<mtu>\d+)"
         ]
 
         # compile regexes
@@ -62,7 +62,7 @@ class FlowgrindddRecordFactory():
                      'iat_min' : float,
                      'iat_avg' : float,
                      'iat_max' : float,
-                     'cwnd'    : int,
+                     'cwnd'    : float,
                      'ssth'    : int,
                      'uack'    : int,
                      'sack'    : int,
@@ -79,25 +79,32 @@ class FlowgrindddRecordFactory():
             flow_ids = map(int, set(r['flow_id']))
             flow_map = dict()
 
-            debug("hmm")
-
             # initialize value records
             for flow_id in flow_ids:
-                flow_map[flow_id] = StrictStruct(id=flow_id, size=0, **keys)
+                flow_map[flow_id] = dict()
+                flow_map[flow_id]['S'] = StrictStruct(direction='S', size=0, **keys)
+                flow_map[flow_id]['R'] = StrictStruct(direction='R', size=0, **keys)
+                #setattr(flow_map[flow_id],'S',dict())
+                #setattr(flow_map[flow_id],'R',dict())
                 for key in keys.iterkeys():
-                    setattr(flow_map[flow_id],key,list())
+                    setattr(flow_map[flow_id]['S'],key,list())
+                    setattr(flow_map[flow_id]['R'],key,list())
 
             # iterate over all entries, shuffle and convert
             for i in range(len(r['flow_id'])):
-                flow = flow_map[int(r['flow_id'][i])]
+                    if r['direction'][i] == 'S':
+                        dir = 'S'
+                    else:
+                        dir = 'R'
 
-                for (key, convert) in keys.iteritems():
-                    try:
-                        getattr(flow,key).append(convert(r[key][i]))
-                    except KeyError, inst:
-                        warn('Failed to get r["%s"][%u]' %(key,i))
-                        raise inst
-                flow.size += 1
+                    flow = flow_map[int(r['flow_id'][i])][dir]
+                    for (key, convert) in keys.iteritems():
+                            try:
+                                getattr(flow,key).append(convert(r[key][i]))
+                            except KeyError, inst:
+                                warn('Failed to get r["%s"][%u]' %(key,i))
+                                raise inst
+                    flow.size += 1
 
             return flow_map.values()
 
@@ -120,3 +127,4 @@ class FlowgrindddRecordFactory():
 
     def createRecord(self, filename, test):
         return FlowgrindddRecord(filename, self.regexes, self.whats)
+
