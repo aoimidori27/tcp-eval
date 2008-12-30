@@ -2,9 +2,10 @@
 
 ## settings
 ECLIPSE=/opt/eclipse/eclipse
-WORKSPACE=/mnt/localscratch/eclipse-build/workspace
+WORKSPACE=/home/eclipse-build/workspace
 PROJECT=MeshConf
-WARDIR=/mnt/localscratch/eclipse-build/build
+WARDIR=/home/eclipse-build/build
+VMARGS="-Xmx512M -XX:MaxPermSize=128M -Djava.library.path=/usr/lib/jni"
 
 DEPLOYFILE=webserver:/var/lib/tomcat5.5/webapps/$PROJECT.war
 VERSIONFILE=$WORKSPACE/$PROJECT/src/net/umic_mesh/meshconf/common/Version.java
@@ -26,10 +27,10 @@ echo "Modifying $VERSIONFILE..."
 sed -i "s/@PLACEHOLDER@/r$REV/g" $VERSIONFILE
 
 echo "Cleaning and building workspace..."
-$ECLIPSE --launcher.suppressErrors -nosplash -application org.eclipse.jdt.apt.core.aptBuild -data $WORKSPACE 2>&1 | tee $TMPFILE
+$ECLIPSE --launcher.suppressErrors -nosplash -application org.eclipse.jdt.apt.core.aptBuild -data $WORKSPACE -vmargs $VMARGS 2>&1 | tee $TMPFILE
 
 echo "Exporting $PROJECT to $WARFILE..."
-$ECLIPSE --launcher.suppressErrors -nosplash -application in.cypal.studio.gwt.core.ExportWar -data $WORKSPACE -dest $WARFILE -project $PROJECT  2>&1 | tee -a $TMPFILE
+$ECLIPSE --launcher.suppressErrors -nosplash -application in.cypal.studio.gwt.core.ExportWar -data $WORKSPACE -dest $WARFILE -project $PROJECT -vmargs $VMARGS 2>&1 | tee -a $TMPFILE
 
 if grep "error" $TMPFILE; then
   echo "Build failed with error. Not deploying.";
