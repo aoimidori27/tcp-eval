@@ -125,7 +125,7 @@ class CommandFailed(Exception):
         self.stderr = stderr
 
     def __str__(self):
-        return 'Command "%s" failed with return code %d.' %(self.cmd, self.rc)
+        return 'Command "%s" failed with return code %d: %s' %(self.cmd, self.rc, self.stderr)
 
 
 
