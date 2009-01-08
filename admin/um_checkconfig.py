@@ -67,6 +67,8 @@ class CheckConfig(Application):
                 etc_file=os.path.join(etc, rel_file)
                 # ignore files already checked
                 if etc_file in self.checked:
+                    continue
+                else:
                     self.checked.append(etc_file)
                 debug("Checking %s ..." %etc_file)
                 if not os.path.exists(etc_file):
