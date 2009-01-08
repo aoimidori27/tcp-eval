@@ -99,7 +99,7 @@ gidNumber: 100
 quota: /dev/hda3:20000000,30000000,0,0
 userPassword: {MD5}%s
 shadowLastChange: 0
-""" % (llastname,llastname,name,llastname,name,llastname,llastname,name,llastname,mail,uidNumber,upasswd_md5)
+""" % (llastname,llastname,name,lastname,name,lastname,llastname,name,llastname,mail,uidNumber,upasswd_md5)
 
         tmp.write(str_tmp1)
         tmp.flush()        
