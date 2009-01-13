@@ -152,6 +152,10 @@ class Xen(Application):
             
             info("Creating Domain config file %s" % cfg_file)
 
+            vmnode_number = vmeshhost.getNumber()
+            first_byte = vmnode_number/256
+            rest_2bytes = vmnode_number%256
+
             f = os.fdopen(cfg_fd, "w+b")            
             f.write("name = '%s' \n"\
                     "ramdisk = '%s' \n"\
@@ -162,8 +166,8 @@ class Xen(Application):
                     "extra = 'id=default image=%s nodetype=%s hostname=%s "\
                              "init=/linuxrc'\n"
                     %(vmeshnode.getHostname(), ramdisk, kernel,
-                      self.options.memory, vmeshhost.getNumber(),
-                      vmeshnode.getNumber(), image.getImagePath(canonical_path = False),                     
+                      self.options.memory, first_byte, rest_2bytes, 
+                      image.getImagePath(canonical_path = False),                     
                       vmeshnode.getType(), vmeshnode.getHostname()))
             f.flush()
 
