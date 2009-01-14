@@ -82,6 +82,11 @@ class Xen(Application):
             else:
                 raise IndexError
             
+            # no vmnode-numbers greater than 4000
+            if end > 4001:
+                error("No numbers greater than 4000")
+                sys.exit(1)
+
             # Integers greater than zero?
             if begin > 0 and end > 0:
                 self._range = range(begin, end)
@@ -152,7 +157,7 @@ class Xen(Application):
             
             info("Creating Domain config file %s" % cfg_file)
 
-            vmnode_number = vmeshhost.getNumber()
+            vmnode_number = vmeshnode.getNumber()
             first_byte = vmnode_number/256
             rest_2bytes = vmnode_number%256
 
