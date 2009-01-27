@@ -211,18 +211,19 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         """ Gets the gre ip for host with number "hostnum" """
 
         if mask:
-            return "192.168.0.%s/24" % hostnum # FIXME - do not hardcode this.
+            return "172.16.%s.%s/16" %(hostnum/254,hostnum%254+1) # FIXME - do not hardcode this.
         else:
-            return "192.168.0.%s" % hostnum
+            return "172.16.%s.%s" %(hostnum/254,hostnum%254+1)
 
 
     def gre_net(self, mask = True):
         """ Gets the gre network address """
 
         if mask:
-            return "192.168.0.0/24"
+            return "172.16.0.0/16"
         else:
-            return "192.168.0.0"
+            return "172.16.0.0"
+
 
     def setup_gre(self):
         hostnum = self.node.getNumber()
