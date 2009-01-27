@@ -232,7 +232,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
 
         try:
             iface = self.options.interface
-            info("setting up GRE Broadcast tunnel for %s ip: %s" % hostnum )
+            info("setting up GRE Broadcast tunnel for %s" % hostnum )
             execute('ip tunnel del %s' % iface, True, False)
             execute('ip tunnel add %(iface)s mode gre local %(public)s remote %(mcast)s ttl 1 \
                      && ip addr add %(gre)s broadcast 172.16.255.255 dev %(iface)s \
