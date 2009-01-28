@@ -17,7 +17,7 @@ class Bootscripts(xmlrpc.XMLRPC):
         profile_folder = "/opt/umic-mesh/boot/pxe/meshrouter/profiles"
         profile_template = '/opt/umic-mesh/boot/pxe/meshrouter/profile.template'
 
-        def __init__(self, allowNone=False):
+        def __init__(self, allowNone=False, parent=None):
             self.allowNone = allowNone      # for defers
             self.servicename = 'netboot'
 
