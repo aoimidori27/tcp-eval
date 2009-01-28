@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from twisted.web import xmlrpc, server
-from twisted.internet import reactor
+from twisted.internet import reactor, defer
 from logging import info, debug, warn, error
 import string
 # umic-mesh imports
@@ -13,7 +13,7 @@ from um_application import Application
 class Bootscripts(xmlrpc.XMLRPC):
 
         node_profile = "/opt/umic-mesh/boot/pxe/meshrouter/nodes"
-        profile_folder_link = "../profile"
+        profile_folder_link = "../profiles"
         profile_folder = "/opt/umic-mesh/boot/pxe/meshrouter/profiles"
         profile_template = '/opt/umic-mesh/boot/pxe/meshrouter/profile.template'
 
@@ -79,15 +79,12 @@ class Bootscripts(xmlrpc.XMLRPC):
             profid = self._dbpool.getNetbootProfile(self.servicename, profile)
             return profid.addCallback(self.hasData)
 
-        def writeAllProfiles(self, d):
-            debug("Data: %s" % d)
+        @defer.inlineCallbacks 
+        def writeAllProfiles(self, profiles):
             str_done = "Updated "
-            for prof in d:
-                #print prof
-                str_done += prof['flavorName'] + ", "
-                self.getProfile(prof['flavorName'])
-            return str_done
-
+            for profile in profiles:
+                yield self.getProfile(profile['flavorName'])
+            defer.returnValue("Updated "+",".join(map(lambda p: p['flavorName'], profiles)))
 
         # update node link -> link /opt/umic-mesh/boot/pxe/meshrouter/nodes/mrouter$$ to ../profiles/$$PROFILE$$
         def xmlrpc_updateNodelink(self, node):
