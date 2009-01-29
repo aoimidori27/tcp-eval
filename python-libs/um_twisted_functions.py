@@ -52,7 +52,6 @@ def twisted_call(cmd, shell=True):
     Warning: is inefficient for commands with large std output!
     """
     
-    debug("Executing: %s" % cmd.__str__())
     (stdout, stderr, rc) = yield twisted_execute(cmd, shell)
 
     defer.returnValue(rc)
