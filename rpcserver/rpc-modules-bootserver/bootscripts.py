@@ -12,19 +12,19 @@ from um_application import Application
 
 class Bootscripts(xmlrpc.XMLRPC):
 
-        node_profile = "/opt/umic-mesh/boot/pxe/meshrouter/nodes"
-        profile_folder_link = "../profiles"
-        profile_folder = "/opt/umic-mesh/boot/pxe/meshrouter/profiles"
-        profile_template = '/opt/umic-mesh/boot/pxe/meshrouter/profile.template'
+	# name of the default profile
 
         def __init__(self, allowNone=False, parent=None):
             self.allowNone = allowNone      # for defers
             self.servicename = 'netboot'
 
             self.node_profile = "/opt/umic-mesh/boot/pxe/meshrouter/nodes"
-            self.profile_folder_link = "../profile"
+            self.profile_folder_link = "../profiles"
             self.profile_folder = "/opt/umic-mesh/boot/pxe/meshrouter/profiles"
             self.profile_template = '/opt/umic-mesh/boot/pxe/meshrouter/profile.template'
+             
+            # default profile if no explicit profile is given for a node
+            self.profile_default = "default"
 
             # create database connection pool
             self._dbpool = None
@@ -43,13 +43,19 @@ class Bootscripts(xmlrpc.XMLRPC):
             else:
                 return 'Failed.'
 
-        def linkProfile(self, nodedat):
+        def linkProfile(self, nodedat,  node):
             debug("Data from database: %s" % nodedat)
-            if (nodedat != {}):
-                ret = twisted_call("ln -s -f %s/%s %s/%s" % (self.profile_folder_link, nodedat['flavorName'], self.node_profile, self.node))
-                return ret.addCallback(self.linkProfileDone)
-            else:
-                return 'No such node: %s' % self.node
+	    if nodedat:
+          	flavorName = nodedat['flavorName']
+	    else:
+		flavorName = self.profile_default
+  		debug("Node %s has no assigned profile using %s" %(node, flavorName))
+            
+	    ret = twisted_call(["ln", "-s", "-f", 
+                                "%s/%s" %(self.profile_folder_link, flavorName),
+                                "%s/%s" %(self.node_profile, node)], shell=False)
+
+            return ret.addCallback(self.linkProfileDone)
 
         def writeProfile(self, profile, kernel, initrd, image, optarg, version):
             debug("Writing profile %s" % profile)
@@ -67,30 +73,29 @@ class Bootscripts(xmlrpc.XMLRPC):
             file.close()
             return 'Updated %s' % profile
 
-        def hasData(self, d):
+        def hasData(self, d, flavorName):
             debug("hasData: %s" % d)
             if (d != {}):       # if the query-result d is empty there is no such profile in the database
                 return self.writeProfile(d['profile'], d['kernel'], d['initrd'], d['image'], d['opt_args'], d['version'])
             else:
-                return 'No such profile: %s' % self.p
+                return 'No such profile: %s' % flavorName
 
-        def getProfile(self, profile):
+        def getProfile(self, flavorName):
             # get the data of the profile
-            profid = self._dbpool.getNetbootProfile(self.servicename, profile)
-            return profid.addCallback(self.hasData)
+            profid = self._dbpool.getNetbootProfile(self.servicename, flavorName)
+            return profid.addCallback(self.hasData, flavorName)
 
         @defer.inlineCallbacks 
         def writeAllProfiles(self, profiles):
-            str_done = "Updated "
             for profile in profiles:
                 yield self.getProfile(profile['flavorName'])
             defer.returnValue("Updated "+",".join(map(lambda p: p['flavorName'], profiles)))
 
         # update node link -> link /opt/umic-mesh/boot/pxe/meshrouter/nodes/mrouter$$ to ../profiles/$$PROFILE$$
         def xmlrpc_updateNodelink(self, node):
-            self.node = node
+            debug("updateNodelink(%s)" %node)
             nodedat = self._dbpool.getCurrentServiceConfig(self.servicename, node)
-            return nodedat.addCallback(self.linkProfile)
+            return nodedat.addCallback(self.linkProfile, node)
 
         # update profile -> gets data out of the database and writes it to /opt/umic-mesh/boot/pxe/meshrouter/nodes/profiles/$$PROFILE$$
         def xmlrpc_updateProfile(self, profile):
