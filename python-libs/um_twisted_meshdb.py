@@ -345,21 +345,60 @@ class MeshDbPool(adbapi.ConnectionPool):
 
         txn.execute(query)
         return txn.rowcount
-    
 
     @defer.inlineCallbacks
     def switchTestbedProfile(self, name):
         """ Switches the current used testbed profile """
+        """ Removes all colliding profiles """
+        current_profiles = yield self.getCurrentTestbedProfiles()
+        debug(current_profiles)
 
-        query = """UPDATE current_testbed_conf, testbed_profiles
-                   SET current_testbed_profile=testbed_profiles.ID
-                   WHERE testbed_profiles.name='%s';
+        # get nodes used of profiles
+        current_nodes = list()
+        for profileName in current_profiles:
+            nodes_append = yield self.getProfileNodes(profileName)
+            current_nodes.append(nodes_append)
+        debug(current_nodes)
+        new_nodes = yield self.getProfileNodes(name)
+        debug(new_nodes)
+
+        # compare current nodes with new nodes
+        stop_profiles = list()
+        for i in range(0,len(current_nodes)):
+            for node in new_nodes:
+                if node in current_nodes[i]:
+                    if not i in stop_profiles:
+                        stop_profiles.append(i)
+        debug(stop_profiles)
+
+        # stop conflicting profiles
+        for i in stop_profiles:
+            query = """DELETE FROM current_testbed_conf
+                       WHERE current_testbed_profile = (SELECT id FROM testbed_profiles WHERE name = '%s')
+                    """ % current_profiles[i]
+            debug(query)
+            rowcount = yield self.runInteraction(self._getRowcount, query)
+
+        # insert new profile
+        query = """INSERT INTO current_testbed_conf (current_testbed_profile) 
+                   SELECT testbed_profiles.id FROM testbed_profiles WHERE testbed_profiles.name = '%s'
                 """ % name
+        debug(query)
+        rowcount = yield self.runInteraction(self._getRowcount, query)
+        defer.returnValue(rowcount)
+
+
+    def getCurrentTestbedProfiles(self):
+        """ Returns the names of the current used testbed profiles """
+
+        query = """SELECT testbed_profiles.name
+                   FROM current_testbed_conf, testbed_profiles
+                   WHERE testbed_profiles.ID = current_testbed_profile
+                """
 
         debug(query)
-        rowcount = yield self.runInteraction(self._getRowcount,query)
+        return self.fetchColumnAsList(query)
 
-        defer.returnValue(rowcount)
 
     @defer.inlineCallbacks
     def getCurrentTestbedProfile(self):
@@ -374,6 +413,19 @@ class MeshDbPool(adbapi.ConnectionPool):
         result = yield self.fetchAssoc(query)
         defer.returnValue(result["name"])
 
+    def getProfileNodes(self,profileName):
+        """ Return name of nodes used by a profile """
+        profileID = """SELECT id
+                       FROM testbed_profiles
+                       WHERE name = '%s'
+                    """ % profileName
+        query = """SELECT nodes.name
+                   FROM nodes, testbed_profiles_data
+                   WHERE testbed_profiles_data.tprofileID = (%s)
+                   AND testbed_profiles_data.nodeID = nodes.nodeID;
+                """ % profileID
+        debug(query)
+        return self.fetchColumnAsList(query)
 
     def getTestbedNodes(self):
         """ Returns a list of nodes which are in the current testbedprofile """
