@@ -9,6 +9,8 @@ import sys
 import getpass
 import string
 import md5,base64
+from ldif import LDIFParser
+from ldap.modlist import addModlist
 from random import choice       # to generate a user password
 from logging import info, debug, warn, error
 
@@ -27,11 +29,24 @@ class LdapAdd(Application):
         usage = "usage: %prog\nUsername and all details will be asked at runtime.\nHome directory will be /home/<LASTNAME>"
         self.parser.set_usage(usage)
         self.parser.set_defaults(server = "accountserver",
-                         baseDN = "ou=People,dc=umic-mesh,dc=net")
+                         baseDN = "ou=People,dc=umic-mesh,dc=net",
+                         passfile = "/etc/ldap.secret"
+                    )
+        
+        self.parser.add_option("-l", "--ldap-server", metavar = "SERVER",
+                               action = "store", dest = "server",
+                               help = "The server at which the LDAP directory is located [default: %default]")
+        self.parser.add_option("-d", "--baseDN", metavar = "baseDN",
+                               action = "store", dest = "baseDN",
+                               help = "The base DN define at which node the search should originate [default: %default]")
+        self.parser.add_option("-y", "--passfile", metavar = "FILE",
+                               action = "store", dest = "passfile",
+                               help = "The file for the admin password [default: %default]")
 
     def run(self):
+        passwd=file(self.options.passfile).readline()
+        passwd=passwd.strip()
         # ----------> connect to ldap server
-        passwd = getpass.getpass("LDAP admin password: ")        #get the ldap admin password without displaying it
         try:
             l = ldap.open(self.options.server)
             l.simple_bind_s("cn=admin,dc=umic-mesh,dc=net", passwd)
@@ -102,7 +117,28 @@ shadowLastChange: 0
 """ % (llastname,llastname,name,lastname,name,lastname,llastname,name,llastname,mail,uidNumber,upasswd_md5)
 
         tmp.write(str_tmp1)
-        tmp.flush()        
+        tmp.flush()
+        tmp.seek(0)
+        
+        class AddLDIF(LDIFParser):
+                def __init__(self, input, ldap_handle):
+                        self.ldap_handle = ldap_handle
+                        LDIFParser.__init__(self, input)
+        
+                def handle(self, dn, entry):
+                        if not dn:
+                                return
+                        modlist = addModlist(entry)
+                        self.ldap_handle.add_s(dn, modlist)
+
+        parser = AddLDIF(tmp, l)
+
+        try:
+                parser.parse()
+        except ldap.LDAPError, error_message:
+                error("Error: %s" %str(error_message))
+		error("Giving up.")
+		exit()
 
         tmp2 = tempfile.NamedTemporaryFile()
         str_tmp2 = """version: 1
@@ -116,23 +152,17 @@ automountInformation: -fstype=nfs,rw,hard,intr,nodev,exec,nosuid,relatime,rsize=
 
         tmp2.write(str_tmp2)
         tmp2.flush()
+        tmp2.seek(0)
 
-        # ----------> call ldapadd to create user
-        exec1 = call("ldapadd -x -D \"cn=admin,dc=umic-mesh,dc=net\" -w \"%s\" -f %s" % (passwd,tmp.name))
-        if (exec1 == 0):
-            info("Added user.")
-            exec2 = call("ldapadd -x -D \"cn=admin,dc=umic-mesh,dc=net\" -w \"%s\" -f %s" % (passwd, tmp2.name))
-            if (exec2 == 0):
-                info("Automount information added.")
-            else:
+        parser = AddLDIF(tmp2, l)
+        try:
+                parser.parse()
+        except ldap.LDAPError, error_message:
+                error("Error: %s" %str(error_message))
                 error("Adding automount information failed.\nDeleting user.")
-                rid = l.delete("cn=%s,ou=auto.home,ou=automount,ou=admin,dc=umic-mesh,dc=net" % llastname)
-                l.result(rid)
+                rid = l.delete("uid=%s,ou=People,dc=umic-mesh,dc=net" % llastname)
                 exit()
-        else:
-            error("Adding user failed.")
-            exit()
-        
+                
         # ----------> add user to groups
         def_groups = ['um-user','um-webuser']
         mod_attrs = [( ldap.MOD_ADD, 'memberUid', llastname )]
