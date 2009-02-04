@@ -13,10 +13,8 @@ from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
           
 
-class Route_monitor(RPCService):
+class Routemonitor(RPCService):
     """Class for managing the route monitor daemon"""
-
-
     #
     # Public XMLRPC Interface
     #
@@ -95,9 +93,9 @@ class Route_monitor(RPCService):
         """ This function invokes start-stop daemon to bring up the route monitor"""
         
         args = [ '-h', self._config['sink_host'],
-                 '-p', self._config['sink_port'] ]
+                 '-p', str(self._config['sink_port']) ]
         if self._config['interface']:
-            args.extend(['-i', self.config['interface'])
+            args.extend([ '-i', self.config['interface'] ] )
         cmd = [ "start-stop-daemon", "--start",  
                 "--pidfile", self._pidfile,
                 "--exec", self._daemon,
