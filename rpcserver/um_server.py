@@ -181,5 +181,5 @@ class RPCServerApp(Application):
 
 
 if __name__ == '__main__':
-    path = os.path.join(os.path.dirname(sys.argv[0]), 'rpc-modules')
+    path = os.path.join(os.path.dirname(sys.argv[0]), 'rpc-modules-meshnode')
     RPCServerApp().main(path)
