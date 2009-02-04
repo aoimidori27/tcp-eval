@@ -30,7 +30,8 @@ image_info = dict(
         svn_prefix    = "/opt/checkout"
     ),
     vmeshhost = dict(
-        svn_mappings = { "/config/vmeshhost/trunk" : "config",
+        svn_mappings = { "/config/vmeshhost/trunk" : "config.local",
+                         "/config/common/trunk" : "config.common",
                          "/linux/xen/branches/linux-2.6.18-xen-um" : "linux/default",
                          "/tools/nuttcp/branches/um-version-tcp_info" : "tools/nuttcp",
                          "/tools/flowgrind/trunk" : "tools/flowgrind",
@@ -52,7 +53,8 @@ image_info = dict(
                             "scripts/measurement" : "/usr/local/bin" }
     ),
     vmeshnode = dict(
-        svn_mappings = { "/config/vmeshnode/trunk" : "config",
+        svn_mappings = { "/config/vmeshnode/trunk" : "config.local",
+                         "/config/common/trunk" : "config.common",
                          "/linux/vanilla/branches/linux-2.6.24.x-um" : "linux/default",
                          "/linux/vanilla/branches/linux-2.6.24.x-um-reorder" : "linux/reorder",
                          "/linux/vanilla/branches/linux-2.6.27.x-tcp-ncr" : "linux/tcp-ncr",
@@ -71,7 +73,8 @@ image_info = dict(
                             "scripts/util" : "/usr/local/bin" }
     ),
     meshnode = dict(
-        svn_mappings = { "/config/vmeshnode/trunk" : "config",
+        svn_mappings = { "/config/meshnode/trunk" : "config.local",
+                         "/config/common/trunk" : "config.common",
                          "/linux/vanilla/branches/linux-2.6.24.x-um" : "linux/default",
                          "/linux/vanilla/branches/linux-2.6.16.29-icmp" : "linux/icmp",
                          "/linux/vanilla/branches/linux-2.6.16.29-elcn" : "linux/elcn",
@@ -93,7 +96,8 @@ image_info = dict(
                          "/scripts/python-libs" : "scripts/python-libs",
                          "/scripts/rpcserver" : "scripts/rpcserver",
                          "/scripts/mesh" : "scripts/mesh",
-                         "/scripts/util" : "scripts/util" },
+                         "/scripts/util" : "scripts/util",
+                         "/projects/meshconf/monitoring/trunk" : "monitoring" },
         script_mappings = { "scripts/mesh" : "/usr/local/sbin",
                             "scripts/util" : "/usr/local/bin",
                             "scripts/rpcserver" : "/usr/local/sbin" }
