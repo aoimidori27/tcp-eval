@@ -5,13 +5,13 @@
 import ldap
 import os
 import sys
-import getpass
+#import getpass
 import string
 from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_application import Application
-from um_functions import execute, CommandFailed
+from um_functions import execute, CommandFailed, requireroot
 
 class LdapDelete(Application):
 
@@ -20,18 +20,32 @@ class LdapDelete(Application):
         Application.__init__(self)
 
         # initialization of the option parser
+        requireroot()
+
         usage = "usage: %prog"
         self.parser.set_usage(usage)
         self.parser.set_defaults(server = "accountserver",
                                  baseDN = "ou=People,dc=umic-mesh,dc=net",
-                                 userid = "")
+                                 userid = "",
+                                 passfile = "/etc/ldap.secret")
         self.parser.add_option("-u", "--userid",
                                action = "store", dest = "userid",
                                help = "Set the user to remove")
 
+        self.parser.add_option("-g", "--group",
+                               action = "store", dest = "group",
+                               help = "Removes user only from given group")
+
+        self.parser.add_option("-y", "--passfile", metavar = "FILE",
+                               action = "store", dest = "passfile",
+                               help = "The file for the admin password [default: %default]")
+
+
     def run(self):
         # ----------> connect to ldap server
-        passwd = getpass.getpass("LDAP admin password: ")        #get the ldap admin password without displaying it
+        #passwd = getpass.getpass("LDAP admin password: ")        #get the ldap admin password without displaying it
+        passwd=file(self.options.passfile).readline()
+        passwd=passwd.strip()
         try:
             l = ldap.open(self.options.server)
             l.simple_bind_s("cn=admin,dc=umic-mesh,dc=net", passwd)
@@ -48,7 +62,14 @@ class LdapDelete(Application):
                 print "username: ",
                 uid = sys.stdin.readline().strip()
 
-            # ----------> delete user from groups
+            # ----------> delete user from only ONE group (option -g)
+            if (self.options.group):
+                mod_attrs = [( ldap.MOD_DELETE, 'memberUid', uid )]
+                l.modify_s('cn=%s,ou=Group,dc=umic-mesh,dc=net' %self.options.group, mod_attrs)
+                info("User %s removed from group %s" %(uid, self.options.group))
+                exit()
+
+            # ----------> delete user from all groups
             mid = l.search_s("ou=Group,dc=umic-mesh,dc=net", ldap.SCOPE_SUBTREE, "objectClass=*")
             groups = []
             for entry in mid:

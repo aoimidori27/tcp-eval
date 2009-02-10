@@ -43,6 +43,14 @@ class LdapAdd(Application):
                                action = "store", dest = "passfile",
                                help = "The file for the admin password [default: %default]")
 
+        self.parser.add_option("-g", "--group", metavar = "GROUP",
+                               action = "store", dest = "group",
+                               help = "Adds user to the given group (only works with -u)")
+
+        self.parser.add_option("-u", "--user", metavar = "UID",
+                               action = "store", dest = "uid",
+                               help = "User to add to group")
+
     def run(self):
         passwd=file(self.options.passfile).readline()
         passwd=passwd.strip()
@@ -54,7 +62,18 @@ class LdapAdd(Application):
         except ldap.LDAPError, error_message:
             error("Couldn't connect. %s" % error_message)
             exit()
+       
+        # ----------> add user to ONE group
+        if (self.options.group):
+            if (self.options.uid):
+                mod_attrs = [( ldap.MOD_ADD, 'memberUid', self.options.uid )]
+                l.modify_s('cn=%s,ou=Group,dc=umic-mesh,dc=net' %self.options.group, mod_attrs)
+                info("User %s added to group %s." %(self.options.uid, self.options.group))
+            else:
+                error("No user given. Use option -u !")
+            exit()
         
+ 
         # ----------> finding the maximum uidNumber, so that the new user can get the next
         mid = l.search_s(self.options.baseDN, ldap.SCOPE_SUBTREE, "objectClass=*")
         
