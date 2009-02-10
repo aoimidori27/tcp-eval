@@ -66,9 +66,31 @@ class LdapAdd(Application):
         # ----------> add user to ONE group
         if (self.options.group):
             if (self.options.uid):
-                mod_attrs = [( ldap.MOD_ADD, 'memberUid', self.options.uid )]
-                l.modify_s('cn=%s,ou=Group,dc=umic-mesh,dc=net' %self.options.group, mod_attrs)
-                info("User %s added to group %s." %(self.options.uid, self.options.group))
+                # does group exists?
+                mid = l.search_s("ou=Group,dc=umic-mesh,dc=net", ldap.SCOPE_SUBTREE, "objectClass=*")
+                gr_exists = 0
+                for gr in mid:
+                    try:
+                        if str(gr[1]['cn'][0]) == str(self.options.group): gr_exists = 1
+                    except:
+                        pass
+
+                # does user exists?
+                mid = l.search_s("ou=People,dc=umic-mesh,dc=net", ldap.SCOPE_SUBTREE, "objectClass=*")
+                usr_exists = 0
+                for usr in mid:
+                    try:
+                        if usr[1]['uid'][0] == self.options.uid: usr_exists = 1
+                    except:
+                        pass
+
+                if usr_exists:
+                    if gr_exists:
+                        mod_attrs = [( ldap.MOD_ADD, 'memberUid', self.options.uid )]
+                        l.modify_s('cn=%s,ou=Group,dc=umic-mesh,dc=net' %self.options.group, mod_attrs)
+                        info("User %s added to group %s." %(self.options.uid, self.options.group))
+                    else: error("Group does not exist.")
+                else: error("User does not exist.")
             else:
                 error("No user given. Use option -u !")
             exit()
