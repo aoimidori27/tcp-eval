@@ -140,7 +140,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
                 $"""
         reaches_str = r"""
                 ([0-9]+)(?:-([0-9]+))?          # DIGITS | DIGITS "-" DIGITS
-                (?:\[([0-9]+\.[0-9]+)\])?               # [ "[" FLOAT "]" ]
+                (?:\[([0-9]+(\.[0-9]+)?)\])?               # [ "[" FLOAT "]" ]
                 (?:\ +|$)                       # optional spaces
                 """
         line_re    = re.compile(line_str % reaches_str, re.VERBOSE)
@@ -166,7 +166,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
             # parse line, skip on syntax error
             lm = line_re.match(line)
             if not lm:
-                warn("Syntax error in line %s. Skipping." %line)
+                warn("SSyntax error in line %s. Skipping." %line)
                 continue
 
             host = lm.group(1)
@@ -392,8 +392,8 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh", "-i",
-                                        self.options.interface, "-l", "-"]
+                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh", 
+                                                "-i", self.options.interface, "-l", "-"]
                 if self.options.debug:
                     cmd.append("--debug")
 
