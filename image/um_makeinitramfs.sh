@@ -20,12 +20,12 @@ DIRS="$DIRS,/bin,/lib,/etc,/lib/dhcp3-client"
 
 # files which belong to /bin
 BINFILES="bash,cat,chmod,echo,expr,grep,hostname,"
-BINFILES="$BINFILES,kill,logger,ls,mknod,mount,ping,rm,sed"
-BINFILES="$BINFILES,sh,sleep,umount,uname,run-init,chroot"
+BINFILES="$BINFILES,kill,logger,ls,mknod,mount,ping,ps,rm,sed"
+BINFILES="$BINFILES,sh,sleep,umount,uname,run-init,chroot,xargs"
 
 # files which belong to /sbin
 SBINFILES="brctl,dhclient3,dhclient,hwclock,ifconfig,insmod,ip,losetup,usplash_write"
-SBINFILES="$SBINFILES,modprobe,ntpdate,portmap,route,iptables"
+SBINFILES="$SBINFILES,mount.nfs,modprobe,ntpdate,portmap,route,iptables"
 SBINFILES="$SBINFILES,ethtool,syslog-ng,strace"
 
 # some static files, which are copied only for ubuntu
