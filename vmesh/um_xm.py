@@ -5,6 +5,7 @@
 import os
 import sys
 import tempfile
+import xmlrpclib, socket
 from logging import info, debug, warn, error
 from optparse import OptionValueError
 
@@ -23,16 +24,22 @@ class Xen(Application):
 
         Application.__init__(self)
 
+
+        self.action = ''
+        self.commands = ('list', 'create')
+
         # object variables
         self._range = []
+        self.serverlist = ['vmhost1', 'vmhost2', 'vmhost11']
 
         # initialization of the option parser
-        usage = "usage: %prog [options] ID | FROM TO \n" \
-                "where ID, FROM, TO are node IDs (integers) greater than zero"
+        usage = "usage: \t%prog list \n" \
+                "\t%prog [options] create ID | FROM TO \n" \
+                "\twhere ID, FROM, TO are node IDs (integers) greater than zero"
         self.parser.set_usage(usage)
         self.parser.set_defaults(console = False, dry_run = False,
                 image_type = "vmeshnode", kernel = "default/vmeshnode-vmlinuz",
-                memory = 50, node_type = "vmeshrouter",
+                memory = 50, node_type = "vmeshrouter", hostinfo = False,
                 ramdisk = "vmeshnode-initrd", image_version = "default")
 
         self.parser.add_option("-c", "--console",
@@ -61,31 +68,30 @@ class Xen(Application):
         self.parser.add_option("-V", "--image_version", metavar = "VERSION",
                 action = "store", dest = "image_version", type="string",
                 help = 'the image version for the domain [default: %default]')
+        self.parser.add_option("-H", "--host-info", metavar = "HOSTINFO",
+                action = "store_true", dest = "hostinfo",
+                help = 'WITH LIST: show information about Domain-0 of each host')
 
 
-    def set_option(self):
-        """Set the options for the Xen object"""
-
-        Application.set_option(self)
-
+    def set_options_create(self):
         try:
             # check if imagetype fit to nodetype
             Node.isValidImage(self.options.image_type, self.options.node_type)
         
             # correct numbers of arguments?
-            begin = int(self.args[0])
+            begin = int(self.args[1])
             
-            if len(self.args) == 1:
+            if len(self.args) == 2:
                 end = begin + 1
-            elif len(self.args) == 2:     
-                end = int(self.args[1]) + 1
+            elif len(self.args) == 3:     
+                end = int(self.args[2]) + 1
             else:
                 raise IndexError
             
             # no vmnode-numbers greater than 4000
             if end > 4001:
                 error("No numbers greater than 4000")
-                sys.exit(1)
+                sys.exit()
 
             # Integers greater than zero?
             if begin > 0 and end > 0:
@@ -95,7 +101,7 @@ class Xen(Application):
             
             # everthing is OK, we can leave the method
             return
-                  
+                 
         except NodeValidityException, exception:
             error("Invalid combination of node type and image type")
             error(exception)
@@ -108,8 +114,42 @@ class Xen(Application):
         # the program
         sys.exit(1)
 
+    def set_options_list(self):
+        groups = os.getgroups()
+        allowed = 0
+        for i in [2000, 2009]:  # um-admin, vmeshhost-admin
+            if i in groups:
+                allowed = 1
 
-    def run(self):
+        if allowed == 0:
+            error("You don't have enough rights.")
+            exit()
+
+
+    def set_option(self):
+        """Set the options for the Xen object"""
+
+        Application.set_option(self)
+
+        # correct numbers of arguments?
+        if (len(self.args) == 0) or (len(self.args) > 3): 
+            self.parser.error("Incorrect number of arguments")
+
+        # set arguments
+        self.action = self.args[0]
+
+        # does the command exists?
+        if not self.action in self.commands:
+            self.parser.error('Unkown COMMAND %s' %(self.action))
+
+        # additional option checking for create
+        if self.action == 'create':
+            self.set_options_create()
+        # additional option checking for list
+        if self.action == 'list':
+            self.set_options_list()
+
+    def run_create(self):
         """Start the desired number of vmeshnodes"""
 
         # must be root
@@ -202,6 +242,84 @@ class Xen(Application):
             f.close()
             os.remove(cfg_file)
 
+    def run_list(self):
+        def vmr_compare(x, y):
+            x_name = x[6][1]
+            y_name = y[6][1]
+
+            if x_name == 'Domain-0':
+                x_nr = 0
+            else:
+                x_nr = int(x_name.replace('vmrouter',''))
+
+            if y_name == 'Domain-0':
+                y_nr = 0
+            else:
+                y_nr = int(y_name.replace('vmrouter',''))
+
+            if x_nr > y_nr:
+                return 1
+            elif x_nr == y_nr:
+                return 0
+            elif x_nr < y_nr:
+                return -1
+
+        if self.options.hostinfo:
+            info("Collecting stats ..")
+            #print headline
+            print "Host           #Nodes     Mem   VCPUs"
+            print "-------------------------------------"
+            for server in self.serverlist:
+                # connect to server
+                session = xmlrpclib.Server('http://%s:8006/' %server)
+                try:
+                    vm = session.xend.domains(True,False)
+                except socket.error, err:
+                    error("Server %s: %s" %(server, err))
+                    continue
+
+                # number of vmrouter running on this host
+                nr_router = len(vm)-1
+
+                # print infos
+                print "%s \t %s \t %s \t %s" %(server, nr_router, vm[0][11][1], vm[0][5][1])
+
+        else:
+            info("Collecting stats ..")
+            vm_all = []
+            for server in self.serverlist:
+                # connect to server
+                session = xmlrpclib.Server('http://%s:8006/' %server)
+                try:
+                    vm = session.xend.domains(True,False)
+                except socket.error, err:
+                    error("Server %s: %s" %(server, err))
+                    continue
+    
+                # extend list of all vmrouters by new ones
+                for entry in vm:
+                    entry[0] = server
+                vm_all.extend(vm)
+    
+            #sort list by vmrouter name
+            vm_all.sort(vmr_compare)
+    
+            # print infos
+            print "Name                     Host            User            Mem     State            Time"
+            print "-----------------------------------------------------------------------------------------"    
+            for entry in vm_all:
+                if entry[6][1] == "Domain-0":
+                    continue
+                else:
+                    print "%s \t\t %s \t %s \t %s \t %s \t %s" \
+                        %(entry[6][1], entry[0], "\t", entry[11][1], entry[22][1], entry[17][1])
+                            #name,     server,  user,    mem,         state,        cputime
+
+    def run(self):
+        if self.action == 'create':
+            self.run_create()
+        if self.action == 'list':
+            self.run_list()
 
 
 if __name__ == "__main__":
