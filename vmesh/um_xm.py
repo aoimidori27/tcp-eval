@@ -147,6 +147,8 @@ class Xen(Application):
         for i in [0, 2000, 2009, 2010]:  # root, um-admin, vmeshhost-admin, vmeshhost-user
             if i in groups:
                 return
+        error("You are not in the right group")
+        sys.exit(1)
 
     def set_option(self):
         """Set the options for the Xen object"""
