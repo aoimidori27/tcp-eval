@@ -5,7 +5,9 @@
 import os
 import sys
 import tempfile
-import xmlrpclib, socket
+import xmlrpclib
+import socket
+import MySQLdb
 from logging import info, debug, warn, error
 from optparse import OptionValueError
 
@@ -28,19 +30,24 @@ class Xen(Application):
         self.action = ''
         self.commands = ('list', 'create')
 
+        self.dbhost = 'webserver'
+        self.db = 'umic-mesh'   
+        self.dbuser = 'um_xm'
+        self.dbpass = 'eSWEuB7LeEss6sjF'
+    
         # object variables
         self._range = []
         self.serverlist = ['vmhost1', 'vmhost2', 'vmhost11']
 
         # initialization of the option parser
-        usage = "usage: \t%prog list \n" \
+        usage = "usage: \t%prog [options] list \n" \
                 "\t%prog [options] create ID | FROM TO \n" \
                 "\twhere ID, FROM, TO are node IDs (integers) greater than zero"
         self.parser.set_usage(usage)
         self.parser.set_defaults(console = False, dry_run = False,
                 image_type = "vmeshnode", kernel = "default/vmeshnode-vmlinuz",
                 memory = 50, node_type = "vmeshrouter", hostinfo = False,
-                ramdisk = "vmeshnode-initrd", image_version = "default")
+                ramdisk = "vmeshnode-initrd", image_version = "default", force = False)
 
         self.parser.add_option("-c", "--console",
                 action = "store_true", dest = "console",
@@ -71,6 +78,26 @@ class Xen(Application):
         self.parser.add_option("-H", "--host-info", metavar = "HOSTINFO",
                 action = "store_true", dest = "hostinfo",
                 help = 'WITH LIST: show information about Domain-0 of each host')
+        self.parser.add_option("-f", "--force",
+                action = "store_true", dest = "force",
+                help = "do action, even if the database can't be reached")
+
+
+    def db_connect(self):
+        self.dbconn = None
+        try:
+            self.dbconn = MySQLdb.connect(host = self.dbhost, 
+                                          db = self.db,
+                                          user = self.dbuser,
+                                          passwd = self.dbpass)
+            self.dbconn.autocommit(True)
+                                          
+        except Exception, e:
+            error("Could not connect to database: %s" %e)
+            if not self.options.force:
+                error("Use -f if you want to continue anyways")
+                sys.exit(1)
+                
 
 
     def set_options_create(self):
@@ -237,32 +264,32 @@ class Xen(Application):
                     error("Error while starting %s" % vmeshnode.getHostname())
                     error(exception)
     
-    
             # close and remove config file
             f.close()
             os.remove(cfg_file)
-
+       
+            # write user to the databse
+            if self.dbconn:
+                if os.environ.has_key("SUDO_USER"):
+                    user = os.environ["SUDO_USER"]
+                else: 
+                    user = os.environ["USER"]
+                cursor = self.dbconn.cursor()
+                query = "INSERT IGNORE INTO nodes SET "\
+                        "name='%s',nodetype='vmeshrouter',hardware='XEN',nr=%u,"\
+                        "room='',box='',comment='';" %(vmeshnode.getHostname(),vmeshnode.getNumber())
+                cursor.execute(query)
+                query = "INSERT INTO nodes_vmesh (nodeID,created_by) "\
+                        "SELECT nodeID,'%s' FROM nodes WHERE nodes.name='%s' "\
+                        "ON DUPLICATE KEY UPDATE created_by='%s';" %(user,vmeshnode.getHostname(),user)
+                cursor.execute(query)
     def run_list(self):
+       
         def vmr_compare(x, y):
-            x_name = x[6][1]
-            y_name = y[6][1]
-
-            if x_name == 'Domain-0':
-                x_nr = 0
-            else:
-                x_nr = int(x_name.replace('vmrouter',''))
-
-            if y_name == 'Domain-0':
-                y_nr = 0
-            else:
-                y_nr = int(y_name.replace('vmrouter',''))
-
-            if x_nr > y_nr:
-                return 1
-            elif x_nr == y_nr:
-                return 0
-            elif x_nr < y_nr:
-                return -1
+            # only compare numerical part, works for our purpose
+            x_nr = int(filter(lambda c: c.isdigit(), x))
+            y_nr = int(filter(lambda c: c.isdigit(), y))
+            return cmp(x_nr, y_nr)                  
 
         if self.options.hostinfo:
             info("Collecting stats ..")
@@ -286,7 +313,8 @@ class Xen(Application):
 
         else:
             info("Collecting stats ..")
-            vm_all = []
+
+            vm_all = dict() 
             for server in self.serverlist:
                 # connect to server
                 session = xmlrpclib.Server('http://%s:8006/' %server)
@@ -297,25 +325,46 @@ class Xen(Application):
                     continue
     
                 # extend list of all vmrouters by new ones
-                for entry in vm:
-                    entry[0] = server
-                vm_all.extend(vm)
+                for entry in vm: 
+                    d = dict()
+                    # skip first elem in entry
+                    for elem in entry[1:]:
+                        (key, value) = elem
+                        d[key] = value
+                    # add server name to entry
+                    d["server"] = server
+                    # skip dom0
+                    if d["domid"] == 0:
+                        continue
+                    # initialize user field
+                    d["user"] = "None"
+                    # use domain name as key
+                    key = d["name"]
+                    vm_all[key] = d
     
-            #sort list by vmrouter name
-            vm_all.sort(vmr_compare)
-    
+            #sort by vmrouter name
+            sorted_keyset = vm_all.keys()
+            sorted_keyset.sort(vmr_compare)
+
+            # get vmrouter reservationss: 
+            if self.dbconn:
+                nodeset = ",".join(map(lambda s: "'"+s+"'", sorted_keyset))
+                cursor = self.dbconn.cursor()
+                cursor.execute("SELECT nodes.name,created_by FROM nodes,nodes_vmesh WHERE nodes.nodeID=nodes_vmesh.nodeID AND nodes.name IN (%s)" %nodeset)
+                for row in cursor.fetchall():
+                    (key, value) = row
+                    vm_all[key]['user'] = value
+
             # print infos
-            print "Name                     Host            User            Mem     State            Time"
-            print "-----------------------------------------------------------------------------------------"    
-            for entry in vm_all:
-                if entry[6][1] == "Domain-0":
-                    continue
-                else:
-                    print "%s \t\t %s \t %s \t %s \t %s \t %s" \
-                        %(entry[6][1], entry[0], "\t", entry[11][1], entry[22][1], entry[17][1])
-                            #name,     server,  user,    mem,         state,        cputime
+            print "Name          Host      User                 Mem State  Time"
+            print "------------------------------------------------------------------------------------"    
+            for key in sorted_keyset:
+                  entry = vm_all[key]
+                  print "%s %s %s %3s %6s %s" \
+                        %(entry["name"].ljust(13), entry["server"].ljust(9), entry["user"].ljust(20), entry["maxmem"], entry["state"], entry["cpu_time"])
 
     def run(self):
+        self.db_connect()
         if self.action == 'create':
             self.run_create()
         if self.action == 'list':
