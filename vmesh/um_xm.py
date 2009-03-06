@@ -144,14 +144,9 @@ class Xen(Application):
     def set_options_list(self):
         groups = os.getgroups()
         allowed = 0
-        for i in [2000, 2009]:  # um-admin, vmeshhost-admin
+        for i in [0, 2000, 2009, 2010]:  # root, um-admin, vmeshhost-admin, vmeshhost-user
             if i in groups:
-                allowed = 1
-
-        if allowed == 0:
-            error("You don't have enough rights.")
-            exit()
-
+                return
 
     def set_option(self):
         """Set the options for the Xen object"""
