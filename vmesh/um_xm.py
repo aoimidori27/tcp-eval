@@ -4,6 +4,7 @@
 # python imports
 import os
 import sys
+import grp
 import tempfile
 import xmlrpclib
 import socket
@@ -142,9 +143,15 @@ class Xen(Application):
         sys.exit(1)
 
     def set_options_list(self):
+        # get group ids
+        group_ids = []
+        for gr_name in ['root', 'um-admin', 'vmeshhost-admin', 'vmeshhost-user']:
+            group_ids.append(grp.getgrnam(gr_name)[2])  # append group id
+
+        # check if user is in one of these groups
         groups = os.getgroups()
         allowed = 0
-        for i in [0, 2000, 2009, 2010]:  # root, um-admin, vmeshhost-admin, vmeshhost-user
+        for i in group_ids:
             if i in groups:
                 return
         error("You are not in the right group")
