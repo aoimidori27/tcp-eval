@@ -160,7 +160,7 @@ class Btex2utf8(Application):
         self.parse_option()
         self.set_option()
     
-        (e,d,sr,sw) = codecs.lookup(self.options.encoding)
+        sw = codecs.getwriter(self.options.encoding)
         outstream = sw(self.outfile)
 
         # build up re
