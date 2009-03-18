@@ -79,7 +79,7 @@ class Wlan_devices(RPCService):
         """ Rereads the configuration
 
             The wlan_Device service table has the following important columns
-                 wlandev   : native base device (eg. wifi0)
+                 wlandev   : native base device (eg. 0,1)
                  vap       : the virtual device to create (eg. ath0)
                  wlanmode  : the mode of the device to create (eg. adhoc)
                  bssid     : a flag to override the bssid
