@@ -43,7 +43,7 @@ class Babel(RPCService):
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
-        """ Check if olsrd is alive by looking in the process table. """
+        """ Check if babel is alive by looking in the process table. """
         cmd = ["/bin/ps", "-C", "babel" ]
         rc = yield twisted_call(cmd, shell=False)
 
@@ -63,7 +63,9 @@ class Babel(RPCService):
 
         self._name = "babel"
         self._config = None
+
         self._configfile = None
+
         self._daemon = "/usr/local/bin/babel"
     
     
@@ -78,6 +80,7 @@ class Babel(RPCService):
             
         """
         
+        # get service config out of database
         assoc = yield self._parent._dbpool.getCurrentServiceConfig(self._name)
         if not assoc:
             info("Found no configuration")
@@ -85,25 +88,48 @@ class Babel(RPCService):
 
         self._config = assoc
 
-        if self._configfile and os.path.exists(self._configfile):
-            tempfile = file(self._configfile, 'w')
-        else:
-            # create new tempfile
-            (temp_fd, self._configfile) = mkstemp(".conf", self._name)
-            info("Created new configfile: %s", self._configfile)
-            tempfile = os.fdopen(temp_fd, 'w')
-        
-        tempfile.write(assoc['config'])
-        tempfile.close()
+        if assoc['config']:        
+                # set/create configfile
+                if self._configfile and os.path.exists(self._configfile):
+                    tempfile = file(self._configfile, 'w')
+                else:
+                    # create new tempfile
+                    (temp_fd, self._configfile) = mkstemp(".conf", self._name)
+                    info("Created new configfile: %s", self._configfile)
+                    tempfile = os.fdopen(temp_fd, 'w') 
+                tempfile.write(assoc['config'])
+                tempfile.close()
 
         defer.returnValue(0)
                                    
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function invokes start-stop daemon to bring up olsrd """
+        """ This function invokes start-stop daemon to bring up babel """
         
-        args = ["-f", self._configfile, "-d", "0"]
+        # set arguments
+        args = ['-d', '0']
+
+        try: args.extend(['-m', self._config['mcastaddress']])
+        except: pass
+        try: args.extend(['-p', self._config['port']])
+        except: pass
+        try: args.extend(['-h', self._config['hellointerval']])
+        except: pass
+        try: args.extend(['-H', self._config['whellointerval']])
+        except: pass
+        try: args.extend(['-i', self._config['ihellointerval']])
+        except: pass
+        try: args.extend(['-u', self._config['updateinterval']])
+        except: pass
+
+        try: args.extend(['-c', self._configfile])
+        except: pass
+
+        try: args.append(self._config['interfaces'])
+        except: error("At least one interface has to be given!")
+
+        # set command
         cmd = [ "start-stop-daemon", "--start",  
                 "--exec", self._daemon,
                 "--"]
@@ -112,7 +138,7 @@ class Babel(RPCService):
         if len(stdout):
             debug(stdout)
         if (rc != 0):
-            error("olsr.start(): Command failed with RC=%s", rc)
+            error("babel.start(): Command failed with RC=%s", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
             # when an error occurs stdout is important too
@@ -125,7 +151,7 @@ class Babel(RPCService):
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function invokes start-stop-daemon to stop olsrd """
+        """ This function invokes start-stop-daemon to stop babel """
 
         cmd = [ "start-stop-daemon", "--stop",  "--quiet",
                 "--exec", self._daemon,
@@ -135,7 +161,7 @@ class Babel(RPCService):
         if len(stdout):
             debug(stdout)
         if (rc != 0):
-            error("olsr.stop(): Command failed with RC=%s", rc)
+            error("babel.stop(): Command failed with RC=%s", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
         yield self._parent._dbpool.stoppedService(self._config,
