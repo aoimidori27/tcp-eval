@@ -110,23 +110,25 @@ class Babel(RPCService):
         # set arguments
         args = ['-d', '0']
 
-        if not self._config['mcastaddress']] == NULL:   args.extend(['-m', self._config['mcastaddress']])
-        if not self._config['port']] == NULL:           args.extend(['-p', self._config['port']])
-        if not self._config['hellointerval']] == NULL:  args.extend(['-h', self._config['hellointerval']])
-        if not self._config['whellointerval']] == NULL: args.extend(['-H', self._config['whellointerval']])
-        if not self._config['ihellointerval']] == NULL: args.extend(['-i', self._config['ihellointerval']])
-        if not self._config['updateinterval']]== NULL:  args.extend(['-u', self._config['updateinterval']])
+        if not self._config['mcastaddress'] == None:    args.extend(['-m', self._config['mcastaddress']])
+        if not self._config['port'] == None:            args.extend(['-p', str(self._config['port'])])
+        if not self._config['hellointerval'] == None:   args.extend(['-h', str(self._config['hellointerval'])])
+        if not self._config['whellointerval'] == None:  args.extend(['-H', str(self._config['whellointerval'])])
+        if not self._config['ihellointerval'] == None:  args.extend(['-i', str(self._config['ihellointerval'])])
+        if not self._config['updateinterval']== None:   args.extend(['-u', str(self._config['updateinterval'])])
 
-        if self.configfile: args.extend(['-c', self._configfile])
+        if self._configfile: args.extend(['-c', self._configfile])
 
         try: args.append(self._config['interfaces'])
         except: error("At least one interface has to be given!")
+        debug("Args: %s" %args)
 
         # set command
         cmd = [ "start-stop-daemon", "--start",  
                 "--exec", self._daemon,
                 "--"]
         cmd.extend(args)
+        debug("Cmd: %s" %cmd)
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
         if len(stdout):
             debug(stdout)
