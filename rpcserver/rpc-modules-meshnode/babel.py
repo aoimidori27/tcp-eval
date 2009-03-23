@@ -110,21 +110,14 @@ class Babel(RPCService):
         # set arguments
         args = ['-d', '0']
 
-        try: args.extend(['-m', self._config['mcastaddress']])
-        except: pass
-        try: args.extend(['-p', self._config['port']])
-        except: pass
-        try: args.extend(['-h', self._config['hellointerval']])
-        except: pass
-        try: args.extend(['-H', self._config['whellointerval']])
-        except: pass
-        try: args.extend(['-i', self._config['ihellointerval']])
-        except: pass
-        try: args.extend(['-u', self._config['updateinterval']])
-        except: pass
+        if not self._config['mcastaddress']] == NULL:   args.extend(['-m', self._config['mcastaddress']])
+        if not self._config['port']] == NULL:           args.extend(['-p', self._config['port']])
+        if not self._config['hellointerval']] == NULL:  args.extend(['-h', self._config['hellointerval']])
+        if not self._config['whellointerval']] == NULL: args.extend(['-H', self._config['whellointerval']])
+        if not self._config['ihellointerval']] == NULL: args.extend(['-i', self._config['ihellointerval']])
+        if not self._config['updateinterval']]== NULL:  args.extend(['-u', self._config['updateinterval']])
 
-        try: args.extend(['-c', self._configfile])
-        except: pass
+        if self.configfile: args.extend(['-c', self._configfile])
 
         try: args.append(self._config['interfaces'])
         except: error("At least one interface has to be given!")
