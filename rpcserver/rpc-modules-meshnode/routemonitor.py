@@ -61,7 +61,7 @@ class Routemonitor(RPCService):
 
         self._name = "routemonitor"
         self._config = None
-        self._daemon = "/usr/local/sbin/routemonitor"
+        self._daemon = "/usr/local/bin/routemonitor"
         self._pidfile = "/var/run/routemonitor.pid"
     
     
