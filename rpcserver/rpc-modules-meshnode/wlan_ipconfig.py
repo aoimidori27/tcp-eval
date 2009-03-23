@@ -87,6 +87,13 @@ class Wlan_ipconfig(RPCService):
         defer.returnValue(0)
                                    
 
+    def chorder(self, address):
+        """ changes the order of an ip address """
+        sa = address.split('.')
+        return sa[3] + "." + sa[2] + "." + sa[1] + "." + sa[0]
+
+
+
     @defer.inlineCallbacks
     def start(self):
         """ This function brings up the interfaces. """
@@ -113,6 +120,18 @@ class Wlan_ipconfig(RPCService):
                     error(" %s" %line)
                 final_rc = rc
 
+            # update dns
+            update_dns1 = [ "echo", "-e", "\"update delete %s.mrouter%s.umic-mesh.net A\nupdate add %s.mrouter%s.umic-mesh.net 600 A %s\nsend\"" %(config["interface"], nodenr, config["interface"], nodenr, address), "|", "nsupdate", "-y", "rndc-key:o2bpYQo1BCYLVGZiafJ4ig==" ]
+
+            (stdout, stderr, rc) = yield twisted_execute(update_dns1, shell=False)
+            debug("nsupdate: %s" %str(rc))
+
+            chaddress = self.chorder(address)
+            update_dns2 = [ "echo", "-e", "\"update delete %s.in-addr.arpa PTR\nupdate add %s.in-addr.arpa 600 PTR %s.mrouter%s\nsend\"" %(chaddress, chaddress, config["interface"], nodenr), "|", "nsupdate -y rndc-key:o2bpYQo1BCYLVGZiafJ4ig==" ]
+
+            (stdout, stderr, rc) = yield twisted_execute(update_dns2, shell=False)
+            debug("nsupdate: %s" %str(rc))
+
             yield self._parent._dbpool.startedService(config,
                                                       rc, message=stderr)
                 
@@ -122,12 +141,15 @@ class Wlan_ipconfig(RPCService):
     def stop(self):
         """ This function shuts the interfaces down. """
 
+        nodenr = Node().getNumber()
+
         final_rc = 0
         if not self._configs:
             self.warn("stop(): not initialized with configs")
             defer.returnValue(2)
 
         for config in self._configs:
+            address = "%s%u" %(config["ipprefix"], nodenr)
             
             cmd = [ "ifconfig", config["interface"],
                     "0.0.0.0",
@@ -143,16 +165,19 @@ class Wlan_ipconfig(RPCService):
                 for line in stderr.splitlines():
                     error(" %s" %line)
                 final_rc = rc
-            
+
+            # delete dns entries
+            update_dns1 = [ "echo", "-e", "\"update delete %s.mrouter%s.umic-mesh.net A\nsend\"" %(config["interface"], nodenr), "|", "nsupdate -y rndc-key:o2bpYQo1BCYLVGZiafJ4ig==" ]
+            update_dns2 = [ "echo", "-e", "\"update delete %s.in-addr.arpa PTR\nsend\"" %self.chorder(address), "|", "nsupdate -y rndc-key:o2bpYQo1BCYLVGZiafJ4ig==" ]
+
+            (stdout, stderr, rc) = yield twisted_execute(update_dns1, shell=False)
+            debug("nsupdate: %s" %str(rc))
+
+            (stdout, stderr, rc) = yield twisted_execute(update_dns2, shell=False)
+            debug("nsupdate: %s" %str(rc))
+
             yield self._parent._dbpool.stoppedService(config,
                                                       rc, message=stderr)
         defer.returnValue(final_rc)
 
-
-
-
-
-
-
-        
-        
+ 
