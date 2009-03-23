@@ -108,7 +108,7 @@ class Babel(RPCService):
         """ This function invokes start-stop daemon to bring up babel """
         
         # set arguments
-        args = ['-d', '0']
+        args = ['-D', '-d', '0']
 
         if not self._config['mcastaddress'] == None:    args.extend(['-m', self._config['mcastaddress']])
         if not self._config['port'] == None:            args.extend(['-p', str(self._config['port'])])
