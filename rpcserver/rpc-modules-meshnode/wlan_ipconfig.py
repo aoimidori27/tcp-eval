@@ -123,16 +123,20 @@ class Wlan_ipconfig(RPCService):
                 final_rc = rc
 
             # update dns
-            update_dns1 = [ "echo", "-e", "\"update delete %s.mrouter%s.umic-mesh.net A\nupdate add %s.mrouter%s.umic-mesh.net %u A %s\nsend\"" %(config["interface"], nodenr, config["interface"], nodenr, self._dnsttl, address), "|", "nsupdate", "-y", "rndc-key:%s" %self._dnskey ]
+            update_dns1 = "echo \"update delete %s.mrouter%s.umic-mesh.net A\\nupdate add %s.mrouter%s.umic-mesh.net %u A %s\\nsend\" | nsupdate -y rndc-key:%s" %(config["interface"], nodenr, config["interface"], nodenr, self._dnsttl, address, self._dnskey) 
 
-            (stdout, stderr, rc) = yield twisted_execute(update_dns1, shell=False)
+            (stdout, stderr, rc) = yield twisted_execute(update_dns1, shell=True)
             debug("nsupdate: %s" %str(rc))
+            if (stdout): print stdout
+            if (stderr): print stderr
 
             chaddress = self.chorder(address)
-            update_dns2 = [ "echo", "-e", "\"update delete %s.in-addr.arpa PTR\nupdate add %s.in-addr.arpa %u PTR %s.mrouter%s\nsend\"" %(chaddress, chaddress, self._dnsttl, config["interface"], nodenr), "|", "nsupdate -y rndc-key:%s" %self._dnskey ]
+            update_dns2 = "echo \"update delete %s.in-addr.arpa PTR\\nupdate add %s.in-addr.arpa %u PTR %s.mrouter%s\\nsend\" | nsupdate -y rndc-key:%s" %(chaddress, chaddress, self._dnsttl, config["interface"], nodenr, self._dnskey)
 
-            (stdout, stderr, rc) = yield twisted_execute(update_dns2, shell=False)
+            (stdout, stderr, rc) = yield twisted_execute(update_dns2, shell=True)
             debug("nsupdate: %s" %str(rc))
+            if (stdout): print stdout
+            if (stderr): print stderr
 
             yield self._parent._dbpool.startedService(config,
                                                       rc, message=stderr)
@@ -169,13 +173,13 @@ class Wlan_ipconfig(RPCService):
                 final_rc = rc
 
             # delete dns entries
-            update_dns1 = [ "echo", "-e", "\"update delete %s.mrouter%s.umic-mesh.net A\nsend\"" %(config["interface"], nodenr), "|", "nsupdate -y rndc-key:%s" %self._dnskey ]
-            update_dns2 = [ "echo", "-e", "\"update delete %s.in-addr.arpa PTR\nsend\"" %self.chorder(address), "|", "nsupdate -y rndc-key:%s" %self._dnskey ]
+            update_dns1 = "echo \"update delete %s.mrouter%s.umic-mesh.net A\\nsend\" | nsupdate -y rndc-key:%s" %(config["interface"], nodenr, self._dnskey)
+            update_dns2 = "echo \"update delete %s.in-addr.arpa PTR\\nsend\" | nsupdate -y rndc-key:%s" %(self.chorder(address), self._dnskey)
 
-            (stdout, stderr, rc) = yield twisted_execute(update_dns1, shell=False)
+            (stdout, stderr, rc) = yield twisted_execute(update_dns1, shell=True)
             debug("nsupdate: %s" %str(rc))
 
-            (stdout, stderr, rc) = yield twisted_execute(update_dns2, shell=False)
+            (stdout, stderr, rc) = yield twisted_execute(update_dns2, shell=True)
             debug("nsupdate: %s" %str(rc))
 
             yield self._parent._dbpool.stoppedService(config,
