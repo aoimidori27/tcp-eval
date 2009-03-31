@@ -19,7 +19,7 @@ DIRS="$DIRS,/var/lib/dhcp3,/var/log,/var/run,/etc"
 DIRS="$DIRS,/bin,/lib,/etc,/lib/dhcp3-client"
 
 # files which belong to /bin
-BINFILES="bash,cat,chmod,echo,expr,grep,hostname,"
+BINFILES="bash,cat,chmod,echo,expr,grep,hostname"
 BINFILES="$BINFILES,kill,logger,ls,mknod,mount,ping,ps,rm,sed"
 BINFILES="$BINFILES,sh,sleep,umount,uname,run-init,chroot,xargs"
 
@@ -47,7 +47,6 @@ function makedev() {
    cd $INITRD_TMP/dev
    MAKEDEV std
 
-   mknod $INITRD_TMP/dev/watchdog c 10 130
    mknod $INITRD_TMP/dev/console c 5 1
    mknod $INITRD_TMP/dev/tty12   c 4 12
 
@@ -56,6 +55,9 @@ function makedev() {
 
    # watchdog
    mknod $INITRD_TMP/dev/watchdog c 10 130 
+
+   # rtc
+   mknod $INITRD_TMP/dev/rtc c 10 135
 }
 
 # filecopy "$files" "$searchpath" "$dstdir"
