@@ -109,14 +109,17 @@ class LdapAdd(Application):
                 pass #No uidNumber in entry
         
         # ----------> set user data
-        print "Forename: ",
+        print "Given name: ",
         name=sys.stdin.readline().strip()
-        
+
+        sys.stdout.softspace = 0        #to prevent leading space
         print "Lastname: ",
         lastname=sys.stdin.readline().strip()
         
-        mail=string.lower(name)+"."+string.lower(lastname)+"@rwth-aachen.de"
-        print "Email [def: "+mail+"]: ",
+        mail="%s.%s@rwth-aachen.de" %(string.lower(name.replace(" ",".")), string.lower(lastname))
+
+        sys.stdout.softspace = 0
+        print "Email [def: %s]: " %mail ,
         mail2=sys.stdin.readline().strip()
         if (mail2 != ""):
             mail = mail2
@@ -129,6 +132,7 @@ class LdapAdd(Application):
 
         size = 9
         upasswd = ''.join([choice(string.letters + string.digits) for i in range(size)])
+        sys.stdout.softspace = 0
         print "Password will be: %s" % upasswd
         upasswd_md5 = base64.encodestring(md5.new(str(upasswd)).digest())
 
@@ -208,11 +212,11 @@ automountInformation: -fstype=nfs,rw,hard,intr,nodev,exec,nosuid,relatime,rsize=
         def_groups = ['um-user','um-webuser']
         mod_attrs = [( ldap.MOD_ADD, 'memberUid', llastname )]
         for gr in def_groups:
-            l.modify_s('cn='+gr+',ou=Group,dc=umic-mesh,dc=net', mod_attrs)
+            l.modify_s('cn=%s,ou=Group,dc=umic-mesh,dc=net' %gr, mod_attrs)
             info("Added user %s to group %s" % (llastname, gr))
         
         # ----------> create home directory
-        call("su %s -c exit" % llastname)
+        #call("su %s -c exit" % llastname)
 
         # ----------> close connection and remove temp files
         l.unbind_s()
