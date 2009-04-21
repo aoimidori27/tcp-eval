@@ -38,8 +38,8 @@ class FlowgrindddRecordFactory():
 	    " +(?P<direction>[S,R])"\
             " +(?P<flow_id>\d+) +(?P<begin>\d+\.\d+) +(?P<end>\d+\.\d+)"\
             " +(?P<tput>\d+\.\d+)"\
-            " +(?P<rtt_min>\d+\.\d+) +(?P<rtt_avg>\d+\.\d+) +(?P<rtt_max>\d+\.\d+)"\
-            " +(?P<iat_min>\d+\.\d+) +(?P<iat_avg>\d+\.\d+) +(?P<iat_max>\d+\.\d+)"\
+            " +(?P<rtt_min>\d+\.\d+|inf) +(?P<rtt_avg>\d+\.\d+|inf) +(?P<rtt_max>\d+\.\d+|inf)"\
+            " +(?P<iat_min>\d+\.\d+|inf) +(?P<iat_avg>\d+\.\d+|inf) +(?P<iat_max>\d+\.\d+|inf)"\
             " +(?P<cwnd>\d+\.\d+) +(?P<ssth>\d+) +(?P<uack>\d+) +(?P<sack>\d+)"\
             " +(?P<lost>\d+) +(?P<retr>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
             " +(?P<krtt>\d+\.\d+) +(?P<krttvar>\d+\.\d+) +(?P<krto>\d+\.\d+)"\
