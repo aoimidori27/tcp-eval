@@ -249,29 +249,29 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
     def chorder(self, address):
         """ changes the order of an ip address """
         sa = address.split('.')
-        return "%s.%s.%s.%s" %(sa[3],sa[2],sa[1],sa[0])
+        sa.reverse()
+        return ".".join(sa) 
 
     def setup_dns(self):
         # update dns
-        iface = "ath0"
+        iface = self.options.interface
         hostnum = self.node.getNumber()
         address = self.gre_ip(hostnum, mask=False)
 
         update_dns1 = "echo \"update delete %s.vmrouter%s.umic-mesh.net A\\nupdate add %s.vmrouter%s.umic-mesh.net %u A %s\\nsend\" | nsupdate -y rndc-key:%s" %(iface, hostnum, iface, hostnum, self._dnsttl, address, self._dnskey)
-
-        (stdout, stderr) = execute(update_dns1)
-        #debug("nsupdate: %s" %str(rc))
-        if (stdout): print stdout
-        if (stderr): print stderr
+        try:
+                (stdout, stderr) = execute(update_dns1)
+        except CommandFailed, inst:
+                error("Updating DNS entry for %s.vmrouter%s failed." % (iface,hostnum))
+                error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
 
         chaddress = self.chorder(address)
         update_dns2 = "echo \"update delete %s.in-addr.arpa PTR\\nupdate add %s.in-addr.arpa %u PTR %s.vmrouter%s\\nsend\" | nsupdate -y rndc-key:%s" %(chaddress, chaddress, self._dnsttl, iface, hostnum, self._dnskey)
-
-        (stdout, stderr) = execute(update_dns2)
-        #debug("nsupdate: %s" %str(rc))
-        if (stdout): print stdout
-        if (stderr): print stderr
-
+        try:
+                (stdout, stderr) = execute(update_dns2)
+        except CommandFailed, inst:
+                error("Updating DNS entry for %s.in-addr.arpa failed." % (chaddress))
+                error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
 
     def setup_trafficcontrol(self):
         iface = "eth0"
