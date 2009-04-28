@@ -35,6 +35,8 @@ tc class  add dev %(iface)s parent 1: classid 1:%(nr)d cbq rate %(rate)smbit all
 tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
     match ip protocol 47 0xff flowid 1:%(nr)d \
     match ip dst %(dst)s"""
+        self._dnsttl = 300
+        self._dnskey = "o2bpYQo1BCYLVGZiafJ4ig=="
 
         
         # initialization of the option parser
@@ -243,6 +245,34 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
             error("Setting up GRE tunnel %s (%s, %s) failed." % (hostnum, public_ip, gre_ip))
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
 
+
+    def chorder(self, address):
+        """ changes the order of an ip address """
+        sa = address.split('.')
+        return "%s.%s.%s.%s" %(sa[3],sa[2],sa[1],sa[0])
+
+    def setup_dns(self):
+        # update dns
+        iface = "ath0"
+        hostnum = self.node.getNumber()
+        address = self.gre_ip(hostnum, mask=False)
+
+        update_dns1 = "echo \"update delete %s.vmrouter%s.umic-mesh.net A\\nupdate add %s.vmrouter%s.umic-mesh.net %u A %s\\nsend\" | nsupdate -y rndc-key:%s" %(iface, hostnum, iface, hostnum, self._dnsttl, address, self._dnskey)
+
+        (stdout, stderr) = execute(update_dns1)
+        #debug("nsupdate: %s" %str(rc))
+        if (stdout): print stdout
+        if (stderr): print stderr
+
+        chaddress = self.chorder(address)
+        update_dns2 = "echo \"update delete %s.in-addr.arpa PTR\\nupdate add %s.in-addr.arpa %u PTR %s.vmrouter%s\\nsend\" | nsupdate -y rndc-key:%s" %(chaddress, chaddress, self._dnsttl, iface, hostnum, self._dnskey)
+
+        (stdout, stderr) = execute(update_dns2)
+        #debug("nsupdate: %s" %str(rc))
+        if (stdout): print stdout
+        if (stderr): print stderr
+
+
     def setup_trafficcontrol(self):
         iface = "eth0"
         hostnum = self.node.getNumber()
@@ -415,6 +445,9 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
 
             info("Setting up GRE tunnel ...")
             self.setup_gre()
+
+            info("Update DNS entries ...")
+            self.setup_dns()
             
             info("Setting up iptables rules ... ")
             self.setup_iptables()
