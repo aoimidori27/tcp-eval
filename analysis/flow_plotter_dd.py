@@ -104,8 +104,8 @@ class FlowPlotter(Application):
         p = UmLinePlot(plotname+'_rto_rtt')
         p.setYLabel(r"$\\ms$")
         p.setXLabel("time")
-        p.plot(valfilename, "RTO", using="2:8", linestyle=2)
-        p.plot(valfilename, "RTT", using="2:9", linestyle=3)
+        p.plot(valfilename, "RTO", using="2:9", linestyle=2)
+        p.plot(valfilename, "RTT", using="2:8", linestyle=3)
         # output plot
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
