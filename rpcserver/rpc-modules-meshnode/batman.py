@@ -13,8 +13,8 @@ from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
           
 
-class Flowgrindd(RPCService):
-    """Class for managing the flowgrind daemon"""
+class Batman(RPCService):
+    """Class for managing the OLSR daemon"""
 
 
     #
@@ -35,7 +35,7 @@ class Flowgrindd(RPCService):
     def xmlrpc_start(self):
         rc = yield self.reread_config()
         if rc == 0:            
-            print(yield self.start())
+            rc = yield self.start()
         defer.returnValue(rc)
 
     def xmlrpc_stop(self):
@@ -43,8 +43,8 @@ class Flowgrindd(RPCService):
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
-        """ Check if flowgrinddd is alive by looking in the process table. """
-        cmd = ["/bin/ps", "-C", self._daemon.split('/')[-1]]
+        """ Check if batman is alive by looking in the process table. """
+        cmd = ["/bin/ps", "-C", "batmand" ]
         rc = yield twisted_call(cmd, shell=False)
 
         if (rc==0):
@@ -61,18 +61,18 @@ class Flowgrindd(RPCService):
         # Call super constructor
         RPCService.__init__(self, parent)
 
-        self._name = "flowgrindd"
+        self._name = "batman"
         self._config = None
-        self._daemon = None
+        self._configfile = None
+        self._daemon = "/usr/local/sbin/batmand"
     
     
     @defer.inlineCallbacks
     def reread_config(self):
         """ Rereads the configuration
 
-            The flowgrindd service table has the following important columns
-                 port : the port on which the server should listen
-                 
+            The batman service table has the following important columns
+                 config : the config file contents
 
             Will return 0 on success.
             
@@ -84,32 +84,22 @@ class Flowgrindd(RPCService):
             defer.returnValue(-1)
 
         self._config = assoc
-        if self._config['distributed']:
-		self._daemon = "/usr/local/sbin/flowgrindd"
-	else:
-		self._daemon = "/usr/local/sbin/flowgrindd_dd"
-
-        if not self._config["port"]: self._config["port"] = 5999
 
         defer.returnValue(0)
                                    
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function invokes start-stop daemon to bring up flowgrindd """
-       
-        args = ["-p", "%u" %self._config["port"]]
-        if (self._config["verbose"]):
-            args.extend("-D")
+        """ This function invokes start-stop daemon to bring up batmand """
+        
         cmd = [ "start-stop-daemon", "--start",  
                 "--exec", self._daemon,
-                "--"]
-        cmd.extend(args)
+                "--", self._config["interface"]]
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
         if len(stdout):
             debug(stdout)
         if (rc != 0):
-            error("flowgrindd.start(): Command failed with RC=%s", rc)
+            error("batman.start(): Command failed with RC=%s", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
             # when an error occurs stdout is important too
@@ -122,7 +112,7 @@ class Flowgrindd(RPCService):
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function invokes start-stop-daemon to stop flowgrindd """
+        """ This function invokes start-stop-daemon to stop batmand """
 
         cmd = [ "start-stop-daemon", "--stop",  "--quiet",
                 "--exec", self._daemon,
@@ -132,7 +122,7 @@ class Flowgrindd(RPCService):
         if len(stdout):
             debug(stdout)
         if (rc != 0):
-            error("flowgrindd.stop(): Command failed with RC=%s", rc)
+            error("batman.stop(): Command failed with RC=%s", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
         yield self._parent._dbpool.stoppedService(self._config,
