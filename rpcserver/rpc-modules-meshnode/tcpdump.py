@@ -47,7 +47,7 @@ class Tcpdump(xmlrpc.XMLRPC):
 
 
     @defer.inlineCallbacks
-    def xmlrpc_start(self, iface, expr, promisc=False):
+    def xmlrpc_start(self, iface, expr, promisc=False, options=None):
         """
         Start tcpdump instance for interface iface with filter expr.
 
@@ -62,6 +62,7 @@ class Tcpdump(xmlrpc.XMLRPC):
 
         # FIXME: -Z?
         cmd = [self._daemon, "-i", iface, "-w", "-"]
+	if options is not None and options['tcpdump_snaplen']: cmd.extend(['-s', str(options['tcpdump_snaplen'])])
         
         if not promisc:
             cmd.append("-p")

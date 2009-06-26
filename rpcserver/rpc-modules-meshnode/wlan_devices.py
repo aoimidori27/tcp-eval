@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re, glob
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
 
@@ -106,18 +107,23 @@ class Wlan_devices(RPCService):
         final_rc = 0
 
         for config in self._configs:
-            
-            cmd = [ "wlanconfig", config["vap"], "create",
-                    "wlandev",  config["wlandev"],
-                    "wlanmode", config["wlanmode"] ]
-            
-            if config["bssid"]:
-                cmd.append("bssid")
-            else:
-                cmd.append("-bssid")            
 
-            if config["nosbeacon"]:
-                cmd.append("nosbeacon")
+	    devnum = re.compile("^(?:wmaster|wifi)(\d)$").match(config["wlandev"]).group(1)
+	    cmd = None
+	    if os.path.exists("/sys/class/net/wmaster" + devnum):
+		# ath5k driver
+		# twisted_execute([ "ip", "link", "set", "wmaster" + devnum, "name", config["wlandev"] ], shell=False)
+		if config["wlanmode"] == "ahdemo": config["wlanmode"] = "adhoc"
+		phy = glob.glob("/sys/class/net/wmaster"+devnum + "/device/ieee80211*")[0].split(":")[1]
+		cmd = [ "iw", "phy", phy, "interface", "add", config["vap"], "type", config["wlanmode"] ]
+            else:
+	        cmd = [ "wlanconfig", config["vap"], "create", "wlandev",  config["wlandev"], "wlanmode", config["wlanmode"] ]
+                if config["bssid"]:
+        	        cmd.append("bssid")
+		else:
+                	cmd.append("-bssid")            
+	        if config["nosbeacon"]:
+         		cmd.append("nosbeacon")
                 
             (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
             if len(stdout):
@@ -149,8 +155,13 @@ class Wlan_devices(RPCService):
         for config in self._configs:
             cmd = [ "ip", "link", "set", config["vap"], "down" ]
             yield twisted_call(cmd, shell=False)
-            
-            cmd = [ "wlanconfig", config["vap"], "destroy" ]            
+	    
+	    devnum = re.compile("^(?:wmaster|wifi)(\d)$").match(config["wlandev"]).group(1)
+
+	    if os.path.exists("/sys/class/net/wmaster" + devnum):
+	            cmd = [ "iw", config["vap"], "del" ]
+	    else:
+	            cmd = [ "wlanconfig", config["vap"], "destroy" ]
                 
             (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
             if len(stdout):

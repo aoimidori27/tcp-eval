@@ -126,6 +126,13 @@ class Wlan_parameters(RPCService):
             channel    = config["channel"]
             txpower    = config["txpower"]
             mcast_rate = config["mcast_rate"]
+	    driver     = None
+
+	    f = open("/sys/class/net/" + interface + "/uevent", "r")
+	    for line in f.readlines():
+	    	(key, driver) = line.split('=')
+		if key == "PHYSDEVDRIVER": break
+
 
             stderr = "";
 
@@ -151,14 +158,13 @@ class Wlan_parameters(RPCService):
                 stderr = stderr+"setting txpower failed\n"
                 final_rc = rc
 
-            rc = yield self.iwcmd("iwpriv", config, "mcast_rate")            
-            if rc != 0:
-                stderr = stderr+"setting mcast_rate failed\n"
-                final_rc = rc
+            if driver == "ath_pci":
+	            rc = yield self.iwcmd("iwpriv", config, "mcast_rate")            
+	            if rc != 0:
+	                stderr = stderr+"setting mcast_rate failed\n"
+	                final_rc = rc
                 
-            yield self._parent._dbpool.startedService(config,
-                                                      final_rc, message=stderr)
-            
+            yield self._parent._dbpool.startedService(config, final_rc, message=stderr)
                                                         
         defer.returnValue(final_rc)
 
