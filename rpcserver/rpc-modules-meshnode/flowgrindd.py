@@ -35,7 +35,7 @@ class Flowgrindd(RPCService):
     def xmlrpc_start(self):
         rc = yield self.reread_config()
         if rc == 0:            
-            print(yield self.start())
+            rc = yield self.start()
         defer.returnValue(rc)
 
     def xmlrpc_stop(self):
