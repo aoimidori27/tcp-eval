@@ -163,7 +163,7 @@ class StrictStruct:
                             % (self.__class__, k))
 
 
-    def __getattr__(self, name):
+    def __getitem__(self, name):
         try:
             return self._items[name]
         except KeyError:
@@ -171,7 +171,7 @@ class StrictStruct:
                     % (self.__class__, name))
 
 
-    def __setattr__(self, name, value):
+    def __setitem__(self, name, value):
         if name in self.__dict__:
             self.__dict__[name] = value
         elif name in self._items:
@@ -180,6 +180,8 @@ class StrictStruct:
             raise AttributeError("'%s' instance has no attribute '%s'"
                     % (self.__class__, name))
 
-
+    def keys(self):
+    	return self.__dict__["_items"].keys()
+   
     def __str__(self):
         return "<%s: %r>" % (self.__class__, self._items)

@@ -43,7 +43,8 @@ class FlowgrindddRecordFactory():
             " +(?P<cwnd>\d+\.\d+) +(?P<ssth>\d+) +(?P<uack>\d+) +(?P<sack>\d+)"\
             " +(?P<lost>\d+) +(?P<retr>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
             " +(?P<krtt>\d+\.\d+) +(?P<krttvar>\d+\.\d+) +(?P<krto>\d+\.\d+)"\
-	    " +(?P<mss>\d+) +(?P<mtu>\d+)"
+	    " +(?P<castate>loss|open|disorder|recovery) +(?P<mss>\d+) +(?P<mtu>\d+)",
+	    "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2} \d{2}:\d{2}:\d{2} \d{4}): controlling host"
         ]
 
         # compile regexes
@@ -73,6 +74,7 @@ class FlowgrindddRecordFactory():
                      'krtt'    : float,
                      'krttvar' : float,
                      'krto'    : float,
+                     'castate' : lambda x:x,
 		     'mss'     : int,
 		     'mtu'     : int }
             
@@ -84,11 +86,9 @@ class FlowgrindddRecordFactory():
                 flow_map[flow_id] = dict()
                 flow_map[flow_id]['S'] = StrictStruct(direction='S', size=0, **keys)
                 flow_map[flow_id]['R'] = StrictStruct(direction='R', size=0, **keys)
-                #setattr(flow_map[flow_id],'S',dict())
-                #setattr(flow_map[flow_id],'R',dict())
                 for key in keys.iterkeys():
-                    setattr(flow_map[flow_id]['S'],key,list())
-                    setattr(flow_map[flow_id]['R'],key,list())
+                    flow_map[flow_id]['S'][key] = list()
+                    flow_map[flow_id]['R'][key] = list()
 
             # iterate over all entries, shuffle and convert
             for i in range(len(r['flow_id'])):
@@ -100,11 +100,11 @@ class FlowgrindddRecordFactory():
                     flow = flow_map[int(r['flow_id'][i])][dir]
                     for (key, convert) in keys.iteritems():
                             try:
-                                getattr(flow,key).append(convert(r[key][i]))
+                                flow[key].append(convert(r[key][i]))
                             except KeyError, inst:
                                 warn('Failed to get r["%s"][%u]' %(key,i))
                                 raise inst
-                    flow.size += 1
+                    flow['size'] += 1
 
             return flow_map.values()
 
@@ -119,11 +119,10 @@ class FlowgrindddRecordFactory():
             flows             = group_flows,
             flow_id_list      = lambda r: map(int, r['flow_id']),
             forward_tput_list = lambda r: map(float, r['forward_tput_list']),
-            reverse_tput_list = lambda r: map(float, r['reverse_tput_list'])                        
+            reverse_tput_list = lambda r: map(float, r['reverse_tput_list']),
+            test_start_time   = lambda r: time.mktime(time.strptime(r['test_start_time'][0]))
 
          )
-
-        
 
     def createRecord(self, filename, test):
         return FlowgrindddRecord(filename, self.regexes, self.whats)
