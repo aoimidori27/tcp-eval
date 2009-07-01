@@ -108,6 +108,33 @@ class FlowgrindddRecordFactory():
 
             return flow_map.values()
 
+        def outages(r, min_retr=0, min_time=0, time_abs=1):
+		flow_map = dict()
+		outages = dict()
+		if time_abs: time_abs = time.mktime(time.strptime(r['test_start_time'][0]))
+		for i in range(len(r['begin'])):
+			flow_id, retr, dir = int(r['flow_id'][i]), int(r['retr'][i]), r['direction'][i]
+
+			if flow_id not in flow_map: flow_map[flow_id] = dict()
+			if dir not in flow_map[flow_id]: flow_map[flow_id][dir] = None
+
+			if flow_map[flow_id][dir] is None and retr > 0:
+				flow_map[flow_id][dir] = dict(begin=i, retr=retr)
+			if flow_map[flow_id][dir] is not None:
+				tmp = flow_map[flow_id][dir]
+				if retr > 0:
+					tmp['retr'] = retr
+				else:
+					b, e, re = float(r['begin'][tmp['begin']]), float(r['begin'][i]), int(tmp['retr'])
+					if re >= min_retr and e - b >= min_time:
+						if flow_id not in outages: outages[flow_id] = dict()
+						if dir not in outages[flow_id]: outages[flow_id][dir] = []
+						outages[flow_id][dir].append(dict(begin=b+time_abs,end=e+time_abs,retr=re))
+					flow_map[flow_id][dir] = None
+		return outages
+
+
+
         # phase 2 result calculation
         self.whats = dict(
             # average thruput: just sum up all summary lines 
@@ -120,8 +147,8 @@ class FlowgrindddRecordFactory():
             flow_id_list      = lambda r: map(int, r['flow_id']),
             forward_tput_list = lambda r: map(float, r['forward_tput_list']),
             reverse_tput_list = lambda r: map(float, r['reverse_tput_list']),
-            test_start_time   = lambda r: time.mktime(time.strptime(r['test_start_time'][0]))
-
+            test_start_time   = lambda r: time.mktime(time.strptime(r['test_start_time'][0])),
+            outages	      = outages
          )
 
     def createRecord(self, filename, test):

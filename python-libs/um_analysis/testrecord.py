@@ -71,7 +71,7 @@ class TestRecord:
         """ returns the header as a dictionary """
         return self.header
         
-    def calculate(self, what):
+    def calculate(self, what, **kwargs):
         """
         
         Calculate the given value from parsed values.
@@ -83,7 +83,7 @@ class TestRecord:
             return None
            
         try:
-            return self.whats[what](self.results);
+            return self.whats[what](self.results, **kwargs);
         except KeyError, inst:
             warn("Failed get %s out of %s: KeyError:%s" %(what, self.filename, inst))
             self.valid = False
