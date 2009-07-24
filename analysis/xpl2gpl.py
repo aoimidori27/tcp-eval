@@ -4,7 +4,7 @@
 """xpl2gpl.py -- tcptrace / xplot 2 gnuplot converter
 
 """
-import os, math, optparse, sys, logging
+import os, math, optparse, sys
 from logging import info, debug, warn, error
 from simpleparse import generator
 from simpleparse.parser import Parser
@@ -55,7 +55,7 @@ class xpl2gpl(object):
 	punct	:= 	[!@#$%^&()+=|\{}:;<>,.?/"_]
 	whitespace	:= 	[ \t]
 	string	:= 	( alphanum / punct / whitespace )*, linebreak
-	keyword	:=	[ A-Z]+
+	keyword	:=	([ A-Z]+ / int1) 
 	float1	:=	[0-9]+,".",[0-9]+
 	float2	:=	[0-9]+,".",[0-9]+
 	int1 	:=	[0-9]+
@@ -90,7 +90,7 @@ class xpl2gpl(object):
       parser = generator.buildParser(declaration).parserbyname('root')
       
       gploutput = open ( "%s.gpl" %(basename) , 'w')
-      dataoutput = open ( "%s.data" %(basename) , 'w')
+      dataoutput = open ( "%s.datasets" %(basename) , 'w')
       labelsoutput = open ( "%s.labels" %(basename) , 'w')
 
       datasources = list()
@@ -114,7 +114,7 @@ class xpl2gpl(object):
 	  else:
 	    position = "center"
 	  # write out
-	  labelsoutput.write('set label "%s" at (%s-946684800.000000), %s %s' %(label,xpoint,ypoint,position) )
+	  labelsoutput.write('set label "%s" at (%s-946684800.000000), %s %s\n' %(label,xpoint,ypoint,position) )
 
 	# read colors
 	elif tag == 'color':
