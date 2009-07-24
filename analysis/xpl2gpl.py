@@ -1,16 +1,14 @@
 #! /usr/bin/env python
-# -*- coding: iso-8859-15 -*-
+# -*- coding: utf-8 -*-
 
 """xpl2gpl.py -- tcptrace / xplot 2 gnuplot converter
 
 """
-import os, time, math, tempfile, optparse, sys, os, subprocess, simpleparse, logging, array, mx.TextTools
+import os, math, optparse, sys, logging
 from logging import info, debug, warn, error
 from simpleparse import generator
 from simpleparse.parser import Parser
 from mx.TextTools import TextTools
-from sys import stdin, stdout, stderr
-import pprint, time, profile
 
 class xpl2gpl(object):
   "Class to convert xplot/tcptrace files to gnuplot files"
@@ -52,7 +50,7 @@ class xpl2gpl(object):
 	exit(1)
 
       declaration = declaration = r'''
-	root	:=	timeval,title,xlabel,ylabel,(diamond / text / arrow / line / dot / box / tick / color / linebreak)*,end*
+	root	:=	timeval,title,xlabel,ylabel,(diamond / text / varrow / harrow / line / dline / dot / box / tick / color / linebreak)*,end*
 	alphanum	:= 	[a-zA-Z0-9]
 	punct	:= 	[!@#$%^&()+=|\{}:;<>,.?/"_]
 	whitespace	:= 	[ \t]
@@ -69,8 +67,10 @@ class xpl2gpl(object):
 	ylabel	:= 	'ylabel\n',string
 	linebreak	:=	[ \t]*,( '\n' / '\n\r' ),[ \t]*
 	color	:=	( 'green' / 'yellow' / 'white' / 'orange' / 'blue' / 'magenta' / 'red' / 'purple' / 'pink' )
-	arrow 	:=	( 'darrow' / 'uarrow' / 'larrow' / 'rarrow' ),whitespace,float1,whitespace,int1, linebreak
-	line	:=	( 'line' / 'dline' ),whitespace,float1,whitespace,int1,whitespace,float2,whitespace,int2,linebreak
+	harrow 	:=	( 'larrow' / 'rarrow'),whitespace,float1,whitespace,int1,linebreak
+	varrow 	:=	( 'darrow' / 'uarrow'),whitespace,float1,whitespace,int1,linebreak
+	line	:=	( 'line' ),whitespace,float1,whitespace,int1,whitespace,float2,whitespace,int2,linebreak
+	dline	:=	( 'dline' ),whitespace,float1,whitespace,int1,whitespace,float2,whitespace,int2,linebreak
 	dot 	:=	('dot'),whitespace,float1,whitespace,int1,(whitespace,color)*, linebreak
 	diamond	:=	('diamond'),whitespace,float1,whitespace,int1,(whitespace,color)*,linebreak
 	box		:=	('box'),whitespace,float1,whitespace,int1,(whitespace,color)*,linebreak
@@ -80,12 +80,14 @@ class xpl2gpl(object):
       xplfile = open ( entry ).read()
       basename = os.path.splitext(os.path.basename(entry))[0]
 
+      # debug declaration mode
       if self.options.debug:
 	debugparser = Parser (declaration)
+	import pprint
 	pprint.pprint(debugparser.parse(xplfile))
 	exit(0)
 
-      parser = simpleparse.generator.buildParser(declaration).parserbyname('root')
+      parser = generator.buildParser(declaration).parserbyname('root')
       
       gploutput = open ( "%s.gpl" %(basename) , 'w')
       dataoutput = open ( "%s.data" %(basename) , 'w')
@@ -118,10 +120,10 @@ class xpl2gpl(object):
 	elif tag == 'color':
 	  currentcolor = xplfile[beg:end]	
 
-	# read dot
-	elif tag == 'arrow':
-	  if ('arrow',currentcolor) not in datasources:
-	    datasources.append( ('arrow',currentcolor) )
+	# read l/r arrow
+	elif tag == 'varrow':
+	  if ('varrow',currentcolor) not in datasources:
+	    datasources.append( ('varrow',currentcolor) )
 	  for subtag, subbeg, subend, subparts in subtags:
 	    if subtag == 'float1':
 	      xpoint = xplfile[subbeg:subend]
@@ -129,8 +131,19 @@ class xpl2gpl(object):
 	      ypoint = xplfile[subbeg:subend]
 	    elif subtag == 'color':
 	      currentcolor = xplfile[subbeg:subend]
-	  data.append( ( ('arrow', currentcolor), "%s %s\n" %(xpoint, ypoint) ) )
+	  data.append( ( ('varrow', currentcolor), "%s %s\n" %(xpoint, ypoint) ) )
 
+	elif tag == 'harrow':
+	  if ('harrow',currentcolor) not in datasources:
+	    datasources.append( ('harrow',currentcolor) )
+	  for subtag, subbeg, subend, subparts in subtags:
+	    if subtag == 'float1':
+	      xpoint = xplfile[subbeg:subend]
+	    elif subtag == 'int1':
+	      ypoint = xplfile[subbeg:subend]
+	    elif subtag == 'color':
+	      currentcolor = xplfile[subbeg:subend]
+	  data.append( ( ('harrow', currentcolor), "%s %s\n" %(xpoint, ypoint) ) )
 
 	# read dot
 	elif tag == 'dot':
@@ -198,6 +211,20 @@ class xpl2gpl(object):
 	      y2point = xplfile[subbeg:subend]
 	  data.append( ( ('line',currentcolor), "%s %s\n%s %s\n\n" %(x1point, y1point, x2point, y2point) ) )
 
+	elif tag == 'dline':
+	  if ('dline',currentcolor) not in datasources:
+	    datasources.append( ('dline',currentcolor) )
+	  for subtag, subbeg, subend, subparts in subtags:
+	    if subtag == 'float1':
+	      x1point = xplfile[subbeg:subend]
+	    elif subtag == 'int1':
+	      y1point = xplfile[subbeg:subend]
+	    elif subtag == 'float2':
+	      x2point = xplfile[subbeg:subend]
+	    elif subtag == 'int2':
+	      y2point = xplfile[subbeg:subend]
+	  data.append( ( ('dline',currentcolor), "%s %s\n%s %s\n\n" %(x1point, y1point, x2point, y2point) ) )
+
       # read title
 	elif tag == 'title':
 	  title = xplfile[beg+len("title\n"):end-len("\n")]
@@ -227,6 +254,16 @@ class xpl2gpl(object):
 	  style = "lines"
 	elif datasource[0] == "dot":
 	  style = "dots"
+	elif datasource[0] == "box":
+	  style = "points pt 3"
+	elif datasource[0] == "diamond":
+	  style = "points pt 1"
+	elif datasource[0] == "varrow":
+	  style = "points pt 1"
+	elif datasource[0] == "harrow":
+	  style = "points pt 5"
+	elif datasource[0] == "dline":
+	  style = "linepoints pt 4"
 	else: 
 	  style = "points pt 2"
 	if first == False:
