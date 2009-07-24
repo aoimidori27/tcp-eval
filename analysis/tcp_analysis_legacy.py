@@ -466,7 +466,7 @@ class TcpAnalysis(Analysis):
         
         for key in sorted_labels:
             value = data[key]
-            fh.write("%s" %key)
+            fh.write('"%s"' %key)
             for val in value:
                 fh.write(" %s" %val)
             fh.write("\n")
@@ -578,7 +578,7 @@ class TcpAnalysis(Analysis):
         
         for key in sorted_labels:
             value = data[key]
-            fh.write("%s" %key)
+            fh.write('"%s"' %key)
             for val in value:
                 fh.write(" %s" %val)
             fh.write("\n")
@@ -743,15 +743,12 @@ class TcpAnalysis(Analysis):
         info("Chi-square test passed    : %s" %(chi_p_value > 0.05))
 
         # omnibus test
-	try:
-        	(omnibus_score, omnibus_tail) = scipy.stats.normaltest(data)
-        	omnibus_p_value = scipy.stats.chisqprob(omnibus_score, 2)[0]
-        	info("Omnibus test score        : %f" %omnibus_score)
-        	info("Omnibus test p-value      : %f" %omnibus_p_value)
-        	info("Omnibus test 2-tail       : %f" %omnibus_tail)
-        	info("Omnibus test passed       : %s" %(omnibus_p_value > 0.05))
-	except:
-		info("Omnibus computation raised an exception!")
+        (omnibus_score, omnibus_tail) = scipy.stats.normaltest(data)
+        omnibus_p_value = scipy.stats.chisqprob(omnibus_score, 2)[0]
+        info("Omnibus test score        : %f" %omnibus_score)
+        info("Omnibus test p-value      : %f" %omnibus_p_value)
+        info("Omnibus test 2-tail       : %f" %omnibus_tail)
+        info("Omnibus test passed       : %s" %(omnibus_p_value > 0.05))
         
     
                
@@ -867,7 +864,7 @@ class TcpAnalysis(Analysis):
         self.failed = dict()
 
         # only load flowgrind test records    
-        self.loadRecords(tests=["flowgrinddd","rate"])
+        self.loadRecords(tests=["flowgrind","rate"])
                         
         self.dbcon.commit()
         self.generateHistogram()
