@@ -60,7 +60,7 @@ class Checkout(Application):
 
         # does the command exists?
         if not self.action in self.commands:
-            self.parser.error('Unkown COMMAND %s' %(self.action))
+            self.parser.error('Unknown COMMAND %s' %(self.action))
 
 
     def update_checkout(self):
