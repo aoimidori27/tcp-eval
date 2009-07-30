@@ -97,6 +97,12 @@ class CheckConfig(Application):
 
     def main(self):
         "Main method of image object"
+        try:
+            # must be root
+            requireroot()
+
+        except CommandFailed, exception:
+            error(exception)
 
         self.parse_option()
         self.set_option()
