@@ -84,10 +84,7 @@ class Flowgrindd(RPCService):
             defer.returnValue(-1)
 
         self._config = assoc
-        if self._config['distributed']:
-		self._daemon = "/usr/local/sbin/flowgrindd"
-	else:
-		self._daemon = "/usr/local/sbin/flowgrindd_dd"
+	self._daemon = "/usr/local/sbin/flowgrindd"
 
         if not self._config["port"]: self._config["port"] = 5999
 
