@@ -194,7 +194,7 @@ def test_flowgrind(mrs,
                    flowgrind_cc     = "reno",
                    flowgrind_dump   = False,
                    flowgrind_iface  = "ath0",
-                   flowgrind_bport  = 20000,
+                   flowgrind_bport  = 5999,
                    flowgrind_opts   = "",
                    gzip_dumps       = True,
                    **kwargs ):
@@ -226,10 +226,10 @@ def test_flowgrind(mrs,
 
     dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
 
-    cmd = "flowgrind -O s=TCP_CONG_MODULE=%s -T s=%.3f -p %u -H %s" % (flowgrind_cc,
+    cmd = "flowgrind -O s=TCP_CONG_MODULE=%s -T s=%.3f -H d=%s" % (flowgrind_cc,
                                                          flowgrind_duration,
-                                                         flowgrind_bport,
-                                                         dst_ip)
+                                                         dst_ip,
+							 )
     if flowgrind_opts:
         cmd = " ".join([cmd, flowgrind_opts])
 
