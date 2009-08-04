@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
-import os, sys, stat
+import os, sys, stat, socket
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
 
@@ -11,9 +11,6 @@ from twisted.web import xmlrpc
 
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
-from subprocess import Popen,PIPE
-from time import sleep
-from signal import signal, SIGTERM, SIGINT
 
 class Routelogger(RPCService):
     """Class for managing the route monitor daemon"""
@@ -26,7 +23,7 @@ class Routelogger(RPCService):
         rc = yield self.reread_config()
         
         rc = self.stop()
-	rc = self.start(logDir) and rc
+        rc = self.start(logDir) and rc
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
@@ -63,7 +60,7 @@ class Routelogger(RPCService):
         self._config = None
         self._daemon = "/sbin/rtmon"
         self._pidfile = "/tmp/routeLogger.pid"
-	self._hostname = Popen('hostname', stdout=PIPE).stdout.readline().rstrip()
+        self._hostname = socket.gethostname()
     
     
     @defer.inlineCallbacks
@@ -77,7 +74,7 @@ class Routelogger(RPCService):
         defer.returnValue(0)
                                    
 
-    #@defer.inlineCallbacks
+    @defer.inlineCallbacks
     def start(self, logdir):
         """ This function invokes start-stop daemon to bring up the route logger"""
         if not os.path.exists(logdir):
@@ -91,23 +88,22 @@ class Routelogger(RPCService):
 
         cmd = [ "start-stop-daemon", "--start", "--background", 
                 "--make-pidfile", "--pidfile", self._pidfile,
-		"--chuid", "lukowski",
+                "--chuid", "lukowski",
                 "--exec", self._daemon,
                 "--", "file", logdir + "/" + self._hostname + ".log"]
-	os.waitpid(Popen(cmd, shell=False).pid, 0)
+        yield twisted_call(cmd, shell=False)
     	info("started routelogger")
     	info(cmd)
-        return 0
+        defer.returnValue(0)
 
-    #@defer.inlineCallbacks
+    @defer.inlineCallbacks
     def stop(self):
         """ This function invokes start-stop-daemon to stop routeLogger"""
 
         cmd = [ "start-stop-daemon", "--stop",
                 "--pidfile", self._pidfile]
-	try:
-		os.waitpid(Popen(cmd, shell=False).pid, 0)
-	except OSError:
-		pass
-    	info("stopped routelogger")
-	return 0
+	rc = yield twisted_call(cmd)
+        if (rc != 0):
+            error("Failed to stop rtmon!!!")
+        info("stopped routelogger")
+        defer.returnValue(0)
