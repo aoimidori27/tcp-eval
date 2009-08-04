@@ -2,7 +2,7 @@
 
 PROJECT=MeshConf
 DEPLOYPATH=/var/lib/tomcat5/webapps/$PROJECT
-WARPATH=vmeshhost1:/mnt/localscratch/eclipse-build/build/
+WARPATH=/home/eclipse-build/build/
 
 function usage ()
 {
