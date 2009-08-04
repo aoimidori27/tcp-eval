@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
-import os, sys
+import os, sys, stat
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
 
@@ -14,7 +14,6 @@ from um_twisted_functions import twisted_execute, twisted_call
 from subprocess import Popen,PIPE
 from time import sleep
 from signal import signal, SIGTERM, SIGINT
-
 
 class Routelogger(RPCService):
     """Class for managing the route monitor daemon"""
@@ -85,6 +84,7 @@ class Routelogger(RPCService):
 		info("%s does not exist. Trying to create" % logdir)
 		try:
 			os.mkdir(logdir)
+			os.chmod(logdir, os.stat(logdir)[0] | stat.S_IWOTH)
 		except OSError:
 			error("Logdir creation failed")
 			return 1
@@ -105,6 +105,9 @@ class Routelogger(RPCService):
 
         cmd = [ "start-stop-daemon", "--stop",
                 "--pidfile", self._pidfile]
-	os.waitpid(Popen(cmd, shell=False).pid, 0)
+	try:
+		os.waitpid(Popen(cmd, shell=False).pid, 0)
+	except OSError:
+		pass
     	info("stopped routelogger")
 	return 0
