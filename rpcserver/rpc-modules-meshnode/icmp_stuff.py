@@ -59,9 +59,11 @@ class Icmp_stuff(RPCService):
 
     def start(self):
       
-	os.waitpid(Popen(["/sbin/sysctl", "net.ipv4.tcp_retries2=999"], shell=False).pid, 0)
-	os.waitpid(Popen(["/sbin/sysctl", "net.ipv4.conf.all.accept_redirects=0"], shell=False).pid, 0)
-	os.waitpid(Popen(["/sbin/sysctl", "net.ipv4.conf.all.send_redirects=0"], shell=False).pid, 0)
+	Popen(["/sbin/route", "del", "default"], shell=False)
+	Popen(["/sbin/route", "del", "-net", "192.168.9.0/24", "dev", "ath0"], shell=False)
+	Popen(["/sbin/sysctl", "net.ipv4.tcp_retries2=999"], shell=False)
+	Popen(["/sbin/sysctl", "net.ipv4.conf.all.accept_redirects=0"], shell=False)
+	Popen(["/sbin/sysctl", "net.ipv4.conf.all.send_redirects=0"], shell=False)
 
 
     def stop(self):
