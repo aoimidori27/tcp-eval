@@ -84,7 +84,7 @@ class Routelogger(RPCService):
 			os.chmod(logdir, os.stat(logdir)[0] | stat.S_IWOTH)
 		except OSError:
 			error("Logdir creation failed")
-			return 1
+			defer.returnValue(1)
 
         cmd = [ "start-stop-daemon", "--start", "--background", 
                 "--make-pidfile", "--pidfile", self._pidfile,
