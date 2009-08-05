@@ -44,13 +44,13 @@ for (my $i=0; $i<@stdin; $i++) {
 # The following line would ideally be used instead, however it seems
 # to be too greedy with its escaping...
 #	$stdin[$i] =~ escapeHTML($stdin[$i]);
-	$stdin[$i] =~ s/^([A-Z].+)\n+/<\/pre><h3 class="man">$1<\/h3><pre>/g;
-	$stdin[$i] =~ s/\s([^\s]+)\(([1-9])\)/ <a href=\"..\/man$2\/$1.$2.html\">$1($2)<\/a>/g;
+	$stdin[$i] =~ s/^([A-Z].+)\n+/<\/pre><h3 class="man">$1<\/h3><pre>\n/g;
+	$stdin[$i] =~ s/\s([^\s]+)\(([1-9])\)/ <br\/><a href=\"..\/man$2\/$1.$2.html\">$1($2)<\/a>/g;
 	$stdin[$i] =~ s/\s[<]?([a-zA-Z]+):\/\/([^\s>]+)[>]?/ <a href=\"$1:\/\/$2\">$1:\/\/$2<\/a>/g;
 	$stdin[$i] =~ s/\xe2\x94\xe2\x94\x82/|/g;		# pipe
 	$stdin[$i] =~ s/\xe2\x80\xe2\x80\x98/&#8216;/g; 	# left quote
         $stdin[$i] =~ s/\xe2\x80\xe2\x80\x99/&#8217;/g;		# right quote
-	if ($i>0 && $stdin[$i] =~ /^\s*<\/pre>/) {
+	if ($i>0 && $stdin[$i] =~ /^\s*<\/pre>\n/) {
 		# Remove blank lines preceding a line starting with </pre>
 		if ($stdin[$i-1] =~ /^\s*$/) {
 			splice(@stdin, $i-1, 1);
@@ -62,8 +62,8 @@ for (my $i=0; $i<@stdin; $i++) {
 unshift(@stdin, '<?php 
 	include($_SERVER["DOCUMENT_ROOT"] . "/incl/umic.php");
 	UmicHeader("Man page of '.$title.'");
-	?>');
-unshift(@stdin, $title);
+	?><pre>');
+# unshift(@stdin, $title);
 push(@stdin, '</pre>
 	<?php UmicFooter();?>
 ');
