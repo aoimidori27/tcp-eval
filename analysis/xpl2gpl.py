@@ -4,7 +4,7 @@
 """xpl2gpl.py -- tcptrace / xplot 2 gnuplot converter
 
 """
-import os, math, optparse, sys
+import os, math, optparse, sys, subprocess
 from logging import info, debug, warn, error
 from simpleparse import generator
 from simpleparse.parser import Parser
@@ -19,26 +19,62 @@ class xpl2gpl(object):
     usage = "usage: %prog [options] <file1> <file2> .."
     self.optparser = optparse.OptionParser()
     self.optparser.set_usage(usage)
-    self.optparser.set_defaults(debug = False, title = 'title', xlabel = 'x', ylabel = 'y', execute = False)
-
-    self.optparser.add_option("-t", "--title", metavar = "SUF",
-			    action = "store", dest = "title",
-			    help = "gnuplot title [default: %default]")
-    self.optparser.add_option("-x", "--xlabel", metavar = "SUF",
-			    action = "store", dest = "xlabel",
-			    help = "gnuplot x label [default: %default]")
-    self.optparser.add_option("-y", "--ylabel", metavar = "SUF",
-			    action = "store", dest = "ylabel",
-			    help = "gnuplot y label [default: %default]")
+    self.optparser.set_defaults(debug = False, title = '', xlabel = '', ylabel = '', includefile ='', terminaltype = 'x11', keyoptions = '', terminaloptions = '', labeloptions = '', execute = False, defaultstyle = 'points pt 2',linestyle = 'lines',dotstyle = 'dots',boxstyle = 'points pt 3',diamondstyle = 'points pt 1',varrowstyle = 'points pt 1', harrowstyle = 'points pt 5',dlinestyle = 'linepoints pt 4')
 
     self.optparser.add_option("-d", "--debug", 
 			    action = "store_true", dest = "debug",
 			    help = "debug parsing [default: %default]")
-
     self.optparser.add_option("-e", "--execute-gnuplot", 
 			    action = "store_true", dest = "execute",
 			    help = "execute gnuplot after conversion [default: %default]")
-
+    self.optparser.add_option("--title", metavar = "text",
+			    action = "store", dest = "title",
+			    help = "gnuplot title [default: use xplot title]")
+    self.optparser.add_option("--xlabel", metavar = "text",
+			    action = "store", dest = "xlabel",
+			    help = "gnuplot x label [default: use xplot xlabel]")
+    self.optparser.add_option("--ylabel", metavar = "text",
+			    action = "store", dest = "ylabel",
+			    help = "gnuplot y label [default: use yplot xlabel]")
+    self.optparser.add_option("-a", "--includefile", metavar = "filename",
+			    action = "store", dest = "includefile",
+			    help = "include additional gnuplot file [default: none]")
+    self.optparser.add_option("-t", "--terminal", metavar = "terminaltype",
+			    action = "store", dest = "terminaltype",
+			    help = "use terminal type [default: x11] other possible selections: aqua, latex, mp, pdf, png, postscript, svg, etc")
+    self.optparser.add_option("-o", "--terminaloptions", metavar = "terminaloptions",
+			    action = "store", dest = "terminaloptions",
+			    help = "use terminal options [default: none]")
+    self.optparser.add_option("-l", "--labeloptions", metavar = "labeloptions",
+			    action = "store", dest = "labeloptions",
+			    help = "use label options [default: none]")
+    self.optparser.add_option("--keyoptions", metavar = "keyoptions",
+			    action = "store", dest = "defaultstyle",
+			    help = "use key options [default: nokey]")
+    self.optparser.add_option("--defaultstyle", metavar = "plotoptions",
+			    action = "store", dest = "defaultstyle",
+			    help = "use style options [default: %default]")
+    self.optparser.add_option("--linestyle", metavar = "plotoptions",
+			    action = "store", dest = "linestyle",
+			    help = "use style options [default: %default]")
+    self.optparser.add_option("--dotstyle", metavar = "plotoptions",
+			    action = "store", dest = "dotstyle",
+			    help = "use style options [default: %default]")
+    self.optparser.add_option("--boxstyle", metavar = "plotoptions",
+			    action = "store", dest = "boxstyle",
+			    help = "use style options [default: %default]")
+    self.optparser.add_option("--diamondstyle", metavar = "plotoptions",
+			    action = "store", dest = "diamondstyle",
+			    help = "use style options [default: %default]")
+    self.optparser.add_option("--varrowstyle", metavar = "plotoptions",
+			    action = "store", dest = "varrowstyle",
+			    help = "use style options [default: %default]")
+    self.optparser.add_option("--harrowstyle", metavar = "plotoptions",
+			    action = "store", dest = "harrowstyle",
+			    help = "use style options [default: %default]")
+    self.optparser.add_option("--dlinestyle", metavar = "plotoptions",
+			    action = "store", dest = "dlinestyle",
+			    help = "use style options [default: %default]")
   def main(self):
 
     (self.options, self.args) = self.optparser.parse_args()
@@ -114,7 +150,7 @@ class xpl2gpl(object):
 	  else:
 	    position = "center"
 	  # write out
-	  labelsoutput.write('set label "%s" at (%s-946684800.000000), %s %s\n' %(label,xpoint,ypoint,position) )
+	  labelsoutput.write('set label "%s" at (%s-946684800.000000), %s %s %s\n' %(label,xpoint,ypoint,position,self.options.labeloptions) )
 
 	# read colors
 	elif tag == 'color':
@@ -227,12 +263,21 @@ class xpl2gpl(object):
 
       # read title
 	elif tag == 'title':
-	  title = xplfile[beg+len("title\n"):end-len("\n")]
+	  if self.options.title == '':
+	    title = xplfile[beg+len("title\n"):end-len("\n")]
+	  else:
+	    title = self.options.title
       # read axis labels
 	elif tag == 'xlabel':
-	  xlabel = xplfile[beg+len("xlabel\n"):end-len("\n")]
+	  if self.options.xlabel == '':
+	    xlabel = xplfile[beg+len("xlabel\n"):end-len("\n")]
+	  else:
+	    xlabel = self.options.xlabel
 	elif tag == 'ylabel':
-	  ylabel = xplfile[beg+len("ylabel\n"):end-len("\n")]
+	  if self.options.xlabel == '':
+	    ylabel = xplfile[beg+len("ylabel\n"):end-len("\n")]
+	  else:
+	    ylabel = self.options.ylabel
 	  
 
 
@@ -243,29 +288,35 @@ class xpl2gpl(object):
       gploutput.write('set format x "%.0f"\n')
       gploutput.write('set format y "%.0f"\n')
       gploutput.write('set xdata time\n')
-      gploutput.write('set nokey\n')
+      if self.options.keyoptions == '':
+	gploutput.write('set nokey\n')
+      else:
+	gploutput.write('set key %s\n' %self.options.keyoptions)
       gploutput.write('load "%s.labels"\n' %basename)
+      gploutput.write('\n')
+      if self.options.includefile != '':
+	gploutput.write('#load include file\nload "%s"\n' %self.options.includefile)
       gploutput.write('plot ')
       
       #iterate over data sources
       first = True
       for index,datasource in enumerate(datasources):
 	if datasource[0] == "line":
-	  style = "lines"
+	  style = self.options.linestyle
 	elif datasource[0] == "dot":
-	  style = "dots"
+	  style = self.options.dotstyle
 	elif datasource[0] == "box":
-	  style = "points pt 3"
+	  style = self.options.boxstyle
 	elif datasource[0] == "diamond":
-	  style = "points pt 1"
+	  style = self.options.diamondstyle
 	elif datasource[0] == "varrow":
-	  style = "points pt 1"
+	  style = self.options.varrowstyle
 	elif datasource[0] == "harrow":
-	  style = "points pt 5"
+	  style = self.options.harrowstyle
 	elif datasource[0] == "dline":
-	  style = "linepoints pt 4"
+	  style = self.options.dlinestyle
 	else: 
-	  style = "points pt 2"
+	  style = self.options.defaultstyle
 	if first == False:
 	  gploutput.write(', ')
 	gploutput.write('"%s.datasets" index %s using ($1-946684800.0):2 with %s' %(basename,index,style ) )
@@ -283,8 +334,9 @@ class xpl2gpl(object):
 
 
     #output options 
-      gploutput.write('set term postscript\n')
-      gploutput.write('set output "%s.ps"\n' %basename)
+
+      gploutput.write('set term %s %s\n' %(self.options.terminaltype,self.options.terminaloptions) )
+      gploutput.write('set output "%s.%s"\n' %(basename,self.options.terminaltype) )
       gploutput.write('replot\n')
       gploutput.write('pause -1\n')
 
@@ -292,6 +344,8 @@ class xpl2gpl(object):
       dataoutput.close()
       labelsoutput.close()
 
+      if self.options.execute:
+	os.system("gnuplot  -persist %s.gpl &" %basename)
   
 if __name__ == "__main__":
   xpl2gpl().main()
