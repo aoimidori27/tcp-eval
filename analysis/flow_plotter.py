@@ -83,7 +83,7 @@ class FlowPlotter(Application):
         
         # tput
         p = UmLinePlot(plotname+'_tput')
-        p.setYLabel(r"$\\Mbps$")
+        p.setYLabel(r"$\\SI{\Mbps}$")
         p.setXLabel("time")
         p.plot(valfilename, "Throughput", using="2:3", linestyle=2)
         p.plot(valfilename, "reverse Throughput", using="2:4", linestyle=3)
@@ -102,7 +102,7 @@ class FlowPlotter(Application):
 
         # rto, rtt
         p = UmLinePlot(plotname+'_rto_rtt')
-        p.setYLabel(r"$\\ms$")
+        p.setYLabel(r"$\\SI{\milli\second}")
         p.setXLabel("time")
         p.plot(valfilename, "RTO", using="2:9", linestyle=2)
         p.plot(valfilename, "RTT", using="2:8", linestyle=3)

@@ -167,7 +167,7 @@ class TcpAnalysis(Analysis):
         fh.close()
 
         p = UmLinePlot(plotname)
-        p.setYLabel(r"$\\Mbps$")
+        p.setYLabel(r"$\\SI{\Mbps}$")
         if times:
             p.setXLabel("Time")
             p.setXDataTime()
@@ -193,7 +193,7 @@ class TcpAnalysis(Analysis):
         # get runs
         dbcur.execute('''
         SELECT DISTINCT runNo, run_label
-        FROM tests ORDER BY runNo'''
+        ROM tests ORDER BY runNo'''
         )
         runs = dict()
         for row in dbcur:
@@ -212,7 +212,7 @@ class TcpAnalysis(Analysis):
 
         outdir = self.options.outdir
         p = UmLinePlot("tput_over_time_per_run")
-        p.setYLabel(r"$\\Mbps$")
+        p.setYLabel(r"$\\SI{\Mbps}$")
 
 
         for runNo in runs.keys():
@@ -478,7 +478,7 @@ class TcpAnalysis(Analysis):
 
         g = UmHistogram(plotname)
 
-        g.setYLabel(r"Throughput in $\\Mbps$")
+        g.setYLabel(r"Throughput in $\\SI{\Mbps}$")
         g.setClusters(limit)
         g.setYRange("[ 0 : * ]")
 
@@ -590,7 +590,7 @@ class TcpAnalysis(Analysis):
 
         g = UmHistogram(plotname)
 
-        g.setYLabel(r"Throughput in $\\Mbps$")
+        g.setYLabel(r"Throughput in $\\SI{\Mbps}$")
         g.setClusters(limit)
         g.setYRange("[ 0 : * ]")
 
@@ -653,7 +653,7 @@ class TcpAnalysis(Analysis):
 
         g = UmGnuplot(plotname)
 
-        g.setXLabel(r"Throughput in $\\Mbps$")
+        g.setXLabel(r"Throughput in $\\SI{\Mbps}$")
         g.setYLabel("Fraction of Pairs")
         
         g.plot('"%s" using 1:2 title "1-Hop" ls 1 with steps' % valfilename)
@@ -788,7 +788,7 @@ class TcpAnalysis(Analysis):
         fh.close()
 
         p = UmBoxPlot(plotname)
-        p.setXLabel(r"Throughput in $\\Mbps$")
+        p.setXLabel(r"Throughput in $\\SI{\Mbps}$")
         p.setYLabel("Frequency")
         p.plot(valfilename,"Frequency", using="1:2", linestyle=1)
 
