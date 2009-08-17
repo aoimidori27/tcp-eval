@@ -198,7 +198,7 @@ class Chroot(Application):
             self.umount()
         
         except ImageException, exception:
-            error(exception.msg)
+            error(exception)  #before it was "exception.msg"
         except CommandFailed, exception:
             error(exception)
 

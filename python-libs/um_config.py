@@ -101,6 +101,7 @@ image_info = dict(
                          "/tools/twisted/branches/um-version" : "tools/twisted",
                          "/tools/libnfnetlink/trunk" : "tools/libnfnetlink",
                          "/tools/libnetfilter_queue/trunk" : "tools/libnetfilter_queue",
+                         "/tools/iw/trunk" : "tools/iw",
                          "/scripts/python-libs" : "scripts/python-libs",
                          "/scripts/rpcserver" : "scripts/rpcserver",
                          "/scripts/mesh" : "scripts/mesh",

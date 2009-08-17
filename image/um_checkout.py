@@ -25,6 +25,7 @@ class Checkout(Application):
         # object variables
         self.commands = ('update', 'status')
         self.action = ''
+        self.image_types = list()
 
         # initialization of the option parser
         usage = "usage: %prog [options] COMMAND \n" \
@@ -44,6 +45,9 @@ class Checkout(Application):
         self.parser.add_option("-L", "--nolinks",
                                action = "store_false", dest = "links",
                                help = "do not consider links in /usr/local/[s]bin")
+        self.parser.add_option("-I", "--image_type", metavar = "TYPE",
+                               action = "store", dest = "image_type", choices = Image.types(),
+                               help = "Only work on image of given type given")
 
 
     def set_option(self):
@@ -62,6 +66,12 @@ class Checkout(Application):
         if not self.action in self.commands:
             self.parser.error('Unknown COMMAND %s' %(self.action))
 
+        # restrict image list or use all image types available
+        if self.options.image_type:
+            self.image_types.append(self.options.image_type)
+	else:
+            self.image_types = Image.types()
+
 
     def update_checkout(self):
         "Update checkout within the images"
@@ -69,7 +79,7 @@ class Checkout(Application):
         # allow group to write and exec files
         os.umask(0002)
 
-        for imagetype in Image.types():
+        for imagetype in self.image_types:
             image = Image(imagetype)
             
             svnmappings = image.getSvnMappings()
@@ -100,7 +110,7 @@ class Checkout(Application):
         # allow group to write and exec files
         os.umask(0002)
 
-        for imagetype in Image.types():
+        for imagetype in self.image_types:
             image = Image(imagetype)
             
             scriptmappings = image.getScriptMappings()
@@ -145,7 +155,7 @@ class Checkout(Application):
     def status_checkout(self):
         "Check the status of the checkout within the images"
 
-        for imagetype in Image.types():
+        for imagetype in self.image_types:
             image = Image(imagetype)
             
             svnmappings = image.getSvnMappings()
@@ -166,7 +176,7 @@ class Checkout(Application):
 
     def status_links(self):
         "Check the symbolic links within the images"
-        for imagetype in Image.types():
+        for imagetype in self.image_types:
             image = Image(imagetype)
             
             scriptmappings = image.getScriptMappings()
