@@ -95,7 +95,7 @@ class Analysis(Application):
         
 
         # testnames are only valid with plain text and numbers
-        regex = re.compile("^i(\d+)_s(\d+)_r(\d+)_test_([a-z,0-9,A-Z]+)$")
+	regex = re.compile("^i(\d+)_s(\d+)_r(\d+)_(\w+)$")
         count = 0
         failed = []
 
@@ -107,7 +107,7 @@ class Analysis(Application):
                 iterationNo = int(groups[0])
                 scenarioNo  = int(groups[1])
                 runNo       = int(groups[2])
-                test = groups[3]
+                test 	    = groups[3]
 
                 # filter tests
                 if tests and not test in tests:
