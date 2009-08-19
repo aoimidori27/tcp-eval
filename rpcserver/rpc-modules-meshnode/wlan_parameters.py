@@ -209,12 +209,3 @@ class Wlan_parameters(RPCService):
             
                                                         
         defer.returnValue(final_rc)
-
-
-
-
-
-
-
-        
-        
