@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import os.path
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
 
@@ -126,15 +127,20 @@ class Wlan_parameters(RPCService):
             channel    = config["channel"]
             txpower    = config["txpower"]
             mcast_rate = config["mcast_rate"]
-	    driver     = None
-
-	    f = open("/sys/class/net/" + interface + "/uevent", "r")
-	    for line in f.readlines():
-	    	(key, driver) = line.split('=')
-		if key == "PHYSDEVDRIVER": break
-
+            driver     = None
 
             stderr = "";
+
+            uevent_path="/sys/class/net/%s/uevent" % interface
+            if not os.path.exists(uevent_path):
+                stderr = "device %s does not exist!" % interface
+                rc = 1
+            else:
+                f = open("/sys/class/net/" + interface + "/uevent", "r")
+                for line in f.readlines():
+                    (key, driver) = line.split('=')
+                    if key == "PHYSDEVDRIVER": break
+                f.close()
 
             rc = yield self.iwcmd("iwconfig", config, "essid")
             if rc != 0:
