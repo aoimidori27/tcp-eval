@@ -58,6 +58,7 @@ function makedev() {
 
    # rtc
    mknod $INITRD_TMP/dev/rtc c 10 135
+   mknod $INITRD_TMP/dev/rtc0 c 254 0
 }
 
 # filecopy "$files" "$searchpath" "$dstdir"
