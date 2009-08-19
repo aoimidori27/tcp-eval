@@ -127,7 +127,7 @@ class UmGnuplot():
         gc.collect()
         
         info("Generating %s" %pdffilename)
-        cmd = ["gnuplot2pdf.py", "-f", "-p", pdffilename]
+        cmd = ["um_gnuplot2pdf", "-f", "-p", pdffilename]
         if cfgfile:
             cmd.extend(["-c", cfgfile])
         if verbose:
