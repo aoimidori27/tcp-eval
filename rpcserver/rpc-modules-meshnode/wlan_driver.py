@@ -89,6 +89,16 @@ class Wlan_driver(RPCService):
             return driver
 
     @defer.inlineCallbacks
+    def ath5k_hack(self):
+        """ Workaround to delete autocreated interfaces """
+        created_interfaces  = [ "wlan0", "wlan1" ]
+        for interface in created_interfaces:
+            cmd = [ "iw", "dev", interface, "del" ]
+            (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
+            if (rc != 0):
+                error("ath5k_hack(): Command failed with RC=%d", rc)
+
+    @defer.inlineCallbacks
     def start(self):
         """ This function loads the driver module. """
         modulename = self.getModuleName(self._config['driver'])       
@@ -104,8 +114,12 @@ class Wlan_driver(RPCService):
             error("wlan_device.start(): Command failed with RC=%d", rc)
             for line in stderr.splitlines():
                 error(" %s" %line)
+        else:
+            if modulename == "ath5k":
+                yield self.ath5k_hack()
         yield self._parent._dbpool.startedService(self._config,
                                                   rc, message=stderr)
+              
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
