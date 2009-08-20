@@ -105,7 +105,7 @@ class Wlan_driver(RPCService):
 
         cmd = [ "/sbin/modprobe", modulename ]
         if self._config['opt_args']:
-            cmd.extend(self._config['opt_args'])
+            cmd.append(self._config['opt_args'])
             
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
         if len(stdout):
