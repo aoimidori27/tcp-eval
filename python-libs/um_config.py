@@ -40,6 +40,7 @@ image_info = dict(
                          "/tools/xen/trunk" : "tools/xen",
                          "/tools/libnetfilter_queue/trunk" : "tools/libnetfilter_queue",
                          "/tools/libnfnetlink/trunk" : "tools/libnfnetlink",
+                         "/tools/git/trunk" : "tools/git",
                          "/boot/bios/trunk" : "boot/bios",
                          "/boot/etherboot/trunk" : "boot/etherboot",
                          "/scripts/python-libs" : "scripts/python-libs",
