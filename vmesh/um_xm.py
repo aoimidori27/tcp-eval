@@ -353,11 +353,12 @@ class Xen(Application):
             # get vmrouter reservationss: 
             if self.dbconn:
                 nodeset = ",".join(map(lambda s: "'"+s+"'", sorted_keyset))
-                cursor = self.dbconn.cursor()
-                cursor.execute("SELECT nodes.name,created_by FROM nodes,nodes_vmesh WHERE nodes.nodeID=nodes_vmesh.nodeID AND nodes.name IN (%s)" %nodeset)
-                for row in cursor.fetchall():
-                    (key, value) = row
-                    vm_all[key]['user'] = value
+                if nodeset != "":
+                    cursor = self.dbconn.cursor()
+                    cursor.execute("SELECT nodes.name,created_by FROM nodes,nodes_vmesh WHERE nodes.nodeID=nodes_vmesh.nodeID AND nodes.name IN (%s)" %nodeset)
+                    for row in cursor.fetchall():
+                        (key, value) = row
+                        vm_all[key]['user'] = value
 
             # print infos
             print "Name          Host      User                 Mem State  Time"
