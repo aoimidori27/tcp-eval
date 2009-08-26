@@ -6,6 +6,7 @@ import os
 import os.path
 import sets
 import dircache
+import threading
 from logging import info, debug, warn, error
 
 # umic-mesh imports
@@ -31,7 +32,7 @@ class Checkout(Application):
         usage = "usage: %prog [options] COMMAND \n" \
                 "where  COMMAND := { status | update }"
         self.parser.set_usage(usage)
-        self.parser.set_defaults(checkout = True, links = True)
+        self.parser.set_defaults(checkout = True, links = True, fast = False)
 
         self.parser.add_option("-c", "--checkout",
                                action = "store_true", dest = "checkout",
@@ -48,7 +49,9 @@ class Checkout(Application):
         self.parser.add_option("-I", "--image_type", metavar = "TYPE",
                                action = "store", dest = "image_type", choices = Image.types(),
                                help = "Only work on image of given type given")
-
+        self.parser.add_option("-f", "--fast",
+                               action = "store_true", dest = "fast",
+                               help = "Work concurrently on multiple images")
 
     def set_option(self):
         "Set options"
@@ -73,13 +76,13 @@ class Checkout(Application):
             self.image_types = Image.types()
 
 
-    def update_checkout(self):
+    def update_checkout(self, image_types):
         "Update checkout within the images"
 
         # allow group to write and exec files
         os.umask(0002)
 
-        for imagetype in self.image_types:
+        for imagetype in image_types:
             image = Image(imagetype)
             
             svnmappings = image.getSvnMappings()
@@ -152,10 +155,10 @@ class Checkout(Application):
                         warn("Recreating of the link %s failed" %(origfile))
 
 
-    def status_checkout(self):
+    def status_checkout(self, image_types):
         "Check the status of the checkout within the images"
 
-        for imagetype in self.image_types:
+        for imagetype in image_types:
             image = Image(imagetype)
             
             svnmappings = image.getSvnMappings()
@@ -215,9 +218,24 @@ class Checkout(Application):
         self.parse_option()
         self.set_option()
 
-        # call the corresponding method
-        if self.options.checkout:
-            eval("self.%s_checkout()" %(self.action))
+        # use fast version
+        if self.options.fast:
+            threadlist = list()
+            # start each image in its own thread
+            for image_type in self.image_types:
+                action = eval("self.%s_checkout" %(self.action))
+                thread = threading.Thread(target=action, args=((image_type,),))
+                threadlist.append(thread)
+                thread.start()
+            # wait for threads to finish
+            for thread in threadlist:
+                thread.join()
+        else:
+            # slow: call the corresponding method serially
+            if self.options.checkout:
+                eval("self.%s_checkout(self.image_types)" %(self.action))
+
+        # doing link operations
         if self.options.links:
             eval("self.%s_links()" %(self.action)) 
 
