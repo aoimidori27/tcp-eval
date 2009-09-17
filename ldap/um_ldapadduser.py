@@ -216,7 +216,7 @@ automountInformation: -fstype=nfs,rw,hard,intr,nodev,exec,nosuid,relatime,rsize=
             info("Added user %s to group %s" % (llastname, gr))
         
         # ----------> create home directory
-        #call("su %s -c exit" % llastname)
+        call("su %s -c exit" % llastname)
 
         # ----------> close connection and remove temp files
         l.unbind_s()
