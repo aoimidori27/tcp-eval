@@ -1,17 +1,16 @@
 #!/bin/bash -e 
 
 
-if [ -n "$1" ]; then
-	if [ "$1" = --help ]; then
-		echo "Usage: apticron [CHROOTDIR]"
-		echo "Mails a list of packaged that are pending-upgrade to the"
-		echo "email address specified in /etc/apticron/apticron.conf"
-		exit 1
-	fi
-	CHROOTDIR=$1
-fi	
+if [ "$1" = --help ]; then
+	echo "Usage: apticron IMAGETYPE VERSION"
+	echo "Mails a list of packaged that are pending-upgrade to the"
+	echo "email address specified in /etc/apticron/apticron.conf"
+	exit 1
+fi
 
-CHROOTDIR=$1
+IMAGETYPE=$1
+VERSION=$2
+CHROOTDIR=/opt/umic-mesh/images/$IMAGETYPE/$VERSION
 
 APTOPTIONS="-o Dir::State=$CHROOTDIR/var/lib/apt -o Dir::Etc=$CHROOTDIR/etc/apt -o Dir::Cache=$CHROOTDIR/var/cache/apt"
 
@@ -84,7 +83,7 @@ apticron report [`/bin/date -R`]
 
 apticron has detected that some packages need upgrading on: 
 
-	$SYSTEM $ADDRESSES chroot: $CHROOTDIR
+	$SYSTEM $ADDRESSES IMAGE: $IMAGE VERSION: $HARDY
 
 The following packages are currently pending an upgrade:
 
@@ -140,6 +139,6 @@ simulated by issuing the command:
 apticron
 EOF
 
-   ) 2>&1 | /usr/bin/mailx -s "Debian package updates on `/bin/hostname` chroot: $CHROOTDIR" $EMAIL 
+   ) 2>&1 | /usr/bin/mailx -s "Debian package updates on `/bin/hostname` IMAGE: $IMAGETYPE VERSION: $VERSION" $EMAIL 
 
 fi

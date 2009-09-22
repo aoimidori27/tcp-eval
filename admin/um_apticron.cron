@@ -1,0 +1,27 @@
+#!/bin/sh 
+
+ONLYDEFAULT=TRUE
+
+RANGE=3600
+NUMBER=`od -vAn -N2 -tu4 < /dev/urandom`
+
+NUMBER=`expr $NUMBER "%" $RANGE`
+# sleep $NUMBER
+test -x /usr/local/bin/um_apticron || exit 0
+
+for IMAGETYPE in $(ls /opt/umic-mesh/images); do
+
+	if [ "$ONLYDEFAULT" = "TRUE" ]; then 
+		/usr/local/bin/um_apticron $IMAGETYPE default
+	
+	else
+		for VERSION in $(ls /opt/umic-mesh/images/$IMAGETYPE); do
+			# dont check symbolic links and non debian images
+			if [ ! -L /opt/umic-mesh/images/$IMAGETYPE/$VERSION ] && [ -f /opt/umic-mesh/images/$IMAGETYPE/$VERSION/etc/debian_version ]; then
+				/usr/local/bin/um_apticron $IMAGETYPE $VERSION
+			fi
+		done
+	fi
+done
+
+exit 0
