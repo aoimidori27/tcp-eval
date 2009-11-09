@@ -109,11 +109,11 @@ class Wlan_devices(RPCService):
         for config in self._configs:
             devnum = re.compile("^(?:wmaster|wifi)(\d)$").match(config["wlandev"]).group(1)
             cmd = None
-            if os.path.exists("/sys/class/net/wmaster" + devnum):
+            if os.path.exists("/sys/class/ieee80211/phy" + devnum):
                 # ath5k driver has no ahdemo mode, switch to ibss mode
                 if config["wlanmode"] == "ahdemo": 
                     config["wlanmode"] = "adhoc"
-                phy = glob.glob("/sys/class/net/wmaster"+devnum + "/device/ieee80211*")[0].split(":")[1]
+                phy = "phy" + devnum
                 cmd = [ "iw", "phy", phy, "interface", "add", config["vap"], "type", config["wlanmode"] ]
             else:
                 cmd = [ "wlanconfig", config["vap"], "create", "wlandev",  config["wlandev"], "wlanmode", config["wlanmode"] ]
