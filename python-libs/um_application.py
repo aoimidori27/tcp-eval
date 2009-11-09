@@ -71,7 +71,7 @@ class Application(object):
             syslog_host = (self.options.server, 514)
             syslog_facility = logging.handlers.SysLogHandler.LOG_DAEMON
             syslog_format = self.parser.get_prog_name() + \
-                            "%(levelname)s: %(message)s"
+                            "[%(levelname)s]: %(message)s"
             syslog_Handler = logging.handlers.SysLogHandler(
                                 syslog_host, syslog_facility)
             syslog_Handler.setFormatter(logging.Formatter(syslog_format))
