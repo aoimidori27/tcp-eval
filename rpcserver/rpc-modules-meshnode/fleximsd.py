@@ -64,7 +64,7 @@ class Fleximsd(RPCService):
         self._name = "fleximsd"
         self._config = None
         self._configfile = None
-        self._daemon = "./fleximsd"
+        self._daemon = "/opt/fleximsd/fleximsd"
 
 
     @defer.inlineCallbacks
