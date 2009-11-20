@@ -64,7 +64,9 @@ class Olsr(RPCService):
         self._name = "olsr"
         self._config = None
         self._configfile = None
-        self._daemon = "/usr/local/sbin/olsrd5"
+        self._daemon_path = "/usr/local/sbin"
+        self._daemon = None
+        self._running_daemon = None
     
     
     @defer.inlineCallbacks
@@ -96,6 +98,8 @@ class Olsr(RPCService):
         tempfile.write(assoc['config'])
         tempfile.close()
 
+        self._daemon = os.path.join(self._daemon_path, assoc['exename'])
+        
         defer.returnValue(0)
                                    
 
@@ -121,6 +125,7 @@ class Olsr(RPCService):
 
         yield self._parent._dbpool.startedService(self._config,
                                                   rc, message=stderr)
+        self._running_daemon = self._daemon
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
@@ -128,7 +133,7 @@ class Olsr(RPCService):
         """ This function invokes start-stop-daemon to stop olsrd """
 
         cmd = [ "start-stop-daemon", "--stop",  "--quiet",
-                "--exec", self._daemon,
+                "--exec", self._running_daemon,
                 "--signal", "TERM",
                 "--retry",  "5"]
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
