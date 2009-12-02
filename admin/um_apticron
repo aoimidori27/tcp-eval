@@ -8,11 +8,22 @@ if [ "$1" = --help ]; then
 	exit 1
 fi
 
+if [ "$(whoami)" != 'root' ]; then
+        echo "Run as root user."
+        exit 1;                     
+fi  
+
 IMAGETYPE=$1
 VERSION=$2
 CHROOTDIR=/opt/umic-mesh/images/$IMAGETYPE/$VERSION
 
-APTOPTIONS="-o Dir::State=$CHROOTDIR/var/lib/apt -o Dir::Etc=$CHROOTDIR/etc/apt -o Dir::Cache=$CHROOTDIR/var/cache/apt"
+if [ "$IMAGETYPE" = "vmeshhost" ]; then 
+	CHROOTARCH=amd64
+	CHROOTCMD="/usr/bin/linux32 /usr/sbin/chroot $CHROOTDIR"
+else
+	CHROOTARCH=i386
+	CHROOTCMD="/usr/sbin/chroot $CHROOTDIR"
+fi
 
 # a sane default for email
 EMAIL=root
@@ -21,7 +32,7 @@ EMAIL=root
 LISTCHANGES_PROFILE=""
 
 # Set $DIRCACHE
-# eval `/usr/bin/apt-config shell DIRCACHE Dir::Cache`
+DIRCACHE="$CHROOTDIR/var/cache/apt/"
 
 # Set the SYSTEM 
 SYSTEM=`/bin/hostname -f`
@@ -65,16 +76,16 @@ if [ -n "$IPADDRESSES" ] ; then
 fi
 
 # update the package lists
-/usr/bin/apt-get $APTOPTIONS -qq update || true
+$CHROOTCMD /usr/bin/apt-get -qq update || true
 
 # get the list of packages which are pending an upgrade
-PKGNAMES=`/usr/bin/apt-get $APTOPTIONS -q -y --allow-unauthenticated -s dist-upgrade | \
+PKGNAMES=`$CHROOTCMD /usr/bin/apt-get -f -q -y --allow-unauthenticated -s dist-upgrade | \
           /bin/grep ^Inst | /usr/bin/cut -d\  -f2 | /usr/bin/sort`
 
 if [ -n "$PKGNAMES" ] ; then
 	
 	# do the upgrade downloads
-	/usr/bin/apt-get $APTOPTIONS -qq -d --allow-unauthenticated dist-upgrade >& /dev/null
+	$CHROOTCMD /usr/bin/apt-get -f -qq -d --allow-unauthenticated dist-upgrade >& /dev/null
 
   (
 	/bin/cat <<EOF
@@ -83,15 +94,15 @@ apticron report [`/bin/date -R`]
 
 apticron has detected that some packages need upgrading on: 
 
-	$SYSTEM $ADDRESSES IMAGE: $IMAGE VERSION: $HARDY
+	$SYSTEM $ADDRESSES IMAGE: $IMAGETYPE VERSION: $VERSION
 
 The following packages are currently pending an upgrade:
 
 EOF
 
-	PKGPATH="/${DIRCACHE}archives/"
+	PKGPATH="${DIRCACHE}archives/"
 	for PKG in $PKGNAMES ; do
-		VER=`LC_ALL=en /usr/bin/apt-cache $APTOPTIONS policy $PKG |\
+		VER=`LC_ALL=en $CHROOTCMD /usr/bin/apt-cache policy $PKG |\
 		     /bin/grep Candidate: | /usr/bin/cut -f 4 -d \ `
 		VERFILE=`echo "$VER" | /bin/sed -e "s/:/%3a/g"`
                 if ls ${PKGPATH}${PKG}_${VERFILE}_*.deb >& /dev/null ; then
@@ -100,7 +111,7 @@ EOF
 		echo -e "\t"$PKG $VER
 	done
 
-	MISSING_DEBS=`apt-get -y --allow-unauthenticated --print-uris dist-upgrade \
+	MISSING_DEBS=`$CHROOTCMD apt-get -y --allow-unauthenticated --print-uris dist-upgrade \
                           | grep "file:" \
                           | sed "s/'file:\(.*\)' .*/\1/g"`
 
@@ -139,6 +150,10 @@ simulated by issuing the command:
 apticron
 EOF
 
-   ) 2>&1 | /usr/bin/mailx -s "Debian package updates on `/bin/hostname` IMAGE: $IMAGETYPE VERSION: $VERSION" $EMAIL 
+) 2>&1 | /usr/bin/mailx -s "Debian package updates on `/bin/hostname` IMAGE: $IMAGETYPE VERSION: $VERSION" $EMAIL 
 
 fi
+
+
+#debug
+# apt-config $APTOPTIONS dump
