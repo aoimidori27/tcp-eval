@@ -31,22 +31,29 @@ class BuildVmesh(Application):
         self.confstr = None
         self.linkinfo = dict()
         self.shapecmd = """\
-tc class  add dev %(iface)s parent 1: classid 1:%(nr)d cbq rate %(rate)smbit allot 1500 prio 5 bounded isolated && \
+tc class  add dev %(iface)s parent 1: classid 1:%(nr)d htb rate %(rate)smbit && \
 tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
     match ip protocol 47 0xff flowid 1:%(nr)d \
     match ip dst %(dst)s"""
         self._dnsttl = 300
         self._dnskey = "o2bpYQo1BCYLVGZiafJ4ig=="
 
-        
+
         # initialization of the option parser
         usage = "usage: %prog [options] [CONFIGFILE] \n" \
                 "where the CONFIGFILE systax looks like the following \n" \
-                "   1: 2[10] 3[5.3] 5-6[0.74] \n" \
+                "   1: 2[10,,100,] 3 5-6[0.74,20,,10] \n" \
                 "   2: ... \n\n" \
-                "vmrouter1 reaches all vmrouters listed after the colon, every \n "\
-                "vmrouter listed after the colon reaches vmrouter1. \n "\
-                "Rate limits in mbps may be given in [] after every entry. \n "\
+                "vmrouter1 reaches all vmrouters listed after the colon, \n"\
+                "every vmrouter listed after the colon reaches vmrouter1. \n\n"\
+                "Link information may be given in [] after every entry: \n"\
+                "   [rate, limit, delay, loss] \n"\
+                "   Rate:        in mbps as float \n"\
+                "   Queue limit: in packets as int \n"\
+                "   Delay:       in ms as int \n"\
+                "   Loss:        in percent as int \n"\
+                "Remark: The link information given for an entry is just a limit for ONE \n"\
+                "        direction, so that it is possible to generate asynchronous lines. \n\n"\
                 "Empty lines and lines starting with # are ignored."
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
@@ -127,24 +134,31 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         always symmetric.
         """
 
-        # mach comments
+        # match comments
         comment_re = re.compile('^\s*#')
-        
+
         # line syntax:
         # LINE = HOST ":" REACHES
         # HOST = DIGITS
         # REACHES = DIGITS REACHES | DIGITS "-" DIGITS " " REACHES
         # additional spaces are allowed everywhere, except around the "-"
+        digits_str = r"""
+                [0-9]+                              # INT
+                """
+        float_str = r"""
+                %s(?:\.%s)?                         # INT "." INT
+                """ % (digits_str,digits_str)
         line_str = r"""
-                ^([0-9]+)\ *:                   # HOST ":"
-                \ *                             # optional spaces
-                ( ( %s )+ )                     # REACHES
+                ^([0-9]+)\ *:                       # HOST ":"
+                \ *                                 # optional spaces
+                ( ( %s )+ )                         # REACHES
                 $"""
         reaches_str = r"""
-                ([0-9]+)(?:-([0-9]+))?          # DIGITS | DIGITS "-" DIGITS
-                (?:\[([0-9]+(\.[0-9]+)?)\])?               # [ "[" FLOAT "]" ]
-                (?:\ +|$)                       # optional spaces
-                """
+                (%s)(?:-(%s))?                      # DIGITS | DIGITS "-" DIGITS
+                (?:\[(%s)?,(%s)?,(%s)?,(%s)?\])?    # [ "[" FLOAT,INT,INT,INT "]" ]
+                (?:\ +|$)                           # optional spaces
+                """ % (digits_str,digits_str,float_str,digits_str,digits_str,digits_str)
+
         line_re    = re.compile(line_str % reaches_str, re.VERBOSE)
         reaches_re = re.compile(reaches_str, re.VERBOSE)
         # read (asymmetric) reachability information from the config file
@@ -157,18 +171,18 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         self.confstr = list()
         for line in fd:
             self.confstr.append(line)
-            
+
             # strip trailing spaces
             line = line.strip()
 
-            # ignore comments
-            if comment_re.match(line):
+            # ignore empty lines and comments
+            if line is '' or comment_re.match(line):
                 continue
 
             # parse line, skip on syntax error
             lm = line_re.match(line)
             if not lm:
-                warn("SSyntax error in line %s. Skipping." %line)
+                warn("Syntax error in line %s. Skipping." %line)
                 continue
 
             host = lm.group(1)
@@ -177,17 +191,23 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
                 first = int(m[0])
                 if m[1]: last = int(m[1])
                 else: last = first
-                info = m[2]
+                info_rate = m[2]
+                info_limit = m[3]
+                info_delay = m[4]
+                info_loss = m[5]
                 if last:
                     reaches.update(range(first, last+1))
                 else:
                     reaches.add(first)
 
-                if info:
-                    if not self.linkinfo.has_key(int(host)):
-                        self.linkinfo[int(host)] = dict()
-                    for i in range(first, last+1):
-                        self.linkinfo[int(host)][i] = info
+                if not self.linkinfo.has_key(int(host)):
+                    self.linkinfo[int(host)] = dict()
+                for i in range(first, last+1):
+                    self.linkinfo[int(host)][i] = dict()
+                    self.linkinfo[int(host)][i]['rate'] = info_rate
+                    self.linkinfo[int(host)][i]['limit'] = info_limit
+                    self.linkinfo[int(host)][i]['delay'] = info_delay
+                    self.linkinfo[int(host)][i]['loss'] = info_loss
 
             asym_map[int(host)] = reaches
 
@@ -250,7 +270,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         """ changes the order of an ip address """
         sa = address.split('.')
         sa.reverse()
-        return ".".join(sa) 
+        return ".".join(sa)
 
     def setup_dns(self):
         # update dns
@@ -282,7 +302,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         # Add qdisc
         try:
             execute("tc qdisc del dev %s root; " % iface +
-                    "tc qdisc add dev %s root handle 1: cbq avpkt 1000 bandwidth 100mbit" % iface
+                    "tc qdisc add dev %s root handle 1: htb default 100" % iface
                     ,True)
         except CommandFailed, inst:
             error('Could not install queuing discipline')
@@ -293,8 +313,8 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         i = 0
         for p in peers:
             try:
-                if self.linkinfo.has_key(hostnum) and self.linkinfo[hostnum].has_key(p):
-                    rate = self.linkinfo[hostnum][p]
+                if self.linkinfo.has_key(hostnum) and self.linkinfo[hostnum].has_key(p) and self.linkinfo[hostnum][p]['rate'] != '':
+                    rate = self.linkinfo[hostnum][p]['rate']
                 elif self.options.rate:
                     rate = self.options.rate
                 else:
@@ -304,12 +324,27 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
 
                 info("Limiting rate of link %s -> %s to %s mbit" % (hostnum,p,rate))
 
-                execute(self.shapecmd % { 
-                        'iface' : iface, 
-                        'nr' : i, 
+                execute(self.shapecmd % {
+                        'iface' : iface,
+                        'nr' : i,
                         'dst' : socket.gethostbyname('%s%s' % (prefix,p)),
-                        'rate' : rate}, 
-                        True)
+                        'rate' : rate}
+                        ,True)
+
+                # netem for queue length, delay and loss
+                netem_str = 'tc qdisc add dev %s parent 1:%s handle %s0: netem' % (iface, i, i)
+                if self.linkinfo[hostnum][p]['limit'] != '':
+                    netem_str += ' limit %s' %self.linkinfo[hostnum][p]['limit']
+                if self.linkinfo[hostnum][p]['delay'] != '':
+                    netem_str += ' delay %sms' %self.linkinfo[hostnum][p]['delay']
+                if self.linkinfo[hostnum][p]['loss'] != '':
+                    netem_str += ' drop %s' %self.linkinfo[hostnum][p]['loss']
+
+                # create netem queue only if one of the parameter is given
+                if self.linkinfo[hostnum][p]['limit'] != '' or self.linkinfo[hostnum][p]['delay'] != '' or self.linkinfo[hostnum][p]['loss'] != '':
+                    info("      Adding netem queue, limit:\'%s\', delay:\'%s\', loss:\'%s\'"
+                        % (self.linkinfo[hostnum][p]['limit'],self.linkinfo[hostnum][p]['delay'],self.linkinfo[hostnum][p]['loss']))
+                    execute(netem_str, True)
 
             except CommandFailed, inst:
                 error('Failed to add tc classes and filters for link %s -> %s' % (hostnum, p))
@@ -376,7 +411,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
             raise
 
     def setup_routing(self):
-        iface   = self.options.interface            
+        iface   = self.options.interface
         hostnum = self.node.getNumber()
 
         # disable send_redirects and accept redirects
@@ -388,7 +423,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
 
         for host in self.conf.keys():
             if host==hostnum:
-                continue        
+                continue
             shortest = BuildVmesh.find_shortest_path(self.conf, hostnum, host)
             # not all hosts may be reachable from this hosts ignore them
             if not shortest:
@@ -400,7 +435,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
             # ignore direct neighbors for now as network mask should cover them
             if dist==1:
                 continue
-            
+
             debug(shortest)
             host_ip = self.gre_ip(host, mask=False)
             gw_ip   = self.gre_ip(shortest[1], mask=False)
@@ -422,14 +457,14 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh", 
+                cmd = ["ssh", h, "sudo", "~/checkout/scripts/vmesh/um_vmesh.py",
                                                 "-i", self.options.interface, "-l", "-"]
                 if self.options.debug:
                     cmd.append("--debug")
 
                 if self.options.staticroutes:
                     cmd.append("--staticroutes")
-    
+
                 if self.options.rate:
                     cmd.append("-R")
                     cmd.append(self.options.rate)
@@ -438,7 +473,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
                 rc = proc.communicate("".join(self.confstr))
                 if proc.returncode != 0:
                     error("Configuring host %s FAILED (%s)" % (h, proc.returncode))
-        
+
         # Apply settings on local host
         else:
             self.node = Node()
@@ -448,7 +483,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
 
             info("Update DNS entries ...")
             self.setup_dns()
-            
+
             info("Setting up iptables rules ... ")
             self.setup_iptables()
 
