@@ -4,27 +4,26 @@
 # python imports
 import optparse, sys, os, subprocess
 from logging import info, debug, warn, error
+# umic-mesh imports
+from um_application import Application
 
-
-class Draft2Pdf(object):
+class Draft2Pdf(Application):
     "Class to convert internet draft text files to pdf"
 
 
     def __init__(self):
         "Constructor of the object"
 
+        Application.__init__(self)
+
         # initialization of the option parser
         usage = "usage: %prog [options] <file1> <file2> .."
-        self.parser = optparse.OptionParser()
         self.parser.set_usage(usage)
         self.parser.set_defaults(force = False, textsuffix = 'txt', pdfsuffix = 'pdf')
 
         self.parser.add_option("-f", "--force",
                                action = "store_true", dest = "force",
                                help = "overwrite existing output pdf file")
-        self.parser.add_option("--debug",
-                               action = "store_true", dest = "debug",
-                               help = "being even more verbose")
         self.parser.add_option("-t", "--textIn", metavar = "SUF",
                                action = "store", dest = "textsuffix",
                                help = "define suffix of input text files [default: %default]")
@@ -33,13 +32,10 @@ class Draft2Pdf(object):
                                help = "define suffix of output pdf file [default: %default]")
 
 
-    def main(self):
+    def run(self):
         "Main method of the DraftToPdf object"
 
-        # parse options
-        (self.options, self.args) = self.parser.parse_args()
-
-	# process every file given on command line
+	    # process every file given on command line
         for entry in self.args:
             if not os.path.isfile(entry):
                 warn("%s is not a regular file. Skipped." %entry)
@@ -66,7 +62,10 @@ class Draft2Pdf(object):
             pstopdf = subprocess.Popen(cmd2, stdin = enscript.stdout)
             (stdout, stderr) = pstopdf.communicate()
 
-
+    def main(self):
+        self.parse_option()
+        self.set_option()
+        self.run()
 
 if __name__ == "__main__":
     Draft2Pdf().main()

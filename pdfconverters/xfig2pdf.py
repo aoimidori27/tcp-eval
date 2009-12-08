@@ -10,14 +10,18 @@ import tempfile
 import subprocess
 import glob
 from logging import info, debug, warn, error
+# umic-mesh imports
+from um_application import Application
 
 
-class Xfig2PDF(object):
+class Xfig2PDF(Application):
     "Class to convert combined xfig to plain pdf"
 
 
     def __init__(self):
         "Constructor of the object"
+
+        Application.__init__(self)
 
         # object variable
         self.settings = r"""
@@ -42,7 +46,6 @@ class Xfig2PDF(object):
 
         # initialization of the option parser
         usage = "usage: %prog [options] BASENAME"
-        self.parser = optparse.OptionParser()
         self.parser.set_usage(usage)
         self.parser.set_defaults(force = False, texsuffix = 'pdf_t',
                                  pdfsuffix = 'pdf', outputsuffix = 'comb.pdf')
@@ -50,9 +53,6 @@ class Xfig2PDF(object):
         self.parser.add_option("-f", "--force",
                                action = "store_true", dest = "force",
                                help = "overwrite existing output pdf file")
-        self.parser.add_option("--debug",
-                               action = "store_true", dest = "debug",
-                               help = "being even more verbose")
         self.parser.add_option("-c", "--cfg", metavar = "FILE",
                                action = "store", dest = "cfgfile",
                                help = "use the file as config file for LaTeX. "\
@@ -74,6 +74,8 @@ class Xfig2PDF(object):
     def set_option(self):
         "Set options"
 
+        Application.set_option(self)
+
         # correct numbers of arguments?
         if len(self.args) != 1:
             self.parser.error("incorrect number of arguments")
@@ -87,14 +89,8 @@ class Xfig2PDF(object):
         self.pdfoutput = os.path.realpath("%s.%s" %(self.args[0], self.options.outputsuffix))
 
 
-    def main(self):
+    def run(self):
         "Main method of the Xfig2PDF object"
-
-        # parse options
-        (self.options, self.args) = self.parser.parse_args()
-
-        # set options
-        self.set_option()
 
         tempdir = tempfile.mkdtemp()
 
@@ -165,6 +161,11 @@ class Xfig2PDF(object):
         os.remove(pdfoutputbasename)
         os.rmdir(tempdir)
 
+
+    def main(self):
+        self.parse_option()
+        self.set_option()
+        self.run()
 
 
 if __name__ == "__main__":

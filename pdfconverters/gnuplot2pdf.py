@@ -11,14 +11,18 @@ import tempfile
 import subprocess
 import re
 from logging import info, debug, warn, error
+# umic-mesh imports
+from um_application import Application
 
 
-class Gnuplot2PDF(object):
+class Gnuplot2PDF(Application):
     "Class to convert epslatex gnuplot to plain pdf"
 
 
     def __init__(self):
         "Constructor of the object"
+
+        Application.__init__(self)
 
         # object variable
         self.settings = r"""
@@ -57,7 +61,6 @@ class Gnuplot2PDF(object):
 
         # initialization of the option parser
         usage = "usage: %prog [options] BASENAME"
-        self.parser = optparse.OptionParser()
         self.parser.set_usage(usage)
         self.parser.set_defaults(force = False, fontsize = 7, serif = False,
                                  texsuffix = 'tex', epssuffix = 'eps')
@@ -65,9 +68,6 @@ class Gnuplot2PDF(object):
         self.parser.add_option("-f", "--force",
                                action = "store_true", dest = "force",
                                help = "overwrite existing output pdf file")
-        self.parser.add_option("--debug",
-                               action = "store_true", dest = "debug",
-                               help = "being even more verbose")
         self.parser.add_option("-c", "--cfg", metavar = "FILE",
                                action = "store", dest = "cfgfile",
                                help = "use the file as config file for LaTeX. "\
@@ -95,6 +95,8 @@ class Gnuplot2PDF(object):
     def set_option(self):
         "Set options"
 
+        Application.set_option(self)
+
         # correct numbers of arguments?
         if len(self.args) != 1:
             self.parser.error("incorrect number of arguments")
@@ -119,14 +121,8 @@ class Gnuplot2PDF(object):
             self.pdfoutput = os.path.realpath("%s.pdf" %self.filename)
 
 
-    def main(self):
+    def run(self):
         "Main method of the Gnuplot2PDF object"
-
-        # parse options
-        (self.options, self.args) = self.parser.parse_args()
-
-        # set options
-        self.set_option()
 
         tempdir = tempfile.mkdtemp()
 
@@ -219,6 +215,11 @@ class Gnuplot2PDF(object):
         os.remove(tmppdfoutput)
         os.remove(tmptexinput)
         os.rmdir(tempdir)
+
+    def main(self):
+        self.parse_option()
+        self.set_option()
+        self.run()
 
 
 
