@@ -457,7 +457,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                cmd = ["ssh", h, "sudo", "~/checkout/scripts/vmesh/um_vmesh.py",
+                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh",
                                                 "-i", self.options.interface, "-l", "-"]
                 if self.options.debug:
                     cmd.append("--debug")
