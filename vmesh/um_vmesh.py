@@ -7,6 +7,7 @@ import re
 import socket
 import sys
 import subprocess
+import os
 
 # umic-mesh imports
 from um_application import Application
@@ -448,6 +449,15 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
                 error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
                 raise
 
+    def setup_user_helper(self):
+        progname = "%s/config/vmesh-helper/%s" %(os.environ["HOME"], self.node.getHostname())
+        if os.path.isfile(progname):
+            info("Executing user-provided helper program...")
+            os.spawnvp(os.P_WAIT, progname, [])
+        else:
+            info("%s does not exist." % progname)
+            info("Skipping user-provided helper program")
+
     def run(self):
         """Main method of the Buildmesh object"""
 
@@ -494,6 +504,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
                 info("Setting up static routing...")
                 self.setup_routing()
 
+            self.setup_user_helper()
 
 
 if __name__ == "__main__":
