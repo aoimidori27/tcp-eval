@@ -450,12 +450,16 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
                 raise
 
     def setup_user_helper(self):
-        progname = "%s/config/vmesh-helper/%s" %(os.environ["HOME"], self.node.getHostname())
-        if os.path.isfile(progname):
+        cmd = ["%s/config/vmesh-helper/%s" %(os.environ["HOME"], self.node.getHostname())]
+        if os.path.isfile(cmd[0]):
             info("Executing user-provided helper program...")
-            os.spawnvp(os.P_WAIT, progname, [])
+            try:
+                execute(cmd)
+            except CommandFailed, inst:
+                error("Execution of %s failed." % cmd[0])
+                error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
         else:
-            info("%s does not exist." % progname)
+            info("%s does not exist." % cmd[0])
             info("Skipping user-provided helper program")
 
     def run(self):
