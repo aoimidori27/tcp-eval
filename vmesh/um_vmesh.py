@@ -41,21 +41,30 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
 
 
         # initialization of the option parser
-        usage = "usage: %prog [options] [CONFIGFILE] \n" \
-                "where the CONFIGFILE systax looks like the following \n" \
-                "   1: 2[10,,100,] 3 5-6[0.74,20,,10] \n" \
-                "   2: ... \n\n" \
-                "vmrouter1 reaches all vmrouters listed after the colon, \n"\
-                "every vmrouter listed after the colon reaches vmrouter1. \n\n"\
-                "Link information may be given in [] after every entry: \n"\
-                "   [rate, limit, delay, loss] \n"\
-                "   Rate:        in mbps as float \n"\
-                "   Queue limit: in packets as int \n"\
-                "   Delay:       in ms as int \n"\
-                "   Loss:        in percent as int \n"\
-                "Remark: The link information given for an entry is just a limit for ONE \n"\
-                "        direction, so that it is possible to generate asynchronous lines. \n\n"\
-                "Empty lines and lines starting with # are ignored."
+        usage = """\
+usage:  prog [options] [CONFIGFILE]
+        where the CONFIGFILE systax looks like the following
+            1: 2[10,,100,] 3 5-6[0.74,20,,10]
+            2: ...
+
+Explanation:
+    vmrouter1 reaches all vmrouters listed after the colon,
+    every vmrouter listed after the colon reaches vmrouter1.
+
+    Link information may be given in brackets after every
+    entry, and the sytax [rate, limit, delay, loss], where:
+        * Rate: in mbps as float
+        * Queue limit: in packets as int
+        * Delay: in ms as int
+        * Loss: in percent as int
+
+Remarks:
+    The link information given for an entry are just
+    a limit for ONE direction, so that it is possible to
+    generate asynchronous lines.
+
+    Empty lines and lines starting with # are ignored."""
+
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
                                  multicast = "224.66.66.66", offset = 0, staticroutes=False)
