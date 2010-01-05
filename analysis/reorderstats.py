@@ -233,13 +233,11 @@ class Info:
                             if len(entry['sblocks']) > i+1:
                                 if entry['sblocks'][i+1][1] == sack_blocks[block+1]:
                                     #sack hole closed
-                                    #print "sack hole closed: %s" %save_hole
                                     entry['sblocks'].remove(entry['sblocks'][i+1])
                                     if not half['rexmit'].has_key(save_hole):
                                         #reordering
                                         if half:
                                             half['reorder'] += 1
-                                        #print "reor: %s" %save_hole
 
                             done = 1
                             break
