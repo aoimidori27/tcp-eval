@@ -19,14 +19,14 @@ DIRS="$DIRS,/var/lib/dhcp3,/var/log,/var/run,/etc"
 DIRS="$DIRS,/bin,/lib,/etc,/lib/dhcp3-client"
 
 # files which belong to /bin
-BINFILES="bash,cat,chmod,echo,expr,grep,hostname"
-BINFILES="$BINFILES,kill,logger,ls,mknod,mount,ping,ps,rm,sed"
-BINFILES="$BINFILES,sh,sleep,umount,uname,run-init,chroot,xargs"
+BINFILES="bash,cat,chmod,echo,expr,grep,hostname,xargs"
+BINFILES="$BINFILES,kill,logger,ls,mknod,mount,ping,rm,sed"
+BINFILES="$BINFILES,sh,sleep,umount,uname,run-init,chroot"
 
 # files which belong to /sbin
 SBINFILES="brctl,dhclient3,dhclient,hwclock,ifconfig,insmod,ip,losetup,usplash_write"
-SBINFILES="$SBINFILES,mount.nfs,modprobe,ntpdate,portmap,route,iptables"
-SBINFILES="$SBINFILES,ethtool,syslog-ng,strace"
+SBINFILES="$SBINFILES,modprobe,ntpdate,portmap,route,iptables"
+SBINFILES="$SBINFILES,ethtool,syslog-ng,strace,mount.nfs"
 
 # some static files, which are copied only for ubuntu
 STATIC="/bin/ip,/lib/dhcp3-client/call-dhclient-script"
@@ -55,10 +55,6 @@ function makedev() {
 
    # watchdog
    mknod $INITRD_TMP/dev/watchdog c 10 130 
-
-   # rtc
-   mknod $INITRD_TMP/dev/rtc c 10 135
-   mknod $INITRD_TMP/dev/rtc0 c 254 0
 }
 
 # filecopy "$files" "$searchpath" "$dstdir"
