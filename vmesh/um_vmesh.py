@@ -67,7 +67,7 @@ Remarks:
 
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
-                                 multicast = "224.66.66.66", offset = 0, staticroutes=False)
+                                 multicast = "224.66.66.66", offset = 0, staticroutes=False, userscripts=False)
 
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
@@ -88,6 +88,10 @@ Remarks:
                                type = int,
                                help = "Add this offset to all hosts in the config "\
                                       "(default: %default)")
+        self.parser.add_option("-u", "--userscripts",
+                               action = "store_true", dest = "userscripts",
+                               help = "Execute user scripts for every node if available"\
+                                      "(located in ~/config/vmesh_helper/vmrouter<NUMBER>)")
         self.parser.add_option("-s", "--staticroutes",
                                action = "store_true", dest = "staticroutes",
                                help = "Setup static routing according to topology"\
@@ -459,17 +463,18 @@ Remarks:
                 raise
 
     def setup_user_helper(self):
-        cmd = ["%s/config/vmesh-helper/%s" %(os.environ["HOME"], self.node.getHostname())]
-        if os.path.isfile(cmd[0]):
-            info("Executing user-provided helper program...")
-            try:
-                execute(cmd)
-            except CommandFailed, inst:
-                error("Execution of %s failed." % cmd[0])
-                error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
-        else:
-            info("%s does not exist." % cmd[0])
-            info("Skipping user-provided helper program")
+        if self.options.userscripts:
+            cmd = ["%s/config/vmesh-helper/%s" %(os.environ["HOME"], self.node.getHostname())]
+            if os.path.isfile(cmd[0]):
+                info("Executing user-provided helper program...")
+                try:
+                    execute(cmd)
+                except CommandFailed, inst:
+                    error("Execution of %s failed." % cmd[0])
+                    error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+            else:
+                info("%s does not exist." % cmd[0])
+                info("Skipping user-provided helper program")
 
     def run(self):
         """Main method of the Buildmesh object"""
@@ -491,6 +496,9 @@ Remarks:
                 if self.options.rate:
                     cmd.append("-R")
                     cmd.append(self.options.rate)
+
+                if self.options.userscripts:
+                    cmd.append("-u")
 
                 proc =subprocess.Popen(cmd, stdin=subprocess.PIPE)
                 rc = proc.communicate("".join(self.confstr))
