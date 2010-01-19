@@ -82,7 +82,7 @@ class Image(object):
         contained = image_type in Image.types()
 
         if not contained and raiseError:
-            raise ImageValidityException("image_type", Image.types())
+            raise ImageValidityException('image_type: %s' %image_type, Image.types())
     
         return contained              
 
