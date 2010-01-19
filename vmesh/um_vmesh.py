@@ -7,7 +7,7 @@ import re
 import socket
 import sys
 import subprocess
-import os
+#import pdb
 
 # umic-mesh imports
 from um_application import Application
@@ -41,33 +41,24 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
 
 
         # initialization of the option parser
-        usage = """\
-usage:  prog [options] [CONFIGFILE]
-        where the CONFIGFILE systax looks like the following
-            1: 2[10,,100,] 3 5-6[0.74,20,,10]
-            2: ...
-
-Explanation:
-    vmrouter1 reaches all vmrouters listed after the colon,
-    every vmrouter listed after the colon reaches vmrouter1.
-
-    Link information may be given in brackets after every
-    entry, and the sytax [rate, limit, delay, loss], where:
-        * Rate: in mbps as float
-        * Queue limit: in packets as int
-        * Delay: in ms as int
-        * Loss: in percent as int
-
-Remarks:
-    The link information given for an entry are just
-    a limit for ONE direction, so that it is possible to
-    generate asynchronous lines.
-
-    Empty lines and lines starting with # are ignored."""
-
+        usage = "usage: %prog [options] [CONFIGFILE] \n" \
+                "where the CONFIGFILE systax looks like the following \n" \
+                "   1: 2[10,,100,] 3 5-6[0.74,20,,10] \n" \
+                "   2: ... \n\n" \
+                "vmrouter1 reaches all vmrouters listed after the colon, \n"\
+                "every vmrouter listed after the colon reaches vmrouter1. \n\n"\
+                "Link information may be given in [] after every entry: \n"\
+                "   [rate, limit, delay, loss] \n"\
+                "   Rate:        in mbps as float \n"\
+                "   Queue limit: in packets as int \n"\
+                "   Delay:       in ms as int \n"\
+                "   Loss:        in percent as int \n"\
+                "Remark: The link information given for an entry is just a limit for ONE \n"\
+                "        direction, so that it is possible to generate asynchronous lines. \n\n"\
+                "Empty lines and lines starting with # are ignored."
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
-                                 multicast = "224.66.66.66", offset = 0, staticroutes=False, userscripts=False)
+                                 multicast = "224.66.66.66", offset = 0, staticroutes=False, multipath=False, maxpath=2)
 
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
@@ -88,14 +79,19 @@ Remarks:
                                type = int,
                                help = "Add this offset to all hosts in the config "\
                                       "(default: %default)")
-        self.parser.add_option("-u", "--userscripts",
-                               action = "store_true", dest = "userscripts",
-                               help = "Execute user scripts for every node if available"\
-                                      "(located in ~/config/vmesh_helper/vmrouter<NUMBER>)")
         self.parser.add_option("-s", "--staticroutes",
                                action = "store_true", dest = "staticroutes",
                                help = "Setup static routing according to topology"\
                                       "(default: %default)")
+        self.parser.add_option("-p", "--multipath",
+                               action = "store_true", dest = "multipath",
+                               help = "Setup equal cost multipath routes. For use with -s"\
+                                   "(default:%default)")
+        self.parser.add_option("-x", "--maxpath",
+                                action="store", dest="maxpath", type = int,
+                                help = "Maximum number of parallel paths to set up. \
+                                        Use only in connection with --multipath."\
+                                        "(default:%default)")
         self.parser.add_option("-R", "--rate",
                                action = "store", dest = "rate", metavar="RATE",
                                help = "Rate limit in mbps")
@@ -414,6 +410,19 @@ Remarks:
                         shortest = newpath
         return shortest
 
+    @staticmethod
+    def find_k_equal_cost_paths(graph, start, end, paths=[]):
+        for node in graph[start]:
+            newpath = BuildVmesh.find_shortest_path(graph, node, end)
+            if newpath == None:
+                continue
+            if len(paths)==0 or len(newpath) < len(paths[0]):
+                paths = [newpath]
+            if len(newpath) == len(paths[0]) and newpath not in paths:
+                paths += [newpath]
+        return paths
+
+
     def set_sysctl(self, key, val):
         arg = "%s=%s" %(key,val)
         cmd = ["sysctl","-w",arg]
@@ -434,47 +443,70 @@ Remarks:
         self.set_sysctl("net.ipv4.conf.%s.send_redirects" %iface,0)
         self.set_sysctl("net.ipv4.conf.%s.accept_redirects" %iface,0)
         self.set_sysctl("net.ipv4.conf.%s.forwarding" %iface, 1)
+    
+        if self.options.multipath:
+            for host in self.conf.keys():
+                if host==hostnum:
+                    continue
+        
+                paths = BuildVmesh.find_k_equal_cost_paths(self.conf, hostnum, host)
+                # not all hosts may be reachable from this hosts ignore them
+                if len(paths) == 0 :
+                    continue
 
-        for host in self.conf.keys():
-            if host==hostnum:
-                continue
-            shortest = BuildVmesh.find_shortest_path(self.conf, hostnum, host)
-            # not all hosts may be reachable from this hosts ignore them
-            if not shortest:
-                continue
+                # calculate distance unlike the single path version we don't need to subtract 1 as the node itself isn't saved in the list
+                dist = len(paths[0]) #equal cost so the dist from the first path suffices
 
-            # calculate distance
-            dist = len(shortest)-1
+                # ignore direct neighbors for now as network mask should cover them
+                if dist==1:
+                    continue
 
-            # ignore direct neighbors for now as network mask should cover them
-            if dist==1:
-                continue
+                host_ip = self.gre_ip(host, mask=False)
 
-            debug(shortest)
-            host_ip = self.gre_ip(host, mask=False)
-            gw_ip   = self.gre_ip(shortest[1], mask=False)
+                
+                cmd = ["ip", "route", "replace", host_ip]
+                for i  in range(min(len(paths),self.options.maxpath)):
+                    nexthop = self.gre_ip(paths[i][0], mask=False)
+                    cmd += ["nexthop", "via", nexthop, "dev", iface]
 
-            cmd = ["ip", "route", "replace", host_ip, "dev", iface, "via", gw_ip, "metric", str(dist)]
-            try:
-                execute(cmd, shell=False)
-            except CommandFailed, inst:
-                error('Adding routing entry for host %s failed.' % host_ip)
-                error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
-                raise
-
-    def setup_user_helper(self):
-        if self.options.userscripts:
-            cmd = ["%s/config/vmesh-helper/%s" %(os.environ["HOME"], self.node.getHostname())]
-            if os.path.isfile(cmd[0]):
-                info("Executing user-provided helper program...")
                 try:
-                    execute(cmd)
+                    execute(cmd, shell=False)
                 except CommandFailed, inst:
-                    error("Execution of %s failed." % cmd[0])
+                    error('Adding routing entry for host %s failed.' % host_ip)
                     error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
-            else:
-                info("%s does not exist." % cmd[0])
-                info("Skipping user-provided helper program")
+                    raise
+
+
+
+        else:        
+            for host in self.conf.keys():
+                if host==hostnum:
+                    continue
+                shortest = BuildVmesh.find_shortest_path(self.conf, hostnum, host)
+                # not all hosts may be reachable from this hosts ignore them
+                if not shortest:
+                    continue
+
+                # calculate distance
+                dist = len(shortest)-1
+
+                # ignore direct neighbors for now as network mask should cover them
+                if dist==1:
+                    continue
+
+                debug(shortest)
+                host_ip = self.gre_ip(host, mask=False)
+                gw_ip   = self.gre_ip(shortest[1], mask=False)
+
+                cmd = ["ip", "route", "replace", host_ip, "dev", iface, "via", gw_ip, "metric", str(dist)]
+
+
+                try:
+                    execute(cmd, shell=False)
+                except CommandFailed, inst:
+                    error('Adding routing entry for host %s failed.' % host_ip)
+                    error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+                    raise
 
     def run(self):
         """Main method of the Buildmesh object"""
@@ -485,20 +517,21 @@ Remarks:
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh",
-                                                "-i", self.options.interface, "-l", "-"]
+                cmd = ["ssh", h, "sudo", "~/checkout/scripts/vmesh/um_vmesh.py",
+                                               "-i", self.options.interface, "-l", "-"]
                 if self.options.debug:
                     cmd.append("--debug")
 
                 if self.options.staticroutes:
                     cmd.append("--staticroutes")
-
+                if self.options.multipath:
+                    cmd.append("--multipath")
+                if self.options.maxpath:
+                    cmd.append("--maxpath")
+                    cmd.append(self.options.maxpath)
                 if self.options.rate:
                     cmd.append("-R")
                     cmd.append(self.options.rate)
-
-                if self.options.userscripts:
-                    cmd.append("-u")
 
                 proc =subprocess.Popen(cmd, stdin=subprocess.PIPE)
                 rc = proc.communicate("".join(self.confstr))
@@ -523,9 +556,9 @@ Remarks:
 
             if self.options.staticroutes:
                 info("Setting up static routing...")
-                self.setup_routing()
+             
+        self.setup_routing()
 
-            self.setup_user_helper()
 
 
 if __name__ == "__main__":
