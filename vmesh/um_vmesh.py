@@ -8,6 +8,8 @@ import socket
 import sys
 import subprocess
 import os
+from logging import info, debug, warn, error, critical
+
 
 # umic-mesh imports
 from um_application import Application
@@ -555,15 +557,16 @@ Remarks:
                     cmd.append("--multipath")
                 if self.options.maxpath:
                     cmd.append("--maxpath")
-                    cmd.append(self.options.maxpath)
+                    cmd.append(str(self.options.maxpath))
                 if self.options.rate:
                     cmd.append("-R")
                     cmd.append(self.options.rate)
 
                 if self.options.userscripts:
                     cmd.append("-u")
-
-                proc =subprocess.Popen(cmd, stdin=subprocess.PIPE)
+                
+                debug("Executing: %s", cmd)
+                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
                 rc = proc.communicate("".join(self.confstr))
                 if proc.returncode != 0:
                     error("Configuring host %s FAILED (%s)" % (h, proc.returncode))
