@@ -67,7 +67,7 @@ Remarks:
 
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
-                                 multicast = "224.66.66.66", offset = 0, staticroutes=False, userscripts=False)
+                                 multicast = "224.66.66.66", offset = 0, staticroutes=False, multipath=False, maxpath=2)
 
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
@@ -96,6 +96,15 @@ Remarks:
                                action = "store_true", dest = "staticroutes",
                                help = "Setup static routing according to topology "\
                                       "(default: %default)")
+        self.parser.add_option("-p", "--multipath",
+                               action = "store_true", dest = "multipath",
+                               help = "Setup equal cost multipath routes. For use with -s"\
+                                   "(default:%default)")
+        self.parser.add_option("-x", "--maxpath",
+                                action="store", dest="maxpath", type = int,
+                                help = "Maximum number of parallel paths to set up. \
+                                        Use only in connection with --multipath."\
+                                        "(default:%default)")
         self.parser.add_option("-R", "--rate",
                                action = "store", dest = "rate", metavar="RATE",
                                help = "Rate limit in mbps")
@@ -414,6 +423,19 @@ Remarks:
                         shortest = newpath
         return shortest
 
+    @staticmethod
+    def find_k_equal_cost_paths(graph, start, end, paths=[]):
+        for node in graph[start]:
+            newpath = BuildVmesh.find_shortest_path(graph, node, end)
+            if newpath == None:
+                continue
+            if len(paths)==0 or len(newpath) < len(paths[0]):
+                paths = [newpath]
+            if len(newpath) == len(paths[0]) and newpath not in paths:
+                paths += [newpath]
+        return paths
+
+
     def set_sysctl(self, key, val):
         arg = "%s=%s" %(key,val)
         cmd = ["sysctl","-w",arg]
@@ -435,32 +457,69 @@ Remarks:
         self.set_sysctl("net.ipv4.conf.%s.accept_redirects" %iface,0)
         self.set_sysctl("net.ipv4.conf.%s.forwarding" %iface, 1)
 
-        for host in self.conf.keys():
-            if host==hostnum:
-                continue
-            shortest = BuildVmesh.find_shortest_path(self.conf, hostnum, host)
-            # not all hosts may be reachable from this hosts ignore them
-            if not shortest:
-                continue
+        if self.options.multipath:
+            for host in self.conf.keys():
+                if host==hostnum:
+                    continue
+        
+                paths = BuildVmesh.find_k_equal_cost_paths(self.conf, hostnum, host)
+                # not all hosts may be reachable from this hosts ignore them
+                if len(paths) == 0 :
+                    continue
 
-            # calculate distance
-            dist = len(shortest)-1
+                # calculate distance unlike the single path version we don't need to subtract 1 as the node itself isn't saved in the list
+                dist = len(paths[0]) #equal cost so the dist from the first path suffices
 
-            # ignore direct neighbors for now as network mask should cover them
-            if dist==1:
-                continue
+                # ignore direct neighbors for now as network mask should cover them
+                if dist==1:
+                    continue
 
-            debug(shortest)
-            host_ip = self.gre_ip(host, mask=False)
-            gw_ip   = self.gre_ip(shortest[1], mask=False)
+                host_ip = self.gre_ip(host, mask=False)
 
-            cmd = ["ip", "route", "replace", host_ip, "dev", iface, "via", gw_ip, "metric", str(dist)]
-            try:
-                execute(cmd, shell=False)
-            except CommandFailed, inst:
-                error('Adding routing entry for host %s failed.' % host_ip)
-                error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
-                raise
+                
+                cmd = ["ip", "route", "replace", host_ip]
+                for i  in range(min(len(paths),self.options.maxpath)):
+                    nexthop = self.gre_ip(paths[i][0], mask=False)
+                    cmd += ["nexthop", "via", nexthop, "dev", iface]
+
+                try:
+                    execute(cmd, shell=False)
+                except CommandFailed, inst:
+                    error('Adding routing entry for host %s failed.' % host_ip)
+                    error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+                    raise
+
+
+
+        else:        
+            for host in self.conf.keys():
+                if host==hostnum:
+                    continue
+                shortest = BuildVmesh.find_shortest_path(self.conf, hostnum, host)
+                # not all hosts may be reachable from this hosts ignore them
+                if not shortest:
+                    continue
+
+                # calculate distance
+                dist = len(shortest)-1
+
+                # ignore direct neighbors for now as network mask should cover them
+                if dist==1:
+                    continue
+
+                debug(shortest)
+                host_ip = self.gre_ip(host, mask=False)
+                gw_ip   = self.gre_ip(shortest[1], mask=False)
+
+                cmd = ["ip", "route", "replace", host_ip, "dev", iface, "via", gw_ip, "metric", str(dist)]
+
+
+                try:
+                    execute(cmd, shell=False)
+                except CommandFailed, inst:
+                    error('Adding routing entry for host %s failed.' % host_ip)
+                    error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+                    raise
 
     def setup_user_helper(self):
         if self.options.userscripts:
@@ -492,7 +551,11 @@ Remarks:
 
                 if self.options.staticroutes:
                     cmd.append("--staticroutes")
-
+                if self.options.multipath:
+                    cmd.append("--multipath")
+                if self.options.maxpath:
+                    cmd.append("--maxpath")
+                    cmd.append(self.options.maxpath)
                 if self.options.rate:
                     cmd.append("-R")
                     cmd.append(self.options.rate)
