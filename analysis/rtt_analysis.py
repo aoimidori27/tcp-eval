@@ -44,7 +44,7 @@ class RttAnalysis(Analysis):
 
 
     def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
-    
+ 
         recordHeader = record.getHeader()
         src = recordHeader["ping_src"]
         dst = recordHeader["ping_dst"]
@@ -72,7 +72,7 @@ class RttAnalysis(Analysis):
             seq = seqs[i]+(iterationNo)*count
             rtt = rtts[i]
             assoc[seq] = rtt
-        
+
 
     def generateRttGraph(self, pair, data):
         """
@@ -105,12 +105,12 @@ class RttAnalysis(Analysis):
         p = UmPointPlot(plotname)
         p.setYLabel("RTT in ms")
         p.setXLabel("ICMP sequence number")
-        
+
         p.plot(valfilename, "RTT")
 
         # output plot
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
-        
+ 
 
 
     def run(self):
@@ -122,8 +122,7 @@ class RttAnalysis(Analysis):
         # for each pair generate an graph
         for pair in self.nodepairs:
             self.generateRttGraph(pair, self.nodepairs[pair])
-        
-            
+
     def main(self):
         "Main method of the ping stats object"
 

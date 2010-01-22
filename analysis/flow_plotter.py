@@ -5,32 +5,32 @@ import sys
 import os.path
 from logging import info, debug, warn, error
 
-from um_analysis.testrecords_flowgrind_dd import FlowgrindddRecordFactory
+from um_analysis.testrecords_flowgrind import FlowgrindRecordFactory
 from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot
 from um_application import Application
 
 class FlowPlotter(Application):
-    
+
     def __init__(self):
 
         Application.__init__(self)
 
         # object variables
-        self.factory = FlowgrindddRecordFactory()
+        self.factory = FlowgrindRecordFactory()
 
         # initialization of the option parser
-        usage = "usage: %prog [options] file [file]..." 
+        usage = "usage: %prog [options] file [file]..."
 
         self.parser.set_usage(usage)
         self.parser.set_defaults(outdir = "./")
         self.parser.add_option('-O', '--output', metavar="OutDir",
                         action = 'store', type = 'string', dest = 'outdir',
-                        help = 'Set outputdirectory [default: %default]')        
+                        help = 'Set outputdirectory [default: %default]')
         self.parser.add_option("-c", "--cfg", metavar = "FILE",
                         action = "store", dest = "cfgfile",
                         help = "use the file as config file for LaTeX. "\
-                               "No default packages will be loaded.")        
-        
+                               "No default packages will be loaded.")
+
     def set_option(self):
         "Set options"
         Application.set_option(self)
@@ -38,7 +38,7 @@ class FlowPlotter(Application):
         if len(self.args) < 1:
             error("no input files, stop.")
             sys.exit(1)
-        
+
         if not os.path.exists(self.options.outdir):
             info("%s does not exist, creating. " % self.options.outdir)
             os.mkdir(self.options.outdir)
@@ -52,10 +52,10 @@ class FlowPlotter(Application):
 
         if not outdir:
             outdir=self.options.outdir
-        record = self.factory.createRecord(infile, "flowgrinddd")
+        record = self.factory.createRecord(infile, "flowgrind")
         flows = record.calculate("flows")
         
-        plotname = os.path.splitext(os.path.basename(infile))[0]    
+        plotname = os.path.splitext(os.path.basename(infile))[0]
         valfilename = os.path.join(outdir, plotname+".values")
         
         info("Generating %s..." % valfilename)
@@ -76,7 +76,7 @@ class FlowPlotter(Application):
         for i in range(flow['S'].size):
             fh.write("%f %f %f %f %f %f %f %f %f\n" %(flow['S'].begin[i], flow['S'].end[i],
                                                    flow['S'].tput[i], flow['R'].tput[i],
-                                                   flow['S'].cwnd[i], flow['R'].cwnd[i], 
+                                                   flow['S'].cwnd[i], flow['R'].cwnd[i],
                                                    ssth_max(flow['S'].ssth[i], cwnd_max, 50),
                                                    flow['S'].krtt[i], flow['S'].krto[i]))
         fh.close()
@@ -123,5 +123,4 @@ if __name__ == '__main__':
     inst.parse_option()
     inst.set_option()
     inst.run()
-        
 

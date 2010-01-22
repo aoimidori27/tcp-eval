@@ -845,7 +845,7 @@ class TcpAnalysis(Analysis):
                             scenarioNo  INTEGER,
                             runNo       INTEGER,
                             src         INTEGER,
-                            dst         INTEGER,                            
+                            dst         INTEGER,
                             thruput     DOUBLE,
                             thruput_0   DOUBLE,
                             thruput_1   DOUBLE,
@@ -866,9 +866,9 @@ class TcpAnalysis(Analysis):
         # store failed test as a mapping from run_label to number
         self.failed = dict()
 
-        # only load flowgrind test records    
-        self.loadRecords(tests=["flowgrinddd","rate"])
-                        
+        # only load flowgrind test records
+        self.loadRecords(tests=["flowgrind","rate"])
+
         self.dbcon.commit()
         self.generateHistogram()
         self.generateHistogram2Flows()
@@ -877,9 +877,8 @@ class TcpAnalysis(Analysis):
         self.generateTputDistributions()
         self.generateAccTputDistribution(50)
         self.generateAccHistogram()
-        self.generateCumulativeFractionOfPairs()        
-        
-                    
+        self.generateCumulativeFractionOfPairs()
+ 
     def main(self):
         "Main method of the ping stats object"
 
