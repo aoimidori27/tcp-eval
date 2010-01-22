@@ -131,6 +131,10 @@ class xpl2gpl(object):
         datasources = list()
         data = list()
         taglist = TextTools.tag(xplfile, parser)
+        currentcolor = ""
+        title = self.options.title
+        xlabel = self.options.xlabel
+        ylabel = self.options.ylabel
         for tag, beg, end, subtags in taglist[1]:
         # read options and labels from parse tree
         # convert keyword labels
@@ -264,19 +268,15 @@ class xpl2gpl(object):
             elif tag == 'title':
                 if self.options.title == '':
                     title = xplfile[beg+len("title\n"):end-len("\n")]
-                else:
-                    title = self.options.title
+
             # read axis labels
             elif tag == 'xlabel':
                 if self.options.xlabel == '':
                     xlabel = xplfile[beg+len("xlabel\n"):end-len("\n")]
-                else:
-                    xlabel = self.options.xlabel
+
             elif tag == 'ylabel':
                 if self.options.xlabel == '':
                     ylabel = xplfile[beg+len("ylabel\n"):end-len("\n")]
-                else:
-                    ylabel = self.options.ylabel
 
         #write optons to gpl file
         gploutput.write('set title "%s"\n' %title )
