@@ -48,7 +48,8 @@ image_info = dict(
                          "/scripts/vmesh" : "scripts/vmesh",
                          "/scripts/util" : "scripts/util",
                          "/scripts/measurement" : "scripts/measurement",
-                         "/scripts/analysis" : "scripts/analysis" },
+                         "/scripts/analysis" : "scripts/analysis",
+                         "/scripts/pdfconverters" : "scripts/pdfconverters" },
         script_mappings = { "scripts/image" : "/usr/local/sbin",
                             "scripts/vmesh" : "/usr/local/sbin",
                             "scripts/image" : "/usr/local/sbin",
@@ -73,11 +74,13 @@ image_info = dict(
                          "/tools/libnfnetlink/trunk" : "tools/libnfnetlink",
                          "/tools/libnetfilter_queue/trunk" : "tools/libnetfilter_queue",
                          "/scripts/python-libs" : "scripts/python-libs",
+                         "/scripts/rpcserver" : "scripts/rpcserver",
                          "/scripts/vmesh" : "scripts/vmesh",
                          "/scripts/util" : "scripts/util",
                          "/projects/flowgrind/trunk" : "projects/flowgrind" },
         script_mappings = { "scripts/vmesh" : "/usr/local/sbin",
-                            "scripts/util" : "/usr/local/bin" }
+                            "scripts/util" : "/usr/local/bin", 
+                            "scripts/rpcserver" : "/usr/local/sbin" }
     ),
     meshnode = dict(
         svn_mappings = { "/config/meshnode/trunk" : "config.local",
