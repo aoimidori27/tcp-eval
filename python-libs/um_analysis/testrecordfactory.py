@@ -12,7 +12,6 @@ from numpy import array
 from testrecords_ping import PingRecordFactory
 from testrecords_fping import FpingRecordFactory
 from testrecords_flowgrind import FlowgrindRecordFactory
-from testrecords_flowgrind_dd import FlowgrindddRecordFactory
 from testrecords_rate import RateRecordFactory
     
 class TestRecordFactory:
@@ -29,8 +28,6 @@ class TestRecordFactory:
             factory = FpingRecordFactory()
         elif test=="flowgrind":
             factory = FlowgrindRecordFactory()
-        elif test=="flowgrinddd":
-            factory = FlowgrindddRecordFactory()
         elif test=="rate":
             factory = RateRecordFactory()            
         else:
