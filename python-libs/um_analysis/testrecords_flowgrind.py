@@ -34,7 +34,6 @@ class FlowgrindRecordFactory():
             #0: 169.254.9.1/mrouter1, MSS = 536, ws = 16384/16384 (0/0), bs = 8192/8192, delay = 0.00s/0.00s, duration = 15.00s/0.00s, thruput = 0.607300Mb/s (139 blocks), cc = cubic
             "thruput = (?P<thruput>\d+\.\d+)(\/(?P<thruput_back>\d+\.\d+))?Mb/s",
 
-            # S ID   begin     end   tput Mb/s RTT, ms: min        avg        max IAT, ms: min        avg        max    cwnd  ssth #uack #sack #lost #retr #fack #reor     rtt  rttvar      rto    mss     mtu
             #  ID    begin     end   through min RTT avg RTT max RTT min IAT avg IAT max IAT    cwnd        ssth uack sack lost fret tret fack reor   rtt rttvar     rto   castate   mss   mtu status
 	    " +(?P<direction>[S,R])"\
             " +(?P<flow_id>\d+) +(?P<begin>\d+\.\d+) +(?P<end>\d+\.\d+)"\
@@ -42,7 +41,7 @@ class FlowgrindRecordFactory():
             " +(?P<rtt_min>\d+\.\d+|inf) +(?P<rtt_avg>\d+\.\d+|inf) +(?P<rtt_max>\d+\.\d+|inf)"\
             " +(?P<iat_min>\d+\.\d+|inf) +(?P<iat_avg>\d+\.\d+|inf) +(?P<iat_max>\d+\.\d+|inf)"\
             " +(?P<cwnd>\d+\.\d+) +(?P<ssth>\d+) +(?P<uack>\d+) +(?P<sack>\d+)"\
-            " +(?P<lost>\d+) +(?P<fretr>\d+) +(?P<tretr>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
+            " +(?P<lost>\d+) +(?P<fret>\d+) +(?P<tret>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
             " +(?P<krtt>\d+\.\d+) +(?P<krttvar>\d+\.\d+) +(?P<krto>\d+\.\d+)"\
 	    " +(?P<castate>loss|open|disorder|recovery) +(?P<mss>\d+) +(?P<mtu>\d+)",
 	    "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2} \d{2}:\d{2}:\d{2} \d{4}): controlling host"
@@ -69,7 +68,8 @@ class FlowgrindRecordFactory():
                      'uack'    : int,
                      'sack'    : int,
                      'lost'    : int,
-                     'retr'    : int,
+                     'fret'   : int,
+                     'tret'   : int,
                      'fack'    : int,
                      'reor'    : int,
                      'krtt'    : float,
