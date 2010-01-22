@@ -43,7 +43,7 @@ class RPCServer(xmlrpc.XMLRPC):
                                       password='2PZrfjNXYNBxwru')
             
         except Exception, inst:
-            error("Failed to establish database connection: ", inst)
+            error("Failed to establish database connection: %s", inst)
     
             
         # find and load rpc modules
