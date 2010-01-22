@@ -28,7 +28,7 @@ class Xen(Application):
         Application.__init__(self)
 
         self.action = ''
-        self.commands = ('list', 'create')
+        self.commands = ('list', 'create', 'shutdown')
 
         self.dbhost = 'webserver'
         self.db = 'umic-mesh'
@@ -42,6 +42,7 @@ class Xen(Application):
         # initialization of the option parser
         usage = "usage: \t%prog [options] list \n" \
                 "\t%prog [options] create ID | FROM TO \n" \
+                "\t%prog [options] shutdown ID | FROM TO \n" \
                 "\t\twhere ID, FROM, TO are node IDs (integers) greater than zero"
         self.parser.set_usage(usage)
         self.parser.set_defaults(console = False, dry_run = False,
@@ -98,7 +99,34 @@ class Xen(Application):
                 error("Use -f if you want to continue anyways")
                 sys.exit(1)
 
+    def set_options_shutdown(self):
+        try:
+            # correct numbers of arguments?
+            begin = int(self.args[1])
 
+            if len(self.args) == 2:
+                end = begin + 1
+            elif len(self.args) == 3:
+                end = int(self.args[2]) + 1
+            else:
+                raise IndexError
+
+            # Integers greater than zero?
+            if begin > 0 and end > 0:
+                self._range = range(begin, end)
+            else:
+                raise ValueError
+
+        except IndexError:
+            error("Incorrect number of arguments")
+        except ValueError:
+            error("Arguments are not integers greater than zero")
+        else:
+            return
+
+        # if we get to this point we got an exception and we want to terminate
+        # the program
+        sys.exit(1)
 
     def set_options_create(self):
         try:
@@ -175,6 +203,9 @@ class Xen(Application):
         # additional option checking for create
         if self.action == 'create':
             self.set_options_create()
+        # additional option checking for shutdown 
+        if self.action == 'shutdown':
+            self.set_options_shutdown()
         # additional option checking for list
         if self.action == 'list':
             self.set_options_list()
@@ -286,8 +317,29 @@ class Xen(Application):
                         "SELECT nodeID,'%s' FROM nodes WHERE nodes.name='%s' "\
                         "ON DUPLICATE KEY UPDATE created_by='%s';" %(user,vmeshnode.getHostname(),user)
                 cursor.execute(query)
-    def run_list(self):
 
+    def run_shutdown(self):
+        """Shutdown :the desired number of vmeshnodes"""
+
+        # must be root
+        requireroot()
+
+        for number in self._range:
+            vmeshnode = Node(number, self.options.node_type)
+
+            # create XEN command
+            cmd = "xm shutdown %s" % vmeshnode.getHostname()
+
+            # start vmeshnode
+            try:
+                info("Shutting down %s" % vmeshnode.getHostname())
+                call(cmd, shell = True)
+
+            except CommandFailed, exception:
+                error("Error while shutting down %s" % vmeshnode.getHostname())
+                error(exception)
+
+    def run_list(self):
         def vmr_compare(x, y):
             # only compare numerical part, works for our purpose
             x_nr = int(filter(lambda c: c.isdigit(), x))
@@ -363,14 +415,16 @@ class Xen(Application):
             print "Name          Host      User                 Mem State  Time"
             print "------------------------------------------------------------------------------------"
             for key in sorted_keyset:
-                  entry = vm_all[key]
-                  print "%s %s %s %3s %6s %s" \
-                        %(entry["name"].ljust(13), entry["server"].ljust(9), entry["user"].ljust(20), entry["maxmem"], entry["state"], entry["cpu_time"])
+                entry = vm_all[key]
+                print "%s %s %s %3s %6s %s" \
+                       %(entry["name"].ljust(13), entry["server"].ljust(9), entry["user"].ljust(20), entry["maxmem"], entry["state"], entry["cpu_time"])
 
     def run(self):
         self.db_connect()
         if self.action == 'create':
             self.run_create()
+        if self.action == 'shutdown':
+            self.run_shutdown()
         if self.action == 'list':
             self.run_list()
 
