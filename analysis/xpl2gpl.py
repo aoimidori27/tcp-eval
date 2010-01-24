@@ -87,7 +87,7 @@ class xpl2gpl(object):
         declaration = r'''
             root        :=    timeval,title,xlabel,ylabel,(diamond / text / varrow / harrow / line / dline / dot / box / tick / color / linebreak)*,end*
             alphanum    :=     [a-zA-Z0-9]
-            punct       :=     [!@#$%^&()+=|\{}:;<>,.?/"_]
+            punct       :=     [!@#$%^&()+=|\{}:;<>,.?/"_-]
             whitespace  :=     [ \t]
             string      :=     ( alphanum / punct / whitespace )*, linebreak
             keyword     :=    ([ A-Z]+ / int1)
@@ -96,7 +96,7 @@ class xpl2gpl(object):
             int1        :=    [0-9]+
             int2        :=    [0-9]+
             end         :=    'go', linebreak*
-            timeval     :=    ( 'timeval double' / 'timeval signed' ), linebreak
+            timeval     :=    ( 'timeval double' / 'timeval signed' / 'dtime signed' ), linebreak
             title       :=    'title\n',string
             xlabel      :=     'xlabel\n',string
             ylabel      :=     'ylabel\n',string
@@ -267,7 +267,7 @@ class xpl2gpl(object):
             # read title
             elif tag == 'title':
                 if self.options.title == '':
-                    title = xplfile[beg+len("title\n"):end-len("\n")]
+                    title = xplfile[beg+len("title\n "):end-len("\n")]
 
             # read axis labels
             elif tag == 'xlabel':
