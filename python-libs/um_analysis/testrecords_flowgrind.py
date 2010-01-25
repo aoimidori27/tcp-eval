@@ -68,16 +68,16 @@ class FlowgrindRecordFactory():
                      'uack'    : int,
                      'sack'    : int,
                      'lost'    : int,
-                     'fret'   : int,
-                     'tret'   : int,
+                     'fret'    : int,
+                     'tret'    : int,
                      'fack'    : int,
                      'reor'    : int,
                      'krtt'    : float,
                      'krttvar' : float,
                      'krto'    : float,
                      'castate' : lambda x:x,
-		     'mss'     : int,
-		     'mtu'     : int }
+                     'mss'     : int,
+                     'mtu'     : int }
  
             flow_ids = map(int, set(r['flow_id']))
             flow_map = dict()
