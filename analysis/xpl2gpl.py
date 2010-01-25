@@ -41,7 +41,7 @@ class xpl2gpl(object):
                     help = "include additional gnuplot file [default: none]")
         self.optparser.add_option("-t", "--terminal", metavar = "terminaltype",
                     action = "store", dest = "terminaltype",
-                    help = "use terminal type [default: x11] other possible selections: aqua, latex, mp, pdf, png, postscript, svg, etc")
+                    help = "use terminal type [default: x11] other possible selections: aqua, epslatex, latex, mp, pdf, png, postscript, svg, etc")
         self.optparser.add_option("-o", "--terminaloptions", metavar = "terminaloptions",
                     action = "store", dest = "terminaloptions",
                     help = "use terminal options [default: none]")
@@ -329,7 +329,10 @@ class xpl2gpl(object):
 
         #output options
         gploutput.write('set term %s %s\n' %(self.options.terminaltype,self.options.terminaloptions) )
-        gploutput.write('set output "%s.%s"\n' %(basename,self.options.terminaltype) )
+        if self.options.terminaltype == "epslatex":
+            gploutput.write('set output "%s.tex"\n' %(basename) )
+        else:
+            gploutput.write('set output "%s.%s"\n' %(basename,self.options.terminaltype) )
         gploutput.write('replot\n')
         gploutput.write('pause -1\n')
 
