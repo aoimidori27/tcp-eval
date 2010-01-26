@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# python imports
 import sys
 import os.path
 from logging import info, debug, warn, error
 
+# umic-mesh imports
 from um_analysis.testrecords_flowgrind import FlowgrindRecordFactory
 from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot
 from um_application import Application
 
 class FlowPlotter(Application):
-
     def __init__(self):
-
         Application.__init__(self)
 
         # object variables
@@ -30,12 +30,13 @@ class FlowPlotter(Application):
                         action = "store", dest = "cfgfile",
                         help = "use the file as config file for LaTeX. "\
                                "No default packages will be loaded.")
-	self.parser.add_option("-n", "--number", metavar = "Number",
-				action = 'store', type = 'int', dest = 'number',
-				help = 'print flow number [default: %default]')
+        self.parser.add_option("-n", "--number", metavar = "Number",
+	                    action = 'store', type = 'int', dest = 'number',
+			            help = 'print flow number [default: %default]')
 
     def set_option(self):
-        "Set options"
+        """Set options"""
+
         Application.set_option(self)
 
         if len(self.args) < 1:
@@ -55,7 +56,7 @@ class FlowPlotter(Application):
 
         if not outdir:
             outdir=self.options.outdir
-	number = self.options.number
+        number = self.options.number
         record = self.factory.createRecord(infile, "flowgrind")
         flows = record.calculate("flows")
 
@@ -65,9 +66,9 @@ class FlowPlotter(Application):
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
 
-	if number > len(flows):
-		warn("requested flow number %i greater then flows in file: %i" %(number,len(flows) ) )
-		exit(1)
+        if number > len(flows):
+	        warn("requested flow number %i greater then flows in file: %i" %(number,len(flows) ) )
+		    exit(1)
         flow = flows[number]
 
         #get max cwnd for ssth output
@@ -118,16 +119,16 @@ class FlowPlotter(Application):
 
 
     def run(self):
-        """ Run... """
-
+        """Run..."""
         for infile in self.args:
             self.plot(infile)
 
+    def main(self):
+        self.parse_options()
+        self.set_options()
+        self.run()
 
 # this only runs if the module was *not* imported
 if __name__ == '__main__':
-    inst=FlowPlotter()
-    inst.parse_option()
-    inst.set_option()
-    inst.run()
+    FlowPlotter().main()
 

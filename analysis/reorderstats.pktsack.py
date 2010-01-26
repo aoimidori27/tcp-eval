@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
+# python imports
 import dpkt
 import struct
 import socket
-
 from collections import deque
 from logging import info, debug, warn, error
 
@@ -38,7 +38,6 @@ class Info:
             return 1
        else:
             return 0
-
 
     def process(self,file):
         packets = dpkt.pcap.Reader(open(file,'rb'))

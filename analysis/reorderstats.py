@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
+# python imports
 import dpkt
 import struct
 import socket
-
 from logging import info, debug, warn, error
 
 # umic-mesh imports
@@ -37,7 +37,6 @@ class Info:
             return 1
        else:
             return 0
-
 
     def addConnection(self,ip_hdr):
         try:
@@ -110,10 +109,8 @@ class Info:
                 if ack <= sack_blocks[0] and len(sack_blocks) >= 3 \
                  and (sack_blocks[0] >= sack_blocks[2] and sack_blocks[1] <= sack_blocks[3]): #ex 2nd sack block, 1st sack block is covered by 2nd
                     dsack = 1
-
         except:
             pass
-
 
         # ---- process connection ---
 
@@ -319,12 +316,10 @@ class ReorderInfo(Application):
         print "No. connections with reordering: %u out of %u (%f)" %(con_reordered, len(info.connections), float(con_reordered)/len(info.connections))
         print "Packets reordered: %u out of %u (%f)" %(pkt_reordered, pkt_all, float(pkt_reordered)/pkt_all)
 
-
     def main(self):
         self.parse_option()
         self.set_option()
         self.run()
-
 
 
 if __name__ == "__main__":

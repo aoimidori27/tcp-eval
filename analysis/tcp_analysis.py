@@ -9,32 +9,26 @@ import subprocess
 import re
 import optparse
 from logging import info, debug, warn, error
-
-#from pysqlite2 import dbapi2 as sqlite 
+#from pysqlite2 import dbapi2 as sqlite
 from sqlite3 import dbapi2 as sqlite
-
 import numpy
 import scipy.stats
-
 
 # umic-mesh imports
 from um_application import Application
 from um_functions import call
-
 from um_analysis.analysis import Analysis
 from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot
 
 class TcpAnalysis(Analysis):
-    """ Application for analysis of flowgrind results """
+    """Application for analysis of flowgrind results"""
 
     def __init__(self):
-
         Analysis.__init__(self)
         self.parser.set_defaults(outprefix= "neighbors", quality = 100,
                                  indir  = "./",
                                  outdir = "./",
                                  digraph=False)
-        
         self.parser.add_option('-P', '--prefix', metavar="PREFIX",
                         action = 'store', type = 'string', dest = 'outprefix',
                         help = 'Set prefix of output files [default: %default]')
@@ -42,13 +36,13 @@ class TcpAnalysis(Analysis):
     def set_option(self):
         "Set options"
         Analysis.set_option(self)
-        
+
     def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
         if test == "rate":
             return self.onLoadRate(record, iterationNo, scenarioNo, runNo, test)
-        
+
         dbcur = self.dbcon.cursor()
-    
+
         recordHeader = record.getHeader()
         src = recordHeader["flowgrind_src"]
         dst = recordHeader["flowgrind_dst"]
@@ -60,18 +54,16 @@ class TcpAnalysis(Analysis):
             start_time = int(float(recordHeader["test_start_time"]))
         except KeyError:
             start_time = 0
-        
-        
+
         thruput = record.calculate("thruput")
-        
         if not thruput:
             if not self.failed.has_key(run_label):
                 self.failed[run_label] = 1
             else:
-                self.failed[run_label] = self.failed[run_label]+1            
+                self.failed[run_label] = self.failed[run_label]+1
             return
-    
-        # hack to support two parallel flows 
+
+        # hack to support two parallel flows
         thruput_list = record.calculate("thruput_list")
         if len(thruput_list) == 2:
             thruput_0 = thruput_list[0]
@@ -99,14 +91,12 @@ class TcpAnalysis(Analysis):
 
         if not avg_rate:
             return
-        
+
         dbcur.execute("""
                       INSERT INTO tests_rate VALUES (%u, %u, %u, %f)
                       """ % (iterationNo,scenarioNo,runNo,avg_rate))
 
-
     def generateTputOverTime(self, orderby="iterationNo, runNo, scenarioNo ASC"):
-
         dbcur = self.dbcon.cursor()
 
         thruputs = dict()
@@ -120,13 +110,13 @@ class TcpAnalysis(Analysis):
         sorted_keys = list()
         for row in dbcur:
             (iterationNo, runNo, scenarioNo, thruput, time) = row
-            key = (iterationNo,runNo,scenarioNo)        
+            key = (iterationNo,runNo,scenarioNo)
             thruputs[key] = thruput
             if time != 0:
                 times[key] = time
             sorted_keys.append(key)
 
-        rates = dict()        
+        rates = dict()
         dbcur.execute('''
         SELECT iterationNo, runNo, scenarioNo, avg_rate
         FROM tests_rate
@@ -138,7 +128,7 @@ class TcpAnalysis(Analysis):
             key = (iterationNo,runNo,scenarioNo)
             rates[key] = val
 
-        plotname = "tput_over_time" 
+        plotname = "tput_over_time"
         outdir = self.options.outdir
         valfilename = os.path.join(outdir, plotname+".values")
 
@@ -182,10 +172,9 @@ class TcpAnalysis(Analysis):
 
         if rates:
             p.plot(valfilename, "Avg. Rate", using=using_str+"2", linestyle=9)
-    
+
         # output plot
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
-        
 
     def generateTputOverTimePerRun(self):
         dbcur = self.dbcon.cursor()
@@ -214,13 +203,11 @@ class TcpAnalysis(Analysis):
         p = UmLinePlot("tput_over_time_per_run")
         p.setYLabel(r"$\\SI{\Mbps}$")
 
-
         for runNo in runs.keys():
-
             thruputs = dict()
             rates    = dict()
             times    = dict()
-        
+
             dbcur.execute('''
             SELECT iterationNo, scenarioNo, thruput, start_time
             FROM tests 
@@ -230,9 +217,9 @@ class TcpAnalysis(Analysis):
 
             sorted_keys = list()
 
-            for row in dbcur:                
+            for row in dbcur:
                 (iterationNo, scenarioNo, thruput, time) = row
-                key = (iterationNo,runNo,scenarioNo)        
+                key = (iterationNo,runNo,scenarioNo)
                 thruputs[key] = thruput
                 if time != 0:
                     times[key] = time
@@ -247,7 +234,7 @@ class TcpAnalysis(Analysis):
 
             for row in dbcur:
                 (iterationNo, scenarioNo, avg_rate) = row
-                key = (iterationNo,runNo,scenarioNo)        
+                key = (iterationNo,runNo,scenarioNo)
                 rates[key] = avg_rate
 
             plotname = "tput_over_time_per_run_r%u" %(runNo)
@@ -255,15 +242,13 @@ class TcpAnalysis(Analysis):
 
             info("Generating %s..." % valfilename)
             fh = file(valfilename, "w")
-            
+
             # header
             if times:
                 fh.write("# thruput rate start_time\n")
             else:
                 fh.write("# thruput rate\n")
 
-
-            
             # generate values file
             for key in sorted_keys:
                 thruput = thruputs[key]
@@ -276,10 +261,8 @@ class TcpAnalysis(Analysis):
                     fh.write("%f %f %u\n" %(thruput,rate,times[key]))
                 else:
                     fh.write("%f %f\n" %(thruput,rate))
-                    
             fh.close()
 
-                
             if runNo == 0 and times:
                 p.setXLabel("time")
                 p.setXDataTime()
@@ -294,13 +277,12 @@ class TcpAnalysis(Analysis):
 
             if rates:
                 p.plot(valfilename, "rate "+runs[runNo], linestyle=runNo+1, using=using_str+"2")
-        
 
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
     def generateAccHistogram(self):
-        """ Generates a histogram of the 10 best pairs (avg_thruput).
-            Thruput is accumulated for one run_label """
+        """Generates a histogram of the 10 best pairs (avg_thruput).
+           Thruput is accumulated for one run_label """
 
         dbcur = self.dbcon.cursor()
 
@@ -318,12 +300,11 @@ class TcpAnalysis(Analysis):
         FROM tests GROUP BY src, dst ORDER BY %s DESC LIMIT %d
         ''' %(sortby, limit) )
 
-
         # outfile
         outdir = self.options.outdir
         plotname = "best_%d_pairs_acc" %limit
         bestfilename = os.path.join(outdir, plotname+".values")
-        
+
         info("Generating %s..." % bestfilename)
 
         fh = file(bestfilename, "w")
@@ -347,14 +328,12 @@ class TcpAnalysis(Analysis):
         g.setYLabel(r"Throughput in $\\Mbps$")
         g.setBarsPerCluster(limit)
         g.plot('"%s" using 4:xtic(1) title "Throughput" ls 1' % bestfilename)
-        
+
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
-        
 
     def calculateStdDev(self, rlabel, slabel, key="thruput"):
-        """
-        Calculates the standarddeviation of all values of the same rlabel
-        and scenarioNo
+        """Calculates the standarddeviation of all values of the same rlabel
+           and scenarioNo
         """
 
         dbcur = self.dbcon.cursor()
@@ -365,16 +344,11 @@ class TcpAnalysis(Analysis):
         ''' %(key,slabel,rlabel)
 
         dbcur.execute(query)
-
         ary = numpy.array(dbcur.fetchall())
-
         return ary.std()
 
-
-
     def generateHistogram2Flows(self):
-        """ Generates a histogram with scenario labels for two parallel flows
-        """
+        """ Generates a histogram with scenario labels for two parallel flows"""
 
         dbcur = self.dbcon.cursor()
 
@@ -406,12 +380,10 @@ class TcpAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "scenario_compare_2flow" 
+        plotname      = "scenario_compare_2flow"
         valfilename  = os.path.join(outdir, plotname+".values")
 
-        
         info("Generating %s..." % valfilename)
-
         fh = file(valfilename, "w")
 
         # print header
@@ -428,7 +400,6 @@ class TcpAnalysis(Analysis):
             fh.write("min_tput_%(v)s max_tput_%(v)s avg_tput_%(v)s std_tput_%(v)s notests_%(v)s" %{ "v" : val })
             fh.write("min_tput_0%(v)s max_tput_0%(v)s avg_tput_0%(v)s std_tput_0%(v)s notests_%(v)s" %{ "v" : val })
             fh.write("min_tput_1%(v)s max_tput_1%(v)s avg_tput_1%(v)s std_tput_1%(v)s notests_%(v)s" %{ "v" : val })
-            
         fh.write("\n")
 
         sorted_labels = list()
@@ -456,14 +427,11 @@ class TcpAnalysis(Analysis):
                                  min_thruput,max_thruput,avg_thruput,std_thruput,notests,
                                  min_thruput_0,max_thruput_0,avg_thruput_0,std_thruput_0,notests,
                                  min_thruput_1,max_thruput_1,avg_thruput_1,std_thruput_1,notests)
-                                
             debug(row)
-
 
         i = 0
         # only display first LIMIT scenarios
         limit = 10
-        
         for key in sorted_labels:
             value = data[key]
             fh.write("%s" %key)
@@ -473,11 +441,9 @@ class TcpAnalysis(Analysis):
             i += 1
             if i>limit:
                 break
-        
         fh.close()
 
         g = UmHistogram(plotname)
-
         g.setYLabel(r"Throughput in $\\SI{\Mbps}$")
         g.setClusters(limit)
         g.setYRange("[ 0 : * ]")
@@ -485,11 +451,11 @@ class TcpAnalysis(Analysis):
         # bars
         for i in range(len(keys)):
             key = keys[i]
-#            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
+            #buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
             g.plotBar(valfilename, title=scenarios[key], using="%u:xtic(1)" %(4+(i*15)), linestyle=(i+1))
             g.plotBar(valfilename, title=scenarios[key]+" Flow 0", using="%u:xtic(1)" %(9+(i*15)), linestyle=(i+1))
             g.plotBar(valfilename, title=scenarios[key]+" Flow 1", using="%u:xtic(1)" %(14+(i*15)), linestyle=(i+1))
-        
+
         # errobars
         for i in range(len(keys)):
             # TODO: calculate offset with scenarios and gap
@@ -497,7 +463,7 @@ class TcpAnalysis(Analysis):
                 g.plotErrorbar(valfilename, i, 4+(i*15),5+(i*15), "Standard Deviation")
                 g.plotErrorbar(valfilename, i+1, 9+(i*15),10+(i*15))
                 g.plotErrorbar(valfilename, i+2, 14+(i*15),15+(i*15))
-            else:            
+            else:
                 g.plotErrorbar(valfilename, i*3, 4+(i*15),5+(i*15))
                 g.plotErrorbar(valfilename, i*3+1, 9+(i*15),10+(i*15))
                 g.plotErrorbar(valfilename, i*3+2, 14+(i*15),15+(i*15))
@@ -505,10 +471,8 @@ class TcpAnalysis(Analysis):
         # output plot
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
-
     def generateHistogram(self):
-        """ Generates a histogram with scenario labels.
-        """
+        """Generates a histogram with scenario labels."""
 
         dbcur = self.dbcon.cursor()
 
@@ -534,12 +498,10 @@ class TcpAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "scenario_compare" 
+        plotname      = "scenario_compare"
         valfilename  = os.path.join(outdir, plotname+".values")
 
-        
         info("Generating %s..." % valfilename)
-
         fh = file(valfilename, "w")
 
         # print header
@@ -554,7 +516,6 @@ class TcpAnalysis(Analysis):
         for key in scenarios.keys():
             val = scenarios[key]
             fh.write("min_tput_%(v)s max_tput_%(v)s avg_tput_%(v)s std_tput_%(v)s notests_%(v)s" %{ "v" : val })
-            
         fh.write("\n")
 
         sorted_labels = list()
@@ -571,11 +532,9 @@ class TcpAnalysis(Analysis):
             data[rlabel][sno] = "%s %s %s %s %s" %(min_thruput,max_thruput,avg_thruput,std_thruput,notests)
             debug(row)
 
-
         i = 0
         # only display first LIMIT scenarios
         limit = 10
-        
         for key in sorted_labels:
             value = data[key]
             fh.write("%s" %key)
@@ -585,11 +544,9 @@ class TcpAnalysis(Analysis):
             i += 1
             if i>limit:
                 break
-        
         fh.close()
 
         g = UmHistogram(plotname)
-
         g.setYLabel(r"Throughput in $\\SI{\Mbps}$")
         g.setClusters(limit)
         g.setYRange("[ 0 : * ]")
@@ -597,32 +554,31 @@ class TcpAnalysis(Analysis):
         # bars
         for i in range(len(keys)):
             key = keys[i]
-#            buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
+            #buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
             g.plotBar(valfilename, title=scenarios[key], using="%u:xtic(1)" %(4+(i*5)), linestyle=(i+1))
-        
+
         # errobars
         for i in range(len(keys)):
             # TODO: calculate offset with scenarios and gap
             if i == 0:
                 g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5), "Standard Deviation")
-            else:            
+            else:
                 g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5))
 
         # output plot
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
-
     def generateCumulativeFractionOfPairs(self):
         dbcur = self.dbcon.cursor()
-        
+
         # get number of unique pairs
         dbcur.execute('''
-        SELECT COUNT(DISTINCT run_label) FROM tests 
+        SELECT COUNT(DISTINCT run_label) FROM tests
         ''')
 
         pairs = dbcur.fetchone()[0]
         info("Found %u unique pairs" %pairs)
-        
+
         # get unique pairs and calculate avg_thruput, sort by it
         dbcur.execute('''
         SELECT
@@ -632,9 +588,9 @@ class TcpAnalysis(Analysis):
         ''')
 
         outdir = self.options.outdir
-        plotname = "fraction_of_pairs" 
+        plotname = "fraction_of_pairs"
         valfilename = os.path.join(outdir, plotname+".values")
-        
+
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
 
@@ -655,7 +611,7 @@ class TcpAnalysis(Analysis):
 
         g.setXLabel(r"Throughput in $\\SI{\Mbps}$")
         g.setYLabel("Fraction of Pairs")
-        
+
         g.plot('"%s" using 1:2 title "1-Hop" ls 1 with steps' % valfilename)
 
         # output plot
@@ -663,10 +619,11 @@ class TcpAnalysis(Analysis):
 
 
     def generateTputDistributions(self):
-        """ Generate a tput histogram """
+        """Generate a tput histogram"""
+
         dbcur = self.dbcon.cursor()
 
-        # get scenarios 
+        # get scenarios
         dbcur.execute('''
         SELECT DISTINCT scenarioNo, scenario_label
         FROM tests ORDER BY scenarioNo'''
@@ -690,10 +647,9 @@ class TcpAnalysis(Analysis):
         # iterate over every scenario and run an generate a grahic
         for run in runs.iteritems():
             self.generateTputDistribution(run, 100)
-    
 
     def normaltest(self, data, m):
-        ary = numpy.array(data)        
+        ary = numpy.array(data)
         (hist, bins) = numpy.histogram(ary, bins=m)
 
         # number of observations
@@ -719,8 +675,8 @@ class TcpAnalysis(Analysis):
             if (m-1)==i:
                 right = ary.max()
             else:
-                right = bins[i+1]            
-            
+                right = bins[i+1]
+
             # compute the expected 0-hyptohesis count for bin i
             hyp = (norm.cdf(right) - norm.cdf(left)) * n
             exp.append(hyp)
@@ -734,7 +690,7 @@ class TcpAnalysis(Analysis):
         # degrees of freedom (2 parameters were estimated for normal distribution)
         df = m-2-1
 
-#        info("Chi-Square-Test score (mine) : %f" %chi_square)
+        #info("Chi-Square-Test score (mine) : %f" %chi_square)
         #(chi_square_score, p_value) = scipy.stats.chisquare(hist, numpy.array(exp))
         chi_p_value = scipy.stats.chisqprob(chi_square, df)
         info("Chi-square test score     : %f" %chi_square)
@@ -743,18 +699,16 @@ class TcpAnalysis(Analysis):
         info("Chi-square test passed    : %s" %(chi_p_value > 0.05))
 
         # omnibus test
-	try:
-        	(omnibus_score, omnibus_tail) = scipy.stats.normaltest(data)
-        	omnibus_p_value = scipy.stats.chisqprob(omnibus_score, 2)[0]
-        	info("Omnibus test score        : %f" %omnibus_score)
-        	info("Omnibus test p-value      : %f" %omnibus_p_value)
-        	info("Omnibus test 2-tail       : %f" %omnibus_tail)
-        	info("Omnibus test passed       : %s" %(omnibus_p_value > 0.05))
-	except:
-		info("Omnibus computation raised an exception!")
-        
-    
-               
+        try:
+            (omnibus_score, omnibus_tail) = scipy.stats.normaltest(data)
+            omnibus_p_value = scipy.stats.chisqprob(omnibus_score, 2)[0]
+            info("Omnibus test score        : %f" %omnibus_score)
+            info("Omnibus test p-value      : %f" %omnibus_p_value)
+            info("Omnibus test 2-tail       : %f" %omnibus_tail)
+            info("Omnibus test passed       : %s" %(omnibus_p_value > 0.05))
+        except:
+	        info("Omnibus computation raised an exception!")
+
     def generateTputDistribution(self, run, noBins):
         (runNo, run_label) = run
 
@@ -795,15 +749,12 @@ class TcpAnalysis(Analysis):
         mu  = ary.mean()
         std = ary.std()
         self.normaltest(ary,noBins)
-        
+
         f = "exp(-0.5*((x-%f)/%f)**2)/(%f*sqrt(2*pi))" %(mu,std,std)
         p.rawPlot('%s with lines title "Normal Distribution"' %f)
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
-        
-        
 
     def generateAccTputDistribution(self, noBins):
-
         dbcur = self.dbcon.cursor()
         # load data into a numpy array
         dbcur.execute('''
@@ -812,12 +763,9 @@ class TcpAnalysis(Analysis):
         ''')
 
         ary = numpy.array(dbcur.fetchall())
-
         plotname = "tput_distribution_acc_b%u" %(noBins)
-
         outdir = self.options.outdir
         valfilename = os.path.join(outdir, plotname+".values")
-
 
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
@@ -830,12 +778,10 @@ class TcpAnalysis(Analysis):
 
         for i in range(len(n)):
             fh.write("%f %f\n" %(bins[i], n[i]))
-
         fh.close()
 
-
     def run(self):
-        "Main Method"
+        """Main Method"""
 
         # database in memory to access data efficiently
         self.dbcon = sqlite.connect(':memory:')
@@ -878,9 +824,9 @@ class TcpAnalysis(Analysis):
         self.generateAccTputDistribution(50)
         self.generateAccHistogram()
         self.generateCumulativeFractionOfPairs()
- 
+
     def main(self):
-        "Main method of the ping stats object"
+        """Main method of the ping stats object"""
 
         self.parse_option()
         self.set_option()

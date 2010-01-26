@@ -1,26 +1,29 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""xpl2gpl.py -- tcptrace / xplot 2 gnuplot converter
-
-"""
+# python imports
 import os, math, optparse, sys, subprocess
 from logging import info, debug, warn, error
 from simpleparse import generator
 from simpleparse.parser import Parser
 from mx.TextTools import TextTools
 
+"""xpl2gpl.py -- tcptrace / xplot 2 gnuplot converter"""
+
 class xpl2gpl(object):
-    "Class to convert xplot/tcptrace files to gnuplot files"
+    """Class to convert xplot/tcptrace files to gnuplot files"""
 
     def __init__(self):
-
         # initialization of the option parser
         usage = "usage: %prog [options] <file1> <file2> .."
         self.optparser = optparse.OptionParser()
         self.optparser.set_usage(usage)
-        self.optparser.set_defaults(debug = False, title = '', xlabel = '', ylabel = '', includefile ='', terminaltype = 'x11', keyoptions = '', terminaloptions = '', labeloptions = '', execute = False, defaultstyle = 'points pt 2',linestyle = 'lines',dotstyle = 'dots',boxstyle = 'points pt 3',diamondstyle = 'points pt 1',varrowstyle = 'points pt 1', harrowstyle = 'points pt 5',dlinestyle = 'linepoints pt 4')
-
+        self.optparser.set_defaults(debug = False, title = '', xlabel = '', ylabel = '', includefile ='', \
+                                    terminaltype = 'x11', keyoptions = '', terminaloptions = '', \
+                                    labeloptions = '', execute = False, defaultstyle = 'points pt 2', \
+                                    linestyle = 'lines',dotstyle = 'dots',boxstyle = 'points pt 3', \
+                                    diamondstyle = 'points pt 1',varrowstyle = 'points pt 1', \
+                                    harrowstyle = 'points pt 5',dlinestyle = 'linepoints pt 4')
         self.optparser.add_option("-d", "--debug",
                     action = "store_true", dest = "debug",
                     help = "debug parsing [default: %default]")
@@ -76,7 +79,6 @@ class xpl2gpl(object):
                     action = "store", dest = "dlinestyle",
                     help = "use style options [default: %default]")
     def main(self):
-
         (self.options, self.args) = self.optparser.parse_args()
 
         for entry in self.args:
