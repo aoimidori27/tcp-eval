@@ -2,17 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys
-import os
-import os.path
-import subprocess
-import re
-import time
-import signal
-import socket
-import traceback
 from logging import info, debug, warn, error
-from numpy import array
 
 class TestRecord:
     """A record of a single Test.

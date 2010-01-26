@@ -4,7 +4,6 @@
 import dpkt
 import struct
 import socket
-from collections import deque
 from logging import info, debug, warn, error
 
 # umic-mesh imports

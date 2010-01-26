@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import re
 from logging import info, debug, warn, error
-from numpy import array
 
 # umic-mesh imports
 from testrecords_ping import PingRecordFactory

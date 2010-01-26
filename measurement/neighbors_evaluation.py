@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys
 from twisted.internet import defer, reactor
 
 # umic-mesh imports

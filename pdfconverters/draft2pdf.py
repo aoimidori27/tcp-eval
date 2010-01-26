@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import optparse, sys, os, subprocess
+import os
+import subprocess
 from logging import info, debug, warn, error
 
 # umic-mesh imports

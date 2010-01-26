@@ -4,7 +4,6 @@
 # python imports
 import os
 import re
-import sys
 from logging import info, debug, warn, error
 
 # umic-mesh imports

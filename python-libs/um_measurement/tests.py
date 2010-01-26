@@ -2,9 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys
-import os
-import pwd
 from logging import info, warn, error, debug
 
 from twisted.internet import defer, error, reactor

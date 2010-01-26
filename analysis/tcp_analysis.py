@@ -2,20 +2,14 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys
 import os
 import os.path
-import subprocess
-import re
-import optparse
 from logging import info, debug, warn, error
-#from pysqlite2 import dbapi2 as sqlite
 from sqlite3 import dbapi2 as sqlite
 import numpy
 import scipy.stats
 
 # umic-mesh imports
-from um_application import Application
 from um_functions import call
 from um_analysis.analysis import Analysis
 from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot

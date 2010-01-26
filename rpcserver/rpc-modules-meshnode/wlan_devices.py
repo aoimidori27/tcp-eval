@@ -3,9 +3,8 @@
 
 # python imports
 import os
-import re, glob
+import re
 from logging import info, debug, warn, error, critical
-from tempfile import mkstemp
 
 # twisted imports
 from twisted.internet import defer, threads, protocol, utils

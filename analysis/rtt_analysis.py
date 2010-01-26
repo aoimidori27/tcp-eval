@@ -2,25 +2,12 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys
 import os
 import os.path
-import subprocess
-import re
-import time
-import signal
-import socket
-import optparse
-import time
-import gc
 from logging import info, debug, warn, error
-from datetime import timedelta, datetime
-import numpy
 
 # umic-mesh imports
-from um_application import Application
 from um_config import *
-from um_functions import call
 from um_analysis.analysis import Analysis
 from um_gnuplot import UmPointPlot
 

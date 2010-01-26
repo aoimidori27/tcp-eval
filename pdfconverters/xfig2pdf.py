@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import optparse
 import sys
 import os
 import shutil

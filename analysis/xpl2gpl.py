@@ -2,7 +2,11 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os, math, optparse, sys, subprocess
+import os
+import math
+import optparse
+import sys
+import subprocess
 from logging import info, debug, warn, error
 from simpleparse import generator
 from simpleparse.parser import Parser

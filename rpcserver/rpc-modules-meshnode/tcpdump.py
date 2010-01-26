@@ -5,8 +5,6 @@
 import os
 import errno
 import re
-import signal
-import subprocess
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
 

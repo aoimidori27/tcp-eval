@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys
 from logging import info, debug, warn, error
 from twisted.internet import defer, reactor
 

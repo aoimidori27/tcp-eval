@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import os, sys, stat, socket
+import os
+import stat
+import socket
 from logging import info, debug, warn, error, critical
-from tempfile import mkstemp
 
 # twisted imports
 from twisted.internet import defer, threads, protocol, utils

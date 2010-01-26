@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*
 
 # python imports
-import os
 from logging import info, debug, warn, error
 
 # umic-mesh imports

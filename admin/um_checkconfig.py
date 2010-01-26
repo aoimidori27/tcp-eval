@@ -4,8 +4,6 @@
 # python imports
 import os
 import os.path
-import sets
-import dircache
 from logging import info, debug, warn, error
 
 # umic-mesh imports

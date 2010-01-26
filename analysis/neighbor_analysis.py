@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys, os, os.path, subprocess, re, time, signal, socket, optparse, time
+import os
+import os.path
 from logging import info, debug, warn, error
-from datetime import timedelta, datetime
 from pysqlite2 import dbapi2 as sqlite
-import numpy
 
 # umic-mesh imports
-from um_application import Application
 from um_config import *
 from um_functions import call
 from um_analysis.analysis import Analysis

@@ -5,7 +5,6 @@
 import os
 import os.path
 from logging import info, debug, warn, error, critical
-from tempfile import mkstemp
 
 # twisted imports
 from twisted.internet import defer, threads, protocol, utils

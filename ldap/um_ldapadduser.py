@@ -4,11 +4,10 @@
 # python imports
 import tempfile
 import ldap
-import os
 import sys
-import getpass
 import string
-import md5,base64
+import md5
+import base64
 from ldif import LDIFParser
 from ldap.modlist import addModlist
 from random import choice       # to generate a user password
@@ -62,16 +61,16 @@ class LdapAdd(Application):
 
         passwd=file(self.options.passfile).readline()
         passwd=passwd.strip()
-        # ----------> connect to ldap server
+        # connect to ldap server
         try:
             l = ldap.open(self.options.server)
             l.simple_bind_s("cn=admin,dc=umic-mesh,dc=net", passwd)
             info("Connected to server.")
         except ldap.LDAPError, error_message:
             error("Couldn't connect. %s" % error_message)
-            exit()
+            sys.exit(1)
 
-        # ----------> add user to ONE group
+        # add user to ONE group
         if (self.options.group):
             if (self.options.uid):
                 # does group exists?
@@ -101,9 +100,11 @@ class LdapAdd(Application):
                 else: error("User does not exist.")
             else:
                 error("No user given. Use option -u !")
-            exit()
 
-        # ----------> finding the maximum uidNumber, so that the new user can get the next
+            # do nothing else than adding user to one group
+            sys.exit(0)
+
+        # finding the maximum uidNumber, so that the new user can get the next
         mid = l.search_s(self.options.baseDN, ldap.SCOPE_SUBTREE, "objectClass=*")
 
         uidNumber = 2000        #minimum for an uidNumber
@@ -115,7 +116,7 @@ class LdapAdd(Application):
             except:
                 pass #No uidNumber in entry
 
-        # ----------> set user data
+        # set user data
         print "Given name: ",
         name=sys.stdin.readline().strip()
 
@@ -134,7 +135,7 @@ class LdapAdd(Application):
         uidNumber = uidNumber+1
         llastname = string.lower(lastname)
 
-        # ----------> create ldif files
+        # create ldif files
         tmp = tempfile.NamedTemporaryFile()
 
         size = 9
@@ -179,7 +180,7 @@ shadowLastChange: 0
         except ldap.LDAPError, error_message:
             error("Error: %s" %str(error_message))
             error("Giving up.")
-	        exit()
+	        sys.exit(1)
 
         tmp2 = tempfile.NamedTemporaryFile()
         str_tmp2 = """version: 1
@@ -202,19 +203,19 @@ automountInformation: -fstype=nfs,rw,hard,intr,nodev,exec,nosuid,relatime,rsize=
                 error("Error: %s" %str(error_message))
                 error("Adding automount information failed.\nDeleting user.")
                 rid = l.delete("uid=%s,ou=People,dc=umic-mesh,dc=net" % llastname)
-                exit()
+                exit(1)
 
-        # ----------> add user to groups
+        # add user to groups
         def_groups = ['um-user','um-webuser']
         mod_attrs = [( ldap.MOD_ADD, 'memberUid', llastname )]
         for gr in def_groups:
             l.modify_s('cn=%s,ou=Group,dc=umic-mesh,dc=net' %gr, mod_attrs)
             info("Added user %s to group %s" % (llastname, gr))
 
-        # ----------> create home directory
+        # create home directory
         call("su %s -c exit" % llastname)
 
-        # ----------> close connection and remove temp files
+        # close connection and remove temp files
         l.unbind_s()
         tmp.close()
         tmp2.close()

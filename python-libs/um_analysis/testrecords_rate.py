@@ -2,17 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys
-import os
-import os.path
-import subprocess
 import re
-import time
-import signal
-import socket
 from logging import info, debug, warn, error
-from numpy import array
-import traceback
 
 # um imports
 from testrecord import TestRecord

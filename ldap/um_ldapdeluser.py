@@ -3,9 +3,7 @@
 
 # python imports
 import ldap
-import os
 import sys
-import string
 from logging import info, debug, warn, error
 
 # umic-mesh imports
@@ -47,7 +45,7 @@ class LdapDelete(Application):
             info("Connected to server.")
         except ldap.LDAPError, error_message:
             error("Couldn't connect: %s" % error_message)
-            exit()
+            sys.exit(1)
 
         # ----------> get uid
         while (1 == 1):     # if the user doesn't exist do not exit with an error but give it another try
@@ -62,7 +60,7 @@ class LdapDelete(Application):
                 mod_attrs = [( ldap.MOD_DELETE, 'memberUid', uid )]
                 l.modify_s('cn=%s,ou=Group,dc=umic-mesh,dc=net' %self.options.group, mod_attrs)
                 info("User %s removed from group %s" %(uid, self.options.group))
-                exit()
+                sys.exit(0)
 
             # ----------> delete user from all groups
             mid = l.search_s("ou=Group,dc=umic-mesh,dc=net", ldap.SCOPE_SUBTREE, "objectClass=*")

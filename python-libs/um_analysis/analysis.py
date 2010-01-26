@@ -5,7 +5,6 @@
 import sys
 import os
 import os.path
-import subprocess
 import re
 from logging import info, debug, warn, error
 
