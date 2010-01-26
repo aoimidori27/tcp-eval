@@ -19,8 +19,6 @@ from um_application import Application
 from um_functions import execute, CommandFailed, call, requireroot
 
 class LdapAdd(Application):
-
-
     def __init__(self):
         Application.__init__(self)
 
@@ -32,7 +30,6 @@ class LdapAdd(Application):
                          baseDN = "ou=People,dc=umic-mesh,dc=net",
                          passfile = "/etc/ldap.secret"
                     )
-        
         self.parser.add_option("-l", "--ldap-server", metavar = "SERVER",
                                action = "store", dest = "server",
                                help = "The server at which the LDAP directory is located [default: %default]")
@@ -52,6 +49,17 @@ class LdapAdd(Application):
                                help = "User to add to group")
 
     def run(self):
+        class AddLDIF(LDIFParser):
+            def __init__(self, input, ldap_handle):
+                self.ldap_handle = ldap_handle
+                LDIFParser.__init__(self, input)
+
+            def handle(self, dn, entry):
+                if not dn:
+                    return
+                modlist = addModlist(entry)
+                self.ldap_handle.add_s(dn, modlist)
+
         passwd=file(self.options.passfile).readline()
         passwd=passwd.strip()
         # ----------> connect to ldap server
@@ -62,7 +70,7 @@ class LdapAdd(Application):
         except ldap.LDAPError, error_message:
             error("Couldn't connect. %s" % error_message)
             exit()
-       
+
         # ----------> add user to ONE group
         if (self.options.group):
             if (self.options.uid):
@@ -94,11 +102,10 @@ class LdapAdd(Application):
             else:
                 error("No user given. Use option -u !")
             exit()
-        
- 
+
         # ----------> finding the maximum uidNumber, so that the new user can get the next
         mid = l.search_s(self.options.baseDN, ldap.SCOPE_SUBTREE, "objectClass=*")
-        
+
         uidNumber = 2000        #minimum for an uidNumber
         for entry in mid:
             try:            #there is one entry at the beginning without uidNumber
@@ -107,7 +114,7 @@ class LdapAdd(Application):
                     uidNumber = new
             except:
                 pass #No uidNumber in entry
-        
+
         # ----------> set user data
         print "Given name: ",
         name=sys.stdin.readline().strip()
@@ -115,7 +122,7 @@ class LdapAdd(Application):
         sys.stdout.softspace = 0        #to prevent leading space
         print "Lastname: ",
         lastname=sys.stdin.readline().strip()
-        
+
         mail="%s.%s@rwth-aachen.de" %(string.lower(name.replace(" ",".")), string.lower(lastname))
 
         sys.stdout.softspace = 0
@@ -123,10 +130,10 @@ class LdapAdd(Application):
         mail2=sys.stdin.readline().strip()
         if (mail2 != ""):
             mail = mail2
-        
+
         uidNumber = uidNumber+1
         llastname = string.lower(lastname)
-        
+
         # ----------> create ldif files
         tmp = tempfile.NamedTemporaryFile()
 
@@ -164,26 +171,15 @@ shadowLastChange: 0
         tmp.write(str_tmp1)
         tmp.flush()
         tmp.seek(0)
-        
-        class AddLDIF(LDIFParser):
-                def __init__(self, input, ldap_handle):
-                        self.ldap_handle = ldap_handle
-                        LDIFParser.__init__(self, input)
-        
-                def handle(self, dn, entry):
-                        if not dn:
-                                return
-                        modlist = addModlist(entry)
-                        self.ldap_handle.add_s(dn, modlist)
 
         parser = AddLDIF(tmp, l)
 
         try:
-                parser.parse()
+            parser.parse()
         except ldap.LDAPError, error_message:
-                error("Error: %s" %str(error_message))
-		error("Giving up.")
-		exit()
+            error("Error: %s" %str(error_message))
+            error("Giving up.")
+	        exit()
 
         tmp2 = tempfile.NamedTemporaryFile()
         str_tmp2 = """version: 1
@@ -207,14 +203,14 @@ automountInformation: -fstype=nfs,rw,hard,intr,nodev,exec,nosuid,relatime,rsize=
                 error("Adding automount information failed.\nDeleting user.")
                 rid = l.delete("uid=%s,ou=People,dc=umic-mesh,dc=net" % llastname)
                 exit()
-                
+
         # ----------> add user to groups
         def_groups = ['um-user','um-webuser']
         mod_attrs = [( ldap.MOD_ADD, 'memberUid', llastname )]
         for gr in def_groups:
             l.modify_s('cn=%s,ou=Group,dc=umic-mesh,dc=net' %gr, mod_attrs)
             info("Added user %s to group %s" % (llastname, gr))
-        
+
         # ----------> create home directory
         call("su %s -c exit" % llastname)
 
@@ -222,14 +218,13 @@ automountInformation: -fstype=nfs,rw,hard,intr,nodev,exec,nosuid,relatime,rsize=
         l.unbind_s()
         tmp.close()
         tmp2.close()
-        
-        
+
     def main(self):
         self.parse_option()
         self.set_option()
         self.run()
 
 
-
 if __name__ == "__main__":
     LdapAdd().main()
+

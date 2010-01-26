@@ -5,7 +5,6 @@
 import ldap
 import os
 import sys
-#import getpass
 import string
 from logging import info, debug, warn, error
 
@@ -14,8 +13,6 @@ from um_application import Application
 from um_functions import execute, CommandFailed, requireroot
 
 class LdapDelete(Application):
-
-
     def __init__(self):
         Application.__init__(self)
 
@@ -40,10 +37,8 @@ class LdapDelete(Application):
                                action = "store", dest = "passfile",
                                help = "The file for the admin password [default: %default]")
 
-
     def run(self):
         # ----------> connect to ldap server
-        #passwd = getpass.getpass("LDAP admin password: ")        #get the ldap admin password without displaying it
         passwd=file(self.options.passfile).readline()
         passwd=passwd.strip()
         try:
@@ -84,7 +79,7 @@ class LdapDelete(Application):
             for gr in groups:
                 l.modify_s('cn=%s,ou=Group,dc=umic-mesh,dc=net' % gr, mod_attrs)
                 info("Deleted user %s from group %s" % (uid, gr))
-        
+
             # ----------> delete user from automount
             try:
                 rid = l.delete('cn=%s,ou=auto.home,ou=automount,ou=admin,dc=umic-mesh,dc=net' % uid)
@@ -94,7 +89,7 @@ class LdapDelete(Application):
             except ldap.NO_SUCH_OBJECT, error_message:
                 error("No such user. %s" % error_message)
                 self.options.userid = ""
-        
+
         # ----------> delete user
         rid = l.delete('uid=%s,ou=People,dc=umic-mesh,dc=net' % uid)
         l.result(rid)
@@ -102,7 +97,7 @@ class LdapDelete(Application):
 
         # ----------> close connection
         l.unbind_s()
-        
+
 
     def main(self):
         self.parse_option()
@@ -113,3 +108,4 @@ class LdapDelete(Application):
 
 if __name__ == "__main__":
     LdapDelete().main()
+

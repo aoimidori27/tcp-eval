@@ -10,10 +10,8 @@ from logging import info, debug, warn, error
 from um_application import Application
 from um_functions import execute, CommandFailed
 
-
 class SetQuota(Application):
     """Class to set the user system quotas based on LDAP account information"""
-
 
     def __init__(self):
         Application.__init__(self)
@@ -31,9 +29,8 @@ class SetQuota(Application):
                                action = "store", dest = "baseDN",
                                help = "The base DN define at which node the search should originate [default: %default]")
 
-
     def run(self):
-        """Query LDAP server and set the user quotas """
+        """Query LDAP server and set the user quotas"""
 
         # parses a quota line from LDAP.
         # syntax definition: see quota.schema
@@ -55,20 +52,16 @@ class SetQuota(Application):
                 try:
                     # file system, soft blocks, hard blocks, soft inodes, hard inodes.
                     (fs, sblocks, hblocks, sinodes, hinodes) = reg_ex.match(q).groups()
-                    
                     info("Set quota: user=%s, disk=%s, sblocks=%s, hblocks=%s, sinodes=%s, hinodes=%s"
                         % (user, fs, sblocks, hblocks, sinodes, hinodes))
-                    
                     execute(["/usr/sbin/setquota", "-u", user, sblocks, hblocks, sinodes, hinodes, fs],
                             shell=False)
-                
                 except AttributeError, inst:
                     error("Syntax error in quota definition: user=%s, quota='%s'." % (user, quota))
                 except CommandFailed, inst:
                     error("Setting quota failed")
                     error(inst)
                     error("Error message %s" % inst.stderr)
-
 
     def main(self):
         """Main method of the SetQuota object"""
@@ -78,6 +71,6 @@ class SetQuota(Application):
         self.run()
 
 
-
 if __name__ == "__main__":
     SetQuota().main()
+

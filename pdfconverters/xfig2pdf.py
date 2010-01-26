@@ -10,16 +10,15 @@ import tempfile
 import subprocess
 import glob
 from logging import info, debug, warn, error
+
 # umic-mesh imports
 from um_application import Application
 
-
 class Xfig2PDF(Application):
-    "Class to convert combined xfig to plain pdf"
-
+    """Class to convert combined xfig to plain pdf"""
 
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the object"""
 
         Application.__init__(self)
 
@@ -49,7 +48,6 @@ class Xfig2PDF(Application):
         self.parser.set_usage(usage)
         self.parser.set_defaults(force = False, texsuffix = 'pdf_t',
                                  pdfsuffix = 'pdf', outputsuffix = 'comb.pdf')
-
         self.parser.add_option("-f", "--force",
                                action = "store_true", dest = "force",
                                help = "overwrite existing output pdf file")
@@ -70,9 +68,8 @@ class Xfig2PDF(Application):
                                action = "store_true", dest = "landscape",
                                help = "use landscape orientation")
 
-
     def set_option(self):
-        "Set options"
+        """Set options"""
 
         Application.set_option(self)
 
@@ -88,9 +85,8 @@ class Xfig2PDF(Application):
         self.pdfinput  = os.path.realpath("%s.%s" %(self.args[0], self.options.pdfsuffix))
         self.pdfoutput = os.path.realpath("%s.%s" %(self.args[0], self.options.outputsuffix))
 
-
     def run(self):
-        "Main method of the Xfig2PDF object"
+        """Main method of the Xfig2PDF object"""
 
         tempdir = tempfile.mkdtemp()
 
@@ -161,7 +157,6 @@ class Xfig2PDF(Application):
         os.remove(pdfoutputbasename)
         os.rmdir(tempdir)
 
-
     def main(self):
         self.parse_option()
         self.set_option()
@@ -170,3 +165,4 @@ class Xfig2PDF(Application):
 
 if __name__ == "__main__":
     Xfig2PDF().main()
+

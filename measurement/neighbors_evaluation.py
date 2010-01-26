@@ -1,33 +1,29 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import sys
-
 from twisted.internet import defer, reactor
 
+# umic-mesh imports
 from um_measurement import measurement, tests
 from um_node import Node
 
-
 class NeighborsEvaluationMeasurement(measurement.Measurement):
-    """
-        This Measurement tests connectivity via ping.:
-    """
-
+    """This Measurement tests connectivity via ping."""
 
     def __init__(self):
-        """Constructor of the object"""    
+        """Constructor of the object"""
         self.logprefix=""
         measurement.Measurement.__init__(self)
 
     def set_option(self):
         """Set options"""
         measurement.Measurement.set_option(self)
-        
-                                  
+
     @defer.inlineCallbacks
     def run(self):
-        "Main method"
+        """Main method"""
 
         # common options used for all tests
         opts = dict( ping_size        = 100,
@@ -64,11 +60,13 @@ class NeighborsEvaluationMeasurement(measurement.Measurement):
         yield self.tear_down()
         reactor.stop()
 
+    def main(self):
+        self.parse_option()
+        self.set_option()
+        self.run()
+        reactor.run()
 
 
 if __name__ == "__main__":
-    instance = NeighborsEvaluationMeasurement()
-    instance.parse_option()
-    instance.set_option()
-    instance.run()
-    reactor.run()
+    NeighborsEvaluationMeasurement().main()
+

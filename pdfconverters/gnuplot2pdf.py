@@ -11,16 +11,15 @@ import tempfile
 import subprocess
 import re
 from logging import info, debug, warn, error
+
 # umic-mesh imports
 from um_application import Application
 
-
 class Gnuplot2PDF(Application):
-    "Class to convert epslatex gnuplot to plain pdf"
-
+    """Class to convert epslatex gnuplot to plain pdf"""
 
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the object"""
 
         Application.__init__(self)
 
@@ -91,9 +90,8 @@ class Gnuplot2PDF(Application):
                                action = "store", dest = "pdfoutput",
                                help = "define output pdf file [default: BASENAME.pdf]")
 
-
     def set_option(self):
-        "Set options"
+        """Set options"""
 
         Application.set_option(self)
 
@@ -120,9 +118,8 @@ class Gnuplot2PDF(Application):
         else:
             self.pdfoutput = os.path.realpath("%s.pdf" %self.filename)
 
-
     def run(self):
-        "Main method of the Gnuplot2PDF object"
+        """Main method of the Gnuplot2PDF object"""
 
         tempdir = tempfile.mkdtemp()
 
@@ -220,7 +217,6 @@ class Gnuplot2PDF(Application):
         self.parse_option()
         self.set_option()
         self.run()
-
 
 
 if __name__ == "__main__" :

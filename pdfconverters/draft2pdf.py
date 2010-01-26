@@ -4,15 +4,15 @@
 # python imports
 import optparse, sys, os, subprocess
 from logging import info, debug, warn, error
+
 # umic-mesh imports
 from um_application import Application
 
 class Draft2Pdf(Application):
-    "Class to convert internet draft text files to pdf"
-
+    """Class to convert internet draft text files to pdf"""
 
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the object"""
 
         Application.__init__(self)
 
@@ -31,9 +31,8 @@ class Draft2Pdf(Application):
                                action = "store", dest = "pdfsuffix",
                                help = "define suffix of output pdf file [default: %default]")
 
-
     def run(self):
-        "Main method of the DraftToPdf object"
+        """Main method of the DraftToPdf object"""
 
 	    # process every file given on command line
         for entry in self.args:

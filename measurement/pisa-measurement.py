@@ -1,31 +1,29 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import sys
-
 from twisted.internet import defer, reactor
 
+#umic-mesh imports
 from um_measurement import measurement, tests
 from um_node import Node
-
 
 class PisaMeasurement(measurement.Measurement):
     """This Measurement has serveral scenarios to test: bluberdibbblub"""
 
-
     def __init__(self):
-        """Constructor of the object"""    
+        """Constructor of the object"""
         self.logprefix=""
         measurement.Measurement.__init__(self)
 
     def set_option(self):
         """Set options"""
         measurement.Measurement.set_option(self)
-        
-                                  
+
     @defer.inlineCallbacks
     def run(self):
-        "Main method"
+        """Main method"""
 
         # common options used for all tests
         opts = dict( ping_size        = 100,
@@ -56,13 +54,13 @@ class PisaMeasurement(measurement.Measurement):
                 for run_no in range(len(runs)):
                     # set logging prefix, tests append _testname
                     self.logprefix="i%03u_s%u_r%u" % (it, scenario_no, run_no)
-                    
+
                     # merge parameter configuration for the tests
                     kwargs = dict()
                     kwargs.update(runs[run_no])
                     kwargs.update(opts)
                     kwargs.update(scenarios[scenario_no])
-                                        
+
                     # set source and dest for tests
                     kwargs['thrulay_src'] = kwargs['ping_src'] = kwargs['src']
                     kwargs['thrulay_dst'] = kwargs['ping_dst'] = kwargs['dst']
@@ -71,15 +69,16 @@ class PisaMeasurement(measurement.Measurement):
                     yield self.run_test(tests.test_ping, **kwargs)
                     yield self.run_test(tests.test_thrulay, **kwargs)
 
-
         yield self.tear_down()
         reactor.stop()
 
+    def main(self):
+        self.parse_option()
+        self.set_option()
+        self.run()
+        reactor.run()
 
 
 if __name__ == "__main__":
-    instance = PisaMeasurement()
-    instance.parse_option()
-    instance.set_option()
-    instance.run()
-    reactor.run()
+    PisaMeasurement().main()
+
