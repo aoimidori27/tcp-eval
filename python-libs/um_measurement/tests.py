@@ -177,6 +177,7 @@ def test_flowgrind(mrs,
                    flowgrind_bport  = 5999,
                    flowgrind_opts   = "",
                    gzip_dumps       = True,
+                   nodetype         = "meshrouter",
                    **kwargs ):
     """This test performs a simple flowgrind (new, aka dd version) test with one tcp
        flow from src to dst.
@@ -195,11 +196,12 @@ def test_flowgrind(mrs,
             flowgrind_bport    : flowgrind base port
             flowgrind_opts     : additional command line arguments
             gzip_dumps         : gzip dumps to save space
+            nodetype           : the nodetype ("e.g. vmeshrouter")
     """
 
     # for convenience accept numbers as src and dst
-    src = Node(flowgrind_src, node_type="meshrouter")
-    dst = Node(flowgrind_dst, node_type="meshrouter")
+    src = Node(flowgrind_src, node_type=nodetype)
+    dst = Node(flowgrind_dst, node_type=nodetype)
 
     dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
 

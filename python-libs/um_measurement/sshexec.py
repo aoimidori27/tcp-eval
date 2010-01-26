@@ -162,7 +162,6 @@ class SSHConnectionFactory:
                 elif result.type == "exit-signal":
                     (signame, core_dumped,err_msg, lang_tag) = result.status
                     defer.returnValue(-self._name2sig(signame))
-            defer.returnValue(-255)
             else:
                 defer.returnValue(-255)
         except:
