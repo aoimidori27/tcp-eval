@@ -18,7 +18,6 @@ from um_image import Image, ImageValidityException
 from um_node import Node, VMeshHost, NodeValidityException
 from um_functions import requireroot, call, execute, CommandFailed
 
-
 class Xen(Application):
     """Class to start virtual nodes on the basis of Xen"""
 
@@ -92,7 +91,6 @@ class Xen(Application):
                                           user = self.dbuser,
                                           passwd = self.dbpass)
             self.dbconn.autocommit(True)
-
         except Exception, e:
             error("Could not connect to database: %s" %e)
             if not self.options.force:
@@ -116,7 +114,6 @@ class Xen(Application):
                 self._range = range(begin, end)
             else:
                 raise ValueError
-
         except IndexError:
             error("Incorrect number of arguments")
         except ValueError:
@@ -203,7 +200,7 @@ class Xen(Application):
         # additional option checking for create
         if self.action == 'create':
             self.set_options_create()
-        # additional option checking for shutdown 
+        # additional option checking for shutdown
         if self.action == 'shutdown':
             self.set_options_shutdown()
         # additional option checking for list
@@ -233,7 +230,6 @@ class Xen(Application):
 
         # create the desired number of vmeshnodes
         for number in self._range:
-
             # create a vmeshnode object
             try:
                 vmeshnode = Node(number, self.options.node_type)
@@ -248,7 +244,6 @@ class Xen(Application):
                 execute(cmd, shell = False)
                 warn("%s seems to be already running." % vmeshnode.getHostname())
                 continue
-
             except CommandFailed:
                 pass
 
@@ -257,7 +252,6 @@ class Xen(Application):
                                                 % vmeshnode.getHostname())
 
             info("Creating Domain config file %s" % cfg_file)
-
             vmnode_number = vmeshnode.getNumber()
             first_byte = vmnode_number/256
             rest_2bytes = vmnode_number%256
@@ -319,7 +313,7 @@ class Xen(Application):
                 cursor.execute(query)
 
     def run_shutdown(self):
-        """Shutdown :the desired number of vmeshnodes"""
+        """Shutdown the desired number of vmeshnodes"""
 
         # must be root
         requireroot()
@@ -334,7 +328,6 @@ class Xen(Application):
             try:
                 info("Shutting down %s" % vmeshnode.getHostname())
                 call(cmd, shell = True)
-
             except CommandFailed, exception:
                 error("Error while shutting down %s" % vmeshnode.getHostname())
                 error(exception)
@@ -365,7 +358,6 @@ class Xen(Application):
 
                 # print infos
                 print "%s \t %s \t %s \t %s" %(server, nr_router, vm[0][11][1], vm[0][5][1])
-
         else:
             info("Collecting stats ..")
 
@@ -428,10 +420,10 @@ class Xen(Application):
         if self.action == 'list':
             self.run_list()
 
+    def main(self):
+        self.parse_option()
+        self.set_option()
+        self.run()
 
 if __name__ == "__main__":
-    inst = Xen()
-    inst.parse_option()
-    inst.set_option()
-    inst.run()
-
+    Xen().main()

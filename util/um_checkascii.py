@@ -1,25 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# python import
 import sys
 import codecs
+
+# umic-mesh import
 from um_application import Application
 
 class CheckASCII(Application):
-    "Class to check whether there are non ASCII characters in a file"
-
+    """Class to check whether there are non ASCII characters in a file"""
 
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the object"""
 
         Application.__init__(self)
- 
+
         usage = "usage: %prog <file>"
         self.parser.set_usage(usage)
 
-
     def set_option(self):
-        "Set options"
+        """Set options"""
 
         Application.set_option(self);
 
@@ -27,7 +28,6 @@ class CheckASCII(Application):
         if len(self.args) == 0:
             print "Give a filename."
             sys.exit()
-            
 
     def main(self):
         self.parse_option()
@@ -41,15 +41,14 @@ class CheckASCII(Application):
         line = 1
         rline = infile.readline()
         while (rline):
-            try: 
+            try:
                 codec(rline)    # if it fails there are non ascii characters in the line
             except Exception, e:
                 pos = str(e).split()[8].split(":")[0]   # get the position out of the error message
                 print "Non ASCII in line %s pos %s" %(line, int(pos)+1)
             line += 1
-            rline = infile.readline()       
+            rline = infile.readline()
 
 
 if __name__ == '__main__':
     CheckASCII().main()
-

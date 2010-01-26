@@ -12,22 +12,19 @@ from logging import info, debug, warn, error
 # umic-mesh imports
 from um_application import Application
 
-
-
 class Btex2utf8(Application):
-    "Class to convert bibtex special symbols to utf8"
-
+    """Class to convert bibtex special symbols to utf8"""
 
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the object"""
 
         Application.__init__(self);
-        
+
         # object variables
         self.bibtex2unicode_map2 = { # length two
                         r'\\\\AA'   : u'\u00C5', # capital A with ring above
                         r'\\\\AE'   : u'\u00C6', # capital diphthong A with E
-                        r'\\\\ss'   : u'\u00DF', # small german sharp s 
+                        r'\\\\ss'   : u'\u00DF', # small german sharp s
                         r'\\\\aa'   : u'\u00E5', # small a with ring above
                         r'\\\\ae'   : u'\u00E6', # small diphthong a with e
                         r'\\\\OE'   : u'\u0152', # capital dipthong o with e
@@ -35,22 +32,22 @@ class Btex2utf8(Application):
         }
 
         self.bibtex2unicode_map = { # latin-1 characters upper case
-                        r'\\\\`\{?A\}?'   : u'\u00C0', # capital A with grave accent 
+                        r'\\\\`\{?A\}?'   : u'\u00C0', # capital A with grave accent
                         r"\\\\'\{?A\}?"   : u'\u00C1', # capital A with acute accent
                         r'\\\\^\{?A\}?'   : u'\u00C2', # capital A with circumflex accent
                         r'\\\\~\{?A\}?'   : u'\u00C3', # capital A with tilde
                         r'\\\\"\{?A\}?'   : u'\u00C4', # capital A with diaresis
                         r'\\\\c\{?C\}?'   : u'\u00C7', # capital C with cedilla
-                        r'\\\\`\{?E\}?'   : u'\u00C8', # capital E with grave accent 
+                        r'\\\\`\{?E\}?'   : u'\u00C8', # capital E with grave accent
                         r"\\\\'\{?E\}?"   : u'\u00C9', # capital E with acute accent
                         r'\\\\^\{?E\}?'   : u'\u00CA', # capital E with circumflex accent
                         r'\\\\"\{?E\}?'   : u'\u00CB', # capital E with diaresis
-                        r'\\\\`\{?I\}?'   : u'\u00CC', # capital I with grave accent 
+                        r'\\\\`\{?I\}?'   : u'\u00CC', # capital I with grave accent
                         r"\\\\'\{?I\}?"   : u'\u00CD', # capital I with acute accent
                         r'\\\\^\{?I\}?'   : u'\u00CE', # capital I with circumflex accent
                         r'\\\\"\{?I\}?'   : u'\u00CF', # capital I with diaresis
-                        r'\\\\~\{?N\}?'   : u'\u00D1', # capital N with tilde 
-                        r'\\\\`\{?O\}?'   : u'\u00D2', # capital O with grave accent 
+                        r'\\\\~\{?N\}?'   : u'\u00D1', # capital N with tilde
+                        r'\\\\`\{?O\}?'   : u'\u00D2', # capital O with grave accent
                         r"\\\\'\{?O\}?"   : u'\u00D3', # capital O with acute accent
                         r'\\\\^\{?O\}?'   : u'\u00D4', # capital O with circumflex accent
                         r'\\\\~\{?O\}?'   : u'\u00D5', # capital O with tilde
@@ -61,15 +58,15 @@ class Btex2utf8(Application):
                         r'\\\\^\{?U\}?'   : u'\u00DB', # capital U with circumflex accent
                         r'\\\\"\{?U\}?'   : u'\u00DC', # capital U with diaresis
                         r"\\\\'\{?Y\}?"   : u'\u00DD', # capital Y with acute accent
- 
+
                         # latin-1 characters lower case
 
-                        r'\\\\`\{?a\}?'   : u'\u00E0', # small a with grave accent 
+                        r'\\\\`\{?a\}?'   : u'\u00E0', # small a with grave accent
                         r"\\\\'\{?a\}?"   : u'\u00E1', # small a with acute accent
                         r'\\\\^\{?a\}?'   : u'\u00E2', # small a with circumflex accent
                         r'\\\\~\{?a\}?'   : u'\u00E3', # small a with tilde
                         r'\\\\"\{?a\}?'   : u'\u00E4', # small a with diaresis
-                        r'\\\\c\{?c\}?'   : u'\u00E7', # small c with cedilla 
+                        r'\\\\c\{?c\}?'   : u'\u00E7', # small c with cedilla
                         r'\\\\`\{?e\}?'   : u'\u00E8', # small e with grave accent
                         r"\\\\'\{?e\}?"   : u'\u00E9', # small e with acute accent
                         r'\\\\^\{?e\}?'   : u'\u00EA', # small e with circumflex accent
@@ -78,8 +75,8 @@ class Btex2utf8(Application):
                         r"\\\\'\{?i\}?"   : u'\u00ED', # small i with acute accent
                         r'\\\\^\{?i\}?'   : u'\u00EE', # small i with circumflex accent
                         r'\\\\"\{?i\}?'   : u'\u00EF', # small i with diaresis
-                        r'\\\\~\{?n\}?'   : u'\u00F1', # small n with tilde 
-                        r'\\\\`\{?o\}?'   : u'\u00F2', # small o with grave accent 
+                        r'\\\\~\{?n\}?'   : u'\u00F1', # small n with tilde
+                        r'\\\\`\{?o\}?'   : u'\u00F2', # small o with grave accent
                         r"\\\\'\{?o\}?"   : u'\u00F3', # small o with acute accent
                         r'\\\\^\{?o\}?'   : u'\u00F4', # small o with circumflex accent
                         r'\\\\~\{?o\}?'   : u'\u00F5', # small o with tilde
@@ -91,16 +88,16 @@ class Btex2utf8(Application):
                         r'\\\\"\{?u\}?'   : u'\u00FC', # small u with diaresis
                         r"\\\\'\{?y\}?"   : u'\u00FD', # small y with acute accent
                         r'\\\\"\{?y\}?'   : u'\u00FF', # small y with diaresis
-     
+
                        # latin Extended-A
-                        r'\\\\c\{?S\}?' : u'\u015E', # capital S with cedilla 
-                        r'\\\\c\{?s\}?' : u'\u015F', # small s with cedilla 
-     
-                       # special symbols 
+                        r'\\\\c\{?S\}?' : u'\u015E', # capital S with cedilla
+                        r'\\\\c\{?s\}?' : u'\u015F', # small s with cedilla
+
+                       # special symbols
                         r'\\\\\\\\'   : u'\\', # backslash
                         r'\\\{'    : u'{',  # left brace
-                        r'\\\}'    : u'}',  # right brace         
-                         
+                        r'\\\}'    : u'}',  # right brace
+
                        # eat non-escaped braces
                         r'\{'      : u'',
                         r'\}'      : u'',
@@ -121,15 +118,15 @@ class Btex2utf8(Application):
                                help = "use this as the output encoding [default: %default]")
 
     def set_option(self):
-        "Set options"
+        """Set options"""
 
         Application.set_option(self);
 
         # correct numbers of arguments?
         if len(self.args) > 1:
             self.parser.error("Incorrect number of arguments")
-       
-        # use stdin as input? 
+
+        # use stdin as input?
         if len(self.args) == 0:
             self.infile = sys.stdin
         else:
@@ -138,14 +135,14 @@ class Btex2utf8(Application):
             # does the input file exists
             if not os.path.exists(self.infile):
                 self.parser.error('Inputfile %s does not exist.' %self.infile)
-    
+
             # is it an directory?
             if os.path.isdir(self.infile):
                 self.parser.error('Inputfile %s is a directory.' %self.infile)
- 
+
             # open it
             self.infile = file(self.infile,'r')
-  
+
         # use stdout as output?
         if not self.options.outfile:
             self.outfile = sys.stdout
@@ -154,12 +151,11 @@ class Btex2utf8(Application):
 
 
     def main(self):
-        "Main method of application object"
-
+        """Main method of application object"""
 
         self.parse_option()
         self.set_option()
-    
+
         sw = codecs.getwriter(self.options.encoding)
         outstream = sw(self.outfile)
 
@@ -191,12 +187,12 @@ class Btex2utf8(Application):
         # now replace all the others and write it to the output file
         regexes = list()
         values = list()
-       
+
         for (key, value) in self.bibtex2unicode_map.iteritems():
             regexes.append(r"(%s)" % key)
             values.append(value)
         regex = "|".join(regexes)
-   
+
         for inline in out1.split("\n"):
             last = 0
             for match in re.finditer(regex, inline):
@@ -210,7 +206,8 @@ class Btex2utf8(Application):
 		    g=g+1
             outstream.write(inline[last:])
             outstream.write("\n")
-        outstream.flush() 
+        outstream.flush()
+
 
 if __name__ == '__main__':
     Btex2utf8().main()

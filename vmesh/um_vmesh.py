@@ -10,17 +10,15 @@ import subprocess
 import os
 from logging import info, debug, warn, error, critical
 
-
 # umic-mesh imports
 from um_application import Application
 from um_functions import *
 from um_node import Node, NodeException
 
 class BuildVmesh(Application):
-    """
-    Setup GRE tunnels and iptables rules to simulate a mesh network with
-    vmeshrouters. This script has to be executed on each vmeshrouter, which
-    shall be part of the simulated network.
+    """Setup GRE tunnels and iptables rules to simulate a mesh network with
+       vmeshrouters. This script has to be executed on each vmeshrouter, which
+       shall be part of the simulated network.
     """
 
     def __init__(self):
@@ -40,7 +38,6 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
     match ip dst %(dst)s"""
         self._dnsttl = 300
         self._dnskey = "o2bpYQo1BCYLVGZiafJ4ig=="
-
 
         # initialization of the option parser
         usage = """\
@@ -70,7 +67,6 @@ Remarks:
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
                                  multicast = "224.66.66.66", offset = 0, staticroutes=False, multipath=False, maxpath=2)
-
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
                                help = "Apply settings for all hosts in config")
@@ -111,8 +107,6 @@ Remarks:
                                action = "store", dest = "rate", metavar="RATE",
                                help = "Rate limit in mbps")
 
-
-
     def set_option(self):
         """Set the options for the BuildVmesh object"""
 
@@ -124,39 +118,37 @@ Remarks:
         else:
             self.conf = self.parse_config(self.args[0])
 
-
     def parse_config(self, file):
-        """
-        Returns an hash which maps host number -> set of reachable host numbers
+        """Returns an hash which maps host number -> set of reachable host numbers
 
-        Config file syntax: Each line either begins with a # (comment)
-        or has a form like
+           Config file syntax: Each line either begins with a # (comment)
+           or has a form like
 
-             host1: host2 host3 host5-host6
+                host1: host2 host3 host5-host6
 
-        where host* are numbers.
+           where host* are numbers.
 
-             host1: host2
+                host1: host2
 
-        means, that host1 reaches host2 and vice versa.
+           means, that host1 reaches host2 and vice versa.
 
-             host1: host2 host3
+                host1: host2 host3
 
-        is equivalent to
+           is equivalent to
 
-            host1: host2
-            host1: host3
+               host1: host2
+               host1: host3
 
-        and
+           and
 
-            host1: host2-host4
+               host1: host2-host4
 
-        is equivalent to
+           is equivalent to
 
-            host1: host2, host3, host4
+               host1: host2, host3, host4
 
-        Note that the reachability relation defined by the config file is
-        always symmetric.
+           Note that the reachability relation defined by the config file is
+           always symmetric.
         """
 
         # match comments
@@ -186,6 +178,7 @@ Remarks:
 
         line_re    = re.compile(line_str % reaches_str, re.VERBOSE)
         reaches_re = re.compile(reaches_str, re.VERBOSE)
+
         # read (asymmetric) reachability information from the config file
         asym_map = {}
         if file == "-":
@@ -253,9 +246,8 @@ Remarks:
 
         return reachability_map
 
-
     def gre_ip(self, hostnum, mask=False):
-        """ Gets the gre ip for host with number "hostnum" """
+        """Gets the gre ip for host with number "hostnum" """
 
         if mask:
             return "172.16.%s.%s/16" %( (hostnum-1)/254, (hostnum-1)%254+1 ) # FIXME - do not hardcode this.
@@ -264,7 +256,7 @@ Remarks:
 
 
     def gre_net(self, mask = True):
-        """ Gets the gre network address """
+        """Gets the gre network address"""
 
         if mask:
             return "172.16.0.0/16"
@@ -292,7 +284,7 @@ Remarks:
 
 
     def chorder(self, address):
-        """ changes the order of an ip address """
+        """changes the order of an ip address"""
         sa = address.split('.')
         sa.reverse()
         return ".".join(sa)
@@ -437,7 +429,6 @@ Remarks:
                 paths += [newpath]
         return paths
 
-
     def set_sysctl(self, key, val):
         arg = "%s=%s" %(key,val)
         cmd = ["sysctl","-w",arg]
@@ -463,7 +454,7 @@ Remarks:
             for host in self.conf.keys():
                 if host==hostnum:
                     continue
-        
+
                 paths = BuildVmesh.find_k_equal_cost_paths(self.conf, hostnum, host)
                 # not all hosts may be reachable from this hosts ignore them
                 if len(paths) == 0 :
@@ -478,7 +469,7 @@ Remarks:
 
                 host_ip = self.gre_ip(host, mask=False)
 
-                
+
                 cmd = ["ip", "route", "replace", host_ip]
                 for i  in range(min(len(paths),self.options.maxpath)):
                     nexthop = self.gre_ip(paths[i][0], mask=False)
@@ -490,10 +481,7 @@ Remarks:
                     error('Adding routing entry for host %s failed.' % host_ip)
                     error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
                     raise
-
-
-
-        else:        
+        else:
             for host in self.conf.keys():
                 if host==hostnum:
                     continue
@@ -514,7 +502,6 @@ Remarks:
                 gw_ip   = self.gre_ip(shortest[1], mask=False)
 
                 cmd = ["ip", "route", "replace", host_ip, "dev", iface, "via", gw_ip, "metric", str(dist)]
-
 
                 try:
                     execute(cmd, shell=False)
@@ -564,7 +551,7 @@ Remarks:
 
                 if self.options.userscripts:
                     cmd.append("-u")
-                
+
                 debug("Executing: %s", cmd)
                 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
                 rc = proc.communicate("".join(self.confstr))
@@ -593,9 +580,11 @@ Remarks:
 
             self.setup_user_helper()
 
+    def main(self):
+        self.parse_option()
+        self.set_option()
+        self.run()
+
 
 if __name__ == "__main__":
-    inst = BuildVmesh()
-    inst.parse_option()
-    inst.set_option()
-    inst.run()
+    BuildVmesh().main()
