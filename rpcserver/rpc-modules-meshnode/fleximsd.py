@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
@@ -9,13 +10,12 @@ from tempfile import mkstemp
 from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
+# umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
 
-
 class Fleximsd(RPCService):
     """Class for managing the OLSR daemon"""
-
 
     #
     # Public XMLRPC Interface
@@ -52,12 +52,11 @@ class Fleximsd(RPCService):
         else:
             defer.returnValue(False)
 
-
     #
     # Internal stuff
     #
-    def __init__(self, parent = None):
 
+    def __init__(self, parent = None):
         # Call super constructor
         RPCService.__init__(self, parent)
 
@@ -66,16 +65,13 @@ class Fleximsd(RPCService):
         self._configfile = None
         self._daemon = "/opt/fleximsd/fleximsd"
 
-
     @defer.inlineCallbacks
     def reread_config(self):
-        """ Rereads the configuration
+        """Rereads the configuration
 
-            The Fleximsd service table has the following important columns
-                 config : the config file contents
-
-            Will return 0 on success.
-
+           The Fleximsd service table has the following important columns
+                config : the config file contents
+           Will return 0 on success.
         """
 
         assoc = yield self._parent._dbpool.getCurrentServiceConfig(self._name)
@@ -101,7 +97,7 @@ class Fleximsd(RPCService):
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function invokes start-stop daemon to bring up olsrd """
+        """This function invokes start-stop daemon to bring up olsrd"""
 
         args = ["-f", self._configfile, "-d", "0"]
         cmd = [ "start-stop-daemon", "--start",
@@ -125,7 +121,7 @@ class Fleximsd(RPCService):
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function invokes start-stop-daemon to stop olsrd """
+        """This function invokes start-stop-daemon to stop olsrd"""
 
         cmd = [ "start-stop-daemon", "--stop",  "--quiet",
                 "--exec", self._daemon,
@@ -141,5 +137,3 @@ class Fleximsd(RPCService):
         yield self._parent._dbpool.stoppedService(self._config,
                                                   rc, message=stderr)
         defer.returnValue(rc)
-
- 

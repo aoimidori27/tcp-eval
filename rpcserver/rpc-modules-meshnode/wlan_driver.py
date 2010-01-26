@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os
 from logging import info, debug, warn, error, critical
 
@@ -8,9 +9,9 @@ from logging import info, debug, warn, error, critical
 from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
+# umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
-          
 
 class Wlan_driver(RPCService):
     """Class for managing the wlan driver module"""
@@ -22,7 +23,6 @@ class Wlan_driver(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_restart(self):
         rc = yield self.reread_config()
-        
         if rc == 0:
             # don't complain if stopping doesnt work
             yield self.stop()
@@ -32,7 +32,7 @@ class Wlan_driver(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_start(self):
         rc = yield self.reread_config()
-        if rc == 0:            
+        if rc == 0:
             rc = yield self.start()
         defer.returnValue(rc)
 
@@ -41,34 +41,31 @@ class Wlan_driver(RPCService):
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
-        """ Check if driver module is loaded. """
+        """Check if driver module is loaded."""
         defer.returnValue(True)
 
     #
     # Internal stuff
     #
+
     def __init__(self, parent = None):
-        
         # Call super constructor
         RPCService.__init__(self, parent)
 
         # servicename in database
         self._name = "wlan_driver"
         self._config = None
-    
-    
+
     @defer.inlineCallbacks
     def reread_config(self):
-        """ Rereads the configuration
+        """Rereads the configuration
 
-            The wlan_driver service table has the following important columns
-                   driver   : the driver to load (madwifi or ath5k)
-                   opt_args : optional module parameters
-
-            Will return 0 on success.
-            
+           The wlan_driver service table has the following important columns
+                  driver   : the driver to load (madwifi or ath5k)
+                  opt_args : optional module parameters
+           Will return 0 on success.
         """
-        
+
         assoc = yield self._parent._dbpool.getCurrentServiceConfig(self._name)
         if not assoc:
             info("Found no configuration")
@@ -90,7 +87,8 @@ class Wlan_driver(RPCService):
 
     @defer.inlineCallbacks
     def ath5k_hack(self):
-        """ Workaround to delete autocreated interfaces """
+        """Workaround to delete autocreated interfaces"""
+
         created_interfaces  = [ "wlan0", "wlan1" ]
         for interface in created_interfaces:
             cmd = [ "iw", "dev", interface, "del" ]
@@ -100,13 +98,14 @@ class Wlan_driver(RPCService):
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function loads the driver module. """
-        modulename = self.getModuleName(self._config['driver'])       
+        """This function loads the driver module."""
+
+        modulename = self.getModuleName(self._config['driver'])
 
         cmd = [ "/sbin/modprobe", modulename ]
         if self._config['opt_args']:
             cmd.extend(self._config['opt_args'].split(" "))
-            
+
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
         if len(stdout):
             debug(stdout)
@@ -119,15 +118,15 @@ class Wlan_driver(RPCService):
                 yield self.ath5k_hack()
         yield self._parent._dbpool.startedService(self._config,
                                                   rc, message=stderr)
-              
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function unloads the driver module """
-        modulename = self.getModuleName(self._config['driver'])       
+        """This function unloads the driver module"""
 
-        cmd = [ "/sbin/rmmod", modulename ]               
+        modulename = self.getModuleName(self._config['driver'])
+
+        cmd = [ "/sbin/rmmod", modulename ]
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
         if len(stdout):
             debug(stdout)
@@ -136,5 +135,5 @@ class Wlan_driver(RPCService):
             for line in stderr.splitlines():
                 error(" %s" %line)
         yield self._parent._dbpool.stoppedService(self._config,
-                                                  rc, message=stderr)            
+                                                  rc, message=stderr)
         defer.returnValue(rc)

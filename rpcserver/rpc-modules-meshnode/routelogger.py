@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os, sys, stat, socket
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
@@ -9,11 +10,13 @@ from tempfile import mkstemp
 from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
+# umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
 
 class Routelogger(RPCService):
     """Class for managing the route monitor daemon"""
+
     #
     # Public XMLRPC Interface
     #
@@ -21,14 +24,14 @@ class Routelogger(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_restart(self, logDir):
         rc = yield self.reread_config()
-        
+
         rc = self.stop()
         rc = self.start(logDir) and rc
         defer.returnValue(rc)
 
     @defer.inlineCallbacks
     def xmlrpc_start(self, logdir):
-    	info("rpc starting routelogger")
+        info("rpc starting routelogger")
         rc = yield self.reread_config()
         rc = yield self.start(logdir)
         defer.returnValue(rc)
@@ -38,7 +41,8 @@ class Routelogger(RPCService):
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
-        """ Check if the routelogger is alive by looking in the process table. """
+        """Check if the routelogger is alive by looking in the process table."""
+
         cmd = ["/bin/ps", "-C", "routeLogger.py" ]
         rc = yield twisted_call(cmd, shell=False)
 
@@ -47,12 +51,11 @@ class Routelogger(RPCService):
         else:
             defer.returnValue(False)
 
-
     #
     # Internal stuff
     #
+
     def __init__(self, parent = None):
-        
         # Call super constructor
         RPCService.__init__(self, parent)
 
@@ -61,22 +64,20 @@ class Routelogger(RPCService):
         self._daemon = "/sbin/rtmon"
         self._pidfile = "/tmp/routeLogger.pid"
         self._hostname = socket.gethostname()
-    
-    
+
     @defer.inlineCallbacks
     def reread_config(self):
-        
         assoc = yield self._parent._dbpool.getCurrentServiceConfig(self._name)
         if not assoc:
             info("Found no configuration")
             defer.returnValue(-1)
         self._config = assoc
         defer.returnValue(0)
-                                   
 
     @defer.inlineCallbacks
     def start(self, logdir):
-        """ This function invokes start-stop daemon to bring up the route logger"""
+        """This function invokes start-stop daemon to bring up the route logger"""
+
         if not os.path.exists(logdir):
 		info("%s does not exist. Trying to create" % logdir)
 		try:
@@ -86,23 +87,23 @@ class Routelogger(RPCService):
 			error("Logdir creation failed")
 			defer.returnValue(1)
 
-        cmd = [ "start-stop-daemon", "--start", "--background", 
+        cmd = [ "start-stop-daemon", "--start", "--background",
                 "--make-pidfile", "--pidfile", self._pidfile,
                 "--chuid", "lukowski",
                 "--exec", self._daemon,
                 "--", "file", logdir + "/" + self._hostname + ".log"]
         yield twisted_call(cmd, shell=False)
-    	info("started routelogger")
-    	info(cmd)
+        info("started routelogger")
+        info(cmd)
         defer.returnValue(0)
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function invokes start-stop-daemon to stop routeLogger"""
+        """This function invokes start-stop-daemon to stop routeLogger"""
 
         cmd = [ "start-stop-daemon", "--stop",
                 "--pidfile", self._pidfile]
-	rc = yield twisted_call(cmd)
+        rc = yield twisted_call(cmd)
         if (rc != 0):
             error("Failed to stop rtmon!!!")
         info("stopped routelogger")

@@ -17,12 +17,10 @@ from um_application import Application
 from um_twisted_functions import twisted_call
 from um_twisted_meshdb import MeshDbPool
 
-        
 class RPCServer(xmlrpc.XMLRPC):
     """RPC Server"""
 
     def __init__(self, module_path = None, parent = None):
-        
         info("Starting up RPCServer...")
         self._module_path = module_path
         self._parent = parent
@@ -30,27 +28,25 @@ class RPCServer(xmlrpc.XMLRPC):
 
         # Call super constructor
         xmlrpc.XMLRPC.__init__(self)
-       
+
         # No such file or directory
         if not self._module_path or not os.path.exists(self._module_path):
             raise OSError('%s: No such file or directory' %self._module_path)
 
         self._dbpool = None
 
-        # create database connection pool        
+        # create database connection pool
         try:
             self._dbpool = MeshDbPool(username='rpcserver',
                                       password='2PZrfjNXYNBxwru')
-            
         except Exception, inst:
             error("Failed to establish database connection: %s", inst)
-    
-            
+
         # find and load rpc modules
         for filename in os.listdir(self._module_path):
             name, ext = os.path.splitext(os.path.basename(filename))
-               
-            # Only handle python files 
+
+            # Only handle python files
             if not ext == '.py':
                 continue
 
@@ -68,14 +64,13 @@ class RPCServer(xmlrpc.XMLRPC):
                 # Close fp explicitly.
                 if fp:
                     fp.close()
-           
+
             # Register modules
             info(" Registering rpc module %s" %name.capitalize())
             self._services[name] = eval('module.%s(parent=self)' %name.capitalize())
             self.putSubHandler(name, self._services[name])
 
         info("Startup complete.")
-        
 
     def xmlrpc_ping(self):
         return 'OK'
@@ -114,52 +109,44 @@ class RPCServer(xmlrpc.XMLRPC):
         services = yield self._dbpool.getServicesToStart()
 
         for service in services:
-            text = "Starting service %s" % service 
+            text = "Starting service %s" % service
             info(text)
             yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
                 shell=False)
             if self._services.has_key(service):
-                rc = yield self._services[service].xmlrpc_start() 
-                info("RC=%s" %rc)      
+                rc = yield self._services[service].xmlrpc_start()
+                info("RC=%s" %rc)
             else:
                 error("I'm supposed to start %s, which is not there!" %service)
                 rc = -1
-               
-
         text = "Done."
         yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
                 shell=False)
 
         defer.returnValue(0)
-        
 
 
 class RPCServerApp(Application):
-
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the object"""
         self._restart = True
         Application.__init__(self)
 
-    
-
     def set_option(self):
-        "Set options"
-
+        """Set options"""
         Application.set_option(self)
 
     def set_restart(self, flag = True):
-        "Set restart flag"
+        """Set restart flag"""
         self._restart = flag
 
     @defer.inlineCallbacks
     def startup(self, inst):
         yield inst._dbpool.clearUpServiceStatus()
         yield inst.xmlrpc_apply()
-        
-        
+
     def main(self, path='rpc-modules'):
-        "Main method of the RPCServer Application"
+        """Main method of the RPCServer Application"""
 
         self.parse_option()
         self.set_option()
@@ -168,16 +155,15 @@ class RPCServerApp(Application):
         debug("calling reactor.listenTCP()")
         reactor.listenTCP(7080, server.Site(inst))
         self._restart = False
-       
-        self.startup(inst) 
+
+        self.startup(inst)
         rc = reactor.run()
-        if self._restart:            
+        if self._restart:
             debug("Requesting restart via sys.exit(0)")
             sys.exit(0)
         else:
             debug("Exiting...")
             sys.exit(1)
-
 
 
 if __name__ == '__main__':

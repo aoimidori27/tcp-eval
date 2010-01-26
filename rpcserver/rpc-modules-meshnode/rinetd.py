@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
@@ -9,13 +10,12 @@ from tempfile import mkstemp
 from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
+# umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
-          
 
 class Rinetd(RPCService):
     """Class for managing the RINETD daemon"""
-
 
     #
     # Public XMLRPC Interface
@@ -24,7 +24,7 @@ class Rinetd(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_restart(self):
         rc = yield self.reread_config()
-        
+
         if rc == 0:
             # don't complain if stopping doesnt work
             yield self.stop()
@@ -34,7 +34,7 @@ class Rinetd(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_start(self):
         rc = yield self.reread_config()
-        if rc == 0:            
+        if rc == 0:
             rc = yield self.start()
         defer.returnValue(rc)
 
@@ -43,7 +43,8 @@ class Rinetd(RPCService):
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
-        """ Check if rinetd is alive by looking in the process table. """
+        """Check if rinetd is alive by looking in the process table."""
+
         cmd = ["/bin/ps", "-C", "rinetd" ]
         rc = yield twisted_call(cmd, shell=False)
 
@@ -52,12 +53,11 @@ class Rinetd(RPCService):
         else:
             defer.returnValue(False)
 
-
     #
     # Internal stuff
     #
+
     def __init__(self, parent = None):
-        
         # Call super constructor
         RPCService.__init__(self, parent)
 
@@ -65,19 +65,16 @@ class Rinetd(RPCService):
         self._config = None
         self._configfile = None
         self._daemon = "/usr/sbin/rinetd"
-    
-    
+
     @defer.inlineCallbacks
     def reread_config(self):
-        """ Rereads the configuration
+        """Rereads the configuration
 
-            The rinetd service table has the following important columns
-                 config : the config file contents
-
-            Will return 0 on success.
-            
+           The rinetd service table has the following important columns
+                config : the config file contents
+           Will return 0 on success.
         """
-        
+
         assoc = yield self._parent._dbpool.getCurrentServiceConfig(self._name)
         if not assoc:
             info("Found no configuration")
@@ -92,19 +89,18 @@ class Rinetd(RPCService):
             (temp_fd, self._configfile) = mkstemp(".conf", self._name)
             info("Created new configfile: %s", self._configfile)
             tempfile = os.fdopen(temp_fd, 'w')
-        
+
         tempfile.write(assoc['config'])
         tempfile.close()
 
         defer.returnValue(0)
-                                   
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function invokes start-stop daemon to bring up rinetd """
-        
+        """This function invokes start-stop daemon to bring up rinetd"""
+
         args = ["-c", self._configfile,]
-        cmd = [ "start-stop-daemon", "--start",  
+        cmd = [ "start-stop-daemon", "--start",
                 "--exec", self._daemon,
                 "--"]
         cmd.extend(args)
@@ -125,7 +121,7 @@ class Rinetd(RPCService):
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function invokes start-stop-daemon to stop rinetd """
+        """This function invokes start-stop-daemon to stop rinetd"""
 
         cmd = [ "start-stop-daemon", "--stop",  "--quiet",
                 "--exec", self._daemon,
@@ -139,13 +135,5 @@ class Rinetd(RPCService):
             for line in stderr.splitlines():
                 error(" %s" %line)
         yield self._parent._dbpool.stoppedService(self._config,
-                                                  rc, message=stderr)            
+                                                  rc, message=stderr)
         defer.returnValue(rc)
-
-
-
-
-
-
-        
-        

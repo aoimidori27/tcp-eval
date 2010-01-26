@@ -1,12 +1,12 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os
 import errno
 import re
 import signal
 import subprocess
-
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
 
@@ -15,14 +15,14 @@ from twisted.internet import defer, protocol, reactor, threads
 from twisted.internet import error as twisted_error
 from twisted.web import xmlrpc
 
+# umic-mesh imports
 from um_rpcservice import RPCService
 from um_functions import execute, CommandFailed
 from um_twisted_functions import twisted_sleep
 from um_node import Node
 
-
 class Tcpdump(xmlrpc.XMLRPC):
-    """ Class for managing the packet capturing """
+    """Class for managing the packet capturing"""
 
     # Error codes (used by xmlrpc_stop)
     #   NOT_RUNNING     Trying to stop tcpdump, but tcpdump is not running
@@ -33,7 +33,6 @@ class Tcpdump(xmlrpc.XMLRPC):
     STOPPING_FAILED = 2
 
     def __init__(self, parent = None):
-
         # Call super constructor
         xmlrpc.XMLRPC.__init__(self)
 
@@ -45,14 +44,12 @@ class Tcpdump(xmlrpc.XMLRPC):
         self._name = "tcpdump"
         self._proc = None
 
-
     @defer.inlineCallbacks
     def xmlrpc_start(self, iface, expr, promisc=False, options=None):
-        """
-        Start tcpdump instance for interface iface with filter expr.
+        """Start tcpdump instance for interface iface with filter expr.
 
-        If successful, returns the file name of the pcap dump, else an empty
-        string.
+           If successful, returns the file name of the pcap dump, else an empty
+           string.
         """
 
         # Fail if there is already a tcpdump instance (started by us) running.
@@ -62,8 +59,8 @@ class Tcpdump(xmlrpc.XMLRPC):
 
         # FIXME: -Z?
         cmd = [self._daemon, "-i", iface, "-w", "-"]
-	if options is not None and options['tcpdump_snaplen']: cmd.extend(['-s', str(options['tcpdump_snaplen'])])
-        
+        if options is not None and options['tcpdump_snaplen']:
+            cmd.extend(['-s', str(options['tcpdump_snaplen'])])
         if not promisc:
             cmd.append("-p")
 
@@ -104,11 +101,11 @@ class Tcpdump(xmlrpc.XMLRPC):
 
     @defer.inlineCallbacks
     def xmlrpc_stop(self):
-        """
-        Stop an tcpdump instance started by xmlrpc_start.
+        """Stop an tcpdump instance started by xmlrpc_start.
 
-        Returns one of Tcpdump.{NOT_RUNNING,STOPPED,STOPPING_FAILED}
+           Returns one of Tcpdump.{NOT_RUNNING,STOPPED,STOPPING_FAILED}
         """
+
         if self._proc is None:
             defer.returnValue(Tcpdump.NOT_RUNNING)
         rc =  yield self._proc.kill()
@@ -122,15 +119,13 @@ class Tcpdump(xmlrpc.XMLRPC):
 
 
 class _TcpdumpProtocol(protocol.ProcessProtocol):
-    """
-    ProcessProtocol instance for using tcpdump which tries to detect, if
-    tcpdump was successfully started.
+    """ProcessProtocol instance for using tcpdump which tries to detect, if
+       tcpdump was successfully started.
 
-    This is signalled by the deferred returned by _Tcpdump.deferred().
+       This is signalled by the deferred returned by _Tcpdump.deferred().
 
-    Returns a 3-tuple (success, status, stderr), where success is a Boolean,
-    status either None or an exit status and stderr the output of tcpdump on fd
-    2.
+       Returns a 3-tuple (success, status, stderr), where success is a Boolean,
+       status either None or an exit status and stderr the output of tcpdump on fd 2.
     """
 
     def __init__(self):
@@ -150,11 +145,11 @@ class _TcpdumpProtocol(protocol.ProcessProtocol):
         return not self._ended
 
     def errReceived(self, data):
+        """Accumulates stderr output, till a whole line was collected. Iff this
+           line is "listening on ...", tcpdump start is considered successful,
+           else failed.
         """
-        Accumulates stderr output, till a whole line was collected. Iff this
-        line is "listening on ...", tcpdump start is considered successful,
-        else failed.
-        """
+
         if self._fired:
             return
         self._stderr.append(data)
@@ -172,12 +167,12 @@ class _TcpdumpProtocol(protocol.ProcessProtocol):
 
     @defer.inlineCallbacks
     def kill(self):
-        """
-        Stop tcpdump instance.
+        """Stop tcpdump instance.
 
-        Returns a Deferred, which evaluetes to True, if tcpdump could be TERMed
-        or KILLed; else to False.
+           Returns a Deferred, which evaluetes to True, if tcpdump could be TERMed
+           or KILLed; else to False.
         """
+
         try:
             self.transport.signalProcess('TERM')
             self._timeout = twisted_sleep(2)

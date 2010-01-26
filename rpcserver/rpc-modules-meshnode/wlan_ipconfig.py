@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
@@ -9,24 +10,23 @@ from tempfile import mkstemp
 from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
+# umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
-from um_node import Node          
+from um_node import Node
 
 class Wlan_ipconfig(RPCService):
     """Class for configuring static ip addresses for VAPs"""
-
 
     #
     # Public XMLRPC Interface
     #
 
     @defer.inlineCallbacks
-    def xmlrpc_restart(self):        
-
+    def xmlrpc_restart(self):
         # don't complain if stopping doesnt work
         yield self.stop()
-        
+
         rc = yield self.reread_config()
         if rc == 0:
             rc = yield self.start()
@@ -35,7 +35,7 @@ class Wlan_ipconfig(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_start(self):
         rc = yield self.reread_config()
-        if rc == 0:            
+        if rc == 0:
             rc = yield self.start()
         defer.returnValue(rc)
 
@@ -44,15 +44,13 @@ class Wlan_ipconfig(RPCService):
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
-        """ returns always true """
+        """returns always true"""
         defer.returnValue(True)
-
 
     #
     # Internal stuff
     #
     def __init__(self, parent = None):
-        
         # Call super constructor
         RPCService.__init__(self, parent)
 
@@ -64,52 +62,44 @@ class Wlan_ipconfig(RPCService):
 
         self._dnsttl = 300
         self._dnskey = "o2bpYQo1BCYLVGZiafJ4ig=="
-    
-    
+
     @defer.inlineCallbacks
     def reread_config(self):
-        """ Rereads the configuration
+        """Rereads the configuration
 
-            The wlan_Device service table has the following important columns
-                 interface : interface to configure
-                 prefix    : the ip prefix
-                 netmask   : the netmask to set
-
-            Will return 0 on success.
-            
+           The wlan_Device service table has the following important columns
+                interface : interface to configure
+                prefix    : the ip prefix
+                netmask   : the netmask to set
+           Will return 0 on success.
         """
-        
+
         list_of_assoc = yield self._parent._dbpool.getCurrentServiceConfigMany(self._name)
         if not list_of_assoc:
             info("Found no configuration.")
             defer.returnValue(-1)
-
         self._configs = list_of_assoc
-
         defer.returnValue(0)
-                                   
 
     def chorder(self, address):
-        """ changes the order of an ip address """
+        """changes the order of an ip address"""
         sa = address.split('.')
         return sa[3] + "." + sa[2] + "." + sa[1] + "." + sa[0]
 
-
-
     @defer.inlineCallbacks
     def start(self):
-        """ This function brings up the interfaces. """
+        """This function brings up the interfaces."""
 
         final_rc = 0
         nodenr = Node().getNumber()
 
         for config in self._configs:
             address = "%s%u" %(config["ipprefix"], nodenr)
-            
+
             cmd = [ "ifconfig", config["interface"],
                      address,
                     "netmask",  config["netmask"],
-                    "up" ]            
+                    "up" ]
 
             self.info("Bringing %s up..." %config["interface"])
             (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
@@ -140,12 +130,11 @@ class Wlan_ipconfig(RPCService):
 
             yield self._parent._dbpool.startedService(config,
                                                       rc, message=stderr)
-                
         defer.returnValue(final_rc)
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function shuts the interfaces down. """
+        """This function shuts the interfaces down."""
 
         nodenr = Node().getNumber()
 
@@ -156,10 +145,10 @@ class Wlan_ipconfig(RPCService):
 
         for config in self._configs:
             address = "%s%u" %(config["ipprefix"], nodenr)
-            
+
             cmd = [ "ifconfig", config["interface"],
                     "0.0.0.0",
-                    "down" ]            
+                    "down" ]
 
             self.info("Bringing %s down..." %config["interface"])
             (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
@@ -185,5 +174,3 @@ class Wlan_ipconfig(RPCService):
             yield self._parent._dbpool.stoppedService(config,
                                                       rc, message=stderr)
         defer.returnValue(final_rc)
-
- 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
@@ -9,13 +10,12 @@ from tempfile import mkstemp
 from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
+# umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
-          
 
 class Sysctl(RPCService):
     """Class for managing the settings of kernel variables"""
-
 
     #
     # Public XMLRPC Interface
@@ -24,7 +24,6 @@ class Sysctl(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_restart(self):
         rc = yield self.reread_config()
-        
         if rc == 0:
             rc = yield self.start()
         defer.returnValue(rc)
@@ -32,25 +31,24 @@ class Sysctl(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_start(self):
         rc = yield self.reread_config()
-        if rc == 0:            
+        if rc == 0:
             rc = yield self.start()
         defer.returnValue(rc)
 
     def xmlrpc_stop(self):
-        """ Not yet implemented. """
+        """Not yet implemented."""
         return self.stop()
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
-        """ Not yet implemented. """
+        """Not yet implemented."""
         defer.returnValue(True)
-
 
     #
     # Internal stuff
     #
+
     def __init__(self, parent = None):
-        
         # Call super constructor
         RPCService.__init__(self, parent)
 
@@ -58,19 +56,16 @@ class Sysctl(RPCService):
         self._name = "sysctl"
         self._configfile = None
         self._configs = None
-    
-    
+
     @defer.inlineCallbacks
     def reread_config(self):
-        """ Rereads the configuration
+        """Rereads the configuration
 
-            The sysctl service table has the following important columns
-                 config : see sysctl.conf(5)
-
-            Will return 0 on success.
-            
+           The sysctl service table has the following important columns
+                config : see sysctl.conf(5)
+           Will return 0 on success.
         """
-        
+
         list_of_assoc = yield self._parent._dbpool.getCurrentServiceConfigMany(self._name)
         if not list_of_assoc:
             info("Found no configuration")
@@ -90,18 +85,15 @@ class Sysctl(RPCService):
             tempfile.write("# values loaded from %s\n" %row['flavorName'])
             tempfile.write(row['config'])
             tempfile.write("\n")
-            
         tempfile.close()
 
         defer.returnValue(0)
-                                   
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function invokes sysctl(8) to configure kernel parameters """
-        
+        """This function invokes sysctl(8) to configure kernel parameters"""
+
         cmd = [ "/sbin/sysctl","-p", self._configfile ]
-        
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
         if len(stdout):
             debug(stdout)
@@ -124,7 +116,4 @@ class Sysctl(RPCService):
         for config in self._configs:
             yield self._parent._dbpool.stoppedService(config,
                                                       0, message="")
-            
         defer.returnValue(0)
-
-

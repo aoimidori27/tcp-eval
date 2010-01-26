@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
@@ -9,13 +10,12 @@ from tempfile import mkstemp
 from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
+# umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
-          
 
 class Babel(RPCService):
     """Class for managing the babel routing daemon"""
-
 
     #
     # Public XMLRPC Interface
@@ -24,7 +24,6 @@ class Babel(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_restart(self):
         rc = yield self.reread_config()
-        
         if rc == 0:
             # don't complain if stopping doesnt work
             yield self.stop()
@@ -34,7 +33,7 @@ class Babel(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_start(self):
         rc = yield self.reread_config()
-        if rc == 0:            
+        if rc == 0:
             rc = yield self.start()
         defer.returnValue(rc)
 
@@ -43,7 +42,8 @@ class Babel(RPCService):
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
-        """ Check if babel is alive by looking in the process table. """
+        """Check if babel is alive by looking in the process table."""
+
         cmd = ["/bin/ps", "-C", "babel" ]
         rc = yield twisted_call(cmd, shell=False)
 
@@ -52,12 +52,11 @@ class Babel(RPCService):
         else:
             defer.returnValue(False)
 
-
     #
     # Internal stuff
     #
+
     def __init__(self, parent = None):
-        
         # Call super constructor
         RPCService.__init__(self, parent)
 
@@ -67,19 +66,16 @@ class Babel(RPCService):
         self._configfile = None
 
         self._daemon = "/usr/local/bin/babel"
-    
-    
+
     @defer.inlineCallbacks
     def reread_config(self):
-        """ Rereads the configuration
+        """Rereads the configuration
 
-            The babel service table has the following important columns
-                 config : the config file contents
-
-            Will return 0 on success.
-            
+           The babel service table has the following important columns
+                config : the config file contents
+           Will return 0 on success.
         """
-        
+
         # get service config out of database
         assoc = yield self._parent._dbpool.getCurrentServiceConfig(self._name)
         if not assoc:
@@ -88,7 +84,7 @@ class Babel(RPCService):
 
         self._config = assoc
 
-        if assoc['config']:        
+        if assoc['config']:
                 # set/create configfile
                 if self._configfile and os.path.exists(self._configfile):
                     tempfile = file(self._configfile, 'w')
@@ -96,17 +92,15 @@ class Babel(RPCService):
                     # create new tempfile
                     (temp_fd, self._configfile) = mkstemp(".conf", self._name)
                     info("Created new configfile: %s", self._configfile)
-                    tempfile = os.fdopen(temp_fd, 'w') 
+                    tempfile = os.fdopen(temp_fd, 'w')
                 tempfile.write(assoc['config'])
                 tempfile.close()
-
         defer.returnValue(0)
-                                   
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function invokes start-stop daemon to bring up babel """
-        
+        """This function invokes start-stop daemon to bring up babel"""
+
         # set arguments
         args = ['-D', '-d', '0']
 
@@ -124,7 +118,7 @@ class Babel(RPCService):
         debug("Args: %s" %args)
 
         # set command
-        cmd = [ "start-stop-daemon", "--start",  
+        cmd = [ "start-stop-daemon", "--start",
                 "--exec", self._daemon,
                 "--"]
         cmd.extend(args)
@@ -146,7 +140,7 @@ class Babel(RPCService):
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function invokes start-stop-daemon to stop babel """
+        """This function invokes start-stop-daemon to stop babel"""
 
         cmd = [ "start-stop-daemon", "--stop",  "--quiet",
                 "--exec", self._daemon,
@@ -160,13 +154,5 @@ class Babel(RPCService):
             for line in stderr.splitlines():
                 error(" %s" %line)
         yield self._parent._dbpool.stoppedService(self._config,
-                                                  rc, message=stderr)            
+                                                  rc, message=stderr)
         defer.returnValue(rc)
-
-
-
-
-
-
-        
-        

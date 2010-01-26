@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os
 from logging import info, debug, warn, error, critical
 from tempfile import mkstemp
@@ -9,13 +10,12 @@ from tempfile import mkstemp
 from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
+# umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
-          
 
 class Batman(RPCService):
     """Class for managing the OLSR daemon"""
-
 
     #
     # Public XMLRPC Interface
@@ -24,7 +24,6 @@ class Batman(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_restart(self):
         rc = yield self.reread_config()
-        
         if rc == 0:
             # don't complain if stopping doesnt work
             yield self.stop()
@@ -34,7 +33,7 @@ class Batman(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_start(self):
         rc = yield self.reread_config()
-        if rc == 0:            
+        if rc == 0:
             rc = yield self.start()
         defer.returnValue(rc)
 
@@ -43,7 +42,8 @@ class Batman(RPCService):
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
-        """ Check if batman is alive by looking in the process table. """
+        """Check if batman is alive by looking in the process table."""
+
         cmd = ["/bin/ps", "-C", "batmand" ]
         rc = yield twisted_call(cmd, shell=False)
 
@@ -52,12 +52,11 @@ class Batman(RPCService):
         else:
             defer.returnValue(False)
 
-
     #
     # Internal stuff
     #
+
     def __init__(self, parent = None):
-        
         # Call super constructor
         RPCService.__init__(self, parent)
 
@@ -65,34 +64,29 @@ class Batman(RPCService):
         self._config = None
         self._configfile = None
         self._daemon = "/usr/local/sbin/batmand"
-    
-    
+
     @defer.inlineCallbacks
     def reread_config(self):
-        """ Rereads the configuration
+        """Rereads the configuration
 
-            The batman service table has the following important columns
-                 config : the config file contents
-
-            Will return 0 on success.
-            
+           The batman service table has the following important columns
+                config : the config file contents
+           Will return 0 on success.
         """
-        
+
         assoc = yield self._parent._dbpool.getCurrentServiceConfig(self._name)
         if not assoc:
             info("Found no configuration")
             defer.returnValue(-1)
-
         self._config = assoc
 
         defer.returnValue(0)
-                                   
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function invokes start-stop daemon to bring up batmand """
-        
-        cmd = [ "start-stop-daemon", "--start",  
+        """This function invokes start-stop daemon to bring up batmand"""
+
+        cmd = [ "start-stop-daemon", "--start",
                 "--exec", self._daemon,
                 "--", self._config["interface"]]
         (stdout, stderr, rc) = yield twisted_execute(cmd, shell=False)
@@ -112,7 +106,7 @@ class Batman(RPCService):
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function invokes start-stop-daemon to stop batmand """
+        """This function invokes start-stop-daemon to stop batmand"""
 
         cmd = [ "start-stop-daemon", "--stop",  "--quiet",
                 "--exec", self._daemon,
@@ -126,13 +120,5 @@ class Batman(RPCService):
             for line in stderr.splitlines():
                 error(" %s" %line)
         yield self._parent._dbpool.stoppedService(self._config,
-                                                  rc, message=stderr)            
+                                                  rc, message=stderr)
         defer.returnValue(rc)
-
-
-
-
-
-
-        
-        

@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os
 from logging import info, debug, warn, error, critical
 
@@ -8,13 +9,12 @@ from logging import info, debug, warn, error, critical
 from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
+#umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
-          
 
 class Static_routing(RPCService):
     """Class for configuring static routing"""
-
 
     #
     # Public XMLRPC Interface
@@ -23,7 +23,7 @@ class Static_routing(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_restart(self):
         rc = yield self.reread_config()
-        
+
         if rc == 0:
             # don't complain if stopping doesnt work
             yield self.stop()
@@ -33,7 +33,7 @@ class Static_routing(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_start(self):
         rc = yield self.reread_config()
-        if rc == 0:            
+        if rc == 0:
             rc = yield self.start()
         defer.returnValue(rc)
 
@@ -43,35 +43,32 @@ class Static_routing(RPCService):
     def xmlrpc_isAlive(self):
         return True
 
-
     #
     # Internal stuff
     #
+
     def __init__(self, parent = None):
-        
         # Call super constructor
         RPCService.__init__(self, parent)
 
         # servicename in database
         self._name = "static_routing"
         self._config = None
-    
-    
+
     @defer.inlineCallbacks
     def reread_config(self):
-        """ Rereads the configuration
+        """Rereads the configuration
 
-            The static_routing service table has the following important columns
-                   dest   : destination the server to log to
-                   gw     : gateway
-                   prefix : prefix
-                   metric : routing metric
-                   nic    : interface name
+           The static_routing service table has the following important columns
+                  dest   : destination the server to log to
+                  gw     : gateway
+                  prefix : prefix
+                  metric : routing metric
+                  nic    : interface name
 
-            Will return 0 on success.
-            
+           Will return 0 on success.
         """
-        
+
         assocList = yield self._parent._dbpool.getStaticRouting()
         if not assocList:
             info("Found no configuration")
@@ -81,11 +78,10 @@ class Static_routing(RPCService):
 
 
         defer.returnValue(0)
-                                   
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function loads the routing entries module. """
+        """This function loads the routing entries module."""
 
         final_rc = 0
 
@@ -93,7 +89,7 @@ class Static_routing(RPCService):
 
             # iterate over routing entries
             errmsg = ""
-            # first rc != 0 which happens 
+            # first rc != 0 which happens
             tmp_rc  = 0
             for rentry in config["rentries"]:
                 cmd = ["ip", "route", "add",
@@ -119,13 +115,11 @@ class Static_routing(RPCService):
                 final_rc = tmp_rc
             yield self._parent._dbpool.startedService(config,
                                                       tmp_rc, message=errmsg)
-
-            
         defer.returnValue(final_rc)
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function removes static routing entries """
+        """This function removes static routing entries"""
 
         final_rc = 0
 
@@ -159,14 +153,4 @@ class Static_routing(RPCService):
                 final_rc = tmp_rc
             yield self._parent._dbpool.stoppedService(config,
                                                       tmp_rc, message=errmsg)
-    
         defer.returnValue(final_rc)
-        
-
-
-
-
-
-
-        
-        

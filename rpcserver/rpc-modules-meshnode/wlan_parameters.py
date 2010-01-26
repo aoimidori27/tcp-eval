@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import os
 import os.path
 from logging import info, debug, warn, error, critical
@@ -10,24 +11,23 @@ from tempfile import mkstemp
 from twisted.internet import defer, threads, protocol, utils
 from twisted.web import xmlrpc
 
+# umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call, twisted_sleep
-from um_node import Node          
+from um_node import Node
 
 class Wlan_parameters(RPCService):
     """Class for configuring VAPs (ESSID, txpower etc) """
-
 
     #
     # Public XMLRPC Interface
     #
 
     @defer.inlineCallbacks
-    def xmlrpc_restart(self):        
-
+    def xmlrpc_restart(self):
         # don't complain if stopping doesnt work
         yield self.stop()
-        
+
         rc = yield self.reread_config()
         if rc == 0:
             rc = yield self.start()
@@ -36,25 +36,24 @@ class Wlan_parameters(RPCService):
     @defer.inlineCallbacks
     def xmlrpc_start(self):
         rc = yield self.reread_config()
-        if rc == 0:            
+        if rc == 0:
             rc = yield self.start()
         defer.returnValue(rc)
 
     def xmlrpc_stop(self):
-        """ This is not implemented """
+        """This is not implemented"""
         return self.stop();
 
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
-        """ returns always true """
+        """returns always true"""
         defer.returnValue(True)
-
 
     #
     # Internal stuff
     #
+
     def __init__(self, parent = None):
-        
         # Call super constructor
         RPCService.__init__(self, parent)
 
@@ -63,24 +62,20 @@ class Wlan_parameters(RPCService):
 
         # stores a list of device configuration
         self._configs = None
-        
-    
-    
+
     @defer.inlineCallbacks
     def reread_config(self):
-        """ Rereads the configuration
+        """Rereads the configuration
 
-            The wlan_Device service table has the following important columns
-                 interface  : interface to configure
-                 essid      : the essid
-                 channel    : the channel
-                 txpower    : the txpower
-                 mcast_rate : the baserate                 
-
-            Will return 0 on success.
-            
+           The wlan_Device service table has the following important columns
+                interface  : interface to configure
+                essid      : the essid
+                channel    : the channel
+                txpower    : the txpower
+                mcast_rate : the baserate
+           Will return 0 on success.
         """
-        
+
         list_of_assoc = yield self._parent._dbpool.getCurrentServiceConfigMany(self._name)
         if not list_of_assoc:
             info("Found no configuration.")
@@ -89,14 +84,12 @@ class Wlan_parameters(RPCService):
         self._configs = list_of_assoc
 
         defer.returnValue(0)
-                                   
 
     @defer.inlineCallbacks
     def iwcmd(self, cmd, config, attribute):
-        """ Helper function to invoke iwconfig and iwpriv """
+        """Helper function to invoke iwconfig and iwpriv"""
 
         value = config[attribute]
-
         rc = 0
         if value:
             value = str(value)
@@ -110,14 +103,11 @@ class Wlan_parameters(RPCService):
             if (rc != 0):
                 self.error("failed to set %s of %s" %(attribute,interface))
                 self.stderror(stderr)
-
-            
         defer.returnValue(rc)
-                
 
     @defer.inlineCallbacks
     def start(self):
-        """ This function sets up vaps. """
+        """This function sets up vaps."""
 
         final_rc = 0
         nodenr = Node().getNumber()
@@ -159,24 +149,23 @@ class Wlan_parameters(RPCService):
             if rc != 0:
                 info("Setting txpower failed, try another time...")
                 yield twisted_sleep(5)
-                rc = yield self.iwcmd("iwconfig", config, "txpower")    
+                rc = yield self.iwcmd("iwconfig", config, "txpower")
             if rc != 0:
                 stderr = stderr+"setting txpower failed\n"
                 final_rc = rc
 
             if driver == "ath_pci":
-	            rc = yield self.iwcmd("iwpriv", config, "mcast_rate")            
+	            rc = yield self.iwcmd("iwpriv", config, "mcast_rate")
 	            if rc != 0:
 	                stderr = stderr+"setting mcast_rate failed\n"
 	                final_rc = rc
-                
+
             yield self._parent._dbpool.startedService(config, final_rc, message=stderr)
-                                                        
         defer.returnValue(final_rc)
 
     @defer.inlineCallbacks
     def stop(self):
-        """ This function resets vaps to reasonable defaults. """
+        """This function resets vaps to reasonable defaults."""
 
         final_rc = 0
         nodenr = Node().getNumber()
@@ -205,13 +194,10 @@ class Wlan_parameters(RPCService):
                 stderr = stderr+"setting txpower failed\n"
                 final_rc = rc
 
-            rc = yield self.iwcmd("iwpriv", config, "mcast_rate")            
+            rc = yield self.iwcmd("iwpriv", config, "mcast_rate")
             if rc != 0:
                 stderr = stderr+"setting mcast_rate failed\n"
                 final_rc = rc
-                
             yield self._parent._dbpool.stoppedService(config,
                                                       final_rc, message=stderr)
-            
-                                                        
         defer.returnValue(final_rc)
