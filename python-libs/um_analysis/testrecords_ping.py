@@ -26,7 +26,7 @@ class PingRecordFactory():
     def __init__(self):
         # helper functions for "whats" calulation
         def compute_hop_avg(results):
-            "Computes the average hopcount per test record"
+            """Computes the average hopcount per test record"""
 
             # convert array to float
             fhops = map(float, results['ppt_ttl'])
@@ -35,7 +35,7 @@ class PingRecordFactory():
             return array(hops).mean()
 
         def compute_hop_std(results):
-            "Computes the hopcount deviation per test record"
+            """Computes the hopcount deviation per test record"""
 
             # convert array to float
             fhops = map(float, results['ppt_ttl'])

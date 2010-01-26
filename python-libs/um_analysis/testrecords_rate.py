@@ -45,7 +45,7 @@ class RateRecordFactory():
             return res
 
         def calcAverageRate(r):
-            """ Calculates the average rate. """
+            """Calculates the average rate."""
 
             rates = createRateDict(r)
             nominator = 0

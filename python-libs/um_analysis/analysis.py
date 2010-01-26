@@ -74,10 +74,10 @@ class Analysis(Application):
         pass
 
     def loadRecords(self, onLoad = None, tests = None):
-        """ This function creates testrecords from test log files
-            the onLoad function is called with, TestRecord, testname
-            iterationNo and scenarioNo.
-            If tests is set only records for these tests are created.
+        """This function creates testrecords from test log files
+           the onLoad function is called with, TestRecord, testname
+           iterationNo and scenarioNo.
+           If tests is set only records for these tests are created.
         """
 
         if not onLoad:
@@ -129,6 +129,7 @@ class Analysis(Application):
         self.parse_option()
         self.set_option()
         Analysis.run(self)
+
 
 # this only runs if the module was *not* imported
 if __name__ == '__main__':

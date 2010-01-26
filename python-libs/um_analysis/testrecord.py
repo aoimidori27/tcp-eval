@@ -15,10 +15,10 @@ from logging import info, debug, warn, error
 from numpy import array
 
 class TestRecord:
-    """ A record of a single Test.
-        For performance reasons it expects already compiled regexes and
-        an initialize dict with function pointers to calculate results,
-        from parsed values.
+    """A record of a single Test.
+       For performance reasons it expects already compiled regexes and
+       an initialize dict with function pointers to calculate results,
+       from parsed values.
     """
 
     def __init__(self, filename, regexes, whats):
@@ -64,12 +64,12 @@ class TestRecord:
         fh.close()
 
     def getHeader(self):
-        """ Returns the header as a dictionary. """
+        """Returns the header as a dictionary. """
         return self.header
 
     def calculate(self, what, **kwargs):
-        """ Calculate the given value from parsed values.
-            If calculation failes, this record is marked invalid, and None is returned.
+        """Calculate the given value from parsed values.
+           If calculation failes, this record is marked invalid, and None is returned.
         """
 
         if not self.valid:
