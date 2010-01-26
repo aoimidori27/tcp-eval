@@ -157,12 +157,12 @@ class SSHConnectionFactory:
             result = yield proc.deferred()
             proc.stopped = True
             if hasattr(result, "type"):
-		if result.type == "exit-status":
+                if result.type == "exit-status":
                     defer.returnValue(result.status[0])
                 elif result.type == "exit-signal":
                     (signame, core_dumped,err_msg, lang_tag) = result.status
                     defer.returnValue(-self._name2sig(signame))
-			defer.returnValue(-255)
+            defer.returnValue(-255)
             else:
                 defer.returnValue(-255)
         except:
