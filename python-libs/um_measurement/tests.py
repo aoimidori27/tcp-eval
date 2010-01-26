@@ -9,7 +9,7 @@ from twisted.python import failure
 
 # umic-mesh imports
 from um_node import Node
-from um_twisted_functions import twisted_call
+from um_twisted_functions import twisted_call, twisted_execute
 
 """This module should collect standard test methods."""
 
@@ -175,7 +175,7 @@ def test_flowgrind(mrs,
                    flowgrind_dump   = False,
                    flowgrind_iface  = "ath0",
                    flowgrind_bport  = 5999,
-                   flowgrind_opts   = "",
+                   flowgrind_opts   = [],
                    gzip_dumps       = True,
                    nodetype         = "meshrouter",
                    **kwargs ):
@@ -203,15 +203,28 @@ def test_flowgrind(mrs,
     src = Node(flowgrind_src, node_type=nodetype)
     dst = Node(flowgrind_dst, node_type=nodetype)
 
+    # ips of the measurement interfaces
+    src_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
     dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
+   
+    # path of executable
+    cmd = [ "flowgrind" ]
+    
+    # options
+    cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_cc])    
+    cmd.extend(["-T", "s=%.3f" % flowgrind_duration])
 
-    cmd = "flowgrind -O s=TCP_CONG_MODULE=%s -T s=%.3f -H d=%s" % (flowgrind_cc,
-                                                         flowgrind_duration,
-                                                         dst_ip,)
+    # build host specifiers
+    cmd.extend(["-H", "s=%s/%s,d=%s/%s" % (src_ip, src.getHostname(),
+                                           dst_ip, dst.getHostname()) ]);
+
+    # just add additional parameters                                 
     if flowgrind_opts:
-        cmd = " ".join([cmd, flowgrind_opts])
+        cmd.extend(flowgrind_opts)
 
     if flowgrind_dump:
+        raise NotImplementedError, "bport must be re-added to new flowgrind first"
+
         dumpfile_src = None
         dumpfile_dst = None
         results = yield mrs.xmlrpc_many([src.getHostname(),dst.getHostname()],
@@ -233,10 +246,13 @@ def test_flowgrind(mrs,
             warn("Failed to start tcpdump on %s: %s" %(dst.getHostname(),
                                                        dres[1].getErrorMessage()))
 
-    result = yield  mrs.remote_execute(src.getHostname(),
-                                       cmd,
-                                       log_file,
-                                       timeout=flowgrind_duration+5)
+    # TODO(hannemann): maybe a timeout needs to be implemented
+    (stdout, stderr, rc) = yield twisted_execute(cmd, shell = False)
+    # TODO(hannemann): use pipes instead
+    log_file.write(stdout)
+  
+    result = rc
+
     if flowgrind_dump:
         yield mrs.xmlrpc_many([src.getHostname(),dst.getHostname()],
                               "tcpdump.stop")
