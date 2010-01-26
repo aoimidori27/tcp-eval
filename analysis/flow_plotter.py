@@ -31,8 +31,8 @@ class FlowPlotter(Application):
                         help = "use the file as config file for LaTeX. "\
                                "No default packages will be loaded.")
         self.parser.add_option("-n", "--number", metavar = "Number",
-	                    action = 'store', type = 'int', dest = 'number',
-			            help = 'print flow number [default: %default]')
+                        action = 'store', type = 'int', dest = 'number',
+                        help = 'print flow number [default: %default]')
 
     def set_option(self):
         """Set options"""
@@ -67,8 +67,8 @@ class FlowPlotter(Application):
         fh = file(valfilename, "w")
 
         if number > len(flows):
-	        warn("requested flow number %i greater then flows in file: %i" %(number,len(flows) ) )
-		    exit(1)
+            warn("requested flow number %i greater then flows in file: %i" %(number,len(flows) ) )
+            exit(1)
         flow = flows[number]
 
         #get max cwnd for ssth output

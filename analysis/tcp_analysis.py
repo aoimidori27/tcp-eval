@@ -701,7 +701,7 @@ class TcpAnalysis(Analysis):
             info("Omnibus test 2-tail       : %f" %omnibus_tail)
             info("Omnibus test passed       : %s" %(omnibus_p_value > 0.05))
         except:
-	        info("Omnibus computation raised an exception!")
+            info("Omnibus computation raised an exception!")
 
     def generateTputDistribution(self, run, noBins):
         (runNo, run_label) = run
