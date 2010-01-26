@@ -13,19 +13,18 @@ from um_application import Application
 from um_functions import *
 
 class CheckConfig(Application):
-    "Class to check the configuration of an installation"
-
+    """Class to check the configuration of an installation"""
 
     def __init__(self):
         "Constructor of the object"
 
         Application.__init__(self);
-        
+
         # object variables
-	self.checked = list()
+        self.checked = list()
 
         # initialization of the option parser
-        usage = "usage: %prog [options]\n" 
+        usage = "usage: %prog [options]\n"
 
         self.parser.set_usage(usage)
         self.parser.set_defaults(config_local = "/opt/checkout/config.local",
@@ -46,12 +45,9 @@ class CheckConfig(Application):
                                action = "store_true", dest = "update",
                                help = "try to correct found errors [%default]")
 
-
     def set_option(self):
-        "Set options"
-
+        """Set options"""
         Application.set_option(self);
-
 
     def check_against(self, config_dir):
         etc = self.options.etc
@@ -91,12 +87,10 @@ class CheckConfig(Application):
                         info("Overwrite link %s, now pointing to %s ..." %(etc_file, abs_file))
                         # try to be as atomic as possible by using ln with "force"
                         execute(['ln','-sf',abs_file, etc_file], shell=False)
-                            
-                     
-                    
 
     def main(self):
-        "Main method of image object"
+        """Main method of image object"""
+
         try:
             # must be root
             requireroot()
@@ -109,7 +103,8 @@ class CheckConfig(Application):
 
         # check local folder first because it has priority
         self.check_against(self.options.config_local)
-        self.check_against(self.options.config_common)    
+        self.check_against(self.options.config_common)
 
 if __name__ == '__main__':
     CheckConfig().main()
+

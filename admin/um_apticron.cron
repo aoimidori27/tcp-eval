@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/sh
 
 ONLYDEFAULT=TRUE
 
@@ -11,9 +11,9 @@ test -x /usr/local/bin/um_apticron || exit 0
 
 for IMAGETYPE in $(ls /opt/umic-mesh/images); do
 
-	if [ "$ONLYDEFAULT" = "TRUE" ]; then 
+	if [ "$ONLYDEFAULT" = "TRUE" ]; then
 		/usr/local/bin/um_apticron $IMAGETYPE default
-	
+
 	else
 		for VERSION in $(ls /opt/umic-mesh/images/$IMAGETYPE); do
 			# dont check symbolic links and non debian images

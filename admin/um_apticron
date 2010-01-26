@@ -1,5 +1,4 @@
-#!/bin/bash -e 
-
+#!/bin/bash -e
 
 if [ "$1" = --help ]; then
 	echo "Usage: apticron IMAGETYPE VERSION"
@@ -10,14 +9,14 @@ fi
 
 if [ "$(whoami)" != 'root' ]; then
         echo "Run as root user."
-        exit 1;                     
-fi  
+        exit 1;
+fi
 
 IMAGETYPE=$1
 VERSION=$2
 CHROOTDIR=/opt/umic-mesh/images/$IMAGETYPE/$VERSION
 
-if [ "$IMAGETYPE" = "vmeshhost" ]; then 
+if [ "$IMAGETYPE" = "vmeshhost" ]; then
 	CHROOTARCH=amd64
 	CHROOTCMD="/usr/bin/linux32 /usr/sbin/chroot $CHROOTDIR"
 else
@@ -34,7 +33,7 @@ LISTCHANGES_PROFILE=""
 # Set $DIRCACHE
 DIRCACHE="/var/cache/apt/"
 
-# Set the SYSTEM 
+# Set the SYSTEM
 SYSTEM=`/bin/hostname -f`
 
 # Set the IPADDRESSNUM
@@ -43,10 +42,9 @@ IPADDRESSNUM="1"
 # Source the config file
 [ -e /etc/apticron/apticron.conf ] && . /etc/apticron/apticron.conf
 
-
 if [ -z "$IPADDRESSES" ]; then
 	# Set the IPv4 addresses
-	IPADDRESSES=`(echo $( /bin/hostname -i ) ; 
+	IPADDRESSES=`(echo $( /bin/hostname -i ) ;
 		     /sbin/ip -f inet addr show scope global | \
 		     /bin/grep "scope global" |\
 		     /usr/bin/head -$IPADDRESSNUM |\
@@ -69,7 +67,7 @@ if [ -n "$IPADDRESSES" ] ; then
 		# Add the Address
 		ADDRESSES="${ADDRESSES} ${address}"
 	done
-	
+
 	ADDRESSES=`echo $ADDRESSES | /usr/bin/fmt -w68 |\
 		   /bin/sed 's/^/\t[ /;s/\$/ ]/'`
 	ADDRESSES=`echo -e "\n$ADDRESSES"`
@@ -83,7 +81,7 @@ PKGNAMES=`$CHROOTCMD /usr/bin/apt-get -f -q -y --allow-unauthenticated -s dist-u
           /bin/grep ^Inst | /usr/bin/cut -d\  -f2 | /usr/bin/sort`
 
 if [ -n "$PKGNAMES" ] ; then
-	
+
 	# do the upgrade downloads
 	$CHROOTCMD /usr/bin/apt-get -f -qq -d --allow-unauthenticated dist-upgrade >& /dev/null
 
@@ -92,7 +90,7 @@ if [ -n "$PKGNAMES" ] ; then
 apticron report [`/bin/date -R`]
 ========================================================================
 
-apticron has detected that some packages need upgrading on: 
+apticron has detected that some packages need upgrading on:
 
 	$SYSTEM $ADDRESSES IMAGE: $IMAGETYPE VERSION: $VERSION
 
@@ -125,7 +123,7 @@ Package Details:
 EOF
 
 	if [ -z "$LISTCHANGES_PROFILE" ] ; then
-		$CHROOTCMD /usr/bin/apt-listchanges --which=both --headers -f text $DEBS 
+		$CHROOTCMD /usr/bin/apt-listchanges --which=both --headers -f text $DEBS
 	else
 		$CHROOTCMD /usr/bin/apt-listchanges -f text --profile=$LISTCHANGES_PROFILE $DEBS
 	fi
@@ -140,20 +138,19 @@ You can perform the upgrade by issuing the command:
 as root on $SYSTEM
 
 It is recommended that you simulate the upgrade first to confirm that
-the actions that would be taken are reasonable. The upgrade may be 
+the actions that would be taken are reasonable. The upgrade may be
 simulated by issuing the command:
 
 	aptitude -s -y dist-upgrade
 
--- 
+--
 apticron
 EOF
 
-) 2>&1 | /usr/bin/mailx -s "Debian package updates on `/bin/hostname` IMAGE: $IMAGETYPE VERSION: $VERSION" $EMAIL 
+) 2>&1 | /usr/bin/mailx -s "Debian package updates on `/bin/hostname` IMAGE: $IMAGETYPE VERSION: $VERSION" $EMAIL
 #)
 
 fi
-
 
 #debug
 # apt-config $APTOPTIONS dump
