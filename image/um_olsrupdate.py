@@ -10,13 +10,11 @@ from um_application import Application
 from um_functions import *
 from um_config import *
 
-
 class OlsrUpdate(Application):
-    "Class to handle update of olsr files in the local svn repos"
-
+    """Class to handle update of olsr files in the local svn repos"""
 
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the object"""
 
         Application.__init__(self)
 
@@ -35,15 +33,12 @@ class OlsrUpdate(Application):
                                action = "store", dest = "mirror",
                                help = "Set mirror to download from (default: %default)")
 
-
     def set_option(self):
-        "Set options"
-
+        """Set options"""
         Application.set_option(self)
 
-
     def olsrupdate(self):
-        "Update OLSR source"
+        """Update OLSR source"""
 
         # create temporary directory
         tmp   = self.options.usertmp
@@ -68,7 +63,6 @@ class OlsrUpdate(Application):
               %(remote_repos, remote_version, tmp)
         debug(cmd)
         call(cmd, shell = True)
-
 
         info("Searching updated files...")
 
@@ -102,14 +96,12 @@ class OlsrUpdate(Application):
 
         info("Done.")
 
-
     def main(self):
-        "Main method of the OlsrUpdate object"
+        """Main method of the OlsrUpdate object"""
 
         self.parse_option()
         self.set_option()
         self.olsrupdate()
-
 
 
 if __name__ == "__main__":

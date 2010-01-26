@@ -124,8 +124,8 @@ class FlowPlotter(Application):
             self.plot(infile)
 
     def main(self):
-        self.parse_options()
-        self.set_options()
+        self.parse_option()
+        self.set_option()
         self.run()
 
 # this only runs if the module was *not* imported

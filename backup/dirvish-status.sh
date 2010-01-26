@@ -13,7 +13,7 @@ tmpfile=/tmp/dirvish.status.$$
 WARNINGS=""
 for machine in `ls|grep -v lost+found`; do
     test ! -d $machine/dirvish && continue;
-    
+
     echo "================== $machine =================="
 
     cd $machine
@@ -32,8 +32,7 @@ for machine in `ls|grep -v lost+found`; do
         echo "             (last backup: $last)"
         WARNINGS="$WARNINGS $machine"
     else
-
-        # Otherwise, we assume that if there is no Status: success, 
+        # Otherwise, we assume that if there is no Status: success,
         # the backup wasn't successful. It could be that the backup is
         # still running, but is still worth a look.
         if [ `grep -c "Status: success" $YESTERDAY/summary` -eq "0" ]; then
@@ -53,7 +52,7 @@ for machine in `ls|grep -v lost+found`; do
 
 done > $tmpfile
 
-# Include a [**] notation on the subject line if there were warnings. 
+# Include a [**] notation on the subject line if there were warnings.
 if [ "$WARNINGS" != "" ]; then
     WARNSUB="[**] "
 else

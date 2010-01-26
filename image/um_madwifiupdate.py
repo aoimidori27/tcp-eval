@@ -8,12 +8,11 @@ from logging import info, debug, warn, error
 from um_application import Application
 from um_functions import *
 
-
 class MadwifiUpdate(Application):
-    "Class to handle update madwifi files in repos"
+    """Class to handle update madwifi files in repos"""
 
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the object"""
 
         Application.__init__(self)
 
@@ -29,15 +28,12 @@ class MadwifiUpdate(Application):
                                action = "store", dest = "repos",
                                help = "Set the repository to download from")
 
-
     def set_option(self):
-        "Set options"
-
+        """Set options"""
         Application.set_option(self)
 
-
     def madwifiupdate(self):
-        "Update Madwifi-ng source"
+        """Update Madwifi-ng source"""
 
         # create temporary directory
         tmp   = self.options.usertmp
@@ -95,15 +91,14 @@ class MadwifiUpdate(Application):
 
         info("Done.")
 
-
     def main(self):
-        "Main method of the MadwifiUpdate object"
-        
+        """Main method of the MadwifiUpdate object"""
+
         self.parse_option()
         self.set_option()
         self.madwifiupdate()
 
 
-
 if __name__ == "__main__":
     MadwifiUpdate().main()
+

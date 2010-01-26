@@ -15,14 +15,13 @@ from um_functions import *
 from um_image import Image
 
 class Checkout(Application):
-    "Class to update the checkout"
-
+    """Class to update the checkout"""
 
     def __init__(self):
         "Constructor of the object"
 
         Application.__init__(self);
-        
+
         # object variables
         self.commands = ('update', 'status')
         self.action = ''
@@ -54,7 +53,7 @@ class Checkout(Application):
                                help = "Work concurrently on multiple images")
 
     def set_option(self):
-        "Set options"
+        """Set options"""
 
         Application.set_option(self);
 
@@ -72,19 +71,18 @@ class Checkout(Application):
         # restrict image list or use all image types available
         if self.options.image_type:
             self.image_types.append(self.options.image_type)
-	else:
+        else:
             self.image_types = Image.types()
 
-
     def update_checkout(self, image_types):
-        "Update checkout within the images"
+        """Update checkout within the images"""
 
         # allow group to write and exec files
         os.umask(0002)
 
         for imagetype in image_types:
             image = Image(imagetype)
-            
+
             svnmappings = image.getSvnMappings()
             imagepath = image.getImagePath()
             svnprefix = Image.svnPrefix()
@@ -95,7 +93,7 @@ class Checkout(Application):
             for src, dst in svnmappings.iteritems():
                 dst = "%s%s/%s" %(imagepath, svnprefix, dst)
                 src = "%s%s" %(svnrepos, src)
-                
+
                 if not os.path.exists(dst):
                     info("svn checkout %s %s" %(src, dst))
                     call("mkdir -p %s" %(dst), shell = True)
@@ -103,41 +101,39 @@ class Checkout(Application):
                 else:
                     info("svn update %s" %(dst))
                     cmd = ('svn', 'update', dst)
-                
                 call(cmd, shell = False)
 
-
     def update_links(self):
-        "Update symbolic links within the images"
+        """Update symbolic links within the images"""
 
         # allow group to write and exec files
         os.umask(0002)
 
         for imagetype in self.image_types:
             image = Image(imagetype)
-            
+
             scriptmappings = image.getScriptMappings()
             imagepath = image.getImagePath()
             svnprefix = Image.svnPrefix()
-            pattern = "%s/scripts/*" %(svnprefix)       
+            pattern = "%s/scripts/*" %(svnprefix)
 
-            info("Update symbolic links within the image: %s" %(imagepath)) 
-            
+            info("Update symbolic links within the image: %s" %(imagepath))
+
             # delete all links
             for dst in sets.Set(scriptmappings.values()):
-                dst = "%s%s" %(imagepath, dst)               
+                dst = "%s%s" %(imagepath, dst)
                 cmd = "find %s -lname '%s' -print0 | "\
                       "xargs -r -0 rm" %(dst, pattern)
                 try:
                     call(cmd, shell = True)
                 except CommandFailed:
                     warn("Removing of links in %s failed" %(dst))
-            
+
             # recreate all links
             for src, dst in scriptmappings.iteritems():
                 nsrc = "%s%s/%s" % (imagepath, svnprefix, src)
                 dst = "%s%s" %(imagepath, dst)
-                
+
                 for file in dircache.listdir(nsrc):
                     # ignore files which start with a .
                     if file.startswith("."):
@@ -154,19 +150,18 @@ class Checkout(Application):
                     except OSError:
                         warn("Recreating of the link %s failed" %(origfile))
 
-
     def status_checkout(self, image_types):
-        "Check the status of the checkout within the images"
+        """Check the status of the checkout within the images"""
 
         for imagetype in image_types:
             image = Image(imagetype)
-            
+
             svnmappings = image.getSvnMappings()
             imagepath = image.getImagePath()
             svnprefix = Image.svnPrefix()
 
             info("Check the status of the checkout within the images: %s" %(imagepath))
-            
+
             for src, dst in svnmappings.iteritems():
                 dst = "%s%s/%s" %(imagepath, Image.svnPrefix(), dst)
                 if not os.path.exists(dst):
@@ -175,23 +170,22 @@ class Checkout(Application):
                 cmd = ('svn', 'status', dst)
                 info("svn status %s" %(dst))
                 call(cmd, shell = False)
-        
 
     def status_links(self):
-        "Check the symbolic links within the images"
+        """Check the symbolic links within the images"""
         for imagetype in self.image_types:
             image = Image(imagetype)
-            
+
             scriptmappings = image.getScriptMappings()
             imagepath = image.getImagePath()
             svnprefix = Image.svnPrefix()
 
             info("Check the symbolic links within the image: %s" %(imagepath))
-            
+
             for src, dst in scriptmappings.iteritems():
                 nsrc = "%s%s/%s" % (imagepath, svnprefix, src)
                 dst = "%s%s" %(imagepath, dst)
-               
+
                 for file in dircache.listdir(nsrc):
                     # ignore files which start with a .
                     if file.startswith("."):
@@ -203,17 +197,16 @@ class Checkout(Application):
                     origfile = "%s/%s/%s%s" %(svnprefix, src, file, ext)
                     linksrc  = "%s/%s" %(dst, file)
                     linkdst  = os.path.realpath(linksrc)
-                   
+
                     if not os.path.lexists(linksrc):
                         warn("Missing symbolic link %s -> %s" %(linksrc, origfile))
                     elif not origfile == linkdst:
                         warn("Broken symbolic link %s -> %s" %(linksrc, os.readlink(linksrc)))
-                    
 
     def main(self):
-        "Main method of image object"
+        """Main method of image object"""
 
-	requireNOroot()
+        requireNOroot()
 
         self.parse_option()
         self.set_option()
@@ -237,7 +230,7 @@ class Checkout(Application):
 
         # doing link operations
         if self.options.links:
-            eval("self.%s_links()" %(self.action)) 
+            eval("self.%s_links()" %(self.action))
 
 
 

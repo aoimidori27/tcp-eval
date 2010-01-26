@@ -10,16 +10,16 @@ from um_functions import *
 from um_config import *
 
 class KernelUpdate(Application):
-    "Class to handle kernel source update within images"
+    """Class to handle kernel source update within images"""
 
     def __init__(self):
-        "Constructor of the object"
+        """Constructor of the object"""
 
         Application.__init__(self)
 
         usage = "usage: %prog -k <kernelversion> [OPTIONS]"
         self.parser.set_usage(usage)
-        
+
         self.parser.set_defaults(mirror="http://sunsite.informatik.rwth-aachen.de/ftp/pub/Linux/kernel/v2.6", usertmp="/tmp/kernelupdate")
         self.parser.add_option("-p", "--tmp",
                                action = "store", dest = "usertmp",
@@ -32,13 +32,12 @@ class KernelUpdate(Application):
                                help = "Set the mirror to download from (default: %default)")
 
     def set_option(self):
-        "Set options"
-
+        """Set options"""
         Application.set_option(self)
 
 
     def kernelupdate(self):
-        "Update Kernel source"
+        """Update Kernel source"""
 
         # set parameter
         kernelinfos = dict()
@@ -98,13 +97,13 @@ class KernelUpdate(Application):
 
 
     def main(self):
-        "Main method of the kernelupdate object"
+        """Main method of the kernelupdate object"""
 
         self.parse_option()
         self.set_option()
         self.kernelupdate()
 
 
-
 if __name__ == "__main__":
     KernelUpdate().main()
+

@@ -12,16 +12,15 @@ from um_application import Application
 from um_image import Image, ImageException
 from um_functions import requireroot, call, execute, CommandFailed
 
-
 class Chroot(Application):
-    """Class to chroot into a UMIC-Mesh.net image"""    
+    """Class to chroot into a UMIC-Mesh.net image"""
 
     def __init__(self):
         """Creates a new Chroot object"""
 
         Application.__init__(self)
 
-        # object variables   
+        # object variables
         self._mtab = None
         self._image = None
         self._command = None
@@ -32,11 +31,11 @@ class Chroot(Application):
                              "automount" : "/usr/sbin/automount",
                              "chroot" : "/usr/sbin/chroot",
                              "linux32" : "/usr/bin/linux32"}
-        
+
         self._mount_map = [{"device" : "/dev", "mountpoint" : "dev", "args" : "-o bind"},
                            {"device" : "/proc", "mountpoint" : "proc", "args" : "-o bind"},
                            {"device" : "/tmp", "mountpoint" : "tmp", "args" : "-o bind"}]
-       
+
         self._automount_map = [{"mountpoint" : "home",
                                 "mapfile" : "ldap ou=auto.home,ou=automount,"\
                                             "ou=admin,dc=umic-mesh,dc=net",
@@ -69,7 +68,6 @@ class Chroot(Application):
                 action = "store", dest = "image_version", type="string",
                 help = "the image version for chroot [default: %default]")
 
-
     def set_option(self):
         """Set the options for the Chroot object"""
 
@@ -81,10 +79,9 @@ class Chroot(Application):
         else:
             self._command = self._executables["bash"]
 
-
     def checkMount(self, mountpoint):
         """Return true if the mountpoint is already mounted, otherwise return false"""
-        
+
         # get all mount points
         if self._mtab is None:
             self._mtab = execute(self._executables["mount"], shell = True)[0]
@@ -95,14 +92,11 @@ class Chroot(Application):
         for line in self._mtab:
             if regex.search(line):
                 return True
-
         return False
 
-
     def automount(self):
-        """
-        Starts the automounter for all mount points that are denoted in the
-        object variable "automount_map"
+        """Starts the automounter for all mount points that are denoted in the
+           object variable "automount_map"
         """
 
         # for all entries in the automount map
@@ -111,26 +105,25 @@ class Chroot(Application):
                                       automount["mountpoint"])
             mapfile = automount["mapfile"]
             args = automount["args"]
-            
-            # check mountpoint            
+
+            # check mountpoint
             if not self.checkMount(mountpoint):
                 cmd = "%s %s %s %s" % (self._executables["automount"],
                                        mountpoint, mapfile, args)
                 info(cmd)
                 call(cmd, shell = True)
 
-
     def mount(self):
         """Mount all devices that are denoted in the object variable "mount_map" """
-        
+
         # for all entries in the mount map
         for mount in self._mount_map:
             device = mount["device"]
             mountpoint = os.path.join(self._image.getImagePath(),
                                       mount["mountpoint"])
             args = mount["args"]
-            
-            # check mountpoint            
+
+            # check mountpoint
             if not self.checkMount(mountpoint):
                 cmd = "%s %s %s %s" % (self._executables["mount"], args, device, mountpoint)
                 info(cmd)
@@ -148,17 +141,15 @@ class Chroot(Application):
         for mount in self._mount_map:
             mountpoint = os.path.join(self._image.getImagePath(),
                                       mount["mountpoint"])
-            
             # check mountpoint
-            if self.checkMount(mountpoint):           
+            if self.checkMount(mountpoint):
                 cmd = "%s %s" % (self._executables["umount"], mountpoint)
                 info(cmd)
-                call(cmd, shell = True)    
+                call(cmd, shell = True)
 
- 
     def chroot(self):
         """Chroot into the image and execute the command"""
-       
+
         # build chroot command
         cmd = "%s %s %s %s -c 'export %s=%s && %s'" \
               %(self._executables["chroot"], self._image.getImagePath(),
@@ -170,21 +161,19 @@ class Chroot(Application):
             cmd = "%s %s " %(self._executables["linux32"], cmd)
 
         # execute command
-        call(cmd, shell = True)          
-
+        call(cmd, shell = True)
 
     def run(self):
+        """Main method of the Chroot object. Mount all devices and chroot into
+           the image. After chroot is terminated all devices are proper unmouted
         """
-        Main method of the Chroot object. Mount all devices and chroot into
-        the image. After chroot is terminated all devices are proper unmouted
-        """
-        
+
         try:
             # must be root
             requireroot()
 
-            # create a new Image object   
-            self._image = Image(self.options.image_type, self.options.image_version) 
+            # create a new Image object
+            self._image = Image(self.options.image_type, self.options.image_version)
             info("Image type: %s" % self._image.getType())
 
             # mount the file system and start automounter
@@ -196,16 +185,16 @@ class Chroot(Application):
 
             # unmount the file system
             self.umount()
-        
+
         except ImageException, exception:
             error(exception)  #before it was "exception.msg"
         except CommandFailed, exception:
             error(exception)
 
-
+    def main(self):
+        self.parse_option()
+        self.set_option()
+        self.run()
 
 if __name__ == "__main__":
-    inst = Chroot()
-    inst.parse_option()
-    inst.set_option()
-    inst.run()
+    Chroot().main()
