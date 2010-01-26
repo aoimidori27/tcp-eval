@@ -23,27 +23,24 @@ from um_functions import StrictStruct
 from um_twisted_functions import twisted_sleep
 
 class SSHConnectionFactory:
-
-    def __init__(self, user=pwd.getpwuid(os.getuid())[0]
-):
+    def __init__(self, user=pwd.getpwuid(os.getuid())[0]):
         self._connections = {}
         self._lost_ds = []
         self._user = user
         self._cleaningUp = False
 
     def _cancelTimeout(self, result, callLater):
-        """
-        Cancels the timeout represented by the IDelayedCall in callLater
-        """
+        """Cancels the timeout represented by the IDelayedCall in callLater"""
+
         if callLater.active():
             callLater.cancel()
         return result
 
     def _lostHandler(self, reason, host):
+        """Handles connectionLost event. If we initiated the disconnect,
+           connectionLost is no error.
         """
-        Handles connectionLost event. If we initiated the disconnect,
-        connectionLost is no error.
-        """
+
         if self._cleaningUp:
             return reason
         else:
@@ -51,12 +48,12 @@ class SSHConnectionFactory:
             del self._connections[host]
 
     def _connect(self, user, host, port = 22):
-        """
-        Creates a connection and returns a deferred.
+        """Creates a connection and returns a deferred.
 
-        The deferred is callback()'ed, if the connection was established and
-        errbacked if the connection attempt failed.
+           The deferred is callback()'ed, if the connection was established and
+           errbacked if the connection attempt failed.
         """
+
         conn = _Connection()
         connect_d = defer.Deferred()
         lost_d = defer.Deferred()
@@ -65,13 +62,10 @@ class SSHConnectionFactory:
         reactor.connectTCP(host, port, fact)
 
         return (connect_d, lost_d)
-        
 
     @defer.inlineCallbacks
     def _stop(self, proc):
-        """
-        Forces a process to stop by doing INT, TERM, KILL, disconnect.
-        """
+        """Forces a process to stop by doing INT, TERM, KILL, disconnect."""
 
         signals=[signal.SIGINT, signal.SIGTERM, signal.SIGKILL]
 
@@ -81,28 +75,33 @@ class SSHConnectionFactory:
             yield twisted_sleep(1)
             if proc.stopped:
                 return
-       
+
         warn("command: %s still running disconnecting..." %proc.getCommand())
         proc.disconnect()
 
     def _name2sig(self, signame):
-        """
-
-        Converts a ssh signal string to a signal number
-
-        """
+        """Converts a ssh signal string to a signal number"""
         return eval("signal.SIG%s" %signame)
 
     def isConnected(self, node):
         return self._connections.has_key(node)
 
     def connect(self, nodes):
+        """Creates master connections.
+           Returns a deferred. callback(failed) with a list of errors.
         """
-        Creates master connections.
 
-        Returns a deferred. callback(failed) with a list of errors.
+        def addConnections(resList):
+            failed = list()
+            for res in resList:
+                if res[0] == defer.SUCCESS:
+                    conn = res[1]
+                    host = conn.transport.transport.getPeer().host
+                    self._connections[host] = conn
+                else:
+                    failed.append(res[1])
 
-        """
+            return failed
 
         deferreds = []
         for n in nodes:
@@ -114,21 +113,7 @@ class SSHConnectionFactory:
             self._lost_ds.append(lost_d)
 
         dl = defer.DeferredList(deferreds, consumeErrors = True)
-
-        def addConnections(resList):
-            failed = list()
-            for res in resList:
-                if res[0] == defer.SUCCESS:
-                    conn = res[1]
-                    host = conn.transport.transport.getPeer().host
-                    self._connections[host] = conn
-                else:
-                    failed.append(res[1])
- 
-            return failed
-
         dl.addCallback(addConnections)
-
         return dl
 
     @defer.inlineCallbacks
@@ -145,14 +130,13 @@ class SSHConnectionFactory:
 
     @defer.inlineCallbacks
     def remoteExecute(self, node, command, timeout=None, out_fd=None, err_fd=None):
-        """
-        Executes "command" on "node" with "timeout" and write output to
-        "out_fd" and "err_fd" (the latter must be python file objects).
+        """Executes "command" on "node" with "timeout" and write output to
+           "out_fd" and "err_fd" (the latter must be python file objects).
 
-        Return value is a deferred which results in
-          * return code if the program terminated by itself
-          * -signal if the program was killed by a signal
-          * -255 if we got no exit-* message (connection loss, forced disconnect ...)
+           Return value is a deferred which results in
+             * return code if the program terminated by itself
+             * -signal if the program was killed by a signal
+             * -255 if we got no exit-* message (connection loss, forced disconnect ...)
         """
 
         if node in self._connections:
@@ -174,10 +158,10 @@ class SSHConnectionFactory:
             proc.stopped = True
             if hasattr(result, "type"):
 		if result.type == "exit-status":
-                	defer.returnValue(result.status[0])
-            	elif result.type == "exit-signal":
-                	(signame, core_dumped,err_msg, lang_tag) = result.status                
-                	defer.returnValue(-self._name2sig(signame))
+                    defer.returnValue(result.status[0])
+                elif result.type == "exit-signal":
+                    (signame, core_dumped,err_msg, lang_tag) = result.status
+                    defer.returnValue(-self._name2sig(signame))
 			defer.returnValue(-255)
             else:
                 defer.returnValue(-255)
@@ -186,22 +170,19 @@ class SSHConnectionFactory:
             raise
 
 
-
 class _Transport(transport.SSHClientTransport):
-
     def __init__(self, factory):
         self.factory = factory
 
     def _isInKnownHosts(self, host, pubKey):
-        """
-        Assume every host is known :/
-        """
+        """Assume every host is known :/"""
         return 1
 
         # copied from twisted.conch.client.default - but does not work with hashed known_hosts ...
         """checks to see if host is in the known_hosts file for the user.
-        returns 0 if it isn't, 1 if it is and is the same, 2 if it's changed.
+           returns 0 if it isn't, 1 if it is and is the same, 2 if it's changed.
         """
+
         keyType = common.getNS(pubKey)[0]
         retVal = 0
 
@@ -244,6 +225,7 @@ class _Transport(transport.SSHClientTransport):
     def connectionSecure(self):
         self.requestService(_Auth(self.factory.user, self.factory.conn))
 
+
 class _TransportFactory(protocol.ClientFactory):
     # This factory exists just for passing additional parameters on reactor.connectTCP:
     #
@@ -255,13 +237,11 @@ class _TransportFactory(protocol.ClientFactory):
     # _Connection depends on the existance of the clientConnectionEstablished method.
 
     def __init__(self, user, conn, connectDeferred = None, lostDeferred = None):
-        """
-        Takes two deferreds:
-
-         * connectDeferred is always called: Either when the connection was
-           established or when establishing the connection failed
-         * lostDeferred is called (as errback), if the connection was lost in
-           an unclean fashion.
+        """Takes two deferreds:
+            * connectDeferred is always called: Either when the connection was
+              established or when establishing the connection failed
+            * lostDeferred is called (as errback), if the connection was lost in
+              an unclean fashion.
         """
         self.user = user
         self.conn = conn
@@ -272,16 +252,15 @@ class _TransportFactory(protocol.ClientFactory):
         return _Transport(self)
 
     def clientConnectionEstablished(self, conn):
-        """
-        Called by _Connection, if the connection was established. conn is a
-        _Connection instance.
+        """Called by _Connection, if the connection was established. conn is a
+           _Connection instance.
 
-        Note: Despite its naming similarity to clientConnectionFailed/Lost, it
-        is not a standard method of the ClientFactory class.
+           Note: Despite its naming similarity to clientConnectionFailed/Lost, it
+           is not a standard method of the ClientFactory class.
         """
+
         if self._connectDeferred is not None:
             self._connectDeferred.callback(conn)
-
 
     def clientConnectionFailed(self, connector, reason):
         if self._connectDeferred is not None:
@@ -293,12 +272,9 @@ class _TransportFactory(protocol.ClientFactory):
 
 
 class _Auth(userauth.SSHUserAuthClient):
-    """
-    SSH authentication class.
-
-    Uses public key authentication if ssh-agent is available, else password authentication.
-
-    Magic stuff copied from twisted.conch.client.default.
+    """SSH authentication class.
+       Uses public key authentication if ssh-agent is available, else password authentication.
+       Magic stuff copied from twisted.conch.client.default.
     """
 
     def __init__(self, user, *args):
@@ -336,9 +312,7 @@ class _Auth(userauth.SSHUserAuthClient):
         return self._agent.signData(publicKey, signData)
 
     def getPrivateKey(self):
-        """
-        Not implemented.
-        """
+        """Not implemented."""
         return None
 
     def getPublicKey(self):
@@ -349,10 +323,8 @@ class _Auth(userauth.SSHUserAuthClient):
 
 
 class _Connection(connection.SSHConnection):
-    """
-    SSH connection class. With openChannel(), multiple programs can be executed
-    using one instance of this class.
-
+    """SSH connection class. With openChannel(), multiple programs can be executed
+       using one instance of this class.
     """
 
     def __init__(self):
@@ -371,12 +343,11 @@ class _Connection(connection.SSHConnection):
             channel.openFailed(ConchError("Service stopped"))
 
     def executeChan(self, command, fd_out, fd_err):
-        """
-        Executes a program on the remote host.
+        """Executes a program on the remote host.
 
-        stdout and stderr are redirected to fd_out, fd_err (file objects).
-        returns an SSHProc instance (or None, if the connection was already
-        closed before ...)
+           stdout and stderr are redirected to fd_out, fd_err (file objects).
+           returns an SSHProc instance (or None, if the connection was already
+           closed before ...)
         """
 
         if not self._established:
@@ -399,9 +370,7 @@ class _Connection(connection.SSHConnection):
 
 
 class SSHProc:
-    """
-    Remote process object.
-    """
+    """Remote process object."""
 
     def __init__(self, chan, command):
         self._chan = chan
@@ -411,25 +380,19 @@ class SSHProc:
         self._command = command
 
     def deferred(self):
-        """
-        Returns a deferred. This deferred is called when the Channel terminates.
-        """
+        """Returns a deferred. This deferred is called when the Channel terminates."""
         return self._d
 
     def disconnect(self):
-        """
-        See _Channel.disconnect
-        """
+        """See _Channel.disconnect"""
         self._chan.forceDisconnect()
 
 
     def _sig2name(self, sig):
+        """Converts a signal number to a ssh signal string.
+           (Which is the signal name without the "SIG" prefix)
         """
 
-        Converts a signal number to a ssh signal string.
-        (Which is the signal name without the "SIG" prefix)
-
-        """
         signals = dir(signal)
         signals = filter(lambda x: not x.startswith("SIG_"), signals)
         signals = filter(lambda x: x.startswith("SIG"), signals)
@@ -437,7 +400,6 @@ class SSHProc:
             if eval("signal.%s" %signalname) == sig:
                 return signalname[3:]
         raise LookupError, "No signal name found for %s!" % sig
-        
 
     def kill(self, signal):
         """
@@ -448,8 +410,9 @@ class SSHProc:
     def getCommand(self):
         return self._command
 
+
 class ChanExitStruct(StrictStruct):
-    """ CommandChannel exit status struct """
+    """CommandChannel exit status struct"""
 
     def __init__(self, **kwargs):
         StrictStruct.__init__(self, ['type', 'status'], **kwargs)
@@ -471,18 +434,18 @@ class CommandChannel(channel.SSHChannel):
     name = 'session'
 
     def __init__(self, command, fd_out, fd_err, *args, **kwargs):
-        """
-        command is a string, which will be executed on the other connection endpoint.
+        """command is a string, which will be executed on the other connection endpoint.
 
-        d is an callback, which will be called, when the channel exits. The
-        result will be a ChanExitStruct with:
+           d is an callback, which will be called, when the channel exits. The
+           result will be a ChanExitStruct with:
 
-        * exit type: one of "exit-status", "exit-signal" or "disconnect".
-            exit-status: Remote program terminated by itself and returned status code
-            exit-signal: Remote program was terminated by signal status code
-            disconnect: Channel was closed by a call to disconnect or forceDisconnect
-        * status code: exit status or name of killing signal. None in case of disconnect.
+           * exit type: one of "exit-status", "exit-signal" or "disconnect".
+               exit-status: Remote program terminated by itself and returned status code
+               exit-signal: Remote program was terminated by signal status code
+               disconnect: Channel was closed by a call to disconnect or forceDisconnect
+           * status code: exit status or name of killing signal. None in case of disconnect.
         """
+
         channel.SSHChannel.__init__(self, *args, **kwargs)
         self._command = command
         self.d = defer.Deferred()
@@ -500,37 +463,35 @@ class CommandChannel(channel.SSHChannel):
         channel.SSHChannel.closed(self)
 
     def disconnect(self):
-        """
-        Disconnects the channel.
+        """Disconnects the channel.
 
-        If the remote end does not react with an exit-{signal,status} request,
-        self.d will be called with ChanExitStruct and type="disconnect".
+           If the remote end does not react with an exit-{signal,status} request,
+           self.d will be called with ChanExitStruct and type="disconnect".
         """
+
         self._result = ChanExitStruct(type="disconnect")
         self.loseConnection()
 
     def forceDisconnect(self):
-        """
-        Disconnects the channel and fires the callback immediately.
+        """Disconnects the channel and fires the callback immediately.
 
-        Channel is disconnected like with disconnect(), but forceDisconnect
-        does not wait till the other end closes the channel, before firing the
-        "channel terminated" callback.
+           Channel is disconnected like with disconnect(), but forceDisconnect
+           does not wait till the other end closes the channel, before firing the
+           "channel terminated" callback.
 
-        Rationale: OpenSSH server does not immediately react on a "channel close"
-        request, but only terminates, if the program tries to write something
-        on stdout or stderr.
+           Rationale: OpenSSH server does not immediately react on a "channel close"
+           request, but only terminates, if the program tries to write something
+           on stdout or stderr.
         """
         self.disconnect()
         self.d.callback(self._result)
         self.d = None
 
     def kill(self, sig):
-        """
-        Sends signal sig to the remote process, where sig is the name of a
-        signal without the leading SIG. For valid values of sig, see RFC 4254.
+        """Sends signal sig to the remote process, where sig is the name of a
+           signal without the leading SIG. For valid values of sig, see RFC 4254.
 
-        Note: The OpenSSH daemon does not support this but dropbear does.
+           Note: The OpenSSH daemon does not support this but dropbear does.
         """
         self.conn.sendRequest(self, 'signal', common.NS(sig))
 
@@ -549,17 +510,15 @@ class CommandChannel(channel.SSHChannel):
             self._stderr.write(data)
 
     def request_exit_status(self, data):
-        """
-        Called, when an exit-status request was sent by the remote connection end.
-        """
+        """Called, when an exit-status request was sent by the remote connection end."""
+
         status = parseSSHAnswer('u', data)
         self._result = ChanExitStruct(type='exit-status', status=status)
         self.loseConnection()
 
     def request_exit_signal(self, data):
-        """
-        Called, when an exit-signal request was sent by the remote connection end.
-        """
+        """Called, when an exit-signal request was sent by the remote connection end."""
+
         status = parseSSHAnswer('sbss', data)
         self._result = ChanExitStruct(type='exit-signal', status=status)
         self.loseConnection()
@@ -585,3 +544,4 @@ def parseSSHAnswer(format, data):
         else:
             raise NotImplementedError("Format char '%s' is not implemented" % fmt)
     return parsed
+

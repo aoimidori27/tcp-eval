@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# python imports
 import os.path
 import os
 import sys
@@ -12,24 +13,20 @@ from twisted.internet import defer, reactor
 from twisted.python import log
 import twisted.names.client
 
+# umic-mesh imports
 from um_application import Application
 from um_measurement.sshexec import SSHConnectionFactory
 from um_twisted_meshdb import MeshDbPool
 
-
-
 class Measurement(Application):
-    """
+    """Framework for UMIC-Mesh measurement applications.
 
-    Framework for UMIC-Mesh measurement applications.
+       Provides an Application wrapper for Measurement classes. Must be
+       subclassed to be used.
 
-    Provides an Application wrapper for Measurement classes. Must be
-    subclassed to be used.
-
-    As usual for Application subclassses, the subclass may add own parameters
-    to self.parser.
-    It must call parse_option() and Measurement2App.set_option afterwards.
-
+       As usual for Application subclassses, the subclass may add own parameters
+       to self.parser.
+       It must call parse_option() and Measurement2App.set_option afterwards.
     """
 
     def __init__(self):
@@ -47,23 +44,17 @@ class Measurement(Application):
         self._maccache = dict()
 
         self.xmlrpc_port = 7080
-
         self._stats = dict()
-
         p = self.parser
 
         usage = "usage: %prog [options] -L outputdir\n"
         p.set_usage(usage)
-
-
         p.set_defaults(
                 log_dir = None,
                 )
-
         p.add_option("-L", "--log-dir", metavar="NAME",
                 action = "store", dest = "log_dir",
                 help = "Where to store the log files.")
-
 
     def set_option(self):
         Application.set_option(self)
@@ -71,14 +62,12 @@ class Measurement(Application):
         if not self.options.log_dir:
             self.parser.error("An output directory must be specified.")
 
-
-
     def _getNull(self):
-        """ Provides a null file descriptor. """
+        """Provides a null file descriptor."""
+
         if not self._null:
             self._null = open('/dev/null','w')
         return self._null
-
 
     def xmlrpc_many(self, hosts, cmd, *args):
         """Calls a remote procedure on hosts"""
@@ -88,9 +77,7 @@ class Measurement(Application):
         for host in hosts:
             deferredList.append(self.xmlrpc(host, cmd,
                                            *args))
-        return defer.DeferredList(deferredList, consumeErrors=True)                
-            
-
+        return defer.DeferredList(deferredList, consumeErrors=True)
 
     def xmlrpc(self, host, cmd, *args):
         """Calls a remote procedure on a host"""
@@ -101,11 +88,8 @@ class Measurement(Application):
 
     @defer.inlineCallbacks
     def switchTestbedProfile(self, name):
-        """
-        
-        Switches the current testbed profile
-        and applies configuration changes to all nodes.
-        
+        """Switches the current testbed profile
+           and applies configuration changes to all nodes.
         """
 
         yield self._dbpool.switchTestbedProfile(name)
@@ -137,10 +121,10 @@ class Measurement(Application):
             i=i+1
         info("Succeeded: %d, Failed: %d" %(succeeded, failed))
         info("Testbed profile is now: %s" %current)
-        
 
     def remote_execute_many(self, hosts, cmd, **kwargs):
         """Executes command cmd on hosts, returns a DeferredList"""
+
         deferredList = []
 
         for host in hosts:
@@ -181,6 +165,7 @@ class Measurement(Application):
 
     def _update_stats(self, test, rc):
         """ This function updates internal statistics """
+
         test_name = test.func_name
 
         if not self._stats.has_key(test_name):
@@ -228,17 +213,16 @@ class Measurement(Application):
 
         log_file.close()
 
-
     @defer.inlineCallbacks
     def tear_down(self):
         yield self._scf.disconnect()
 
     def sleep(self, seconds):
         """ This function returns a deferred which will fire seconds later """
+
         d = defer.Deferred()
         reactor.callLater(seconds, d.callback, 0)
         return d
-
 
     def generate_pair_permutations(self, nodelist,
                                    symmetric=True,
@@ -246,10 +230,10 @@ class Measurement(Application):
                                    **kwargs):
         """returns a list of dicts
 
-        Generates all 2-tuple permutations of the given nodelist. The dicts
-        generated have the keys src, dst, run_label and all keys out of kwargs.
-
+           Generates all 2-tuple permutations of the given nodelist. The dicts
+           generated have the keys src, dst, run_label and all keys out of kwargs.
         """
+
         res = list()
         for target in nodelist:
             for source in nodelist:
@@ -268,9 +252,8 @@ class Measurement(Application):
                                    **kwargs):
         """returns a list of dicts
 
-        Loads pairs from the given filename. The dicts
-        generated have the keys src, dst, run_label and all keys out of kwargs.
-
+           Loads pairs from the given filename. The dicts
+           generated have the keys src, dst, run_label and all keys out of kwargs.
         """
 
         fh = file(filename)
@@ -280,13 +263,14 @@ class Measurement(Application):
             (source, target) = line.split()
             res.append(dict( run_label=label_(source,target),
                              src=int(source),
-                             dst=int(target), **kwargs))        
+                             dst=int(target), **kwargs))
         return res
 
     @defer.inlineCallbacks
     def get_next_hop(self, src, dst):
-        """ Get the next hop for the given destination.
-            Destination must be an ip address or prefix """
+        """Get the next hop for the given destination.
+           Destination must be an ip address or prefix
+        """
 
         cmd = "ip route get %s" %dst
         stdout = os.tmpfile()
@@ -294,7 +278,7 @@ class Measurement(Application):
                                            cmd,
                                            stdout,
                                            timeout=3)
-        
+
         stdout.seek(0)
         # get first word of the first line
         lines = stdout.readlines()
@@ -318,7 +302,7 @@ class Measurement(Application):
 
     @defer.inlineCallbacks
     def get_mac(self, src, dst, interface):
-        """ Returns the mac address for the destination address """
+        """Returns the mac address for the destination address"""
 
         try:
             mac = self._maccache[dst]
@@ -328,11 +312,11 @@ class Measurement(Application):
 
         cmd = "sudo arping -c 1 -i %s -r %s " %(interface,dst)
         stdout = os.tmpfile()
-        result = yield self.remote_execute(src,                                           
+        result = yield self.remote_execute(src,
                                            cmd,
                                            stdout,
                                            timeout=2)
-        
+
         stdout.seek(0)
         # get first word of the first line
         lines = stdout.readlines()
@@ -347,7 +331,6 @@ class Measurement(Application):
 
         defer.returnValue(mac)
 
-
     @defer.inlineCallbacks
     def preInit(self, nodes, ssh_master=True):
         """ Does some pre init of the nodes (creating ssh master connection etc... """
@@ -356,7 +339,6 @@ class Measurement(Application):
             rc = yield self._scf.connect(nodes)
 
         defer.returnValue(rc)
-
 
     def getIp(self, hostname, interface = None):
         if interface:
@@ -371,6 +353,6 @@ class Measurement(Application):
             return inst
 
         deferred.addErrback(errorHandler)
-        
+
         return deferred
-        
+

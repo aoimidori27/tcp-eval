@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# python imports
 import sys
 import os
 import pwd
@@ -9,14 +10,11 @@ from logging import info, warn, error, debug
 from twisted.internet import defer, error, reactor
 from twisted.python import failure
 
+# umic-mesh imports
 from um_node import Node
 from um_twisted_functions import twisted_call
 
-"""
-
-This module should collect standard test methods.
-
-"""
+"""This module should collect standard test methods."""
 
 @defer.inlineCallbacks
 def test_rate(mrs,
@@ -42,12 +40,12 @@ def test_rate(mrs,
     debug("mac    : "+mac)
 
     cmd = 'grep -A 13 "%s" /proc/net/madwifi/%s/ratestats_%u' %(mac, rate_iface, rate_size)
-    
+
     result = yield mrs.remote_execute(src.getHostname(),
                                       cmd,
                                       log_file,
                                       timeout=2)
-              
+
 @defer.inlineCallbacks
 def test_ping(mrs,
               log_file,
@@ -59,23 +57,21 @@ def test_ping(mrs,
               ping_opts     = "",
               ping_iface    = "ath0",
               **kwargs ):
+    """This test performs a simple ping from src to dst.
+
+       required arguments:
+           mrs        : reference to parent measurement class
+           log_file   : file descriptor where the results are written to
+           ping_src   : sender of the pings
+           ping_dst   : receiver of the pings
+
+       optional arguments:
+           ping_size    : size in bytes of the packets send out
+           ping_count   : how many packets should be send out
+           ping_interval: time between to pings in seconds
+           ping_opts    : additional ping options
     """
 
-    This test performs a simple ping from src to dst.
-        
-    required arguments:
-        mrs        : reference to parent measurement class
-        log_file   : file descriptor where the results are written to
-        ping_src   : sender of the pings
-        ping_dst   : receiver of the pings
-
-    optional arguments:
-        ping_size    : size in bytes of the packets send out
-        ping_count   : how many packets should be send out
-        ping_interval: time between to pings in seconds
-        ping_opts    : additional ping options
-        
-    """
     # for convenience accept numbers as src and dst
     src = Node(ping_src, node_type="meshrouter")
     dst = Node(ping_dst, node_type="meshrouter")
@@ -85,13 +81,10 @@ def test_ping(mrs,
     cmd = "ping -i %.3f -c %u -s %u %s %s" % (ping_interval, ping_count,
                                               ping_size, ping_opts,
                                               dst_ip)
-
-    
     rc = yield mrs.remote_execute(src.getHostname(),
-              	                  cmd,
+                                  cmd,
                                   log_file,
                                   timeout=int((ping_interval*ping_count)+5))
-
     defer.returnValue(rc)
 
 @defer.inlineCallbacks
@@ -105,23 +98,21 @@ def test_fping(mrs,
               ping_iface    = "ath0",
               fping_opts    = "",
               **kwargs ):
+    """This test performs a simple ping from src to dst. Drop in replacement for ping.
+
+       required arguments:
+           mrs        : reference to parent measurement class
+           log_file   : file descriptor where the results are written to
+           ping_src   : sender of the pings
+           ping_dst   : receiver of the pings
+
+       optional arguments:
+           ping_size    : size in bytes of the packets send out
+           ping_count   : how many packets should be send out
+           ping_interval: time between to pings in seconds
+           fping_opts   : additional fping options
     """
 
-    This test performs a simple ping from src to dst. Drop in replacement for ping.
-        
-    required arguments:
-        mrs        : reference to parent measurement class
-        log_file   : file descriptor where the results are written to
-        ping_src   : sender of the pings
-        ping_dst   : receiver of the pings
-
-    optional arguments:
-        ping_size    : size in bytes of the packets send out
-        ping_count   : how many packets should be send out
-        ping_interval: time between to pings in seconds
-        fping_opts   : additional fping options
-        
-    """
     # for convenience accept numbers as src and dst
     src = Node(ping_src, node_type="meshrouter")
     dst = Node(ping_dst, node_type="meshrouter")
@@ -135,35 +126,30 @@ def test_fping(mrs,
                                   cmd,
                                   log_file,
                                   timeout=int((ping_interval*ping_count)+5))
-
     defer.returnValue(rc)
-
 
 @defer.inlineCallbacks
 def test_thrulay(mrs,
-                 log_file, 
+                 log_file,
                  thrulay_src,
                  thrulay_dst,
                  thrulay_duration = 15,
                  thrulay_cc     = "reno",
                  thrulay_opts   = "",
                  **kwargs ):
-    """
+    """This test performs a simple thrulay test with one tcp
+       flow from src to dst.
 
-    This test performs a simple thrulay test with one tcp
-    flow from src to dst.
+       required arguments:
+            log_file   : file descriptor where the results are written to
+            mrs        : reference to parent measurement class
+            thrulay_src: sender of the flow
+            thrulay_dst: receiver of the flow
 
-    required arguments:
-         log_file   : file descriptor where the results are written to
-         mrs        : reference to parent measurement class
-         thrulay_src: sender of the flow
-         thrulay_dst: receiver of the flow
-
-    optional arguments:
-         thrulay_duration: duration of the flow in seconds
-         thrulay_cc      : congestion control method to use
-         thrulay_opts    : additional command line arguments
-
+       optional arguments:
+            thrulay_duration: duration of the flow in seconds
+            thrulay_cc      : congestion control method to use
+            thrulay_opts    : additional command line arguments
     """
 
     # for convenience accept numbers as src and dst
@@ -176,14 +162,11 @@ def test_thrulay(mrs,
                                                thrulay_duration,
                                                dst_ip,
                                                dst.getHostname())
-
     rc = mrs.remote_execute(src.getHostname(),
                             cmd,
                             log_file,
                             timeout=thrulay_duration+5)
-
     defer.returnValue(rc)
-
 
 @defer.inlineCallbacks
 def test_flowgrind(mrs,
@@ -198,26 +181,23 @@ def test_flowgrind(mrs,
                    flowgrind_opts   = "",
                    gzip_dumps       = True,
                    **kwargs ):
-    """
+    """This test performs a simple flowgrind (new, aka dd version) test with one tcp
+       flow from src to dst.
 
-    This test performs a simple flowgrind (new, aka dd version) test with one tcp
-    flow from src to dst.
+       required arguments:
+            log_file      : file descriptor where the results are written to
+            mrs           : reference to parent measurement class
+            flowgrind_src : sender of the flow
+            flowgrind_dst : receiver of the flow
 
-    required arguments:
-         log_file      : file descriptor where the results are written to
-         mrs           : reference to parent measurement class
-         flowgrind_src : sender of the flow
-         flowgrind_dst : receiver of the flow
-
-    optional arguments:
-         flowgrind_duration : duration of the flow in seconds
-         flowgrind_cc       : congestion control method to use
-         flowgrind_dump     : turn on tcpdump on src and sender
-         flowgrind_iface    : iface to get ipaddress
-         flowgrind_bport    : flowgrind base port
-         flowgrind_opts     : additional command line arguments
-         gzip_dumps         : gzip dumps to save space
-
+       optional arguments:
+            flowgrind_duration : duration of the flow in seconds
+            flowgrind_cc       : congestion control method to use
+            flowgrind_dump     : turn on tcpdump on src and sender
+            flowgrind_iface    : iface to get ipaddress
+            flowgrind_bport    : flowgrind base port
+            flowgrind_opts     : additional command line arguments
+            gzip_dumps         : gzip dumps to save space
     """
 
     # for convenience accept numbers as src and dst
@@ -228,8 +208,7 @@ def test_flowgrind(mrs,
 
     cmd = "flowgrind -O s=TCP_CONG_MODULE=%s -T s=%.3f -H d=%s" % (flowgrind_cc,
                                                          flowgrind_duration,
-                                                         dst_ip,
-							 )
+                                                         dst_ip,)
     if flowgrind_opts:
         cmd = " ".join([cmd, flowgrind_opts])
 
@@ -255,7 +234,6 @@ def test_flowgrind(mrs,
             warn("Failed to start tcpdump on %s: %s" %(dst.getHostname(),
                                                        dres[1].getErrorMessage()))
 
-
     result = yield  mrs.remote_execute(src.getHostname(),
                                        cmd,
                                        log_file,
@@ -263,7 +241,6 @@ def test_flowgrind(mrs,
     if flowgrind_dump:
         yield mrs.xmlrpc_many([src.getHostname(),dst.getHostname()],
                               "tcpdump.stop")
-
         # just schedule moving and compressing for later execution
         if dumpfile_src:
             # just append .hostname.pcap to logfilename
@@ -293,3 +270,4 @@ def test_flowgrind(mrs,
                 d.addCallback(callback)
 
     defer.returnValue(result)
+

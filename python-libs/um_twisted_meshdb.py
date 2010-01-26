@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# python imports
 import socket
 import os
 from logging import info, debug, warn, error, critical
@@ -8,48 +9,44 @@ from logging import info, debug, warn, error, critical
 from twisted.internet import defer, utils, reactor
 from twisted.enterprise import adbapi
 
-
-
 class MeshDbPool(adbapi.ConnectionPool):
     """This class handles the database connection pool, for the mesh database"""
 
     def __init__(self, username, password):
-
         def initConnection(conn):
             # turn on autocommit
             conn.autocommit(True)
-        
+
         adbapi.ConnectionPool.__init__(self, "MySQLdb",
                                        user   = username,
                                        host   = "www.umic-mesh.net",
                                        passwd = password,
-                                       db     = "umic-mesh", 
+                                       db     = "umic-mesh",
                                        cp_min = 1,
                                        cp_max = 3,
                                        cp_openfun = initConnection,
                                        cp_reconnect = True)
 
     def _getAssoc(self, txn, query):
-        """ This function returns an associative array of the first row """
+        """This function returns an associative array of the first row"""
 
         txn.execute(query)
         res = dict()
         if txn.rowcount > 0:
             if txn.rowcount > 1:
-                warn("_getAssoc(): query produced more then one row!")                
+                warn("_getAssoc(): query produced more then one row!")
             row = txn.fetchone()
-            for i in xrange(len(row)):                
+            for i in xrange(len(row)):
                 key = txn.description[i][0]
-                res[key] = row[i]                
-        return res    
-
+                res[key] = row[i]
+        return res
 
     def fetchAssoc(self, query):
-        """ Fetches an associative array from the first row, returns a deferred """
+        """Fetches an associative array from the first row, returns a deferred"""
         return self.runInteraction(self._getAssoc, query)
 
     def _getAssocList(self, txn, query):
-        """ This function returns a list of associative arrays """
+        """This function returns a list of associative arrays"""
 
         txn.execute(query)
         res_list = list()
@@ -59,26 +56,26 @@ class MeshDbPool(adbapi.ConnectionPool):
                 if not row:
                     break
                 res = dict()
-                for i in xrange(len(row)):                
+                for i in xrange(len(row)):
                     key = txn.description[i][0]
                     res[key] = row[i]
                 res_list.append(res)
-                
         return res_list
 
     def fetchAssocList(self, query):
-        """ Fetches a list of associative arrays, returns a deferred """
+        """Fetches a list of associative arrays, returns a deferred"""
         return self.runInteraction(self._getAssocList, query)
 
     def _fetchColumnAsList(self, txn, query, column):
-        """ This function returns a list of the specified column """
+        """This function returns a list of the specified column"""
+
         debug(query)
         txn.execute(query)
         res = list()
         if txn.rowcount > 0:
             for row in txn.fetchall():
-                res.append(row[column])                
-        return res                
+                res.append(row[column])
+        return res
 
     def fetchColumnAsList(self, query, column=0):
         """ Fetches a column of a query as a list """
@@ -86,40 +83,38 @@ class MeshDbPool(adbapi.ConnectionPool):
 
     @defer.inlineCallbacks
     def startedService(self, config, rc, message, hostname = socket.gethostname(), ignoreDups=False):
-        """ Updates the Database on startup of a service flavor. """
+        """Updates the Database on startup of a service flavor."""
 
         if ignoreDups:
             tmp = "INSERT IGNORE"
-        else: 
+        else:
             tmp = "INSERT"
 
         # store record in database
-        query = tmp + """
-                   INTO current_service_status (nodeID,servID,flavorID,version,prio,returncode,message) 
-                   SELECT nodeID, %s, %s, %s, %s, %s,%s FROM nodes WHERE nodes.name=%s;
-                """ 
+        query = tmp + """INTO current_service_status (nodeID,servID,flavorID,version,prio,returncode,message)
+                         SELECT nodeID, %s, %s, %s, %s, %s,%s FROM nodes WHERE nodes.name=%s;
+                      """
         debug(query)
         result = yield self.runQuery(query, (config['servID'], config['flavorID'], config['version'], config['prio'], rc, message, hostname))
 
     @defer.inlineCallbacks
     def stoppedService(self, config, rc, message, hostname = socket.gethostname()):
-        """ Updates the Database on stop of a service flavor. """
+        """Updates the Database on stop of a service flavor."""
 
-        query = """DELETE FROM current_service_status USING current_service_status, nodes 
+        query = """DELETE FROM current_service_status USING current_service_status, nodes
                    WHERE nodes.name='%s' AND nodes.nodeID=current_service_status.nodeID
                    AND servID=%d AND flavorID=%d;
                 """  % (hostname, config['servID'], config['flavorID'])
-
         debug(query)
         result = yield self.runQuery(query)
 
 
     @defer.inlineCallbacks
     def getServiceInfo(self, servicename):
-        """ Returns the serviceID and the service Table as a tuple """
+        """Returns the serviceID and the service Table as a tuple"""
 
         # first get serviceID and the service table
-        query = "SELECT servID, servTable FROM services WHERE servName = %s" 
+        query = "SELECT servID, servTable FROM services WHERE servName = %s"
         debug(query)
         result = yield self.runQuery(query, (servicename))
         debug(result)
@@ -132,17 +127,16 @@ class MeshDbPool(adbapi.ConnectionPool):
 
     @defer.inlineCallbacks
     def getStaticRouting(self, hostname = socket.gethostname()):
-        """ Returns a list of dicts which have a version field and a list of routing table entries """
+        """Returns a list of dicts which have a version field and a list of routing table entries"""
 
         servicename = "static_routing"
-    
+
         # first get serviceID and the service table
         servInfo = yield self.getServiceInfo(servicename)
         if not servInfo:
             defer.returnValue(None)
         (servID, servTable) = servInfo
-        
-        
+
         # look which flavors are selected in current config for this host
         query = "SELECT flavorID,prio,version FROM current_service_conf AS c, nodes " \
                 "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID "\
@@ -183,17 +177,12 @@ class MeshDbPool(adbapi.ConnectionPool):
             final_result.append(tmp)
             if len(res) is 0:
                 warn("No rentries for %s in flavor %u!" %(hostname, flavorID))
-                
 
         defer.returnValue(final_result)
 
-
-    
-        
-
     @defer.inlineCallbacks
     def getCurrentServiceConfigMany(self, servicename, hostname = socket.gethostname()):
-        """ Returns the current configs as an list of dictionary if available, else None """
+        """Returns the current configs as an list of dictionary if available, else None"""
 
         # first get serviceID and the service table
         servInfo = yield self.getServiceInfo(servicename)
@@ -203,7 +192,7 @@ class MeshDbPool(adbapi.ConnectionPool):
 
         # look which flavors are selected in current config for this host
         query = "SELECT flavorID,prio FROM current_service_conf AS c, nodes " \
-                "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID "\
+                "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID " \
                 "AND c.servID='%s' ORDER BY prio ASC;" % (hostname, servID)
         debug(query)
         result = yield self.runQuery(query)
@@ -211,7 +200,6 @@ class MeshDbPool(adbapi.ConnectionPool):
         if len(result) < 1:
             info("No flavors of service %s activated for this host" %servicename)
             defer.returnValue(None)
-
 
         final_result = list()
 
@@ -226,11 +214,8 @@ class MeshDbPool(adbapi.ConnectionPool):
             if len(res) is 0:
                 error("Database error: no flavor %u in %s!" %(flavorID, servTable))
                 defer.returnValue(None)
-                
             final_result.append(res)
-
         defer.returnValue(final_result)
-        
 
     @defer.inlineCallbacks
     def getNetbootProfile(self, servicename, profilename):
@@ -248,7 +233,6 @@ class MeshDbPool(adbapi.ConnectionPool):
         profid['version'] = version['version']
         defer.returnValue(profid)
 
-
     @defer.inlineCallbacks
     def getNetbootProfileNames(self, servicename):
         servInfo = yield self.getServiceInfo(servicename)
@@ -259,10 +243,9 @@ class MeshDbPool(adbapi.ConnectionPool):
         profnames = yield self.fetchAssocList(str_profnames)
         defer.returnValue(profnames)
 
-
     @defer.inlineCallbacks
     def getCurrentServiceConfig(self, servicename, hostname = socket.gethostname()):
-        """ Returns the current config as an dictionary if available, else None """
+        """Returns the current config as an dictionary if available, else None"""
 
         # first get serviceID and the service table
         servInfo = yield self.getServiceInfo(servicename)
@@ -295,8 +278,8 @@ class MeshDbPool(adbapi.ConnectionPool):
 
     @defer.inlineCallbacks
     def getServicesToStart(self, hostname = socket.gethostname()):
-        """ Returns a list of servicenames, appropriate sorted. """
-        
+        """Returns a list of servicenames, appropriate sorted."""
+
         query = """SELECT DISTINCT servName FROM current_service_conf,services
                    WHERE nodeID=(SELECT nodeID FROM nodes WHERE name='%s')
                    AND (nodeID, current_service_conf.servID, flavorID, version)
@@ -305,16 +288,15 @@ class MeshDbPool(adbapi.ConnectionPool):
                    ORDER BY current_service_conf.prio ASC;
                 """ % hostname
 
-        debug(query)        
+        debug(query)
         service_list = yield self.fetchColumnAsList(query)
         debug(service_list)
-        
+
         defer.returnValue(service_list)
 
     @defer.inlineCallbacks
     def getServicesToStop(self, hostname = socket.gethostname()):
-        """ Returns a list of servicenames, appropriate sorted. """
-
+        """Returns a list of servicenames, appropriate sorted."""
 
         query = """SELECT DISTINCT servName FROM current_service_status,services
                    WHERE nodeID=(SELECT nodeID FROM nodes WHERE name='%s')
@@ -326,19 +308,18 @@ class MeshDbPool(adbapi.ConnectionPool):
         debug(query)
         service_list = yield self.fetchColumnAsList(query)
         debug(service_list)
-        
+
         defer.returnValue(service_list)
 
     @defer.inlineCallbacks
     def clearUpServiceStatus(self, hostname = socket.gethostname()):
-        """ Clears the service status table from entries of this host. """
-       
+        """Clears the service status table from entries of this host."""
+
         query = """DELETE FROM current_service_status USING current_service_status, nodes 
                    WHERE nodes.name='%s' AND nodes.nodeID=current_service_status.nodeID;
                 """  % hostname
         debug(query)
         result = yield self.runOperation(query)
-
 
     def _getRowcount(self, txn, query):
         """ This function returns the number of rows effected by the transaction. """
@@ -348,8 +329,10 @@ class MeshDbPool(adbapi.ConnectionPool):
 
     @defer.inlineCallbacks
     def switchTestbedProfile(self, name):
-        """ Switches the current used testbed profile """
-        """ Removes all colliding profiles """
+        """Switches the current used testbed profile
+           Removes all colliding profiles
+        """
+
         current_profiles = yield self.getCurrentTestbedProfiles()
         debug(current_profiles)
 
@@ -387,9 +370,8 @@ class MeshDbPool(adbapi.ConnectionPool):
         rowcount = yield self.runInteraction(self._getRowcount, query)
         defer.returnValue(rowcount)
 
-
     def getCurrentTestbedProfiles(self):
-        """ Returns the names of the current used testbed profiles """
+        """Returns the names of the current used testbed profiles"""
 
         query = """SELECT testbed_profiles.name
                    FROM current_testbed_conf, testbed_profiles
@@ -399,22 +381,21 @@ class MeshDbPool(adbapi.ConnectionPool):
         debug(query)
         return self.fetchColumnAsList(query)
 
-
     @defer.inlineCallbacks
     def getCurrentTestbedProfile(self):
-        """ Returns the name of the current used testbed profile """
+        """Returns the name of the current used testbed profile"""
 
         query = """SELECT testbed_profiles.name AS name
                    FROM current_testbed_conf, testbed_profiles
                    WHERE testbed_profiles.ID = current_testbed_profile;
                 """
-
         debug(query)
         result = yield self.fetchAssoc(query)
         defer.returnValue(result["name"])
 
     def getProfileNodes(self,profileName):
-        """ Return name of nodes used by a profile """
+        """Return name of nodes used by a profile"""
+
         profileID = """SELECT id
                        FROM testbed_profiles
                        WHERE name = '%s'
@@ -428,7 +409,7 @@ class MeshDbPool(adbapi.ConnectionPool):
         return self.fetchColumnAsList(query)
 
     def getTestbedNodes(self):
-        """ Returns a list of nodes which are in the current testbedprofile """
+        """Returns a list of nodes which are in the current testbedprofile"""
 
         query = """SELECT nodes.name
                    FROM nodes, testbed_profiles_data, current_testbed_conf
@@ -438,5 +419,3 @@ class MeshDbPool(adbapi.ConnectionPool):
         debug(query)
         return self.fetchColumnAsList(query)
 
-        
-        

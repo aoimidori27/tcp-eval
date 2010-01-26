@@ -1,32 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-
-  Module for gnuplot scripting.
- 
-"""
-
 # python imports
 import gc
 import os.path
-
 from logging import info, debug, warn, error
-
 import Gnuplot
 
 # umic-mesh imports
 from um_functions import call
-        
+
+"""Module for gnuplot scripting."""
 
 class UmGnuplot():
-    """ A specific umic-mesh plot with convenience functions """
+    """A specific umic-mesh plot with convenience functions"""
 
     def __init__(self, plotname):
-        """ Plotname is for filename generation """
+        """Plotname is for filename generation"""
 
         self.gplot = Gnuplot.Gnuplot()
-
 
         # turn on math environment for axis
         self.gplot('set format "$%g$"')
@@ -51,7 +43,7 @@ class UmGnuplot():
         set style line 6 lt rgb "#B83749" lw 1 pt 7 ps 1
         set style line 7 lt rgb "#2BB1BA" lw 1 pt 7 ps 1
         """)
-       
+
         # grid and other styles
         self.gplot(
         """
@@ -87,8 +79,8 @@ class UmGnuplot():
     def setTimeFmt(self, timefmt):
         self.gplot("set timefmt %s" %timefmt)
 
-    def plot(self, cmd):        
-        """ Extends plotcmd with cmd """
+    def plot(self, cmd):
+        """Extends plotcmd with cmd"""
 
         debug("plot(): %s", cmd)
         if not self._plotcmd:
@@ -98,16 +90,16 @@ class UmGnuplot():
 
 
     def save(self, outdir, verbose=False, cfgfile=None):
-        """ Generates .gplot and .pdf file of this plot.
-            After this this object is not usable anymore,
-            because the underlying Gnuplot instance is destroyed.
+        """Generates .gplot and .pdf file of this plot.
+           After this this object is not usable anymore,
+           because the underlying Gnuplot instance is destroyed.
         """
+
         plotname = self._plotname
-        
+
         texfilename   = os.path.join(outdir, plotname+".tex")
         gplotfilename = os.path.join(outdir, plotname+".gplot")
         pdffilename   = os.path.join(outdir, plotname+".pdf")
-
 
         info("Generating %s" %texfilename)
         # always epslatex output
@@ -117,15 +109,14 @@ class UmGnuplot():
         # do the actual plotting
         debug(self._plotcmd)
         self.gplot(self._plotcmd)
-        
+
         info("Generating %s" %gplotfilename)
         self.gplot.save(gplotfilename)
-        
 
         # make sure gplot output is flushed
         self.gplot = None
         gc.collect()
-        
+
         info("Generating %s" %pdffilename)
         cmd = ["um_gnuplot2pdf", "-f", "-p", pdffilename]
         if cfgfile:
@@ -134,19 +125,17 @@ class UmGnuplot():
             cmd.append("--debug")
         cmd.append(os.path.join(outdir,plotname))
         call(cmd, shell=False)
-                    
-                
+
+
 class UmHistogram(UmGnuplot):
-    """ Represents a Histogram plot """
+    """Represents a Histogram plot"""
 
     def __init__(self, *args, **kwargs):
         UmGnuplot.__init__(self, *args, **kwargs)
 
-    
-
         # gap in bars between bar clusters
         self._gap = 1
-        
+
         self.gplot('set style data histogram')
         self.gplot('set style histogram clustered gap %u title offset character 0,0,0' %self._gap)
 
@@ -155,19 +144,19 @@ class UmHistogram(UmGnuplot):
         self._scenarios = None
 
     def setClusters(self, clusters):
-        """ How many clusters to plot """
+        """How many clusters to plot"""
         right = clusters+0.5
         left  = -0.5
-        
+
         self.setXRange((left,right))
-        
+
         # background rect
         self.gplot('set object 2 rect from %f, graph 0, 0 to %f, graph 1, 0 behind lw 1.0 fc rgb "#98E2E7" fillstyle solid 0.15 border -1' %(left,right))
 
         self._clusters = clusters
 
     def setBarsPerCluster(self, barspercluster):
-        """ How many values per row to plot. """
+        """How many values per row to plot."""
         self._barspercluster = barspercluster
 
     def getGap(self):
@@ -185,13 +174,10 @@ class UmHistogram(UmGnuplot):
             usingstr = "using %s" %using
         cmd = '"%s" %s title "%s" ls %u' %(values, usingstr, title, linestyle)
         UmGnuplot.plot(self, cmd)
-        
+
     def plotErrorbar(self, values, barNo, valColumn, errColumn, title=None, linestyle=2):
-        """
-        
-            plot errorbars, barNo identifies the bar the errobar should be plotted on
-            counting starts with 0
-            
+        """plot errorbars, barNo identifies the bar the errobar should be plotted on
+           counting starts with 0
         """
 
         if title is None:
@@ -213,19 +199,16 @@ class UmHistogram(UmGnuplot):
         cmd = '"%s" using %s %s with errorbars ls %u' %(values,usingstr,titlestr,linestyle)
 
         UmGnuplot.plot(self, cmd)
-    
+
     def getBarWidth(self):
         return 1.0 / (self._barspercluster + self._gap)
 
 
 class UmPointPlot(UmGnuplot):
-    """ Represents a plot with points """
-
+    """Represents a plot with points"""
 
     def __init__(self, *args, **kwargs):
         UmGnuplot.__init__(self, *args, **kwargs)
-
-
 
     def plot(self, values, title, using=None, linestyle=3):
         usingstr = ""
@@ -235,9 +218,8 @@ class UmPointPlot(UmGnuplot):
         UmGnuplot.plot(self, cmd)
 
 
-
 class UmLinePlot(UmGnuplot):
-    """ Represents a plot with points """
+    """Represents a plot with points"""
 
     def __init__(self, *args, **kwargs):
         UmGnuplot.__init__(self, *args, **kwargs)
@@ -249,8 +231,9 @@ class UmLinePlot(UmGnuplot):
         cmd = '"%s" %s title "%s" with lines ls %u' %(values, usingstr, title, linestyle)
         UmGnuplot.plot(self, cmd)
 
+
 class UmBoxPlot(UmGnuplot):
-    """ Plots a histogram representing the distribution of a dataset """
+    """Plots a histogram representing the distribution of a dataset"""
 
     def __init__(self, *args, **kwargs):
         UmGnuplot.__init__(self, *args, **kwargs)
@@ -265,4 +248,3 @@ class UmBoxPlot(UmGnuplot):
     def rawPlot(self, *args, **kwargs):
         UmGnuplot.plot(self, *args, **kwargs)
 
-        

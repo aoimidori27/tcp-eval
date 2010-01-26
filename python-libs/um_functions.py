@@ -7,28 +7,25 @@ import os
 import subprocess
 from logging import info, debug, warn, error
 
-
 def requireroot():
+    """Check whether the current user is root or not. If the user is not root
+       sys.exit() will be called. The sys.exit() function will raise the build-in
+       exception "SystemExit". When it is not handled, the Python interpreter will
+       exit
     """
-    Check whether the current user is root or not. If the user is not root
-    sys.exit() will be called. The sys.exit() function will raise the build-in
-    exception "SystemExit". When it is not handled, the Python interpreter will
-    exit
-    """
-    
+
     if not os.getuid() == 0:
         error("You must be root. Command failed.")
         sys.exit(1)
 
 def requireNOroot():
+    """Check whether the current user is root or not. If the user is root
+       sys.exit() will be called. The sys.exit() function will raise the build-in
+       exception "SystemExit". When it is not handled, the Python interpreter will
+       exit
     """
-    Check whether the current user is root or not. If the user is root
-    sys.exit() will be called. The sys.exit() function will raise the build-in
-    exception "SystemExit". When it is not handled, the Python interpreter will
-    exit
-    """
-    
-    if  os.getuid() == 0:
+
+    if os.getuid() == 0:
         error("You can not be root. Command failed.")
         sys.exit(1)
 
@@ -44,7 +41,6 @@ def execute(cmd, shell = True, raiseError = True):
 
     return (stdout, stderr)
 
-
 def call(cmd, shell = True, raiseError = True):
     """Call a shell command, wait for command to complete and return exit code"""
 
@@ -52,9 +48,8 @@ def call(cmd, shell = True, raiseError = True):
     rc = subprocess.call(cmd, shell = shell)
     if raiseError and rc != 0:
         raise CommandFailed(cmd, rc)
-    
-    return rc
 
+    return rc
 
 def execpy(arguments = []):
     """Function to execute a python script within python"""
@@ -67,7 +62,6 @@ def execpy(arguments = []):
 
     def raiseException(status):
         """Just to raise the exception with status"""
-
         raise SystemExitException(status)
 
     global __name__;
@@ -88,7 +82,7 @@ def execpy(arguments = []):
 
     # override argument list
     sys.argv = arguments
-    
+
     # override sys.exit()
     sys.exit = raiseException
 
@@ -114,7 +108,6 @@ def execpy(arguments = []):
     return rc
 
 
-
 class CommandFailed(Exception):
     """Convenience function to handle return/exit codes"""
 
@@ -128,23 +121,21 @@ class CommandFailed(Exception):
         return 'Command "%s" failed with return code %d: %s' %(self.cmd, self.rc, self.stderr)
 
 
-
 class StrictStruct:
     """Imitiate a struct/record"""
 
     def __init__(self, list = None, **kwargs):
-        """
-        The StrictStruct constructor takes two parameters:
+        """The StrictStruct constructor takes two parameters:
 
-        If "list" is not None, it gives the allowed entries in the struct.
-        Otherwise, the list of allowed entries will be extracted from the **kwargs argument.
+           If "list" is not None, it gives the allowed entries in the struct.
+           Otherwise, the list of allowed entries will be extracted from the **kwargs argument.
 
-        Examples:
-            StrictStruct(['foo', 'bar'])
-            StrictStruct(['foo', 'bar'], foo = 1, bar = 3)
-            StrictStruct(foo = 1, bar = 3)
+           Examples:
+             StrictStruct(['foo', 'bar'])
+             StrictStruct(['foo', 'bar'], foo = 1, bar = 3)
+             StrictStruct(foo = 1, bar = 3)
         """
-        
+
         self.__dict__["_items"] = {}
         if list is None:
             for (k, v) in kwargs.iteritems():
@@ -154,7 +145,7 @@ class StrictStruct:
             for i in list:
                 if i not in self.__dict__:
                     self._items[i] = None
-            
+
             for (k, v) in kwargs.iteritems():
                 if k in self._items:
                     self._items[k] = v
@@ -162,14 +153,12 @@ class StrictStruct:
                     raise AttributeError("'%s' instance has no attribute '%s'"
                             % (self.__class__, k))
 
-
     def __getitem__(self, name):
         try:
             return self._items[name]
         except KeyError:
             raise AttributeError("'%s' instance has no attribute '%s'"
                     % (self.__class__, name))
-
 
     def __setitem__(self, name, value):
         if name in self.__dict__:
@@ -181,7 +170,8 @@ class StrictStruct:
                     % (self.__class__, name))
 
     def keys(self):
-    	return self.__dict__["_items"].keys()
-   
+        return self.__dict__["_items"].keys()
+
     def __str__(self):
         return "<%s: %r>" % (self.__class__, self._items)
+
