@@ -104,7 +104,7 @@ class FlowPlotter(Application):
 
         #resample in place
         if resample > 0:
-            if resample > nosamples:
+            if 2*resample > nosamples:
                 warn("sorry, upsampling not possible")
                 exit(1)
             for d in directions:
@@ -116,20 +116,26 @@ class FlowPlotter(Application):
                     except:
                         continue
                     debug("type: %s" %key)
-                    # TODO: handle _time correctly
 
+                    # the magic happens here
                     for i in range(resample):
                         debug("run: %i" %i)
                         # calculate interval
                         low  = int ( math.ceil(nosamples/resample*i) ) if (i > 0) else 0
-                        high = low+nosamples/resample-1
+                        high = low+nosamples/resample-1 
                         debug("interval: %i to %i, dir: %s" %(low,high,d) )
-                        # calculate avg over interval
-                        data[i] = sum(data[j] for j in range(low,high) ) / (high-low)
+                        # calculate time
+                        if (key == 'begin'):
+                            data[i] = data[low]
+                        elif (key == 'end'):
+                            data[i] = data[high]
+                        # calculate avg
+                        else:
+                            data[i] = sum(data[j] for j in range(low,high) ) / (high-low)
                         debug("resampled no: %i dir: %s value: %f " %(i,d,data[i]) )
 
                     #truncate table to new size
-                    del flow[d][key][resample+1:nosamples]
+                    del flow[d][key][resample:nosamples]
 
             nosamples = resample
             debug("new nosamples: %i" %nosamples)
