@@ -75,9 +75,6 @@ class FlowPlotter(Application):
         plotname = os.path.splitext(os.path.basename(infile))[0]
         valfilename = os.path.join(outdir, plotname+".values")
 
-        info("Generating %s..." % valfilename)
-        fh = file(valfilename, "w")
-
         # to avoid code duplicates
         directions = ['S', 'R']
         nosamples = min(flow['S']['size'], flow['R']['size'])
@@ -92,6 +89,9 @@ class FlowPlotter(Application):
 
         #resample in place
         if resample > 0:
+            if resample > nosamples:
+                warn("sorry, upsampling not possible")
+                exit(1)
             for d in directions:
                 for key in (flow[d].keys()):
                     # check if data is number
@@ -119,6 +119,8 @@ class FlowPlotter(Application):
             nosamples = resample
             debug("new nosamples: %i" %nosamples)
 
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
         # header
         fh.write("# start_time end_time forward_tput reverse_tput forward_cwnd reverse_cwnd ssth krtt krto lost reor fret tret fack\n")
         for i in range(nosamples):
