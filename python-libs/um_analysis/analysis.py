@@ -85,7 +85,7 @@ class Analysis(Application):
         info("Loading records...")
 
         # testnames are only valid with plain text and numbers
-        regex = re.compile("^i(\d+)_s(\d+)_r(\d+)_(\w+)$")
+        regex = re.compile("^i(\d+)_s(\d+)_r(\d+)_test_(\w+)$")
         count = 0
         failed = []
 
