@@ -22,7 +22,7 @@ class FlowPlotter(Application):
         usage = "usage: %prog [options] file [file]..."
 
         self.parser.set_usage(usage)
-        self.parser.set_defaults(outdir = "./", number="0")
+        self.parser.set_defaults(outdir = "./", flownumber="0", resample='0' )
         self.parser.add_option('-O', '--output', metavar="OutDir",
                         action = 'store', type = 'string', dest = 'outdir',
                         help = 'Set outputdirectory [default: %default]')
@@ -30,10 +30,13 @@ class FlowPlotter(Application):
                         action = "store", dest = "cfgfile",
                         help = "use the file as config file for LaTeX. "\
                                "No default packages will be loaded.")
-        self.parser.add_option("-n", "--number", metavar = "Number",
-                        action = 'store', type = 'int', dest = 'number',
+        self.parser.add_option("-n", "--number", metavar = "Flownumber",
+                        action = 'store', type = 'int', dest = 'flownumber',
                         help = 'print flow number [default: %default]')
-
+        self.parser.add_option("-r", "--resample", metavar = "Count",
+                        action = 'store', type = 'int', dest = 'resample',
+                        help = 'resample to this number of data [default:'\
+                        'dont resample]')
     def set_option(self):
         """Set options"""
 
@@ -56,9 +59,17 @@ class FlowPlotter(Application):
 
         if not outdir:
             outdir=self.options.outdir
-        number = self.options.number
+
+        resample = self.options.resample
+        flownumber = self.options.flownumber
         record = self.factory.createRecord(infile, "flowgrind")
         flows = record.calculate("flows")
+
+        if flownumber > len(flows):
+            warn("requested flow number %i greater then flows in file: %i"
+                    %(flownumber,len(flows) ) )
+            exit(1)
+        flow = flows[flownumber]
 
         plotname = os.path.splitext(os.path.basename(infile))[0]
         valfilename = os.path.join(outdir, plotname+".values")
@@ -66,42 +77,56 @@ class FlowPlotter(Application):
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
 
-        if number > len(flows):
-            warn("requested flow number %i greater then flows in file: %i" %(number,len(flows) ) )
-            exit(1)
-        flow = flows[number]
+        # to avoid code duplicates
+        directions = ['S', 'R']
+        nosamples = min(flow['S']['size'], flow['R']['size'])
 
         #get max cwnd for ssth output
         cwnd_max = 0
-        for i in range(flow['S']['size']):
-            if flow['S']['cwnd'][i] > cwnd_max:
-                cwnd_max = flow['S']['cwnd'][i]
-            if flow['R']['cwnd'][i] > cwnd_max:
-                cwnd_max = flow['R']['cwnd'][i]
+        for i in range(nosamples):
+            for dir in directions:
+                if flow[dir]['cwnd'][i] > cwnd_max:
+                    cwnd_max = flow[dir]['cwnd'][i]
+
+        #resample in place
+        # if resample > 0:
+            # for i in range(resample):
 
         # header
-        fh.write("# start_time end_time forward_tput reverse_tput\n")
-        for i in range(flow['S']['size']):
-            fh.write("%f %f %f %f %f %f %f %f %f\n" %(flow['S']['begin'][i], flow['S']['end'][i],
-                                                   flow['S']['tput'][i], flow['R']['tput'][i],
-                                                   flow['S']['cwnd'][i], flow['R']['cwnd'][i],
-                                                   ssth_max(flow['S']['ssth'][i], cwnd_max, 50),
-                                                   flow['S']['krtt'][i], flow['S']['krto'][i]))
+        fh.write(r"""# start_time end_time forward_tput reverse_tput forward_cwnd
+                reverse_cwnd ssth krtt krto lost reor fret tret fack\n""")
+        for i in range(nosamples):
+            fh.write("%f %f %f %f %f %f %f %f %f %f %f %f %f\n"
+                                                    %(
+                                                    flow['S']['begin'][i],
+                                                    flow['S']['end'][i],
+                                                    flow['S']['tput'][i],
+                                                    flow['R']['tput'][i],
+                                                    flow['S']['cwnd'][i],
+                                                    flow['R']['cwnd'][i],
+                                                    ssth_max(flow['S']['ssth'][i], cwnd_max, 50),
+                                                    flow['S']['krtt'][i],
+                                                    flow['S']['krto'][i],
+                                                    flow['S']['lost'][i],
+                                                    flow['S']['reor'][i],
+                                                    flow['S']['fret'][i],
+                                                    flow['S']['tret'][i],
+                                                    ) )
         fh.close()
 
         # tput
         p = UmLinePlot(plotname+'_tput')
-        p.setYLabel(r"$\\si{\mega\bit\per\second}$")
-        p.setXLabel("time")
-        p.plot(valfilename, "Throughput", using="2:3", linestyle=2)
-        p.plot(valfilename, "reverse Throughput", using="2:4", linestyle=3)
+        p.setYLabel(r"Throughput ($\si{\mega\bit\per\second}$)")
+        p.setXLabel(r"time ($\si{\second}$)")
+        p.plot(valfilename, "forward path", using="2:3", linestyle=2)
+        p.plot(valfilename, "reverse path", using="2:4", linestyle=3)
         # output plot
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
         # cwnd
         p = UmLinePlot(plotname+'_cwnd_ssth')
         p.setYLabel(r"$\\#$")
-        p.setXLabel("time")
+        p.setXLabel("time ($\si{\second}$)")
         p.plot(valfilename, "Sender CWND", using="2:5", linestyle=2)
         p.plot(valfilename, "Receiver CWND", using="2:6", linestyle=3)
         p.plot(valfilename, "SSTH", using="2:7", linestyle=4)
@@ -111,9 +136,20 @@ class FlowPlotter(Application):
         # rto, rtt
         p = UmLinePlot(plotname+'_rto_rtt')
         p.setYLabel(r"$\\si{\milli\second}$")
-        p.setXLabel("time")
+        p.setXLabel("time ($\si{\second}$)")
         p.plot(valfilename, "RTO", using="2:9", linestyle=2)
         p.plot(valfilename, "RTT", using="2:8", linestyle=3)
+        # output plot
+        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+
+        # lost, reorder, retransmit
+        p = UmLinePlot(plotname+'_lost_reor_retr')
+        p.setYLabel(r"$\\#$")
+        p.setXLabel("time ($\si{\second}$)")
+        p.plot(valfilename, "lost packages", using="2:10", linestyle=2)
+        p.plot(valfilename, "reordered packages", using="2:11", linestyle=3)
+        p.plot(valfilename, "fast retransmit", using="2:12", linestyle=4)
+        p.plot(valfilename, "limited transmit", using="2:13", linestyle=5)
         # output plot
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
