@@ -142,6 +142,7 @@ class Info:
                 else:
                     c['high'] = 0
                 c['pkts'] = dict()
+                c['rexmit'] = deque()
                 c['acked'] = ack
                 c['reorder'] = 0
                 c['dreorder'] = 0
@@ -183,9 +184,8 @@ class Info:
 
                     #dsack reordering detection
                     if dsack == 1:
-                        if half_pkts.has_key(sack_blocks[0]): #dsack acks a retransmitted segment
-                            if half_pkts[sack_blocks[0]][1]:
-                                half['dreorder'] += 1
+                        if sack_blocks[0] in half['rexmit']: #dsack acks a retransmitted segment
+                            half['dreorder'] += 1
                         else:
                             pass #TODO: packet duplication
 
@@ -198,7 +198,9 @@ class Info:
                         for key in half_keys:
                             #remove pkts with seq lower than acked
                             if key < entry['acked']:
-#                                del half_pkts[key]
+                                if half_pkts[key][1] == 1: #pkt was retransmitted
+                                  half['rexmit'].append(key)
+                                del half_pkts[key]
                                 continue
 
                             if half_pkts[key][0] == 1: #already sacked
