@@ -23,7 +23,8 @@ class FlowPlotter(Application):
         usage = "usage: %prog [options] file [file]..."
 
         self.parser.set_usage(usage)
-        self.parser.set_defaults(outdir = "./", flownumber="0", resample='0', plotsrc=1, plotdst=0 )
+        self.parser.set_defaults(outdir = "./", flownumber="0", resample='0',
+                                 plotsrc='True', plotdst='False', graphics='tput,cwnd,rtt,segments' )
         self.parser.add_option('-O', '--output', metavar="OutDir",
                         action = 'store', type = 'string', dest = 'outdir',
                         help = 'Set outputdirectory [default: %default]')
@@ -39,12 +40,16 @@ class FlowPlotter(Application):
                         help = 'resample to this number of data [default:'\
                                ' dont resample]')
         self.parser.add_option("-s", "--plot-source", metavar = "Bool",
-                        action = 'store', dest = 'plotsrc',
+                        action = 'store', dest = 'plotsrc', choices = ['True','False'],
                         help = 'plot source cwnd and throughput '\
                                '[default: %default]')
         self.parser.add_option("-d", "--plot-dest", metavar = "Bool",
-                        action = 'store', dest = 'plotdst',
+                        action = 'store', dest = 'plotdst', choices = ['True','False'],
                         help = 'plot destination cwnd and throughput '\
+                               '[default: %default]')
+        self.parser.add_option("-G", "--graphics", metavar = "list",
+                        action = 'store', dest = 'graphics',
+                        help = 'Graphics that will be plotted: '\
                                '[default: %default]')
 
     def set_option(self):
@@ -59,6 +64,11 @@ class FlowPlotter(Application):
         if not os.path.exists(self.options.outdir):
             info("%s does not exist, creating. " % self.options.outdir)
             os.mkdir(self.options.outdir)
+
+        if self.options.graphics:
+            self.graphics_array = self.options.graphics.split(',')
+        else:
+            self.graphics_array = ['tput','cwnd','rtt','segments']
 
     def plot(self, infile, outdir=None):
         """Plot one file"""
@@ -163,44 +173,48 @@ class FlowPlotter(Application):
                                                     ) )
         fh.close()
 
-        # tput
-        p = UmLinePlot(plotname+'_tput')
-        p.setYLabel(r"Throughput ($\si{\mega\bit\per\second}$)")
-        p.setXLabel(r"time ($\si{\second}$)")
-        if self.options.plotsrc: p.plot(valfilename, "forward path", using="2:3", linestyle=2)
-        if self.options.plotdst: p.plot(valfilename, "reverse path", using="2:4", linestyle=3)
-        # output plot
-        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        if 'tput' in self.graphics_array:
+            # tput
+            p = UmLinePlot(plotname+'_tput')
+            p.setYLabel(r"Throughput ($\si{\mega\bit\per\second}$)")
+            p.setXLabel(r"time ($\si{\second}$)")
+            if self.options.plotsrc == 'True': p.plot(valfilename, "forward path", using="2:3", linestyle=2)
+            if self.options.plotdst == 'True': p.plot(valfilename, "reverse path", using="2:4", linestyle=3)
+            # output plot
+            p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
-        # cwnd
-        p = UmLinePlot(plotname+'_cwnd_ssth')
-        p.setYLabel(r"$\\#$")
-        p.setXLabel("time ($\si{\second}$)")
-        if self.options.plotsrc: p.plot(valfilename, "Sender CWND", using="2:5", linestyle=2)
-        if self.options.plotdst: p.plot(valfilename, "Receiver CWND", using="2:6", linestyle=3)
-        p.plot(valfilename, "SSTH", using="2:7", linestyle=1)
-        # output plot
-        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        if 'cwnd' in self.graphics_array:
+            # cwnd
+            p = UmLinePlot(plotname+'_cwnd_ssth')
+            p.setYLabel(r"$\\#$")
+            p.setXLabel("time ($\si{\second}$)")
+            if self.options.plotsrc == 'True': p.plot(valfilename, "Sender CWND", using="2:5", linestyle=2)
+            if self.options.plotdst == 'True': p.plot(valfilename, "Receiver CWND", using="2:6", linestyle=3)
+            p.plot(valfilename, "SSTH", using="2:7", linestyle=1)
+            # output plot
+            p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
-        # rto, rtt
-        p = UmLinePlot(plotname+'_rto_rtt')
-        p.setYLabel(r"$\\si{\milli\second}$")
-        p.setXLabel("time ($\si{\second}$)")
-        p.plot(valfilename, "RTO", using="2:9", linestyle=2)
-        p.plot(valfilename, "RTT", using="2:8", linestyle=3)
-        # output plot
-        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        if 'rtt' in self.graphics_array:
+            # rto, rtt
+            p = UmLinePlot(plotname+'_rto_rtt')
+            p.setYLabel(r"$\\si{\milli\second}$")
+            p.setXLabel("time ($\si{\second}$)")
+            p.plot(valfilename, "RTO", using="2:9", linestyle=2)
+            p.plot(valfilename, "RTT", using="2:8", linestyle=3)
+            # output plot
+            p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
-        # lost, reorder, retransmit
-        p = UmLinePlot(plotname+'_lost_reor_retr')
-        p.setYLabel(r"$\\#$")
-        p.setXLabel("time ($\si{\second}$)")
-        p.plot(valfilename, "lost segments", using="2:10", linestyle=2)
-        p.plot(valfilename, "reordered segments", using="2:11", linestyle=3)
-        p.plot(valfilename, "fast retransmits", using="2:12", linestyle=4)
-        p.plot(valfilename, "timeout retransmits", using="2:13", linestyle=5)
-        # output plot
-        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        if 'segments' in self.graphics_array:
+            # lost, reorder, retransmit
+            p = UmLinePlot(plotname+'_lost_reor_retr')
+            p.setYLabel(r"$\\#$")
+            p.setXLabel("time ($\si{\second}$)")
+            p.plot(valfilename, "lost segments", using="2:10", linestyle=2)
+            p.plot(valfilename, "reordered segments", using="2:11", linestyle=3)
+            p.plot(valfilename, "fast retransmits", using="2:12", linestyle=4)
+            p.plot(valfilename, "timeout retransmits", using="2:13", linestyle=5)
+            # output plot
+            p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
 
     def run(self):
