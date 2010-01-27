@@ -4,6 +4,7 @@
 # python imports
 import sys
 import os.path
+import math
 from logging import info, debug, warn, error
 
 # umic-mesh imports
@@ -80,6 +81,7 @@ class FlowPlotter(Application):
         # to avoid code duplicates
         directions = ['S', 'R']
         nosamples = min(flow['S']['size'], flow['R']['size'])
+        debug("nosamples: %i" %nosamples)
 
         #get max cwnd for ssth output
         cwnd_max = 0
@@ -89,12 +91,36 @@ class FlowPlotter(Application):
                     cwnd_max = flow[dir]['cwnd'][i]
 
         #resample in place
-        # if resample > 0:
-            # for i in range(resample):
+        if resample > 0:
+            for d in directions:
+                for key in (flow[d].keys()):
+                    # check if data is number
+                    data = flow[d][key]
+                    try:
+                        float(data[0])
+                    except:
+                        continue
+                    debug("type: %s" %key)
+                    # TODO: handle _time correctly
+
+                    for i in range(resample):
+                        debug("run: %i" %i)
+                        # calculate interval
+                        low  = int ( math.ceil(nosamples/resample*i) ) if (i > 0) else 0
+                        high = low+nosamples/resample-1
+                        debug("interval: %i to %i, dir: %s" %(low,high,d) )
+                        # calculate avg over interval
+                        data[i] = sum(data[j] for j in range(low,high) ) / (high-low)
+                        debug("resampled no: %i dir: %s value: %f " %(i,d,data[i]) )
+
+                    #truncate table to new size
+                    del flow[d][key][resample+1:nosamples]
+
+            nosamples = resample
+            debug("new nosamples: %i" %nosamples)
 
         # header
-        fh.write(r"""# start_time end_time forward_tput reverse_tput forward_cwnd
-                reverse_cwnd ssth krtt krto lost reor fret tret fack\n""")
+        fh.write("# start_time end_time forward_tput reverse_tput forward_cwnd reverse_cwnd ssth krtt krto lost reor fret tret fack\n")
         for i in range(nosamples):
             fh.write("%f %f %f %f %f %f %f %f %f %f %f %f %f\n"
                                                     %(
