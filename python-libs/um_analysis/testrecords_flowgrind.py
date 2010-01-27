@@ -106,7 +106,7 @@ class FlowgrindRecordFactory():
             "thruput = (?P<thruput>\d+\.\d+)(\/(?P<thruput_back>\d+\.\d+))?Mb/s",
 
             #  ID    begin     end   through min RTT avg RTT max RTT min IAT avg IAT max IAT    cwnd        ssth uack sack lost fret tret fack reor   rtt rttvar     rto   castate   mss   mtu status
-        " +(?P<direction>[S,R])"\
+            " +(?P<direction>[S,R])"\
             " +(?P<flow_id>\d+) +(?P<begin>\d+\.\d+) +(?P<end>\d+\.\d+)"\
             " +(?P<tput>\d+\.\d+)"\
             " +(?P<rtt_min>\d+\.\d+|inf) +(?P<rtt_avg>\d+\.\d+|inf) +(?P<rtt_max>\d+\.\d+|inf)"\
@@ -114,8 +114,8 @@ class FlowgrindRecordFactory():
             " +(?P<cwnd>\d+\.\d+) +(?P<ssth>\d+) +(?P<uack>\d+) +(?P<sack>\d+)"\
             " +(?P<lost>\d+) +(?P<fret>\d+) +(?P<tret>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
             " +(?P<krtt>\d+\.\d+) +(?P<krttvar>\d+\.\d+) +(?P<krto>\d+\.\d+)"\
-        " +(?P<castate>loss|open|disorder|recovery) +(?P<mss>\d+) +(?P<mtu>\d+)",
-        "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2} \d{2}:\d{2}:\d{2} \d{4}): controlling host"
+            " +(?P<castate>loss|open|disorder|recovery) +(?P<mss>\d+) +(?P<mtu>\d+)",
+            "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2} \d{2}:\d{2}:\d{2} \d{4}): controlling host"
         ]
 
         # compile regexes

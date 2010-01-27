@@ -47,7 +47,7 @@ class Bootscripts(xmlrpc.XMLRPC):
         if nodedat:
             flavorName = nodedat['flavorName']
         else:
-		    flavorName = self.profile_default
+            flavorName = self.profile_default
             debug("Node %s has no assigned profile using %s" %(node, flavorName))
 
         ret = twisted_call(["ln", "-s", "-f",

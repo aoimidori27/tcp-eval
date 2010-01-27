@@ -80,13 +80,13 @@ class Routelogger(RPCService):
         """This function invokes start-stop daemon to bring up the route logger"""
 
         if not os.path.exists(logdir):
-		info("%s does not exist. Trying to create" % logdir)
-		try:
-			os.mkdir(logdir)
-			os.chmod(logdir, os.stat(logdir)[0] | stat.S_IWOTH)
-		except OSError:
-			error("Logdir creation failed")
-			defer.returnValue(1)
+        info("%s does not exist. Trying to create" % logdir)
+        try:
+            os.mkdir(logdir)
+            os.chmod(logdir, os.stat(logdir)[0] | stat.S_IWOTH)
+        except OSError:
+            error("Logdir creation failed")
+            defer.returnValue(1)
 
         cmd = [ "start-stop-daemon", "--start", "--background",
                 "--make-pidfile", "--pidfile", self._pidfile,

@@ -180,7 +180,7 @@ shadowLastChange: 0
         except ldap.LDAPError, error_message:
             error("Error: %s" %str(error_message))
             error("Giving up.")
-	        sys.exit(1)
+            sys.exit(1)
 
         tmp2 = tempfile.NamedTemporaryFile()
         str_tmp2 = """version: 1

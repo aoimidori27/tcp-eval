@@ -181,7 +181,7 @@ class Btex2utf8(Application):
                     if group:
                         out1 += values2[g]
                         break;
-		    g=g+1
+            g=g+1
             out1 += inline[last:]
 
         # now replace all the others and write it to the output file
@@ -203,7 +203,7 @@ class Btex2utf8(Application):
                     if group:
                         outstream.write(values[g])
                         break;
-		    g=g+1
+            g=g+1
             outstream.write(inline[last:])
             outstream.write("\n")
         outstream.flush()
