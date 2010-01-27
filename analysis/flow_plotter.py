@@ -73,11 +73,12 @@ class FlowPlotter(Application):
     def plot(self, infile, outdir=None):
         """Plot one file"""
 
-        def ssth_max(ssth, cwnd_max, x):
+        def ssth_max(ssth):
             SSTHRESH_MAX = 2147483647
-            if ssth == SSTHRESH_MAX: return 0
-            elif ssth > cwnd_max+x:  return cwnd_max+x
-            else:                    return ssth
+            X = 50
+            if ssth == SSTHRESH_MAX:  return 0
+            elif ssth > cwnd_max + X: return cwnd_max + X
+            else:                     return ssth
 
         def rto_max(rto):
             if rto == 3000: return 0
@@ -90,6 +91,7 @@ class FlowPlotter(Application):
         flownumber = self.options.flownumber
         record = self.factory.createRecord(infile, "flowgrind")
         flows = record.calculate("flows")
+        cwnd_max = 0
 
         if flownumber > len(flows):
             warn("requested flow number %i greater then flows in file: %i"
@@ -106,7 +108,6 @@ class FlowPlotter(Application):
         debug("nosamples: %i" %nosamples)
 
         #get max cwnd for ssth output
-        cwnd_max = 0
         for i in range(nosamples):
             for dir in directions:
                 if flow[dir]['cwnd'][i] > cwnd_max:
@@ -163,7 +164,7 @@ class FlowPlotter(Application):
                                                     flow['R']['tput'][i],
                                                     flow['S']['cwnd'][i],
                                                     flow['R']['cwnd'][i],
-                                                    ssth_max(flow['S']['ssth'][i], cwnd_max, 50),
+                                                    ssth_max(flow['S']['ssth'][i]),
                                                     flow['S']['krtt'][i],
                                                     rto_max(flow['S']['krto'][i]),
                                                     flow['S']['lost'][i],
