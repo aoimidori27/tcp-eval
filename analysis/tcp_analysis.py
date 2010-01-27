@@ -91,6 +91,10 @@ class TcpAnalysis(Analysis):
                       """ % (iterationNo,scenarioNo,runNo,avg_rate))
 
     def generateTputOverTime(self, orderby="iterationNo, runNo, scenarioNo ASC"):
+        """Generates a line plot of the measured throughput regardless of 
+           run or scenario.
+        """
+
         dbcur = self.dbcon.cursor()
 
         thruputs = dict()
@@ -151,7 +155,7 @@ class TcpAnalysis(Analysis):
         fh.close()
 
         p = UmLinePlot(plotname)
-        p.setYLabel(r"$\\SI{\Mbps}$")
+        p.setYLabel(r"\\si{\\Mbps}")
         if times:
             p.setXLabel("Time")
             p.setXDataTime()
@@ -171,12 +175,15 @@ class TcpAnalysis(Analysis):
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
     def generateTputOverTimePerRun(self):
+        """Generates a line plot where every run number gets a 
+           dedicated line ignoring scenario.
+        """     
         dbcur = self.dbcon.cursor()
 
         # get runs
         dbcur.execute('''
         SELECT DISTINCT runNo, run_label
-        ROM tests ORDER BY runNo'''
+        FROM tests ORDER BY runNo'''
         )
         runs = dict()
         for row in dbcur:
@@ -195,7 +202,7 @@ class TcpAnalysis(Analysis):
 
         outdir = self.options.outdir
         p = UmLinePlot("tput_over_time_per_run")
-        p.setYLabel(r"$\\SI{\Mbps}$")
+        p.setYLabel(r"\\si{\Mbps}")
 
         for runNo in runs.keys():
             thruputs = dict()
@@ -267,10 +274,10 @@ class TcpAnalysis(Analysis):
                 p.setXLabel("test")
                 using_str = ""
 
-            p.plot(valfilename, "thruput "+runs[runNo], linestyle=runNo+1, using=using_str+"1")
+            p.plot(valfilename, "Throughput "+runs[runNo], linestyle=runNo+1, using=using_str+"1")
 
             if rates:
-                p.plot(valfilename, "rate "+runs[runNo], linestyle=runNo+1, using=using_str+"2")
+                p.plot(valfilename, "Rate "+runs[runNo], linestyle=runNo+1, using=using_str+"2")
 
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
@@ -319,7 +326,7 @@ class TcpAnalysis(Analysis):
 
         g = UmHistogram(plotname)
 
-        g.setYLabel(r"Throughput in $\\Mbps$")
+        g.setYLabel(r"Throughput in \\si{\\Mbps}")
         g.setBarsPerCluster(limit)
         g.plot('"%s" using 4:xtic(1) title "Throughput" ls 1' % bestfilename)
 
@@ -381,7 +388,7 @@ class TcpAnalysis(Analysis):
         fh = file(valfilename, "w")
 
         # print header
-        fh.write("# run_label no_of_thruputs no_of_failed ")
+        fh.write("# run_label ")
 
         # one line per runlabel
         data = dict()
@@ -391,9 +398,9 @@ class TcpAnalysis(Analysis):
         keys.sort()
         for key in scenarios.keys():
             val = scenarios[key]
-            fh.write("min_tput_%(v)s max_tput_%(v)s avg_tput_%(v)s std_tput_%(v)s notests_%(v)s" %{ "v" : val })
-            fh.write("min_tput_0%(v)s max_tput_0%(v)s avg_tput_0%(v)s std_tput_0%(v)s notests_%(v)s" %{ "v" : val })
-            fh.write("min_tput_1%(v)s max_tput_1%(v)s avg_tput_1%(v)s std_tput_1%(v)s notests_%(v)s" %{ "v" : val })
+            fh.write("min_tput_%(v)s max_tput_%(v)s avg_tput_%(v)s std_tput_%(v)s notests_%(v)s " %{ "v" : val })
+            fh.write("min_tput_0%(v)s max_tput_0%(v)s avg_tput_0%(v)s std_tput_0%(v)s notests_%(v)s " %{ "v" : val })
+            fh.write("min_tput_1%(v)s max_tput_1%(v)s avg_tput_1%(v)s std_tput_1%(v)s notests_%(v)s " %{ "v" : val })
         fh.write("\n")
 
         sorted_labels = list()
@@ -438,7 +445,7 @@ class TcpAnalysis(Analysis):
         fh.close()
 
         g = UmHistogram(plotname)
-        g.setYLabel(r"Throughput in $\\SI{\Mbps}$")
+        g.setYLabel(r"Throughput in $\\si{\Mbps}$")
         g.setClusters(limit)
         g.setYRange("[ 0 : * ]")
 
@@ -466,7 +473,7 @@ class TcpAnalysis(Analysis):
         g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
     def generateHistogram(self):
-        """Generates a histogram with scenario labels."""
+        """Generates a histogram "scenario_compare" with scenario labels."""
 
         dbcur = self.dbcon.cursor()
 
@@ -541,7 +548,7 @@ class TcpAnalysis(Analysis):
         fh.close()
 
         g = UmHistogram(plotname)
-        g.setYLabel(r"Throughput in $\\SI{\Mbps}$")
+        g.setYLabel(r"Throughput in $\\si{\Mbps}$")
         g.setClusters(limit)
         g.setYRange("[ 0 : * ]")
 
@@ -603,7 +610,7 @@ class TcpAnalysis(Analysis):
 
         g = UmGnuplot(plotname)
 
-        g.setXLabel(r"Throughput in $\\SI{\Mbps}$")
+        g.setXLabel(r"Throughput in $\\si{\Mbps}$")
         g.setYLabel("Fraction of Pairs")
 
         g.plot('"%s" using 1:2 title "1-Hop" ls 1 with steps' % valfilename)
@@ -736,7 +743,7 @@ class TcpAnalysis(Analysis):
         fh.close()
 
         p = UmBoxPlot(plotname)
-        p.setXLabel(r"Throughput in $\\SI{\Mbps}$")
+        p.setXLabel(r"Throughput in $\\si{\Mbps}$")
         p.setYLabel("Frequency")
         p.plot(valfilename,"Frequency", using="1:2", linestyle=1)
 
