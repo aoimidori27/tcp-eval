@@ -206,7 +206,7 @@ def test_flowgrind(mrs,
     dst = Node(flowgrind_dst, node_type=nodetype)
 
     # ips of the measurement interfaces
-    src_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
+    src_ip = yield mrs.getIp(src.getHostname(), flowgrind_iface)
     dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
    
     # path of executable
@@ -218,7 +218,7 @@ def test_flowgrind(mrs,
 
     # build host specifiers
     cmd.extend(["-H", "s=%s/%s,d=%s/%s" % (src_ip, src.getHostname(),
-                                           dst_ip, dst.getHostname()) ]);
+                                           dst_ip, dst.getHostname()) ])
 
     # just add additional parameters
     if flowgrind_opts:
