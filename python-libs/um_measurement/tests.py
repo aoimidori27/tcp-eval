@@ -175,6 +175,7 @@ def test_flowgrind(mrs,
                    flowgrind_dump   = False,
                    flowgrind_iface  = "ath0",
                    flowgrind_bport  = 5999,
+                   flowgrind_bin    = "flowgrind",
                    flowgrind_opts   = [],
                    gzip_dumps       = True,
                    nodetype         = "meshrouter",
@@ -194,6 +195,7 @@ def test_flowgrind(mrs,
             flowgrind_dump     : turn on tcpdump on src and sender
             flowgrind_iface    : iface to get ipaddress
             flowgrind_bport    : flowgrind base port
+            flowgrind_bin      : flowgrind binary
             flowgrind_opts     : additional command line arguments
             gzip_dumps         : gzip dumps to save space
             nodetype           : the nodetype ("e.g. vmeshrouter")
@@ -208,7 +210,7 @@ def test_flowgrind(mrs,
     dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
    
     # path of executable
-    cmd = [ "flowgrind" ]
+    cmd = [ flowgrind_bin ]
     
     # options
     cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_cc])    
@@ -218,7 +220,7 @@ def test_flowgrind(mrs,
     cmd.extend(["-H", "s=%s/%s,d=%s/%s" % (src_ip, src.getHostname(),
                                            dst_ip, dst.getHostname()) ]);
 
-    # just add additional parameters                                 
+    # just add additional parameters
     if flowgrind_opts:
         cmd.extend(flowgrind_opts)
 
