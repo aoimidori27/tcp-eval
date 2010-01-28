@@ -163,7 +163,7 @@ class Checkout(Application):
             info("Check the status of the checkout within the images: %s" %(imagepath))
 
             for src, dst in svnmappings.iteritems():
-                dst = "%s%s/%s" %(imagepath, Image.svnPrefix(), dst)
+                dst = "%s%s/%s" %(imagepath, svnprefix, dst)
                 if not os.path.exists(dst):
                     warn("%s is missing" %dst)
                     continue

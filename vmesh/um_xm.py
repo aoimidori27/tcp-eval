@@ -15,7 +15,7 @@ from optparse import OptionValueError
 # umic-mesh imports
 from um_application import Application
 from um_image import Image, ImageValidityException
-from um_node import Node, VMeshHost, NodeValidityException
+from um_node import Node, NodeValidityException
 from um_functions import requireroot, call, execute, CommandFailed
 
 class Xen(Application):
@@ -174,7 +174,6 @@ class Xen(Application):
 
         # check if user is in one of these groups
         groups = os.getgroups()
-        allowed = 0
         for i in group_ids:
             if i in groups:
                 return
@@ -212,9 +211,6 @@ class Xen(Application):
 
         # must be root
         requireroot()
-
-        # gather information form localhost (e.g. hostname)
-        vmeshhost = VMeshHost()
 
         # create an Image object
         try:
