@@ -33,12 +33,15 @@ class TcpEvaluationMeasurement(measurement.Measurement):
     def run(self):
         """Main method"""
 
-        testbed_profile = "tcp_evaluation"
+        # this must be adjusted for the specific measurement
+        testbed_profile = "vmesh_flowgrind"
+        node_type = "vmeshrouter"
 
         # common options used for all tests
         opts = dict( flowgrind_duration = 20,
-                     flowgrind_dump   = True,
-                     tprofile = testbed_profile )
+                     flowgrind_dump   = False,
+                     tprofile = testbed_profile,
+                     nodetype = node_type )
 
         # test nodes load from file
         runs = self.load_pairs_from_file(self.options.pairfile)
@@ -47,15 +50,12 @@ class TcpEvaluationMeasurement(measurement.Measurement):
         iterations  = range(50)
 
         # inner loop with different scenario settings
-        scenarios   = [ dict( scenario_label = "New Reno 1", flowgrind_cc="reno" ),
-                        dict( scenario_label = "Westwood+",  flowgrind_cc="westwood" ),
-                        dict( scenario_label = "Vegas",      flowgrind_cc="vegas"),
-                        dict( scenario_label = "New Reno 2", flowgrind_cc="reno") ]
+        scenarios   = [ dict( scenario_label = "New Reno", flowgrind_cc="reno" ),
+                        dict( scenario_label = "Westwood+", flowgrind_cc="westwood" ),
+                        dict( scenario_label = "Vegas", flowgrind_cc="vegas" ),
+                        dict( scenario_label = "Cubic", flowgrind_cc="cubic" ) ]
 
         yield self.switchTestbedProfile(testbed_profile)
-
-        # due to a flaw in flowgrindd restart it before measurement
-        yield self.xmlrpc_many(range(1,46),"flowgrindd.restart")
 
         for it in iterations:
             for run_no in range(len(runs)):
@@ -71,7 +71,6 @@ class TcpEvaluationMeasurement(measurement.Measurement):
                     # use a different port for every test
                     kwargs['flowgrind_bport'] = int("%u%u%02u" %(scenario_no+1,it, run_no))
 
-
                     # set logging prefix, tests append _testname
                     self.logprefix="i%03u_s%u_r%u" % (it, scenario_no, run_no)
 
@@ -83,7 +82,7 @@ class TcpEvaluationMeasurement(measurement.Measurement):
                     yield self.run_test(tests.test_flowgrind, **kwargs)
 
         # switch back to minimum when done
-        yield self.switchTestbedProfile("minimum")
+        # yield self.switchTestbedProfile("minimum")
         yield self.tear_down()
         reactor.stop()
 
