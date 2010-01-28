@@ -55,9 +55,9 @@ class CheckConfig(Application):
             if '.svn' in dirs:
                 dirs.remove('.svn')
             rel_root=root[len(config_dir):].strip('/')
-            for file in files:
-                abs_file=os.path.join(root, file)
-                rel_file=os.path.join(rel_root, file)
+            for filename in files:
+                abs_file=os.path.join(root, filename)
+                rel_file=os.path.join(rel_root, filename)
                 etc_file=os.path.join(etc, rel_file)
                 # ignore files already checked
                 if etc_file in self.checked:
