@@ -36,7 +36,7 @@ class UmGnuplot():
         self.gplot(
         """
         set style line 1 lt rgb "#F593A1" lw 1 pt 6
-        set style line 2 lt rgb "dark-green" lw 1.5 pt 1
+        set style line 2 lt rgb "dark-green" lw 1 pt 1
         set style line 3 lt rgb "navy" lw 1 pt 7 ps 1
         set style line 4 lt rgb "grey" lw 1
         set style line 5 lt rgb "#98E2E7" lw 1 pt 7 ps 1
