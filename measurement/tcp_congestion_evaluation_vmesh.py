@@ -11,8 +11,8 @@ from um_node import Node
 
 class TcpEvaluationMeasurement(measurement.Measurement):
     """This Measurement has serveral scenarios to test:
-       one flow from each to each node with 3 different congestion
-       control algorithms: New Reno, Vegas and Westwood+
+       one flow from each to each node with 4 different congestion
+       control algorithms: New Reno, Vegas, Westwood+ and Cubic
     """
 
     def __init__(self):
