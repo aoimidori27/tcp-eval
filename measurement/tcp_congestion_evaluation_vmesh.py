@@ -20,7 +20,7 @@ class TcpEvaluationMeasurement(measurement.Measurement):
         self.logprefix=""
         measurement.Measurement.__init__(self)
 
-        self.parser.set_defaults(pairfile = "pairs.lst")
+        self.parser.set_defaults(pairfile = "tcp_congestion_evaluation_vmesh_pairs.lst")
         self.parser.add_option('-f', '--pairfile', metavar="PAIRFILE",
                                action = 'store', type = 'string', dest = 'pairfile',
                                help = 'Set file to load node pairs from [default: %default]')
