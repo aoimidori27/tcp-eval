@@ -29,23 +29,44 @@ def requireNOroot():
         error("You can not be root. Command failed.")
         sys.exit(1)
 
-def execute(cmd, shell = True, raiseError = True):
-    """Execute a shell command, wait for command to complete and return stdout/stderr"""
+def execute(cmd, shell = True, raiseError = True, input = None):
+    """Execute a shell command, wait for command to complete and return 
+       stdout/stderr. If the parameter input is given, it will be use as
+       stdin
+    """
+
+    std_in = None
 
     debug("Executing: %s" % cmd.__str__())
-    prog = subprocess.Popen(cmd, shell = shell, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-    (stdout, stderr) = prog.communicate()
+    if input:
+        std_in = subprocess.PIPE
+        
+    prog = subprocess.Popen(cmd, shell = shell, stdin = std_in,
+                            stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    (stdout, stderr) = prog.communicate(input)
+                
     rc = prog.returncode
     if raiseError and rc != 0:
         raise CommandFailed(cmd, rc, stderr)
 
     return (stdout, stderr)
 
-def call(cmd, shell = True, raiseError = True):
+def call(cmd, shell = True, raiseError = True, noOutput = False, input = None):
     """Call a shell command, wait for command to complete and return exit code"""
 
-    debug("Executing: %s" % cmd.__str__())
-    rc = subprocess.call(cmd, shell = shell)
+    std_in = None
+    std_out = None
+    
+    debug("Executing: %s" % cmd.__str__())    
+    if input:
+        std_in = subprocess.PIPE
+    if noOutput:
+        std_out = open(os.path.devnull, "w")           
+        
+    prog = subprocess.Popen(cmd, shell = shell, stdin = std_in, stdout = std_out)
+    prog.communicate(input)
+
+    rc = prog.returncode
     if raiseError and rc != 0:
         raise CommandFailed(cmd, rc)
 
@@ -174,4 +195,3 @@ class StrictStruct:
 
     def __str__(self):
         return "<%s: %r>" % (self.__class__, self._items)
-
