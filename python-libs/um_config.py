@@ -52,8 +52,9 @@ image_info = dict(
                          "/scripts/pdfconverters" : "scripts/pdfconverters" },
         script_mappings = { "scripts/image" : "/usr/local/sbin",
                             "scripts/vmesh" : "/usr/local/sbin",
-                            "scripts/image" : "/usr/local/sbin",
-                            "scripts/measurement" : "/usr/local/bin" }
+                            "scripts/measurement" : "/usr/local/bin",
+                            "scripts/analysis": "/usr/local/bin",
+                            "scripts/pdfconverters": "/usr/local/bin" }
     ),
     vmeshnode = dict(
         svn_mappings = { "/config/vmeshnode/trunk" : "config.local",
