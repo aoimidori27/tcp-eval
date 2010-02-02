@@ -13,15 +13,18 @@ from um_functions import execute, call
 
 
 class UmLatex():
+    """Class to convert latex figures (e.g. tikz) to pdf graphics"""
 
     def __init__(self, filename = None, outdir = None, defaultPackages = True, 
                  defaultSettings = True, siunitx = True, tikz = True):
         # tex filename and figures named (for building output files)
-        self._filename = None
-        self._outdir = None
+        self._filename = "main"
+        self._outdir = os.getcwd()
         self._figures = list()
-        self.__setFilename(filename)
-        self.__setOutdir(outdir)
+        
+        # set filename and output directory
+        self.setFilename(filename)
+        self.setOutdir(outdir)
                
         # verbose/debug/force mode
         self._verbose = False
@@ -39,6 +42,17 @@ class UmLatex():
 
     def __loadDefaults(self, defaultPackages = True, defaultSettings = True,
                        siunitx = True, tikz = True):
+        """Load default settings for the generated latex file. Currently,
+           we default values for the following packages
+        
+           1. defaultPackages: includes etex, babel, inputenc, fontenc, lmodern,
+              textcomp, graphicx, xcolor
+              
+           2. defaultSettings: pagestyle empty
+           
+           3. default values for siunitx, tikz
+        """
+        
         self.setDocumentclass("scrartcl")
               
         if defaultPackages:
@@ -53,7 +67,7 @@ class UmLatex():
  
         if defaultSettings:     
             self.addSetting(r"\pagestyle{empty}")
-            
+
             # some arrows
             self.addSetting(r"\newcommand*{\Implies}{\ensuremath{\rightarrow}\xspace}")
             self.addSetting(r"\newcommand*{\IFF}{\ensuremath{\leftrightarrow}\xspace}")
@@ -85,31 +99,6 @@ class UmLatex():
             self.addPackage("tikz")
             self.addSetting(r"\usetikzlibrary{backgrounds,arrows,calc}")
 
-
-    def __getFilename(self, filename = None):
-        if filename == None:
-            return self._filename
-        else:
-            return filename
-
-    def __setFilename(self, filename = None):
-        if filename == None:
-            self._filename = "main"
-        else:
-            self._filename = filename
-            
-    def __getOutdir(self, outdir = None):
-        if outdir == None:
-            return self._outdir
-        else:
-            return outdir
-
-    def __setOutdir(self, outdir = None):
-        if outdir == None:
-            self._outdir = os.getcwd()
-        else:
-            self._outdir = outdir
-
     def __buildDocument(self):
         packages = "\n".join(self._packages)
         settings = "\n".join(self._settings)
@@ -118,6 +107,48 @@ class UmLatex():
             %(self._documentclass , packages, settings, content)  
         
         return document
+
+    def setFilename(self, filename = None):
+        """Set member variable "self._filename" to parameter "filename" provided
+           that the parametern is not "None"
+        """
+    
+        if filename:
+            self._filename = filename
+
+    def setOutdir(self, outdir = None):
+        """Set member variable "self._outdir" to parameter "outdir" provided that
+           the parametern is not "None"
+        """
+
+        if outdir:
+            self._outdir = outdir        
+
+    def getFilename(self):        
+        return self._filename
+            
+    def getOutdir(self):
+        return self._outdir
+
+    def getValidFilename(self, filename = None):
+        """If the parameter "filename" is "None" return the member variable
+           "self._filename" otherwise return the parameter itself
+        """
+        
+        if filename:
+            return filename
+        else:
+            return self.getFilename()
+            
+    def getValidOutdir(self, outdir = None):
+        """If the parameter "outdir" is "None" return the member variable
+           "self._outdir" otherwise return the parameter itself
+        """
+
+        if outdir:
+            return outdir
+        else:
+            return self. getOutdir()
 
     def setVerbose(self):
         self._verbose = True
@@ -129,13 +160,20 @@ class UmLatex():
         self._force = True
         
     def setDocumentclass(self, documentclass, *options):
+        """Set the latex documentclass for the document"""
+    
         if options:
             options = ", ".join(options)
             self._documentclass = "\\documentclass[%s]{%s}" %(options, documentclass)
         else:
             self._documentclass = "\\documentclass{%s}" %documentclass
 
-    def addPackage(self, package, *options):    
+    def addPackage(self, package, *options):
+        """Add the given package with its options to the document. Only the
+           name of the package is needed. The "\usepackage{}" latex command will
+           be automatically added       
+        """
+    
         if options:
             options = ", ".join(options)
             command = "\\usepackage[%s]{%s}" %(options, package) 
@@ -145,37 +183,54 @@ class UmLatex():
         self._packages.append(command)
             
     def addSetting(self, command):
+        """Add an arbitrary latex command/setting to the document. The given
+           command the will be added before the latex "\begin{document}" 
+        """
+    
         self._settings.append(command)
         
     def addContent(self, content):
+        """Add arbitrary latex content to the document. The content will be added
+           after the latex "\begin{document}" 
+        """    
+    
         self._content.append(content)
     
-    def addLatexFigure(self, latexfile, name = None):
+    def addLatexFigure(self, latexfile, name = None, command = None):
+        """Add a latex figure to the document. The figure given by the
+           parameter "latexfile" is included by the latex command "\input{}". All
+           necessary commands like "\begin{figure}" or "\end{figure}" are
+           automatically added. The last automataclly added command is "\clearpage",
+           so that all figures are on a new page. If the optional parameter
+           "command" is given, it will be added before the figure is included
+        """
+    
         if not name:
             # get basename
             name = os.path.basename(latexfile)
             # and we want the name without extension
             name = os.path.splitext(name)[0] 
-            
-        figure = r"""
-            \begin{figure}
-            \centering
-            \input{%s}
-            \end{figure}
-            \clearpage""" %latexfile
 
+        # save the name of the figure for further uses
         self._figures.append(name)
-        self.addContent(figure)
+
+        self.addContent("\\begin{figure}\n\\centering")
+        # if an additional command is given, we added it
+        if command:
+            self.addContent(command)
+        self.addContent("\\input{%s}\n\\end{figure}\n\\clearpage" %latexfile)
 
     def save(self, filename = None, outdir = None):
+        """Save the generated latex file to "outdir/filename"""
+    
         # build document
         if self._verbose:
             info("Bulding LaTeX document...")
         document = self.__buildDocument()
     
         # build output path
-        filename = self.__getFilename(filename)
-        finaldir = self.__getOutdir(outdir)
+        filename = self.getValidFilename(filename)
+        finaldir = self.getValidOutdir(outdir)
         texfile = os.path.join(finaldir, "%s.tex" %filename)
        
         if not self._force and os.path.exists(texfile):
@@ -190,14 +245,20 @@ class UmLatex():
         latex.close()
 
     def toPdf(self, filename = None, outdir = None):
+        """Generate the actual pdf figures. First, the document is build. Then
+           pdflatex will run on the document. Afterwards, the new generated
+           pdf will be splitted into single pages, each graphic on a new page.
+           Finally, each page will be cropped by pdfcrop
+        """
+    
         # building document
         if self._verbose:
             info("Bulding LaTeX document...")
         document = self.__buildDocument()
 
         # build output path
-        filename = self.__getFilename(filename)
-        finaldir = self.__getOutdir(outdir)
+        filename = self.getValidFilename(filename)
+        finaldir = self.getValidOutdir(outdir)
         tempdir = tempfile.mkdtemp()
               
         # run pdflatex
