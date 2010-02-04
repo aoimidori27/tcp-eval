@@ -75,7 +75,7 @@ class Texfig2Pdf(Application):
                 basename = "%s_%s" %(self.options.basename, index)
             else:
                 basename = os.path.basename(figure)
-                basename = os.path.splitext(basename)[0]            
+                basename = os.path.splitext(basename)[0]
 
             # add tex fig to the latex doc
             self._latex.addLatexFigure(figure, basename)
