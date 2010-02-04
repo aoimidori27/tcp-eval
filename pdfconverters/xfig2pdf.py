@@ -1,17 +1,17 @@
-#!/usr/bin/env python
+#!/usr/bin/env python -W ignore::DeprecationWarning
 # -*- coding: utf-8 -*-
 
 # python imports
-import sys
-import os
-import shutil
+import os.path
 import tempfile
-import subprocess
-import glob
+import shutil
 from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_application import Application
+from um_latex import UmLatex
+from um_functions import call
+
 
 class Xfig2PDF(Application):
     """Class to convert combined xfig to plain pdf"""
@@ -22,50 +22,28 @@ class Xfig2PDF(Application):
         Application.__init__(self)
 
         # object variable
-        self.settings = r"""
-                        \usepackage[english]{babel}
-                        \usepackage[utf8]{inputenc}
-                        \usepackage[T1]{fontenc}
-                        \usepackage{graphicx}
-                        \usepackage{xcolor}
-                        \usepackage{stmaryrd}
-
-                        % turn off margins
-                        \usepackage[paper=a4paper,left=0mm,right=0mm,top=0mm,bottom=0mm]{geometry}
-
-                        % Arrows
-                        \newcommand*{\implies}{\ensuremath{\rightarrow}\xspace}
-                        \renewcommand*{\iff}{\ensuremath{\leftrightarrow}\xspace}
-                        \newcommand*{\IF}{\ensuremath{\Rightarrow}\xspace}
-                        \newcommand*{\sra}{\ensuremath{\shortrightarrow}\xspace}
-                        \newcommand*{\sla}{\ensuremath{\shortleftarrow}\xspace}
-
-                        """
+        self._latex = None
 
         # initialization of the option parser
-        usage = "usage: %prog [options] BASENAME"
+        usage = "usage: %prog [options] <xfig1> <xfig2> ..."
         self.parser.set_usage(usage)
-        self.parser.set_defaults(force = False, texsuffix = 'pdf_t',
-                                 pdfsuffix = 'pdf', outputsuffix = 'comb.pdf')
+        self.parser.set_defaults(force = False, outdir = os.getcwd())
+        
         self.parser.add_option("-f", "--force",
                                action = "store_true", dest = "force",
                                help = "overwrite existing output pdf file")
-        self.parser.add_option("-c", "--cfg", metavar = "FILE",
-                               action = "store", dest = "cfgfile",
-                               help = "use the file as config file for LaTeX. "\
-                                      "No default packages will be loaded.")
-        self.parser.add_option("-t", "--texIn", metavar = "SUF",
-                               action = "store", dest = "texsuffix",
-                               help = "define suffix of input tex file [default: %default]")
-        self.parser.add_option("-p", "--pdfIn", metavar = "SUF",
-                               action = "store", dest = "pdfsuffix",
-                               help = "define suffix of input pdf file [default: %default]")
-        self.parser.add_option("-P", "--pdfOut", metavar = "SUF",
-                               action = "store", dest = "outputsuffix",
-                               help = "define suffix of output pdf file [default: %default]")
-        self.parser.add_option("--landscape",
-                               action = "store_true", dest = "landscape",
-                               help = "use landscape orientation")
+        self.parser.add_option("-n", "--name", metavar = "NAME",
+                               action = "store", dest = "basename",
+                               help = "basename for all generated xfig/pdf files")
+        self.parser.add_option("-d", "--directory", metavar = "DIR",
+                               action = "store", dest = "outdir",
+                               help = "output directory [default: %default]")
+        self.parser.add_option("-l", "--save-texfile", metavar = "FILE",
+                               action = "store", dest = "texfile",
+                               help = "save main latex file")
+        self.parser.add_option("-x", "--save-figures",
+                               action = "store_true", dest = "save_figures",
+                               help = "save generated xfig latex figures")
 
     def set_option(self):
         """Set options"""
@@ -73,88 +51,89 @@ class Xfig2PDF(Application):
         Application.set_option(self)
 
         # correct numbers of arguments?
-        if len(self.args) != 1:
+        if len(self.args) == 0:
             self.parser.error("incorrect number of arguments")
 
-        # Config File?
-        if self.options.cfgfile:
-            self.settings = "\\input{%s}" %os.path.realpath(self.options.cfgfile)
-
-        self.texinput  = os.path.realpath("%s.%s" %(self.args[0], self.options.texsuffix))
-        self.pdfinput  = os.path.realpath("%s.%s" %(self.args[0], self.options.pdfsuffix))
-        self.pdfoutput = os.path.realpath("%s.%s" %(self.args[0], self.options.outputsuffix))
+        # latex object
+        self._latex = UmLatex(self.options.texfile, self.options.outdir,
+                              self.options.force, self.options.debug, tikz = False) 
 
     def run(self):
         """Main method of the Xfig2PDF object"""
-
+        
+        # get all necessary directories
+        srcdir = os.getcwd()
+        destdir = self.options.outdir
         tempdir = tempfile.mkdtemp()
-
-        if not os.path.isfile(self.texinput):
-            error("%s is not a regular file." %self.texinput)
-            sys.exit(1)
-
-        if os.path.isfile(self.pdfinput):
-            shutil.copy(self.pdfinput, tempdir)
-        else:
-            error("%s is not a regular file." %self.pdfinput)
-            sys.exit(1)
-
-        if not self.options.force and os.path.exists(self.pdfoutput):
-            error("%s already exists." %self.pdfoutput)
-            sys.exit(1)
-
+        
+        # work in tempdir
+        if self.options.debug:
+            debug("Change directory %s" %tempdir)
         os.chdir(tempdir)
+               
+	    # convert all xfigs with fig2dev and put them into one latex document
+        for index, xfig in enumerate(self.args):
+        
+            # get the full path of the figure
+            xfigSrc = os.path.join(srcdir, xfig)
+        
+            if not os.path.isfile(xfigSrc):
+                warn("%s is not a regular file. Skipped." %xfig)
+                continue
+                
+            # get the basename (without extension)
+            if self.options.basename:
+                basename = "%s_%s" %(self.options.basename, index)
+            else:
+                basename = os.path.basename(xfig)
+                basename = os.path.splitext(basename)[0]
+            
+            # build names for output files
+            xfigPdf = "%s_xfig.pdf" %basename
+            xfigTex = "%s_xfig.tex" %basename
+                
+            # run fig2dev
+            info("Run fig2dev on %s..." %xfig)
+            cmd1 = "fig2dev -L pdftex %s %s" %(xfigSrc, xfigPdf)
+            cmd2 = "fig2dev -L pdftex_t -p %s %s %s" %(xfigPdf, xfigSrc, xfigTex)
+            if self.options.debug:
+                call(cmd1)
+                call(cmd2)
+            else:
+                call(cmd1, noOutput = True)
+                call(cmd2, noOutput = True)
 
-        # prepare the LaTeX file
-        latex = open("latex_me", "w")
+            # should we save the xfig pdf and latex file and for further use?
+            if self.options.save_figures:
+                xfigPdfDst = os.path.join(destdir, xfigPdf)
+                xfigTexDst = os.path.join(destdir, xfigTex)
+            
+                if not self.options.force and os.path.exists(xfigPdfDst):
+                    error("%s already exists. Skipped." %xfigPdfDst)
+                else:
+                    info("Save xFig PDF file to %s..." %xfigPdfDst)
+                    shutil.copy(xfigPdf, destdir)
+                              
+                if not self.options.force and os.path.exists(xfigTexDst):
+                    error("%s already exists. Skipped." %xfigTexDst)
+                else:
+                    info("Save xFig Tex file to %s..." %xfigTexDst)
+                    shutil.copy(xfigTex, destdir)
+                    
+            # add new generated to the latex doc
+            self._latex.addLatexFigure(xfigTex, basename)
 
-        if self.options.landscape:
-            latex.write("\\documentclass[landscape]{scrartcl}\n"\
-                        "%s\n" %self.settings)
-        else:
-            latex.write("\\documentclass{scrartcl}\n"\
-                        "%s\n" %self.settings)
+        # should we save generated main latex file for further purpose?
+        if self.options.texfile:
+           info("Save main LaTeX file...")
+           self._latex.save()
+            
+        # build pdf graphics
+        info("Generate PDF files...")
+        self._latex.toPdf(tempdir = tempdir)
 
-        latex.write("\\pagestyle{empty}\n"\
-                    "\\begin{document}\n"\
-                    "\\begin{figure}\n"\
-                    "\\centering\n"\
-                    "\\input{%s}\n"\
-                    "\\end{figure}\n"\
-                    "\\end{document}\n" % self.texinput)
-        latex.close()
-
-        # set the LaTeX file
-        if self.options.debug:
-            cmd = ("pdflatex %s" % latex.name)
-        else:
-            cmd = ("pdflatex -interaction=batchmode %s" % latex.name)
-
-        if subprocess.call(cmd, shell = True):
-            error("Texing %s was unsuccessful." %os.path.realpath(latex.name))
-            sys.exit(1)
-
-        # Crop the new PDF file
-        pdfoutputbasename = os.path.basename(self.pdfoutput)
-        if self.options.debug:
-            cmd = ("pdfcrop %s.pdf %s" %(latex.name, pdfoutputbasename))
-        else:
-            cmd = ("pdfcrop --noverbose %s.pdf %s" % (latex.name, pdfoutputbasename))
-
-        if subprocess.call(cmd, shell = True):
-            error("Cropping %s.pdf was unsuccessful." %os.path.realpath(latex.name))
-            sys.exit(1)
-
-        # copy the final result
-        shutil.copy(pdfoutputbasename, self.pdfoutput)
-
-        #clean up
-        os.remove(latex.name)
-        for entry in glob.glob("%s.*"%latex.name):
-            os.remove(entry)
-        os.remove(os.path.basename(self.pdfinput))
-        os.remove(pdfoutputbasename)
-        os.rmdir(tempdir)
+        # clean up
+        shutil.rmtree(tempdir)
 
     def main(self):
         self.parse_option()
@@ -164,4 +143,3 @@ class Xfig2PDF(Application):
 
 if __name__ == "__main__":
     Xfig2PDF().main()
-

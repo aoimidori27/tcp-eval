@@ -9,27 +9,28 @@ from pyPdf import PdfFileWriter, PdfFileReader
 from logging import info, debug, warn, error
 
 # umic-mesh imports
-from um_functions import execute, call
+from um_functions import call
 
 
 class UmLatex():
     """Class to convert latex figures (e.g. tikz) to pdf graphics"""
 
-    def __init__(self, filename = None, outdir = None, defaultPackages = True, 
-                 defaultSettings = True, siunitx = True, tikz = True):
-        # tex filename and figures named (for building output files)
-        self._filename = "main"
-        self._outdir = os.getcwd()
+    def __init__(self, texfile = "main.tex", outdir = os.getcwd(), force = False,
+                 debug = False, defaultPackages = True, defaultSettings = True,
+                 siunitx = True, tikz = True):
+        """Constructor of the object"""                 
+                 
+        # tex filename and figures names (for building output files)
         self._figures = list()
+        self._texfile = "main.tex"
+        self._outdir = os.getcwd()
         
-        # set filename and output directory
-        self.setFilename(filename)
+        self.setTexfile(texfile)
         self.setOutdir(outdir)
-               
-        # verbose/debug/force mode
-        self._verbose = False
-        self._debug = False
-        self._force = False
+        
+        # force/debug mode
+        self._force = force
+        self._debug = debug
         
         # latex content     
         self._documentclass = ''
@@ -47,9 +48,7 @@ class UmLatex():
         
            1. defaultPackages: includes etex, babel, inputenc, fontenc, lmodern,
               textcomp, graphicx, xcolor
-              
            2. defaultSettings: pagestyle empty
-           
            3. default values for siunitx, tikz
         """
         
@@ -108,39 +107,39 @@ class UmLatex():
         
         return document
 
-    def setFilename(self, filename = None):
-        """Set member variable "self._filename" to parameter "filename" provided
-           that the parametern is not "None"
+    def setTexfile(self, texfile):
+        """Set member variable "self._texfile" to parameter "texfile" provided
+           that the parameter is not "None"
         """
     
-        if filename:
-            self._filename = filename
+        if texfile:
+            self._texfile = texfile
 
-    def setOutdir(self, outdir = None):
+    def setOutdir(self, outdir):
         """Set member variable "self._outdir" to parameter "outdir" provided that
-           the parametern is not "None"
+           the parameter is not "None"
         """
 
         if outdir:
             self._outdir = outdir        
 
-    def getFilename(self):        
-        return self._filename
+    def getTexfile(self):        
+        return self._texfile
             
     def getOutdir(self):
         return self._outdir
 
-    def getValidFilename(self, filename = None):
-        """If the parameter "filename" is "None" return the member variable
-           "self._filename" otherwise return the parameter itself
+    def getValidTexfile(self, texfile):
+        """If the parameter "texfile" is "None" return the member variable
+           "self._texfile" otherwise return the parameter itself
         """
         
-        if filename:
-            return filename
+        if texfile:
+            return texfile
         else:
-            return self.getFilename()
+            return self.getTexfile()
             
-    def getValidOutdir(self, outdir = None):
+    def getValidOutdir(self, outdir):
         """If the parameter "outdir" is "None" return the member variable
            "self._outdir" otherwise return the parameter itself
         """
@@ -149,15 +148,6 @@ class UmLatex():
             return outdir
         else:
             return self. getOutdir()
-
-    def setVerbose(self):
-        self._verbose = True
-        
-    def setDebug(self):
-        self._debug = True
-        
-    def setForce(self):
-        self._force = True
         
     def setDocumentclass(self, documentclass, *options):
         """Set the latex documentclass for the document"""
@@ -196,94 +186,77 @@ class UmLatex():
     
         self._content.append(content)
     
-    def addLatexFigure(self, latexfile, name = None, command = None):
+    def addLatexFigure(self, latexfig, figname, command = None):
         """Add a latex figure to the document. The figure given by the
-           parameter "latexfile" is included by the latex command "\input{}". All
+           parameter "latexfig" is included by the latex command "\input{}". All
            necessary commands like "\begin{figure}" or "\end{figure}" are
-           automatically added. The last automataclly added command is "\clearpage",
-           so that all figures are on a new page. If the optional parameter
-           "command" is given, it will be added before the figure is included
+           automatically added. The last added command is "\clearpage", so that 
+           all figures are on a new page. If the optional parameter "command"
+           is given, it will be added before the figure is included
         """
-    
-        if not name:
-            # get basename
-            name = os.path.basename(latexfile)
-            # and we want the name without extension
-            name = os.path.splitext(name)[0] 
 
         # save the name of the figure for further uses
-        self._figures.append(name)
+        self._figures.append(figname)
 
         self.addContent("\\begin{figure}\n\\centering")
         # if an additional command is given, we added it
         if command:
             self.addContent(command)
-        self.addContent("\\input{%s}\n\\end{figure}\n\\clearpage" %latexfile)
+        self.addContent("\\input{%s}\n\\end{figure}\n\\clearpage" %latexfig)
 
-    def save(self, filename = None, outdir = None):
-        """Save the generated latex file to "outdir/filename"""
+    def save(self, texfile = None, outdir = None):
+        """Save the generated latex file to "outdir/texfile"""
     
         # build document
-        if self._verbose:
-            info("Bulding LaTeX document...")
         document = self.__buildDocument()
     
         # build output path
-        filename = self.getValidFilename(filename)
-        finaldir = self.getValidOutdir(outdir)
-        texfile = os.path.join(finaldir, "%s.tex" %filename)
+        texfile = self.getValidTexfile(texfile)
+        destdir = self.getValidOutdir(outdir)
+        texDst = os.path.join(destdir, texfile)
        
-        if not self._force and os.path.exists(texfile):
-            error("%s already exists. Skipped." %texfile)
+        if not self._force and os.path.exists(texDst):
+            error("%s already exists. Skipped." %texDst)
             return
             
         # write content
-        if self._verbose:
-            info("Write LaTeX document to %s..." %texfile)
-        latex = open(texfile, "w")
+        info("Write LaTeX document to %s..." %texDst)
+        latex = open(texDst, "w")
         latex.write(document)
         latex.close()
 
-    def toPdf(self, filename = None, outdir = None):
+    def toPdf(self, texfile = None, outdir = None, tempdir = tempfile.mkdtemp()):
         """Generate the actual pdf figures. First, the document is build. Then
            pdflatex will run on the document. Afterwards, the new generated
            pdf will be splitted into single pages, each graphic on a new page.
            Finally, each page will be cropped by pdfcrop
         """
     
-        # building document
-        if self._verbose:
-            info("Bulding LaTeX document...")
+        # building document and output path
         document = self.__buildDocument()
-
-        # build output path
-        filename = self.getValidFilename(filename)
-        finaldir = self.getValidOutdir(outdir)
-        tempdir = tempfile.mkdtemp()
+        texfile = self.getValidTexfile(texfile)
+        destdir = self.getValidOutdir(outdir)
               
         # run pdflatex
-        cmd = "pdflatex -jobname %s -output-directory %s" %(filename, tempdir)
-        if self._verbose:
-            info("Run pdflatex on %s..." %filename)
-        
+        info("Run pdflatex on %s..." %texfile)
+        cmd = "pdflatex -jobname %s -output-directory %s" %(texfile, tempdir)
         if self._debug:
             call(cmd, input = document)
         else:
             call(cmd, input = document, noOutput = True)
 
         # open new generated pdf file
-        combinedPDF = os.path.join(tempdir, "%s.pdf" %filename)
+        combinedPDF = os.path.join(tempdir, "%s.pdf" %texfile)
         pdfIn = PdfFileReader(open(combinedPDF, "r"))
  
         # iterate over the number of figures to spit and crop the pdf
-        for page, figname in enumerate(self._figures):
+        for page, figure in enumerate(self._figures):
             # output path
-            splitPDF = os.path.join(tempdir, "%s.a4.pdf" %figname)
-            cropPDF = os.path.join(tempdir, "%s.crop.pdf" %figname)
+            splitPDF = os.path.join(tempdir, "%s.a4.pdf" %figure)
+            cropPDF = os.path.join(tempdir, "%s.crop.pdf" %figure)
         
             # spit pdf into multiple pdf files
-            if self._verbose:
-                info("Write PDF file %s..." %figname) 
+            info("Write PDF file %s..." %figure) 
             pdfOut = PdfFileWriter()
             pdfOut.addPage(pdfIn.getPage(page))
                        
@@ -292,22 +265,20 @@ class UmLatex():
             filestream.close()
   
             # crop pdf  
-            cmd = "pdfcrop %s %s" %(splitPDF, cropPDF)
-            if self._verbose:
-                info("Run pdfcrop on %s..." %figname)
-                        
+            info("Run pdfcrop on %s..." %figure)
+            cmd = "pdfcrop %s %s" %(splitPDF, cropPDF)                        
             if self._debug:
                 call(cmd)
             else:
                 call(cmd, noOutput = True)
             
-            # copy croped pdfs to final destination
-            finalPDF = os.path.join(finaldir, "%s.pdf" %figname)
-            if not self._force and os.path.exists(finalPDF):
-                error("%s already exists. Skipped." %finalPDF)
+            # copy cropped pdfs to final destination
+            pdfDst = os.path.join(destdir, "%s.pdf" %figure)
+            if not self._force and os.path.exists(pdfDst):
+                error("%s already exists. Skipped." %pdfDst)
             else:
-                shutil.copy(cropPDF, finalPDF)
+                shutil.copy(cropPDF, pdfDst)
                 
-        #clean up
-        shutil.rmtree(tempdir)
+        # return tempdir for further use (e.g. clean up)
+        return tempdir
         
