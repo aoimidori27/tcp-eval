@@ -509,7 +509,7 @@ Remarks:
                     nexthop = self.gre_ip(paths[i][0], mask=False)
                     table = self._rtoffset+i
                     cmd  = ["ip", "route", "replace", host_ip]
-                    cmd += ["via", "nexthop", nexthop, "table", str(table)]
+                    cmd += ["via", nexthop, "table", str(table)]
                 try:
                     execute(cmd, shell=False)
                 except CommandFailed, inst:
