@@ -172,7 +172,7 @@ Remarks:
                 $"""
         reaches_str = r"""
                 (%s)(?:-(%s))?                      # DIGITS | DIGITS "-" DIGITS
-                (?:\[(%s)?(?:,(%s))?(?:,(%s))?(?:,(%s))?\])?    # [ "[" FLOAT,INT,INT,INT "]" ]
+                (?:\[(%s)?(?:,(%s)?)?(?:,(%s)?)?(?:,(%s)?)?\])?    # [ "[" FLOAT,INT,INT,INT "]" ]
                 (?:\ +|$)                           # optional spaces
                 """ % (digits_str,digits_str,float_str,digits_str,digits_str,digits_str)
 
@@ -246,6 +246,21 @@ Remarks:
                 reachability_map[r].add(host)
 
         return reachability_map
+
+    def visualize(self, graph):
+        """Visualize topology configuration"""
+        info("Configured with the following topology:")
+        dot_content = list()
+        dot_content.append("digraph G {")
+        for host in graph:
+             for neigh in graph[host]:
+               dot_content.append("%s -> %s" %(host, neigh))
+        dot_content.append("}")
+        try:
+            call("graph-easy --as=ascii", input="\n".join(dot_content))
+        except CommandFailed, inst:
+            warn("Visualizing topology failed.")
+            warn("Visualizing failed: RC=%s, Error=%s" % (inst.rc, inst.stderr))
 
     def gre_ip(self, hostnum, mask=False):
         """Gets the gre ip for host with number "hostnum" """
@@ -531,6 +546,7 @@ Remarks:
         # Apply settings on remote hosts
         if self.options.remote:
             requireNOroot()
+            self.visualize(self.conf)
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
