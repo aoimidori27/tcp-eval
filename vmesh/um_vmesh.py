@@ -42,8 +42,8 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         # initialization of the option parser
         usage = """\
 usage:  prog [options] [CONFIGFILE]
-        where the CONFIGFILE systax looks like the following
-            1: 2[10,,100,] 3 5-6[0.74,20,,10]
+        where the CONFIGFILE syntax looks like the following
+            1: 2[10,,100] 3 5-6[0.74,20,,10]
             2: ...
 
 Explanation:
@@ -51,7 +51,7 @@ Explanation:
     every vmrouter listed after the colon reaches vmrouter1.
 
     Link information may be given in brackets after every
-    entry, and the sytax [rate, limit, delay, loss], where:
+    entry, and the syntax [rate, limit, delay, loss], where:
         * Rate: in mbps as float
         * Queue limit: in packets as int
         * Delay: in ms as int
@@ -172,7 +172,7 @@ Remarks:
                 $"""
         reaches_str = r"""
                 (%s)(?:-(%s))?                      # DIGITS | DIGITS "-" DIGITS
-                (?:\[(%s)?,(%s)?,(%s)?,(%s)?\])?    # [ "[" FLOAT,INT,INT,INT "]" ]
+                (?:\[(%s)?(?:,(%s))?(?:,(%s))?(?:,(%s))?\])?    # [ "[" FLOAT,INT,INT,INT "]" ]
                 (?:\ +|$)                           # optional spaces
                 """ % (digits_str,digits_str,float_str,digits_str,digits_str,digits_str)
 
@@ -206,6 +206,7 @@ Remarks:
             host = lm.group(1)
             reaches = set()
             for m in reaches_re.findall(lm.group(2)):
+		debug(m)
                 first = int(m[0])
                 if m[1]: last = int(m[1])
                 else: last = first
