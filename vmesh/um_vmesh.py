@@ -510,13 +510,12 @@ Remarks:
                     table = self._rtoffset+i
                     cmd  = ["ip", "route", "replace", host_ip]
                     cmd += ["via", nexthop, "table", str(table)]
-                try:
-                    execute(cmd, shell=False)
-                except CommandFailed, inst:
-                    error('Failed adding entry for host %s to table %s.' % (host_ip, table))
-                    error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
-                    raise
-
+                    try:
+                        execute(cmd, shell=False)
+                    except CommandFailed, inst:
+                        error('Failed adding entry for host %s to table %s.' % (host_ip, table))
+                        error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+                        raise
 
     def setup_user_helper(self):
         if self.options.userscripts:
