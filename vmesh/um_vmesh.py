@@ -507,7 +507,7 @@ Remarks:
             if self.options.multipath:
                 for i in range(min(len(paths),self.options.maxpath)):
                     nexthop = self.gre_ip(paths[i][0], mask=False)
-                    table = self._rtoffse+i
+                    table = self._rtoffset+i
                     cmd  = ["ip", "route", "replace", host_ip]
                     cmd += ["via", "nexthop", nexthop, "table", str(table)]
                 try:
