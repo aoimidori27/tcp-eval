@@ -38,6 +38,8 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
     match ip dst %(dst)s"""
         self._dnsttl = 300
         self._dnskey = "o2bpYQo1BCYLVGZiafJ4ig=="
+        # used routing table ids for multipath
+        self._rtoffset = 300   
 
         # initialization of the option parser
         usage = """\
@@ -466,65 +468,55 @@ Remarks:
         self.set_sysctl("net.ipv4.conf.%s.accept_redirects" %iface,0)
         self.set_sysctl("net.ipv4.conf.%s.forwarding" %iface, 1)
 
-        if self.options.multipath:
-            for host in self.conf.keys():
-                if host==hostnum:
-                    continue
+        for host in self.conf.keys():
+            # skip localhost
+            if host==hostnum:
+                continue
 
-                paths = BuildVmesh.find_k_equal_cost_paths(self.conf, hostnum, host)
-                # not all hosts may be reachable from this hosts ignore them
-                if len(paths) == 0 :
-                    continue
+            paths = BuildVmesh.find_k_equal_cost_paths(self.conf, hostnum, host)
+            # not all hosts may be reachable from this hosts ignore them
+            if len(paths) == 0:
+                continue
 
-                # calculate distance unlike the single path version we don't need to subtract 1 as the node itself isn't saved in the list
-                dist = len(paths[0]) #equal cost so the dist from the first path suffices
+            # calculate distance unlike the single path version we don't need to subtract 1 as the node itself isn't saved in the list
+            dist = len(paths[0]) #equal cost so the dist from the first path suffices
 
-                # ignore direct neighbors for now as network mask should cover them
-                if dist==1:
-                    continue
+            # ignore direct neighbors for now as network mask should cover them
+            if dist==1:
+                continue
 
-                host_ip = self.gre_ip(host, mask=False)
+            host_ip = self.gre_ip(host, mask=False)
 
-
-                cmd = ["ip", "route", "replace", host_ip]
-                for i  in range(min(len(paths),self.options.maxpath)):
+            cmd = ["ip", "route", "replace", host_ip]
+            if self.options.multipath:
+                for i in range(min(len(paths),self.options.maxpath)):
                     nexthop = self.gre_ip(paths[i][0], mask=False)
                     cmd += ["nexthop", "via", nexthop, "dev", iface]
+            else:
+                nexthop = self.gre_ip(paths[0][0], mask=False)
+                cmd += ["dev", iface, "via", nexthop, "metric", str(dist)]
+            try:
+                execute(cmd, shell=False)
+            except CommandFailed, inst:
+                error('Adding routing entry for host %s failed.' % host_ip)
+                error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+                raise
 
+            # to have more control over multipath routes, add entries to distinct
+            # routing tables
+            if self.options.multipath:
+                for i in range(min(len(paths),self.options.maxpath)):
+                    nexthop = self.gre_ip(paths[i][0], mask=False)
+                    table = self._rtoffse+i
+                    cmd  = ["ip", "route", "replace", host_ip]
+                    cmd += ["via", "nexthop", nexthop, "table", str(table)]
                 try:
                     execute(cmd, shell=False)
                 except CommandFailed, inst:
-                    error('Adding routing entry for host %s failed.' % host_ip)
+                    error('Failed adding entry for host %s to table %s.' % (host_ip, table))
                     error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
                     raise
-        else:
-            for host in self.conf.keys():
-                if host==hostnum:
-                    continue
-                shortest = BuildVmesh.find_shortest_path(self.conf, hostnum, host)
-                # not all hosts may be reachable from this hosts ignore them
-                if not shortest:
-                    continue
 
-                # calculate distance
-                dist = len(shortest)-1
-
-                # ignore direct neighbors for now as network mask should cover them
-                if dist==1:
-                    continue
-
-                debug(shortest)
-                host_ip = self.gre_ip(host, mask=False)
-                gw_ip   = self.gre_ip(shortest[1], mask=False)
-
-                cmd = ["ip", "route", "replace", host_ip, "dev", iface, "via", gw_ip, "metric", str(dist)]
-
-                try:
-                    execute(cmd, shell=False)
-                except CommandFailed, inst:
-                    error('Adding routing entry for host %s failed.' % host_ip)
-                    error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
-                    raise
 
     def setup_user_helper(self):
         if self.options.userscripts:
@@ -557,11 +549,12 @@ Remarks:
 
                 if self.options.staticroutes:
                     cmd.append("--staticroutes")
+
                 if self.options.multipath:
                     cmd.append("--multipath")
-                if self.options.maxpath:
                     cmd.append("--maxpath")
                     cmd.append(str(self.options.maxpath))
+
                 if self.options.rate:
                     cmd.append("-R")
                     cmd.append(self.options.rate)
