@@ -115,7 +115,8 @@ class FlowgrindRecordFactory():
             " +(?P<lost>\d+) +(?P<fret>\d+) +(?P<tret>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
             " +(?P<krtt>\d+\.\d+) +(?P<krttvar>\d+\.\d+) +(?P<krto>\d+\.\d+)"\
             " +(?P<castate>loss|open|disorder|recovery) +(?P<mss>\d+) +(?P<mtu>\d+)",
-            "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2} \d{2}:\d{2}:\d{2} \d{4}): controlling host"
+            # Wed Oct 14 18:21:42 2009: controlling host = vmhost1, number of flows = 1, reporting interval = 0.10s, [tput] = 10**6 bit/second (SVN Rev 5490)
+            "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2} \d{2}:\d{2}:\d{2} \d{4}): .* reporting interval = (?P<reporting_interval>\d+\.\d+)"
         ]
 
         # compile regexes
@@ -124,9 +125,9 @@ class FlowgrindRecordFactory():
         # phase 2 result calculation
         self.whats = dict(
             # average thruput: just sum up all summary lines
-            thruput = lambda r: sum(map(float, r['thruput'])),
+            thruput           = lambda r: sum(map(float, r['thruput'])),
             # list of summary lines
-            thruput_list = lambda r: map(float, r['thruput']),
+            thruput_list      = lambda r: map(float, r['thruput']),
 
             flow_ids          = lambda r: map(int, set(r['flow_id'])),
             flows             = group_flows,
@@ -134,7 +135,7 @@ class FlowgrindRecordFactory():
             forward_tput_list = lambda r: map(float, r['forward_tput_list']),
             reverse_tput_list = lambda r: map(float, r['reverse_tput_list']),
             test_start_time   = lambda r: time.mktime(time.strptime(r['test_start_time'][0])),
-            outages       = outages
+            outages           = outages
         )
 
     def createRecord(self, filename, test):
