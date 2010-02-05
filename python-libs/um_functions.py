@@ -174,6 +174,12 @@ class StrictStruct:
                     raise AttributeError("'%s' instance has no attribute '%s'"
                             % (self.__class__, k))
 
+    def __getattr__(self, name):
+       return self.__getitem__(name) 
+ 
+    def __setattr__(self, name, value):
+       return self.__setitem__(name, value) 
+
     def __getitem__(self, name):
         try:
             return self._items[name]

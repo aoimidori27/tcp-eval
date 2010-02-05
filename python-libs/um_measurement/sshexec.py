@@ -386,7 +386,6 @@ class SSHProc:
         """See _Channel.disconnect"""
         self._chan.forceDisconnect()
 
-
     def _sig2name(self, sig):
         """Converts a signal number to a ssh signal string.
            (Which is the signal name without the "SIG" prefix)
