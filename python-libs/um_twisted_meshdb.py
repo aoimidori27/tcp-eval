@@ -85,9 +85,9 @@ class MeshDbPool(adbapi.ConnectionPool):
         """Updates the Database on startup of a service flavor."""
 
         if ignoreDups:
-            tmp = "INSERT IGNORE"
+            tmp = "INSERT IGNORE "
         else:
-            tmp = "INSERT"
+            tmp = "INSERT "
 
         # store record in database
         query = tmp + """INTO current_service_status (nodeID,servID,flavorID,version,prio,returncode,message)
