@@ -119,10 +119,13 @@ def test_fping(mrs,
     cmd = "fping -A -p %u -c %u -b %u %s %s 2>&1" % ((ping_interval*1000), ping_count,
                                              ping_size, fping_opts,
                                              dst_ip)
+
+    # calculate conservative timeout with extra 10% and 5 seconds safeguard
+    time_out = int(ping_interval*ping_count*1.1+5)
     rc = yield mrs.remote_execute(src.getHostname(),
                                   cmd,
                                   log_file,
-                                  timeout=int((ping_interval*ping_count)+5))
+                                  timeout=time_out)
     defer.returnValue(rc)
 
 @defer.inlineCallbacks
