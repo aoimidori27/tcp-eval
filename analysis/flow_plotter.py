@@ -209,8 +209,8 @@ class FlowPlotter(Application):
         if 'tput' in self.graphics_array:
             # tput
             p = UmLinePlot(plotname+'_tput')
-            p.setYLabel(r"Throughput ($\si{\mega\bit\per\second}$)")
-            p.setXLabel(r"time ($\si{\second}$)")
+            p.setYLabel(r"Throughput ($\\si[per=frac,fraction=nice]{\\Mbps}$)")
+            p.setXLabel(r"time ($\\si{\\second}$)")
             if self.options.plotsrc == 'True': p.plot(valfilename, "forward path", using="2:3", linestyle=2)
             if self.options.plotdst == 'True': p.plot(valfilename, "reverse path", using="2:4", linestyle=3)
             # output plot
@@ -220,7 +220,7 @@ class FlowPlotter(Application):
             # cwnd
             p = UmLinePlot(plotname+'_cwnd_ssth')
             p.setYLabel(r"$\\#$")
-            p.setXLabel("time ($\si{\second}$)")
+            p.setXLabel(r"time ($\\si{\\second}$)")
             if self.options.plotsrc == 'True': p.plot(valfilename, "Sender CWND", using="2:5", linestyle=2)
             if self.options.plotdst == 'True': p.plot(valfilename, "Receiver CWND", using="2:6", linestyle=3)
             p.plot(valfilename, "SSTH", using="2:7", linestyle=1)
@@ -230,8 +230,8 @@ class FlowPlotter(Application):
         if 'rtt' in self.graphics_array:
             # rto, rtt
             p = UmLinePlot(plotname+'_rto_rtt')
-            p.setYLabel(r"$\\si{\milli\second}$")
-            p.setXLabel("time ($\si{\second}$)")
+            p.setYLabel(r"$\\si{\\milli\\second}$")
+            p.setXLabel(r"time ($\\si{\\second}$)")
             p.plot(valfilename, "RTO", using="2:9", linestyle=2)
             p.plot(valfilename, "RTT", using="2:8", linestyle=3)
             # output plot
@@ -241,7 +241,7 @@ class FlowPlotter(Application):
             # lost, reorder, retransmit
             p = UmLinePlot(plotname+'_lost_reor_retr')
             p.setYLabel(r"$\\#$")
-            p.setXLabel("time ($\si{\second}$)")
+            p.setXLabel(r"time ($\\si{\\second}$)")
             p.plot(valfilename, "lost segments", using="2:10", linestyle=2)
             p.plot(valfilename, "reordered segments", using="2:11", linestyle=3)
             p.plot(valfilename, "fast retransmits", using="2:12", linestyle=4)
