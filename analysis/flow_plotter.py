@@ -37,7 +37,7 @@ class FlowPlotter(Application):
                         help = 'print flow number [default: %default]')
         self.parser.add_option("-r", "--resample", metavar = "Count",
                         action = 'store', type = 'float', dest = 'resample',
-                        help = 'resample to this number of data [default:'\
+                        help = 'resample to this sample rate [default:'\
                                ' dont resample]')
         self.parser.add_option("-s", "--plot-source", metavar = "Bool",
                         action = 'store', dest = 'plotsrc', choices = ['True','False'],
@@ -70,55 +70,13 @@ class FlowPlotter(Application):
         else:
             self.graphics_array = ['tput','cwnd','rtt','segments']
 
-    def plot(self, infile, outdir=None):
-        """Plot one file"""
-
-        def ssth_max(ssth):
-            SSTHRESH_MAX = 2147483647
-            X = 50
-            if ssth == SSTHRESH_MAX:  return 0
-            elif ssth > cwnd_max + X: return cwnd_max + X
-            else:                     return ssth
-
-        def rto_max(rto):
-            if rto == 3000: return 0
-            else:           return rto
-
-        if not outdir:
-            outdir=self.options.outdir
-
-        flownumber = self.options.flownumber
-        record = self.factory.createRecord(infile, "flowgrind")
-        flows = record.calculate("flows")
-
+    def resample(self, record, directions, nosamples, flow):
+        # get sample rate for resampling
         sample = float(record.results['reporting_interval'][0])
         resample = float(self.options.resample)
         rate = resample/sample
         debug("sample = %s, resample = %s -> rate = %s" %(sample, resample, rate))
 
-        cwnd_max = 0
-
-        if flownumber > len(flows):
-            error("requested flow number %i greater then flows in file: %i"
-                    %(flownumber,len(flows) ) )
-            sys.exit(1)
-        flow = flows[flownumber]
-
-        plotname = os.path.splitext(os.path.basename(infile))[0]
-        valfilename = os.path.join(outdir, plotname+".values")
-
-        # to avoid code duplicates
-        directions = ['S', 'R']
-        nosamples = min(flow['S']['size'], flow['R']['size'])
-        debug("nosamples: %i" %nosamples)
-
-        #get max cwnd for ssth output
-        for i in range(nosamples):
-            for dir in directions:
-                if flow[dir]['cwnd'][i] > cwnd_max:
-                    cwnd_max = flow[dir]['cwnd'][i]
-
-        #resample in place
         if resample > 0:
             if rate <= 1 :
                 error("sample = %s, resample = %s -> rate = %s -> rate <= 1 !" %(sample, resample, rate))
@@ -136,10 +94,10 @@ class FlowPlotter(Application):
                     debug("type: %s" %key)
 
                     #actual resampling happens here
-                    next = 0    # where to store the next resample
+                    next = 0    # where to store the next resample (at the end this is the number of points)
                     all = 0     # where are we in the list?
                     while all < nosamples:
-                        sum = 0       # sum of all parts
+                        sum = 0         # sum of all parts
                         r = rate        # how much to sum up
 
                         if all != int(all):             # not an int
@@ -168,8 +126,62 @@ class FlowPlotter(Application):
                     #truncate table to new size
                     del flow[d][key][next:nosamples]
 
-            nosamples = next
-            debug("new nosamples: %i" %nosamples)
+                # set begin and end time
+                for i in range(next):
+                    flow[d]['begin'][i] = i*resample
+                    flow[d]['end'][i] = (i+1)*resample
+
+            debug("new nosamples: %i" %next)
+            return next
+        else: return nosamples  # resample == 0
+
+
+    def plot(self, infile, outdir=None):
+        """Plot one file"""
+
+        def ssth_max(ssth):
+            SSTHRESH_MAX = 2147483647
+            X = 50
+            if ssth == SSTHRESH_MAX:  return 0
+            elif ssth > cwnd_max + X: return cwnd_max + X
+            else:                     return ssth
+
+        def rto_max(rto):
+            if rto == 3000: return 0
+            else:           return rto
+
+        if not outdir:
+            outdir=self.options.outdir
+
+        # create record from given file
+        flownumber = self.options.flownumber
+        record = self.factory.createRecord(infile, "flowgrind")
+        flows = record.calculate("flows")
+
+        cwnd_max = 0
+
+        if flownumber > len(flows):
+            error("requested flow number %i greater then flows in file: %i"
+                    %(flownumber,len(flows) ) )
+            sys.exit(1)
+        flow = flows[flownumber]
+
+        plotname = os.path.splitext(os.path.basename(infile))[0]
+        valfilename = os.path.join(outdir, plotname+".values")
+
+        # to avoid code duplicates
+        directions = ['S', 'R']
+        nosamples = min(flow['S']['size'], flow['R']['size'])
+        debug("nosamples: %i" %nosamples)
+
+        # get max cwnd for ssth output
+        for i in range(nosamples):
+            for dir in directions:
+                if flow[dir]['cwnd'][i] > cwnd_max:
+                    cwnd_max = flow[dir]['cwnd'][i]
+
+        # resampling
+        nosamples = self.resample(record, directions, nosamples, flow)  # returns the new value for nosamples if anything was changed
 
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
