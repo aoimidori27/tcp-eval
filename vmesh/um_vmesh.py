@@ -43,7 +43,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
 
         # initialization of the option parser
         usage = """\
-usage:  prog [options] [CONFIGFILE]
+usage:  %prog [options] [CONFIGFILE]
         where the CONFIGFILE syntax looks like the following
             1: 2[10,,100] 3 5-6[0.74,20,,10]
             2: ...
@@ -208,7 +208,6 @@ Remarks:
             host = lm.group(1)
             reaches = set()
             for m in reaches_re.findall(lm.group(2)):
-		debug(m)
                 first = int(m[0])
                 if m[1]: last = int(m[1])
                 else: last = first

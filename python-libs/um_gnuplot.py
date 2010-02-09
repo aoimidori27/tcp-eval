@@ -4,8 +4,8 @@
 # python imports
 import gc
 import os.path
-from logging import info, debug, warn, error
 import Gnuplot
+from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_functions import call
@@ -87,7 +87,6 @@ class UmGnuplot():
             self._plotcmd = "plot %s" %cmd
         else:
             self._plotcmd = "%s, %s" %(self._plotcmd, cmd)
-
 
     def save(self, outdir, verbose=False, cfgfile=None):
         """Generates .gplot and .pdf file of this plot.
@@ -176,7 +175,7 @@ class UmHistogram(UmGnuplot):
         UmGnuplot.plot(self, cmd)
 
     def plotErrorbar(self, values, barNo, valColumn, errColumn, title=None, linestyle=2):
-        """plot errorbars, barNo identifies the bar the errobar should be plotted on
+        """Plot errorbars, barNo identifies the bar the errobar should be plotted on
            counting starts with 0
         """
 

@@ -66,7 +66,7 @@ class Draft2Pdf(Application):
                 basename = os.path.basename(draft)
                 basename = os.path.splitext(basename)[0]
            
-            # build pdf graphics
+            # build name for output file
             draftDst = os.path.join(destdir, "%s.pdf" %basename)
 
             if not self.options.force and os.path.exists(draftDst):

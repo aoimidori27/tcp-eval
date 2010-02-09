@@ -34,7 +34,7 @@ class Xfig2PDF(Application):
                                help = "overwrite existing output pdf file")
         self.parser.add_option("-n", "--name", metavar = "NAME",
                                action = "store", dest = "basename",
-                               help = "basename for all generated xfig/pdf files")
+                               help = "basename for all generated tex/pdf files")
         self.parser.add_option("-d", "--directory", metavar = "DIR",
                                action = "store", dest = "outdir",
                                help = "output directory [default: %default]")

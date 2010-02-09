@@ -1,18 +1,18 @@
-#!/usr/bin/env python
+#!/usr/bin/env python -W ignore::DeprecationWarning
 # -*- coding: utf-8 -*-
 
 # python imports
-import glob
-import sys
-import os
+import os.path
 import shutil
 import tempfile
-import subprocess
-import re
+import Gnuplot
 from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_application import Application
+from um_latex import UmLatex
+from um_functions import call
+
 
 class Gnuplot2PDF(Application):
     """Class to convert epslatex gnuplot to plain pdf"""
@@ -23,71 +23,34 @@ class Gnuplot2PDF(Application):
         Application.__init__(self)
 
         # object variable
-        self.settings = r"""
-                        \usepackage[english]{babel}
-                        \usepackage[utf8]{inputenc}
-                        \usepackage[T1]{fontenc}
-                        \usepackage{graphicx}
-                        \usepackage{xcolor}
-                        \usepackage{stmaryrd}
-                        \usepackage[alsoload=accepted,alsoload=binary]{siunitx}
-
-                        % siunitx
-                        \newunit{\mps}{\meter\per\second}
-                        \newunit{\kmps}{\km\per\second}
-                        \renewunit{\bit}{b}
-                        \newunit{\Bit}{bit}
-                        \newunit{\kb}{\kilo\bit}
-                        \newunit{\Mb}{\mega\bit}
-                        \newunit{\Gb}{\giga\bit}
-                        \newunit{\Byte}{byte}
-                        \newunit{\kB}{\kilo\byte}
-                        \newunit{\MB}{\mega\byte}
-                        \newunit{\GB}{\giga\byte}
-                        \newunit{\kbps}{\kb\per\second}
-                        \newunit{\Mbps}{\Mb\per\second}
-                        \newunit{\Gbps}{\Gb\per\second}
-
-                        % Arrows
-%                        \renewcommand*{\implies}{\ensuremath{\rightarrow}\xspace}
-                        \renewcommand*{\iff}{\ensuremath{\leftrightarrow}\xspace}
-                        \newcommand*{\IF}{\ensuremath{\Rightarrow}\xspace}
-                        \newcommand*{\sra}{\ensuremath{\shortrightarrow}\xspace}
-                        \newcommand*{\sla}{\ensuremath{\shortleftarrow}\xspace}
-
-                        """
+        self._latex = None
 
         # initialization of the option parser
-        usage = "usage: %prog [options] BASENAME"
+        usage = "usage: %prog [options] <gplot> | <gplotdir> ...\n"\
+                "       where 'gplotdir' is directory which contains one *.gpl or *.gplot file"
+
         self.parser.set_usage(usage)
-        self.parser.set_defaults(force = False, fontsize = 7, serif = False,
-                                 texsuffix = 'tex', epssuffix = 'eps')
+        self.parser.set_defaults(force = False, outdir = os.getcwd(),
+                                 fontsize = 9)
 
         self.parser.add_option("-f", "--force",
                                action = "store_true", dest = "force",
                                help = "overwrite existing output pdf file")
-        self.parser.add_option("-c", "--cfg", metavar = "FILE",
-                               action = "store", dest = "cfgfile",
-                               help = "use the file as config file for LaTeX. "\
-                                      "No default packages will be loaded.")
-        self.parser.add_option("-z", "--fsize", metavar = "NUM", type = int,
+        self.parser.add_option("-n", "--name", metavar = "NAME",
+                               action = "store", dest = "basename",
+                               help = "basename for all generated tex/pdf files")
+        self.parser.add_option("-d", "--directory", metavar = "DIR",
+                               action = "store", dest = "outdir",
+                               help = "output directory [default: %default]")
+        self.parser.add_option("-l", "--save-texfile", metavar = "FILE",
+                               action = "store", dest = "texfile",
+                               help = "save main latex file")
+        self.parser.add_option("-g", "--save-figures",
+                               action = "store_true", dest = "save_figures",
+                               help = "save generated gnuplot latex plots")
+        self.parser.add_option("-z", "--font-size", metavar = "NUM", type = int,
                                action = "store", dest = "fontsize",
                                help = "set font size [default: %default]")
-        self.parser.add_option("-s", "--serif",
-                               action = "store_false", dest = "serif",
-                               help = "set the font family to Sans Serif [default]")
-        self.parser.add_option("-r", "--roman",
-                               action = "store_true", dest = "serif",
-                               help = "set the font family to Roman")
-        self.parser.add_option("-t", "--texIn", metavar = "SUF",
-                               action = "store", dest = "texsuffix",
-                               help = "define suffix of input tex file [default: %default]")
-        self.parser.add_option("-e", "--epsIn", metavar = "SUF",
-                               action = "store", dest = "epssuffix",
-                               help = "define suffix of input eps file [default: %default]")
-        self.parser.add_option("-p", "--pdfOut", metavar = "PDF",
-                               action = "store", dest = "pdfoutput",
-                               help = "define output pdf file [default: BASENAME.pdf]")
 
     def set_option(self):
         """Set options"""
@@ -95,122 +58,130 @@ class Gnuplot2PDF(Application):
         Application.set_option(self)
 
         # correct numbers of arguments?
-        if len(self.args) != 1:
+        if len(self.args) == 0:
             self.parser.error("incorrect number of arguments")
 
-        # Sans serif fonts?
-        if self.options.serif:
-            self.settings = self.settings + r"""\usepackage{lmodern}"""
-        else:
-            self.settings = self.settings + r"""\usepackage{cmbright}"""
-
-        # Config File?
-        if self.options.cfgfile:
-            self.settings = "\\input{%s}" %os.path.realpath(self.options.cfgfile)
-
-        self.filename  = os.path.basename(self.args[0])
-        self.texinput  = os.path.realpath("%s.%s" %(self.args[0], self.options.texsuffix))
-        self.epsinput  = os.path.realpath("%s.%s" %(self.args[0], self.options.epssuffix))
-
-        if self.options.pdfoutput:
-            self.pdfoutput = os.path.realpath(self.options.pdfoutput)
-        else:
-            self.pdfoutput = os.path.realpath("%s.pdf" %self.filename)
+        # latex object
+        self._latex = UmLatex(self.options.texfile, self.options.outdir,
+                              self.options.force, self.options.debug, tikz = False)
+        
+        # use sans serif font and set the correct font size
+        self._latex.setDocumentclass("scrartcl", "fontsize=%spt" %self.options.fontsize)
+        self._latex.addSetting(r"\sffamily")
 
     def run(self):
         """Main method of the Gnuplot2PDF object"""
 
-        tempdir = tempfile.mkdtemp()
+        # get all necessary directories
+        srcdir = os.getcwd()
+        destdir = self.options.outdir
+        tempdir = tempfile.mkdtemp()   
 
-        if not os.path.isfile(self.texinput):
-            error("%s is not a regular file." %self.texinput)
-            sys.exit(1)
-
-        if not os.path.isfile(self.epsinput):
-            error("%s is not a regular file." %self.epsinput)
-            sys.exit(1)
-
-        if not self.options.force and os.path.exists(self.pdfoutput):
-            error("%s already exists." %self.pdfoutput)
-            sys.exit(1)
-
+        # work in tempdir
+        if self.options.debug:
+            debug("Change directory %s" %tempdir)
         os.chdir(tempdir)
+                
+	    # plot all plotfiles and put them into one latex document
+        for index, gplot in enumerate(self.args):
+       
+            # get the full path of the figure or directory
+            gplotSrc = os.path.join(srcdir, gplot)
+        
+            # 'gplotSrc' is a directory
+            if os.path.isdir(gplotSrc):
+            
+                for entry in os.listdir(gplotSrc):
+                    # get the full path
+                    fileSrc = os.path.join(gplotSrc, entry)
+                    # create symlinks into the temp directory
+                    os.symlink(fileSrc, entry)
 
-        # convert the eps graphic to a PDF one
-        pdfinput = "%s.pdf" %os.path.splitext(os.path.basename(self.epsinput))[0]
-        pdfinput = os.path.join(tempdir,pdfinput)
-        if self.options.debug:
-            cmd = ("epstopdf --debug --outfile=%s %s" %(pdfinput, self.epsinput))
-        else:
-            cmd = ("epstopdf --outfile=%s %s" %(pdfinput, self.epsinput))
+                    # get file extension
+                    ext = os.path.splitext(entry)[1]
+                    if ext == ".gpl" or ext == ".gplot":
+                        if not os.path.isfile(gplotSrc):
+                            gplotSrc = os.path.join(entry)
+                        else:
+                            warn("%s contains more than one *.gpl or gplot file. "\
+                                 "Directory skipped." %gplot)
+                            break
+                
+                if not os.path.isfile(gplotSrc):
+                    warn("%s does not contain one *.gpl or *.gplot file. "\
+                         "Directory skipped." %gplot)
+                    continue
+                
+            # 'gplotSrc' is neither a directory nor file
+            elif not os.path.isfile(gplotSrc):
+                warn("%s is not a regular file or directory. Skipped." %gplot)
+                continue
+                
+            # get the basename (without extension)
+            if self.options.basename:
+                basename = "%s_%s" %(self.options.basename, index)
+            else:
+                basename = os.path.basename(gplot)
+                basename = os.path.splitext(basename)[0]
+                
+            # build names for output files
+            gplotEps = "%s_gplot.eps" %basename
+            gplotPdf = "%s_gplot.pdf" %basename
+            gplotTex = "%s_gplot.tex" %basename
 
-        if subprocess.call(cmd, shell = True):
-            error("Converting %s was unsuccessful." %os.path.realpath(self.epsinput))
-            sys.exit(1)
+            # build gnuplot object and load the given gnuplot file
+            # be safe; print a new line if the load file include a "pause" command
+            info("Run gnuplot on %s..." %gplot)            
+            gp = Gnuplot.Gnuplot(debug = int(self.options.debug))
+            gp.load(gplotSrc)
+            gp("\n")
+            
+            # replot with epslatex terminal
+            gp('set terminal epslatex color solid "default" %s' %self.options.fontsize)
+            gp('set output "%s"' %gplotTex)
+            gp("replot")
+            gp.close()
+                        
+            # convert the EPS file to a PDF file   
+            info("Run epstopdf on %s..." %gplot)
+            if self.options.debug:
+                cmd = "epstopdf --debug --outfile=%s %s" %(gplotPdf, gplotEps)
+                call(cmd)
+            else:
+                cmd = "epstopdf --outfile=%s %s" %(gplotPdf, gplotEps)
+                call(cmd, noOutput = True)
 
-        fh = file(self.texinput,'r')
-        texinput = fh.read()
-        # put correct graphic path in texinput because, original filename may be bogus (wrong folder)
-        # use non-greedy +, to avoid matching of }}}}}}
-        texinput = re.sub(r"\\includegraphics\{.+?\}", r"\\includegraphics{%s}" %pdfinput, texinput)
-        fh.close()
+            # should we save the xfig pdf and latex file and for further use?
+            if self.options.save_figures:
+                gplotPdfDst = os.path.join(destdir, gplotPdf)
+                gplotTexDst = os.path.join(destdir, gplotTex)
+            
+                if not self.options.force and os.path.exists(gplotPdfDst):
+                    error("%s already exists. Skipped." %gplotPdfDst)
+                else:
+                    info("Save gnuplot PDF file to %s..." %gplotPdfDst)
+                    shutil.copy(gplotPdf, gplotPdfDst)
+                              
+                if not self.options.force and os.path.exists(gplotTexDst):
+                    error("%s already exists. Skipped." %gplotTexDst)
+                else:
+                    info("Save gnuplot Tex file to %s..." %gplotTexDst)
+                    shutil.copy(gplotTex, gplotTexDst)
+                    
+            # add new generated to the latex doc
+            self._latex.addLatexFigure(gplotTex, basename)
 
-        tmptexinput = os.path.join(tempdir,"graphic.tex")
-        fh = file(tmptexinput,"w")
-        fh.write(texinput)
-        fh.close()
-
-        # prepare the LaTeX file
-        latex = open("latex_me", "w")
-        latex.write("\\documentclass{scrartcl}\n"\
-                    "%s\n"\
-                    "\\pagestyle{empty}\n"\
-                    "\\begin{document}\n"\
-                    "\\begin{figure}\n"\
-                    "\\centering\n"\
-                    "\\fontsize{%s}{%s}\n"\
-                    "\\selectfont\n"\
-                    "\\input{%s}\n"\
-                    "\\end{figure}\n"\
-                    "\\end{document}\n"
-                    %(self.settings, self.options.fontsize,
-                      self.options.fontsize * 1.2, tmptexinput))
-
-        latex.close()
-
-        # set the LaTeX file
-        if self.options.debug:
-            cmd = ("pdflatex %s" %latex.name)
-        else:
-            cmd = ("pdflatex -interaction=batchmode %s" %latex.name)
-
-        if subprocess.call(cmd, shell = True):
-            error("Texing %s was unsuccessful." %os.path.realpath(latex.name))
-            sys.exit(1)
-
-        # Crop the new PDF file
-        tmppdfoutput = os.path.join(tempdir,"tmp-crop.pdf")
-        if self.options.debug:
-            cmd = ("pdfcrop %s.pdf %s" %(latex.name, tmppdfoutput))
-        else:
-            cmd = ("pdfcrop --noverbose %s.pdf %s" %(latex.name, tmppdfoutput))
-
-        if subprocess.call(cmd, shell = True):
-            error("Cropping %s.pdf was unsuccessful." %os.path.realpath(latex.name))
-            sys.exit(1)
-
-        # copy the final result
-        info("Copying file to %s" %self.pdfoutput)
-        shutil.copy(tmppdfoutput, self.pdfoutput)
-
-        # clean up
-        os.remove(latex.name)
-        for entry in glob.glob("%s.*"%latex.name):
-            os.remove(entry)
-        os.remove(pdfinput)
-        os.remove(tmppdfoutput)
-        os.remove(tmptexinput)
-        os.rmdir(tempdir)
+        # should we save generated main latex file for further purpose?
+        if self.options.texfile:
+           info("Save main LaTeX file...")
+           self._latex.save()
+            
+#        # build pdf graphics
+#        info("Generate PDF files...")
+#        self._latex.toPdf(tempdir = tempdir)
+#
+#        # clean up
+#        shutil.rmtree(tempdir)
 
     def main(self):
         self.parse_option()
