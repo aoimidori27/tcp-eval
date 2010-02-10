@@ -345,7 +345,7 @@ Remarks:
 
         # Add class and filter for each peer
         i = 0
-        for p in peers:
+        for p in sorted(peers):
             try:
                 if self.linkinfo.has_key(hostnum) and self.linkinfo[hostnum].has_key(p) and self.linkinfo[hostnum][p]['rate'] != '':
                     rate = self.linkinfo[hostnum][p]['rate']
