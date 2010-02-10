@@ -39,7 +39,7 @@ tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
         self._dnsttl = 300
         self._dnskey = "o2bpYQo1BCYLVGZiafJ4ig=="
         # used routing table ids for multipath
-        self._rtoffset = 300   
+        self._rtoffset = 300
 
         # initialization of the option parser
         usage = """\
@@ -205,11 +205,14 @@ Remarks:
                 warn("Syntax error in line %s. Skipping." %line)
                 continue
 
-            host = lm.group(1)
+            # get linkinfos
+            # offset has to be added to every host
+            offset = self.options.offset
+            host = int(lm.group(1)) + offset
             reaches = set()
             for m in reaches_re.findall(lm.group(2)):
-                first = int(m[0])
-                if m[1]: last = int(m[1])
+                first = int(m[0]) + offset
+                if m[1]: last = int(m[1]) + offset
                 else: last = first
                 info_rate = m[2]
                 info_limit = m[3]
@@ -220,23 +223,16 @@ Remarks:
                 else:
                     reaches.add(first)
 
-                if not self.linkinfo.has_key(int(host)):
-                    self.linkinfo[int(host)] = dict()
+                if not self.linkinfo.has_key(host):
+                    self.linkinfo[host] = dict()
                 for i in range(first, last+1):
-                    self.linkinfo[int(host)][i] = dict()
-                    self.linkinfo[int(host)][i]['rate'] = info_rate
-                    self.linkinfo[int(host)][i]['limit'] = info_limit
-                    self.linkinfo[int(host)][i]['delay'] = info_delay
-                    self.linkinfo[int(host)][i]['loss'] = info_loss
+                    self.linkinfo[host][i] = dict()
+                    self.linkinfo[host][i]['rate'] = info_rate
+                    self.linkinfo[host][i]['limit'] = info_limit
+                    self.linkinfo[host][i]['delay'] = info_delay
+                    self.linkinfo[host][i]['loss'] = info_loss
 
-            asym_map[int(host)] = reaches
-
-        # Add offset
-        asym_map2 = {}
-        offset = self.options.offset
-        for (host, reaches) in asym_map.iteritems():
-            asym_map2[host+offset] = map(lambda x: x+offset, reaches)
-        asym_map = asym_map2
+            asym_map[host] = reaches
 
         # Compute symmetric hull
         hosts = set(asym_map.keys()).union(reduce(lambda u,v: u.union(v), asym_map.values(), set()))
@@ -559,6 +555,10 @@ Remarks:
 
                 if self.options.userscripts:
                     cmd.append("-u")
+
+                if self.options.offset:
+                    cmd.append("-o")
+                    cmd.append(str(self.options.offset))
 
                 debug("Executing: %s", cmd)
                 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
