@@ -68,7 +68,8 @@ Remarks:
 
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
-                                 multicast = "224.66.66.66", offset = 0, staticroutes=False, multipath=False, maxpath=2)
+                                 multicast = "224.66.66.66", offset = 0, staticroutes=False,
+                                 multipath=False, maxpath=2, dry_run=False)
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
                                help = "Apply settings for all hosts in config")
@@ -98,16 +99,19 @@ Remarks:
                                       "(default: %default)")
         self.parser.add_option("-p", "--multipath",
                                action = "store_true", dest = "multipath",
-                               help = "Setup equal cost multipath routes. For use with -s"\
+                               help = "Setup equal cost multipath routes. For use with -s "\
                                    "(default:%default)")
         self.parser.add_option("-x", "--maxpath",
                                 action="store", dest="maxpath", type = int,
                                 help = "Maximum number of parallel paths to set up. \
-                                        Use only in connection with --multipath."\
+                                        Use only in connection with --multipath. "\
                                         "(default:%default)")
         self.parser.add_option("-R", "--rate",
                                action = "store", dest = "rate", metavar="RATE",
                                help = "Rate limit in mbps")
+        self.parser.add_option("-d", "--dry-run",
+                               action = "store_true", dest = "dry_run",
+                               help = "Test the config only (default:%default)")
 
     def set_option(self):
         """Set the options for the BuildVmesh object"""
@@ -532,7 +536,15 @@ Remarks:
         # Apply settings on remote hosts
         if self.options.remote:
             requireNOroot()
-            self.visualize(self.conf)
+
+            # don't print graph option --quiet was given
+            if self.options.verbose:
+                self.visualize(self.conf)
+            # stop here if it's a dry run
+            if self.options.dry_run:
+                sys.exit(0)
+
+            # call script on all vmrouter involved
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
