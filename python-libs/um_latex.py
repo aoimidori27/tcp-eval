@@ -22,12 +22,10 @@ class UmLatex():
                  
         # tex filename and figures names (for building output files)
         self._figures = list()
-        self._texfile = "main.tex"
-        self._outdir = os.getcwd()
-        
-        self.setTexfile(texfile)
-        self.setOutdir(outdir)
-        
+        self._texfile = texfile
+        self._outdir = outdir
+        self._tempdir = tempfile.mkdtemp()
+
         # force/debug mode
         self._force = force
         self._debug = debug
@@ -39,9 +37,15 @@ class UmLatex():
         self._content = list()
         
         # load default values for the latex document (class/packages/settings)
-        self.__loadDefaults(defaultPackages, defaultSettings, siunitx, tikz)
+        self.loadDefaults(defaultPackages, defaultSettings, siunitx, tikz)
+        
+        
+    def __del__(self):
+        """Constructor of the object"""
+        
+        shutil.rmtree(self._tempdir)
 
-    def __loadDefaults(self, defaultPackages = True, defaultSettings = True,
+    def loadDefaults(self, defaultPackages = True, defaultSettings = True,
                        siunitx = True, tikz = True):
         """Load default settings for the generated latex file. Currently,
            we default values for the following packages
@@ -107,48 +111,36 @@ class UmLatex():
         
         return document
 
-    def setTexfile(self, texfile):
-        """Set member variable "self._texfile" to parameter "texfile" provided
-           that the parameter is not "None"
-        """
-    
-        if texfile:
-            self._texfile = texfile
-
-    def setOutdir(self, outdir):
-        """Set member variable "self._outdir" to parameter "outdir" provided that
-           the parameter is not "None"
-        """
-
-        if outdir:
-            self._outdir = outdir        
-
-    def getTexfile(self):        
-        return self._texfile
-            
-    def getOutdir(self):
-        return self._outdir
-
-    def getValidTexfile(self, texfile):
-        """If the parameter "texfile" is "None" return the member variable
+    def __getValidTexfile(self, texfile):
+        """If the parameter "texfile" is "None" return the privat member variable
            "self._texfile" otherwise return the parameter itself
         """
         
         if texfile:
             return texfile
         else:
-            return self.getTexfile()
+            return self._texfile
             
-    def getValidOutdir(self, outdir):
-        """If the parameter "outdir" is "None" return the member variable
+    def __getValidOutdir(self, outdir):
+        """If the parameter "outdir" is "None" return the privat member variable
            "self._outdir" otherwise return the parameter itself
         """
 
         if outdir:
             return outdir
         else:
-            return self. getOutdir()
-        
+            return self._outdir
+
+    def __getValidTempdir(self, tempdir):
+        """If the parameter "tempdir" is "None" return the privat member variable
+           "self._tempdir" otherwise return the parameter itself
+        """
+
+        if tempdir:
+            return tempdir
+        else:
+            return self._tempdir
+                                
     def setDocumentclass(self, documentclass, *options):
         """Set the latex documentclass for the document"""
     
@@ -211,8 +203,8 @@ class UmLatex():
         document = self.__buildDocument()
     
         # build output path
-        texfile = self.getValidTexfile(texfile)
-        destdir = self.getValidOutdir(outdir)
+        texfile = self.__getValidTexfile(texfile)
+        destdir = self.__getValidOutdir(outdir)
         texDst = os.path.join(destdir, texfile)
        
         if not self._force and os.path.exists(texDst):
@@ -225,7 +217,7 @@ class UmLatex():
         latex.write(document)
         latex.close()
 
-    def toPdf(self, texfile = None, outdir = None, tempdir = tempfile.mkdtemp()):
+    def toPdf(self, texfile = None, outdir = None, tempdir = None):
         """Generate the actual pdf figures. First, the document is build. Then
            pdflatex will run on the document. Afterwards, the new generated
            pdf will be splitted into single pages, each graphic on a new page.
@@ -234,8 +226,9 @@ class UmLatex():
     
         # building document and output path
         document = self.__buildDocument()
-        texfile = self.getValidTexfile(texfile)
-        destdir = self.getValidOutdir(outdir)
+        texfile = self.__getValidTexfile(texfile)
+        destdir = self.__getValidOutdir(outdir)
+        tempdir = self.__getValidTempdir(tempdir)
               
         # run pdflatex
         info("Run pdflatex on %s..." %texfile)
@@ -278,7 +271,4 @@ class UmLatex():
                 error("%s already exists. Skipped." %pdfDst)
             else:
                 shutil.copy(cropPDF, pdfDst)
-                
-        # return tempdir for further use (e.g. clean up)
-        return tempdir
         
