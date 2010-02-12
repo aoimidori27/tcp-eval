@@ -22,10 +22,14 @@ class UmLatex():
                  
         # tex filename and figures names (for building output files)
         self._figures = list()
-        self._texfile = texfile
-        self._outdir = outdir
+        self._texfile = "main.tex"
+        self._outdir = os.getcwd()
         self._tempdir = tempfile.mkdtemp()
-
+        
+        # set members only if arguments are not None 
+        self._texfile = self.__getValidTexfile(texfile)
+        self._outdir = self.__getValidOutdir(outdir)
+        
         # force/debug mode
         self._force = force
         self._debug = debug
