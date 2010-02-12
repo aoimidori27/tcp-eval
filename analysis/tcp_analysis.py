@@ -19,13 +19,6 @@ class TcpAnalysis(Analysis):
 
     def __init__(self):
         Analysis.__init__(self)
-        self.parser.set_defaults(outprefix= "neighbors", quality = 100,
-                                 indir  = "./",
-                                 outdir = "./",
-                                 digraph=False)
-        self.parser.add_option('-P', '--prefix', metavar="PREFIX",
-                        action = 'store', type = 'string', dest = 'outprefix',
-                        help = 'Set prefix of output files [default: %default]')
 
     def set_option(self):
         "Set options"
