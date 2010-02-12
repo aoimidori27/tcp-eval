@@ -27,7 +27,7 @@ class Xfig2PDF(Application):
         # initialization of the option parser
         usage = "usage: %prog [options] <xfig1> <xfig2> ..."
         self.parser.set_usage(usage)
-        self.parser.set_defaults(force = False, outdir = os.getcwd())
+        self.parser.set_defaults(force = False, outdir = os.getcwd(), save_figures = False)
         
         self.parser.add_option("-f", "--force",
                                action = "store_true", dest = "force",
