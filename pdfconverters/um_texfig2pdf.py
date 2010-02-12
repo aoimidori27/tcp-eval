@@ -87,10 +87,8 @@ class Texfig2Pdf(Application):
                     
         # build pdf graphics
         info("Generate PDF files...")
-        tempdir = self._latex.toPdf()
-        
-        # clean up
-        shutil.rmtree(tempdir)       
+        self._latex.toPdf()
+   
 
     def main(self):
         self.parse_option()
