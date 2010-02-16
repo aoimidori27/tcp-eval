@@ -25,6 +25,17 @@ class MeshDbPool(adbapi.ConnectionPool):
                                        cp_max = 3,
                                        cp_openfun = initConnection,
                                        cp_reconnect = True)
+    @staticmethod
+    def _queryErrback(failure):
+        error("Query failed: %s", failure.getErrorMessage())
+        return failure
+
+    def runQuery(self, *args, **kwargs):
+        """Overrides ConnectionPool.runQuery to improve logging"""
+        debug("SQL: "+args.__str__())
+        d =  adbapi.ConnectionPool.runQuery(self, *args, **kwargs)
+        d.addErrback(MeshDbPool._queryErrback)
+        return d
 
     def _getAssoc(self, txn, query):
         """This function returns an associative array of the first row"""
@@ -93,7 +104,6 @@ class MeshDbPool(adbapi.ConnectionPool):
         query = tmp + """INTO current_service_status (nodeID,servID,flavorID,version,prio,returncode,message)
                          SELECT nodeID, %s, %s, %s, %s, %s,%s FROM nodes WHERE nodes.name=%s;
                       """
-        debug(query)
         result = yield self.runQuery(query, (config['servID'], config['flavorID'], config['version'], config['prio'], rc, message, hostname))
 
     @defer.inlineCallbacks
@@ -104,7 +114,6 @@ class MeshDbPool(adbapi.ConnectionPool):
                    WHERE nodes.name='%s' AND nodes.nodeID=current_service_status.nodeID
                    AND servID=%d AND flavorID=%d;
                 """  % (hostname, config['servID'], config['flavorID'])
-        debug(query)
         result = yield self.runQuery(query)
 
 
@@ -114,7 +123,6 @@ class MeshDbPool(adbapi.ConnectionPool):
 
         # first get serviceID and the service table
         query = "SELECT servID, servTable FROM services WHERE servName = %s"
-        debug(query)
         result = yield self.runQuery(query, (servicename))
         debug(result)
         if len(result) is not 1:
@@ -140,7 +148,6 @@ class MeshDbPool(adbapi.ConnectionPool):
         query = "SELECT flavorID,prio,version FROM current_service_conf AS c, nodes " \
                 "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID "\
                 "AND c.servID='%s';" % (hostname, servID)
-        debug(query)
         result = yield self.runQuery(query)
         debug(result)
         if len(result) < 1:
@@ -193,7 +200,6 @@ class MeshDbPool(adbapi.ConnectionPool):
         query = "SELECT flavorID,prio FROM current_service_conf AS c, nodes " \
                 "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID " \
                 "AND c.servID='%s' ORDER BY prio ASC;" % (hostname, servID)
-        debug(query)
         result = yield self.runQuery(query)
         debug(result)
         if len(result) < 1:
@@ -256,7 +262,6 @@ class MeshDbPool(adbapi.ConnectionPool):
         query = "SELECT flavorID, prio FROM current_service_conf AS c, nodes " \
                 "WHERE nodes.name='%s' AND c.nodeID=nodes.nodeID "\
                 "AND c.servID='%s';" % (hostname, servID)
-        debug(query)
         result = yield self.runQuery(query)
         debug(result)
         if len(result) is not 1:
