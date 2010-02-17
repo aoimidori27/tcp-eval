@@ -13,14 +13,14 @@ class TestRecord:
 
     def __init__(self, filename, regexes, whats):
         self.results = dict()
-        self.regexes = regexes
         self.filename = filename
         self.whats = whats
         self.valid = True
         self.header = dict()
-        self.parse()
 
-    def parse(self):
+        self.parse(regexes)
+
+    def parse(self, regexes):
         """Parses the file associated with this record."""
 
         fh = open(self.filename, "r")
@@ -42,14 +42,15 @@ class TestRecord:
         # read the rest
         output = fh.read()
 
-        for regex in self.regexes:
+        for regex in regexes:
             matches = regex.finditer(output)
 
             for match in matches:
                 for key, value in match.groupdict().iteritems():
-                    if not self.results.has_key(key):
-                        self.results[key] = []
-                    self.results[key].append(value)
+                    try:
+                        self.results[key].append(value)
+                    except KeyError:
+                        self.results[key] = [value]
 
         fh.close()
 
