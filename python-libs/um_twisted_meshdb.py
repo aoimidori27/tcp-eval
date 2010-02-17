@@ -334,20 +334,24 @@ class MeshDbPool(adbapi.ConnectionPool):
     @defer.inlineCallbacks
     def switchTestbedProfile(self, name):
         """Switches the current used testbed profile
-           Removes all colliding profiles
+           Removes all colliding profiles.
+           Returns a list of nodes affected by the change.
         """
+        dirtyNodes = list()
 
         current_profiles = yield self.getCurrentTestbedProfiles()
         debug(current_profiles)
 
-        # get nodes used of profiles
+        # get nodes used by current profiles
         current_nodes = list()
         for profileName in current_profiles:
             nodes_append = yield self.getProfileNodes(profileName)
             current_nodes.append(nodes_append)
-        debug(current_nodes)
+        debug("Current used nodes: " + current_nodes)
+
+        # get nodes used by the profile which is going to be activated
         new_nodes = yield self.getProfileNodes(name)
-        debug(new_nodes)
+        debug("New nodes: "+new_nodes)
 
         # compare current nodes with new nodes
         stop_profiles = list()
