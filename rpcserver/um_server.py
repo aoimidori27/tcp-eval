@@ -115,7 +115,11 @@ class RPCServer(xmlrpc.XMLRPC):
                 shell=False)
             if self._services.has_key(service):
                 rc = yield self._services[service].xmlrpc_start()
-                info("RC=%s" %rc)
+                info("Service returned RC=%s" %rc)
+                # special case if configuration change needs a reboot
+                if rc == "reboot":
+                    info("Service is going to restart the node. Returning...") 
+                    defer.returnValue(rc)
             else:
                 error("I'm supposed to start %s, which is not there!" %service)
                 rc = -1

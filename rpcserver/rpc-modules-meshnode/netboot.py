@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # python imports
+import socket
 from logging import info, debug, warn, error, critical
 
 # twisted imports
@@ -11,6 +12,7 @@ from twisted.web import xmlrpc
 # umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
+from um_twisted_xmlrpc import xmlrpc
 
 class Netboot(RPCService):
     """Class for managing the netboot module"""
@@ -47,7 +49,6 @@ class Netboot(RPCService):
     #
     # Internal stuff
     #
-
     def __init__(self, parent = None):
         # Call super constructor
         RPCService.__init__(self, parent)
@@ -114,7 +115,12 @@ class Netboot(RPCService):
 
         if restart:
             info("I have to start another pxe configuration: flavor=%s id=%s" %(self._config["flavorName"], self._config["version"]))
+            # make sure pxe profile is updated on the bootserver
+            rc = yield xmlrpc("bootserver", "bootscripts.updateNodelink", socket.gethostname() ) 
+            if (rc != 0):
+                warn("Failed to update nodelink RC=%s" %rc)
             yield twisted_execute(["/sbin/shutdown", "-r","now"], shell=False)
+            defer.returnValue("reboot")
         else:
             info("Config and /proc/cmdline match, doing nothing.")
             yield self._parent._dbpool.startedService(self._config,

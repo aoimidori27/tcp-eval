@@ -8,6 +8,7 @@ import sys
 import time
 from logging import info, debug, warn, error, critical
 
+# twisted imports
 from twisted.web.xmlrpc import Proxy
 from twisted.internet import defer, reactor
 from twisted.python import log
@@ -17,6 +18,7 @@ import twisted.names.client
 from um_application import Application
 from um_measurement.sshexec import SSHConnectionFactory
 from um_twisted_meshdb import MeshDbPool
+from um_twisted_xmlrpc import xmlrpc_many, xmlrpc
 
 class Measurement(Application):
     """Framework for UMIC-Mesh measurement applications.
@@ -43,7 +45,6 @@ class Measurement(Application):
         # caches mac addresses
         self._maccache = dict()
 
-        self.xmlrpc_port = 7080
         self._stats = dict()
         p = self.parser
 
@@ -71,20 +72,13 @@ class Measurement(Application):
 
     def xmlrpc_many(self, hosts, cmd, *args):
         """Calls a remote procedure on hosts"""
-
-        deferredList = []
-
-        for host in hosts:
-            deferredList.append(self.xmlrpc(host, cmd,
-                                           *args))
-        return defer.DeferredList(deferredList, consumeErrors=True)
+        # for convenience only
+        return xmlrpc_many(hosts, cmd, *args)
 
     def xmlrpc(self, host, cmd, *args):
         """Calls a remote procedure on a host"""
-
-        proxy = Proxy('http://%s:%u' %(host, self.xmlrpc_port))
-        debug("Calling %s on %s with args %s" %(cmd,host,args))
-        return proxy.callRemote(cmd, *args)
+        # for convenience only
+        return xmlrpc(host, cmd, *args)
 
     @defer.inlineCallbacks
     def switchTestbedProfile(self, name):
@@ -94,8 +88,8 @@ class Measurement(Application):
 
         yield self._dbpool.switchTestbedProfile(name)
 
-        current = yield self._dbpool.getCurrentTestbedProfile()
-        if not current==name:
+        current = yield self._dbpool.getCurrentTestbedProfiles()
+        if name not in current:
             error("Switch to testbed profile %s failed. Current: %s"
                   %(name,current))
             defer.returnValue(-1)

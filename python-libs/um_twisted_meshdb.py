@@ -356,15 +356,14 @@ class MeshDbPool(adbapi.ConnectionPool):
                 if node in current_nodes[i]:
                     if not i in stop_profiles:
                         stop_profiles.append(i)
-        debug(stop_profiles)
 
         # stop conflicting profiles
+        info("Deactivating conflicting profiles: %s", stop_profiles)       
         for i in stop_profiles:
             query = """DELETE FROM current_testbed_conf
                        WHERE current_testbed_profile = (SELECT id FROM testbed_profiles WHERE name = '%s')
                     """ % current_profiles[i]
-            debug(query)
-            rowcount = yield self.runInteraction(self._getRowcount, query)
+            yield self.runQuery(query)
 
         # insert new profile
         query = """INSERT INTO current_testbed_conf (current_testbed_profile) 
@@ -384,18 +383,6 @@ class MeshDbPool(adbapi.ConnectionPool):
 
         debug(query)
         return self.fetchColumnAsList(query)
-
-    @defer.inlineCallbacks
-    def getCurrentTestbedProfile(self):
-        """Returns the name of the current used testbed profile"""
-
-        query = """SELECT testbed_profiles.name AS name
-                   FROM current_testbed_conf, testbed_profiles
-                   WHERE testbed_profiles.ID = current_testbed_profile;
-                """
-        debug(query)
-        result = yield self.fetchAssoc(query)
-        defer.returnValue(result["name"])
 
     def getProfileNodes(self,profileName):
         """Return name of nodes used by a profile"""
