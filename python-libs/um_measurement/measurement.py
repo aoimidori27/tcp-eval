@@ -103,17 +103,18 @@ class Measurement(Application):
         reboot = 0
         for result in results:
             if result[0] == defer.FAILURE:
-                warn("Failed to setup %s: %s" %(nodes[i], result[1].getErrorMessage()))
+                warn("Failed to setup %s: %s" %(dirty_nodes[i], result[1].getErrorMessage()))
                 failed = failed+1
             else:
                 rc = result[1]
                 if (rc == 0):
                     succeeded = succeeded+1
                 elif (rc == "reboot"):
-                    warn("Node %s will reboot to apply config" %nodes[i])
+                    warn("Node %s will reboot to apply config" %dirty_nodes[i])
+                    reboot = reboot + 1
                 else:
-                    warn("Failed to setup %s: apply() returned: %s" %(nodes[i], rc))
-                    failed = failed+1
+                    warn("Failed to setup %s: apply() returned: %s" %(dirty_nodes[i], rc))
+                    failed = failed + 1
             i=i+1
         info("Succeeded: %d, Failed: %d, Reboot: %d" %(succeeded, failed, reboot))
         info("Activated testbed profiles are now: %s" %current)
