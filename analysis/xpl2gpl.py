@@ -12,135 +12,117 @@ from simpleparse import generator
 from simpleparse.parser import Parser
 from mx.TextTools import TextTools
 
+# umic-mesh imports
+from um_gnuplot import UmHistogram, UmGnuplot, UmXPlot
+from um_application import Application
+
 """xpl2gpl.py -- tcptrace / xplot 2 gnuplot converter"""
 
-class xpl2gpl(object):
+class xpl2gpl(Application):
     """Class to convert xplot/tcptrace files to gnuplot files"""
+
+    declaration = r'''
+root        :=    timeval,title,xlabel,ylabel,(diamond / text / varrow / harrow /
+                  line / dline / dot / box / tick / color / linebreak)*,end*
+alphanum    :=    [a-zA-Z0-9]
+punct       :=    [!@#$%^&()+=|\{}:;<>,.?/"_-]
+whitespace  :=    [ \t]
+string      :=    ( alphanum / punct / whitespace )*, linebreak
+keyword     :=    ([ A-Z]+ / int1)
+float1      :=    [0-9]+,".",[0-9]+
+float2      :=    [0-9]+,".",[0-9]+
+int1        :=    [0-9]+
+int2        :=    [0-9]+
+end         :=    'go', linebreak*
+timeval     :=    ( 'timeval double' / 'timeval signed' / 'dtime signed' ),
+                    linebreak
+title       :=    'title\n',string
+xlabel      :=     'xlabel\n',string
+ylabel      :=     'ylabel\n',string
+linebreak   :=    [ \t]*,( '\n' / '\n\r' ),[ \t]*
+color       :=    ( 'green' / 'yellow' / 'white' / 'orange' / 'blue' / 'magenta' /
+                    'red' / 'purple' / 'pink' / 'window' / 'ack' / 'sack' / 'data' /
+                    'retransmit' / 'duplicate' / 'reorder'/ 'text' / 'default' / 
+                    'sinfin' / 'push' / 'ecn' / 'urgent' / 'probe' / 'a2bseg' /'b2aseg' )
+harrow      :=    ( 'larrow' / 'rarrow'),whitespace,float1,whitespace,int1,
+                    linebreak
+varrow      :=    ( 'darrow' / 'uarrow'),whitespace,float1,whitespace,int1,
+                    linebreak
+line        :=    ( 'line' ),whitespace,float1,whitespace,int1,whitespace,
+                    float2,whitespace,int2,linebreak
+dline       :=    ( 'dline' ),whitespace,float1,whitespace,int1,whitespace,
+                    float2,whitespace,int2,linebreak
+dot         :=    ('dot'),whitespace,float1,whitespace,int1,(whitespace,color)*,
+                    linebreak
+diamond     :=    ('diamond'),whitespace,float1,whitespace,int1,(whitespace,
+                    color)*,linebreak
+box         :=    ('box'),whitespace,float1,whitespace,int1,(whitespace,color)*,
+                    linebreak
+tick        :=    ('dtick' / 'utick' / 'ltick' / 'rtick' / 'vtick' / 'htick'),
+                    whitespace,float1,whitespace,int1,linebreak
+text        :=    ('atext' / 'btext' / 'ltext' / 'rtext' ),whitespace,float1,whitespace,
+                    int1,linebreak,keyword,linebreak
+        '''
 
     def __init__(self):
         # initialization of the option parser
-        usage = "usage: %prog [options] <file1> <file2> .."
-        self.optparser = optparse.OptionParser()
-        self.optparser.set_usage(usage)
-        self.optparser.set_defaults(debug = False, title = '', xlabel = '', ylabel = '', includefile ='', \
-                                    terminaltype = 'x11', keyoptions = '', terminaloptions = '', \
-                                    labeloptions = '', execute = False, defaultstyle = 'points pt 2', \
-                                    linestyle = 'lines',dotstyle = 'dots',boxstyle = 'points pt 3', \
-                                    diamondstyle = 'points pt 1',varrowstyle = 'points pt 1', \
-                                    harrowstyle = 'points pt 5',dlinestyle = 'linepoints pt 4')
-        self.optparser.add_option("-d", "--debug",
-                    action = "store_true", dest = "debug",
+        Application.__init__(self)
+        self.parser.set_usage("usage: %prog [options] <file1> <file2> ..")
+        self.parser.set_defaults(parseroutput = False, outdir = "./")
+        self.parser.add_option("-p", "--parseroutput",
+                    action = "store_true", dest = "parseroutput",
                     help = "debug parsing [default: %default]")
-        self.optparser.add_option("-e", "--execute-gnuplot",
-                    action = "store_true", dest = "execute",
-                    help = "execute gnuplot after conversion [default: %default]")
-        self.optparser.add_option("--title", metavar = "text",
+        self.parser.add_option("--title", metavar = "text",
                     action = "store", dest = "title",
                     help = "gnuplot title [default: use xplot title]")
-        self.optparser.add_option("--xlabel", metavar = "text",
+        self.parser.add_option("--xlabel", metavar = "text",
                     action = "store", dest = "xlabel",
                     help = "gnuplot x label [default: use xplot xlabel]")
-        self.optparser.add_option("--ylabel", metavar = "text",
+        self.parser.add_option("--ylabel", metavar = "text",
                     action = "store", dest = "ylabel",
                     help = "gnuplot y label [default: use yplot xlabel]")
-        self.optparser.add_option("-a", "--includefile", metavar = "filename",
-                    action = "store", dest = "includefile",
-                    help = "include additional gnuplot file [default: none]")
-        self.optparser.add_option("-t", "--terminal", metavar = "terminaltype",
-                    action = "store", dest = "terminaltype",
-                    help = "use terminal type [default: x11] other possible selections: aqua, epslatex, latex, mp, pdf, png, postscript, svg, etc")
-        self.optparser.add_option("-o", "--terminaloptions", metavar = "terminaloptions",
-                    action = "store", dest = "terminaloptions",
-                    help = "use terminal options [default: none]")
-        self.optparser.add_option("-l", "--labeloptions", metavar = "labeloptions",
-                    action = "store", dest = "labeloptions",
-                    help = "use label options [default: none]")
-        self.optparser.add_option("--keyoptions", metavar = "keyoptions",
-                    action = "store", dest = "defaultstyle",
-                    help = "use key options [default: nokey]")
-        self.optparser.add_option("--defaultstyle", metavar = "plotoptions",
-                    action = "store", dest = "defaultstyle",
-                    help = "use style options [default: %default]")
-        self.optparser.add_option("--linestyle", metavar = "plotoptions",
-                    action = "store", dest = "linestyle",
-                    help = "use style options [default: %default]")
-        self.optparser.add_option("--dotstyle", metavar = "plotoptions",
-                    action = "store", dest = "dotstyle",
-                    help = "use style options [default: %default]")
-        self.optparser.add_option("--boxstyle", metavar = "plotoptions",
-                    action = "store", dest = "boxstyle",
-                    help = "use style options [default: %default]")
-        self.optparser.add_option("--diamondstyle", metavar = "plotoptions",
-                    action = "store", dest = "diamondstyle",
-                    help = "use style options [default: %default]")
-        self.optparser.add_option("--varrowstyle", metavar = "plotoptions",
-                    action = "store", dest = "varrowstyle",
-                    help = "use style options [default: %default]")
-        self.optparser.add_option("--harrowstyle", metavar = "plotoptions",
-                    action = "store", dest = "harrowstyle",
-                    help = "use style options [default: %default]")
-        self.optparser.add_option("--dlinestyle", metavar = "plotoptions",
-                    action = "store", dest = "dlinestyle",
-                    help = "use style options [default: %default]")
+        self.parser.add_option('-O', '--output', metavar="OutDir",
+                    action = 'store', type = 'string', dest = 'outdir',
+                    help = 'Set outputdirectory [default: %default]')
+        self.parser.add_option("-c", "--cfg", metavar = "FILE",
+                    action = "store", dest = "cfgfile",
+                    help = "use the file as config file for LaTeX. "\
+                    "No default packages will be loaded.")
+
     def main(self):
-        (self.options, self.args) = self.optparser.parse_args()
+        self.prepare()
+        for arg in self.args:
+            if self.options.parseroutput:
+                self.debugparser(arg)
+            else:
+                self.work(arg)
+
+    def prepare(self):
+        self.parse_option()
+        Application.set_option(self)
 
         for entry in self.args:
             if not os.path.isfile(entry):
-                warn("%s not found." %entry)
+                error("%s not found." %entry)
                 exit(1)
 
-        declaration = r'''
-            root        :=    timeval,title,xlabel,ylabel,(diamond / text / varrow / harrow / line / dline / dot / box / tick / color / linebreak)*,end*
-            alphanum    :=     [a-zA-Z0-9]
-            punct       :=     [!@#$%^&()+=|\{}:;<>,.?/"_-]
-            whitespace  :=     [ \t]
-            string      :=     ( alphanum / punct / whitespace )*, linebreak
-            keyword     :=    ([ A-Z]+ / int1)
-            float1      :=    [0-9]+,".",[0-9]+
-            float2      :=    [0-9]+,".",[0-9]+
-            int1        :=    [0-9]+
-            int2        :=    [0-9]+
-            end         :=    'go', linebreak*
-            timeval     :=    ( 'timeval double' / 'timeval signed' / 'dtime signed' ), linebreak
-            title       :=    'title\n',string
-            xlabel      :=     'xlabel\n',string
-            ylabel      :=     'ylabel\n',string
-            linebreak   :=    [ \t]*,( '\n' / '\n\r' ),[ \t]*
-            color       :=    ( 'green' / 'yellow' / 'white' / 'orange' / 'blue' / 'magenta' / 'red' / 'purple' / 'pink' )
-            harrow      :=    ( 'larrow' / 'rarrow'),whitespace,float1,whitespace,int1,linebreak
-            varrow      :=    ( 'darrow' / 'uarrow'),whitespace,float1,whitespace,int1,linebreak
-            line        :=    ( 'line' ),whitespace,float1,whitespace,int1,whitespace,float2,whitespace,int2,linebreak
-            dline       :=    ( 'dline' ),whitespace,float1,whitespace,int1,whitespace,float2,whitespace,int2,linebreak
-            dot         :=    ('dot'),whitespace,float1,whitespace,int1,(whitespace,color)*, linebreak
-            diamond     :=    ('diamond'),whitespace,float1,whitespace,int1,(whitespace,color)*,linebreak
-            box         :=    ('box'),whitespace,float1,whitespace,int1,(whitespace,color)*,linebreak
-            tick        :=    ('dtick' / 'utick' / 'ltick' / 'rtick' / 'vtick' / 'htick' ),whitespace,float1,whitespace,int1,linebreak
-            text        :=    ('atext' / 'btext' / 'ltext' / 'rtext' ),whitespace,float1,whitespace,int1,linebreak,keyword,linebreak
-        '''
-        xplfile = open ( entry ).read()
-        basename = os.path.splitext(os.path.basename(entry))[0]
+    def work(self, filename):
 
-        # debug declaration mode
-        if self.options.debug:
-            debugparser = Parser (declaration)
-            import pprint
-            pprint.pprint(debugparser.parse(xplfile))
-            exit(0)
+        basename = os.path.splitext(os.path.basename( filename ))[0]
+        xplfile = open ( filename ).read()
 
-        parser = generator.buildParser(declaration).parserbyname('root')
+        simpleparser = generator.buildParser(self.declaration).parserbyname('root')
 
-        gploutput = open ( "%s.gpl" %(basename) , 'w')
+        gploutput = UmXPlot(basename)
         dataoutput = open ( "%s.datasets" %(basename) , 'w')
         labelsoutput = open ( "%s.labels" %(basename) , 'w')
 
+        # start the work
         datasources = list()
         data = list()
-        taglist = TextTools.tag(xplfile, parser)
-        currentcolor = ""
-        title = self.options.title
-        xlabel = self.options.xlabel
-        ylabel = self.options.ylabel
+        info("starting parsing")
+        taglist = TextTools.tag(xplfile, simpleparser)
+        currentcolor = title = xlabel = ylabel = ""
         for tag, beg, end, subtags in taglist[1]:
         # read options and labels from parse tree
         # convert keyword labels
@@ -158,8 +140,8 @@ class xpl2gpl(object):
                     position = "left"
                 else:
                     position = "center"
-                # write out
-                labelsoutput.write('set label "%s" at (%s-946684800.000000), %s %s %s\n' %(label,xpoint,ypoint,position,self.options.labeloptions) )
+                # write label out
+                labelsoutput.write('set label "%s" at (%s-946684800.000000), %s %s\n' %(label,xpoint,ypoint,position) )
 
             # read colors
             elif tag == 'color':
@@ -285,45 +267,15 @@ class xpl2gpl(object):
                     ylabel = xplfile[beg+len("ylabel\n"):end-len("\n")]
 
         #write optons to gpl file
-        gploutput.write('set title "%s"\n' %title )
-        gploutput.write('set ylabel "%s"\n' %ylabel )
-        gploutput.write('set xlabel "%s"\n' %xlabel )
-        gploutput.write('set format x "%.0f"\n')
-        gploutput.write('set format y "%.0f"\n')
-        gploutput.write('set xdata time\n')
-        if self.options.keyoptions == '':
-            gploutput.write('set nokey\n')
-        else:
-            gploutput.write('set key %s\n' %self.options.keyoptions)
-        gploutput.write('load "%s.labels"\n' %basename)
-        gploutput.write('\n')
-        if self.options.includefile != '':
-            gploutput.write('#load include file\nload "%s"\n' %self.options.includefile)
-        gploutput.write('plot ')
+        #gploutput.plot('set title "%s"\n' %title )
+        gploutput.setXLabel(xlabel)
+        gploutput.setYLabel(ylabel)
+        gploutput.gplot('load "%s.labels"\n' %basename)
 
         #iterate over data sources
-        first = True
         for index,datasource in enumerate(datasources):
-            if datasource[0] == "line":
-                style = self.options.linestyle
-            elif datasource[0] == "dot":
-                style = self.options.dotstyle
-            elif datasource[0] == "box":
-                style = self.options.boxstyle
-            elif datasource[0] == "diamond":
-                style = self.options.diamondstyle
-            elif datasource[0] == "varrow":
-                style = self.options.varrowstyle
-            elif datasource[0] == "harrow":
-                style = self.options.harrowstyle
-            elif datasource[0] == "dline":
-                style = self.options.dlinestyle
-            else:
-                style = self.options.defaultstyle
-            if first == False:
-                gploutput.write(', ')
-            gploutput.write('"%s.datasets" index %s using ($1-946684800.0):2 with %s' %(basename,index,style ) )
-            first = False
+	    info("new data source")
+            gploutput.plot(basename+".datasets", index, datasource[0], datasource[1])
 
             # write data with same source in order
             for dataline in data:
@@ -331,23 +283,18 @@ class xpl2gpl(object):
                     dataoutput.write("%s" %dataline[1] )
             dataoutput.write("\n \n")
 
-        gploutput.write(';\n')
-
-        #output options
-        gploutput.write('set term %s %s\n' %(self.options.terminaltype,self.options.terminaloptions) )
-        if self.options.terminaltype == "epslatex":
-            gploutput.write('set output "%s.tex"\n' %(basename) )
-        else:
-            gploutput.write('set output "%s.%s"\n' %(basename,self.options.terminaltype) )
-        gploutput.write('replot\n')
-        gploutput.write('pause -1\n')
-
-        gploutput.close()
         dataoutput.close()
         labelsoutput.close()
+        gploutput.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
-        if self.options.execute:
-            os.system("gnuplot  -persist %s.gpl &" %basename)
+    def debugparser(self, filename):
+        file = open(filename).read()
+        debugparser = Parser (self.declaration)
+        import pprint
+        info("started debug parsing")
+        pprint.pprint(debugparser.parse(file))
+        info("completed debug parsing")
+        exit(0)
 
 if __name__ == "__main__":
     xpl2gpl().main()
