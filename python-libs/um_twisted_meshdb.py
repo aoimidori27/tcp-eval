@@ -352,11 +352,11 @@ class MeshDbPool(adbapi.ConnectionPool):
         for profileName in current_profiles:
             nodes_append = yield self.getProfileNodes(profileName)
             current_nodes.append(nodes_append)
-        debug("Current used nodes: " + current_nodes)
+        debug("Current used nodes: " + current_nodes.__str__())
 
         # get nodes used by the profile which is going to be activated
         new_nodes = yield self.getProfileNodes(name)
-        debug("New nodes: "+new_nodes)
+        debug("New nodes: "+new_nodes.__str__())
 
         # compare current nodes with new nodes
         stop_profiles = list()

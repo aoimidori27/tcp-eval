@@ -108,7 +108,7 @@ class Measurement(Application):
             else:
                 rc = result[1]
                 if (rc != 0):
-                    warn("Failed to setup %s: apply() returned: %d" &(nodes[i], rc))
+                    warn("Failed to setup %s: apply() returned: %s" %(nodes[i], rc))
                     failed = failed+1
                 else:
                     succeeded = succeeded+1
