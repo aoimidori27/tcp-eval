@@ -33,7 +33,14 @@ class MeshDbPool(adbapi.ConnectionPool):
     def runQuery(self, *args, **kwargs):
         """Overrides ConnectionPool.runQuery to improve logging"""
         debug("SQL: "+args.__str__())
-        d =  adbapi.ConnectionPool.runQuery(self, *args, **kwargs)
+        d = adbapi.ConnectionPool.runQuery(self, *args, **kwargs)
+        d.addErrback(MeshDbPool._queryErrback)
+        return d
+   
+    def runInteraction(self, interaction, *args, **kwargs):
+        """Overrides ConnectionPool.runInteraction to improve logging"""
+        debug("SQL: "+args.__str__())
+        d = adbapi.ConnectionPool.runInteraction(self, interaction, *args, **kwargs)
         d.addErrback(MeshDbPool._queryErrback)
         return d
 
@@ -292,7 +299,6 @@ class MeshDbPool(adbapi.ConnectionPool):
                    ORDER BY current_service_conf.prio ASC;
                 """ % hostname
 
-        debug(query)
         service_list = yield self.fetchColumnAsList(query)
         debug(service_list)
 
@@ -309,7 +315,6 @@ class MeshDbPool(adbapi.ConnectionPool):
                    AND services.servID=current_service_status.servID
                    ORDER BY current_service_status.prio DESC;
                 """ % hostname
-        debug(query)
         service_list = yield self.fetchColumnAsList(query)
         debug(service_list)
 
@@ -337,7 +342,7 @@ class MeshDbPool(adbapi.ConnectionPool):
            Removes all colliding profiles.
            Returns a list of nodes affected by the change.
         """
-        dirtyNodes = list()
+        dirty_nodes = list()
 
         current_profiles = yield self.getCurrentTestbedProfiles()
         debug(current_profiles)
@@ -384,8 +389,6 @@ class MeshDbPool(adbapi.ConnectionPool):
                    FROM current_testbed_conf, testbed_profiles
                    WHERE testbed_profiles.ID = current_testbed_profile
                 """
-
-        debug(query)
         return self.fetchColumnAsList(query)
 
     def getProfileNodes(self,profileName):
@@ -400,7 +403,6 @@ class MeshDbPool(adbapi.ConnectionPool):
                    WHERE testbed_profiles_data.tprofileID = (%s)
                    AND testbed_profiles_data.nodeID = nodes.nodeID;
                 """ % profileID
-        debug(query)
         return self.fetchColumnAsList(query)
 
     def getTestbedNodes(self):
@@ -411,6 +413,5 @@ class MeshDbPool(adbapi.ConnectionPool):
                    WHERE testbed_profiles_data.tprofileID = current_testbed_profile
                    AND testbed_profiles_data.nodeID = nodes.nodeID;
                 """
-        debug(query)
         return self.fetchColumnAsList(query)
 
