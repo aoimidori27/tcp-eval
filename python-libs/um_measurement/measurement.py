@@ -86,7 +86,7 @@ class Measurement(Application):
            and applies configuration changes to all nodes.
         """
 
-        yield self._dbpool.switchTestbedProfile(name)
+        dirty_nodes = yield self._dbpool.switchTestbedProfile(name)
 
         current = yield self._dbpool.getCurrentTestbedProfiles()
         if name not in current:
@@ -95,26 +95,28 @@ class Measurement(Application):
             defer.returnValue(-1)
 
         info("Applying configuration changes...")
-        nodes = yield self._dbpool.getTestbedNodes()
-        results = yield self.xmlrpc_many(nodes,"apply")
+        results = yield self.xmlrpc_many(dirty_nodes,"apply")
 
         i = 0
         succeeded = 0
         failed = 0
+        reboot = 0
         for result in results:
             if result[0] == defer.FAILURE:
                 warn("Failed to setup %s: %s" %(nodes[i], result[1].getErrorMessage()))
                 failed = failed+1
             else:
                 rc = result[1]
-                if (rc != 0):
+                if (rc == 0):
+                    succeeded = succeeded+1
+                elif (rc == "reboot"):
+                    warn("Node %s will reboot to apply config" %nodes[i])
+                else:
                     warn("Failed to setup %s: apply() returned: %s" %(nodes[i], rc))
                     failed = failed+1
-                else:
-                    succeeded = succeeded+1
             i=i+1
-        info("Succeeded: %d, Failed: %d" %(succeeded, failed))
-        info("Testbed profile is now: %s" %current)
+        info("Succeeded: %d, Failed: %d, Reboot: %d" %(succeeded, failed, reboot))
+        info("Activated testbed profiles are now: %s" %current)
 
     def remote_execute_many(self, hosts, cmd, **kwargs):
         """Executes command cmd on hosts, returns a DeferredList"""

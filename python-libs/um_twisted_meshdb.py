@@ -27,20 +27,14 @@ class MeshDbPool(adbapi.ConnectionPool):
                                        cp_reconnect = True)
     @staticmethod
     def _queryErrback(failure):
-        error("Query failed: %s", failure.getErrorMessage())
+        error("Query failed: %s" %failure.getErrorMessage())
         return failure
 
-    def runQuery(self, *args, **kwargs):
-        """Overrides ConnectionPool.runQuery to improve logging"""
-        debug("SQL: "+args.__str__())
-        d = adbapi.ConnectionPool.runQuery(self, *args, **kwargs)
-        d.addErrback(MeshDbPool._queryErrback)
-        return d
-   
-    def runInteraction(self, interaction, *args, **kwargs):
+    def runInteraction(self, interaction, query, *args, **kwargs):
         """Overrides ConnectionPool.runInteraction to improve logging"""
-        debug("SQL: "+args.__str__())
-        d = adbapi.ConnectionPool.runInteraction(self, interaction, *args, **kwargs)
+        # NOTE: this function will also get called from "runQuery" and similiar
+        debug('SQL: %s' %query)
+        d = adbapi.ConnectionPool.runInteraction(self, interaction, query, *args, **kwargs)
         d.addErrback(MeshDbPool._queryErrback)
         return d
 
@@ -86,7 +80,6 @@ class MeshDbPool(adbapi.ConnectionPool):
     def _fetchColumnAsList(self, txn, query, column):
         """This function returns a list of the specified column"""
 
-        debug(query)
         txn.execute(query)
         res = list()
         if txn.rowcount > 0:
@@ -345,42 +338,43 @@ class MeshDbPool(adbapi.ConnectionPool):
         dirty_nodes = list()
 
         current_profiles = yield self.getCurrentTestbedProfiles()
-        debug(current_profiles)
+        debug("Activated profiles: %s" %current_profiles)
 
         # get nodes used by current profiles
-        current_nodes = list()
+        current_nodes = dict()
         for profileName in current_profiles:
-            nodes_append = yield self.getProfileNodes(profileName)
-            current_nodes.append(nodes_append)
-        debug("Current used nodes: " + current_nodes.__str__())
+            profile_nodes = yield self.getProfileNodes(profileName)
+            current_nodes[profileName] = profile_nodes
+        debug("Current used nodes: %s"  %current_nodes.values())
 
         # get nodes used by the profile which is going to be activated
         new_nodes = yield self.getProfileNodes(name)
-        debug("New nodes: "+new_nodes.__str__())
-
+        debug("New nodes: %s" %new_nodes)
+        dirty_nodes.extend(new_nodes)
+        
         # compare current nodes with new nodes
         stop_profiles = list()
-        for i in range(0,len(current_nodes)):
-            for node in new_nodes:
-                if node in current_nodes[i]:
-                    if not i in stop_profiles:
-                        stop_profiles.append(i)
-
+        for (profile, nodes) in current_nodes.iteritems():
+            # check if intersection is not empty
+            if len(set(nodes) &  set(new_nodes)) > 0:
+                if profile not in stop_profiles:
+                    stop_profiles.append(profile)
+                
         # stop conflicting profiles
         info("Deactivating conflicting profiles: %s", stop_profiles)       
-        for i in stop_profiles:
+        for profile in stop_profiles:
             query = """DELETE FROM current_testbed_conf
                        WHERE current_testbed_profile = (SELECT id FROM testbed_profiles WHERE name = '%s')
-                    """ % current_profiles[i]
+                    """ %profile
             yield self.runQuery(query)
 
         # insert new profile
         query = """INSERT INTO current_testbed_conf (current_testbed_profile) 
                    SELECT testbed_profiles.id FROM testbed_profiles WHERE testbed_profiles.name = '%s'
                 """ % name
-        debug(query)
-        rowcount = yield self.runInteraction(self._getRowcount, query)
-        defer.returnValue(rowcount)
+        yield self.runQuery(query)
+
+        defer.returnValue(dirty_nodes)
 
     def getCurrentTestbedProfiles(self):
         """Returns the names of the current used testbed profiles"""
