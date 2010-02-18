@@ -247,3 +247,44 @@ class UmBoxPlot(UmGnuplot):
     def rawPlot(self, *args, **kwargs):
         UmGnuplot.plot(self, *args, **kwargs)
 
+class UmXPlot(UmGnuplot):
+    """Plots a xplot file"""
+
+    def __init__(self, *args, **kwargs):
+        UmGnuplot.__init__(self, *args, **kwargs)
+
+    def plot(self, file, index, datatype="default", color="default"):
+        title = ""
+        # generate style, default colors for backward compat
+        if datatype == "line":
+            style = 'lines'
+        elif datatype == "dot":
+            style = 'dots'
+        elif datatype == "box":
+            style = 'points pt 3'
+        elif datatype == "diamond":
+            style = 'points pt 1'
+        elif datatype == "varrow":
+            style = 'points pt 1'
+        elif datatype == "harrow":
+            style = 'points pt 5'
+        elif datatype == "dline":
+            style = 'linepoints pt 4'
+        # um "colors"
+        
+        # dont know what to do
+        
+        else:
+	        style = "points pt 2"
+
+        # concat plot command
+        if title:
+            titlestr = "title \"%s\"" %title
+        else:
+            titlestr = "notitle"
+        cmd = '"%s" index %s using ($1-946684800.0):2 with %s %s' %(file,
+                index, style,titlestr)
+        UmGnuplot.plot(self, cmd)
+
+    def rawPlot(self, *args, **kwargs):
+        UmGnuplot.plot(self, *args, **kwargs)
