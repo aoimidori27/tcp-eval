@@ -1,5 +1,6 @@
 #!/usr/bin/envpython
 # -*- coding: utf-8 -*-
+# vim:softtabstop=4:shiftwidth=4:expandtab
 
 # python imports
 import re
@@ -42,6 +43,9 @@ class FlowgrindRecordFactory():
                      'krttvar' : float,
                      'krto'    : float,
                      'castate' : lambda x:x,
+                     'cret'    : int,
+                     'cfret'   : int,
+                     'ctret'   : int,
                      'mss'     : int,
                      'mtu'     : int }
 
@@ -105,7 +109,7 @@ class FlowgrindRecordFactory():
             #0: 169.254.9.1/mrouter1, MSS = 536, ws = 16384/16384 (0/0), bs = 8192/8192, delay = 0.00s/0.00s, duration = 15.00s/0.00s, thruput = 0.607300Mb/s (139 blocks), cc = cubic
             "thruput = (?P<thruput>\d+\.\d+)(\/(?P<thruput_back>\d+\.\d+))?Mb/s",
 
-            #  ID    begin     end   through min RTT avg RTT max RTT min IAT avg IAT max IAT    cwnd        ssth uack sack lost fret tret fack reor   rtt rttvar     rto   castate   mss   mtu status
+            #  ID    begin     end   through min RTT avg RTT max RTT min IAT avg IAT max IAT    cwnd        ssth uack sack lost fret tret fack reor   rtt rttvar     rto   castate cret cfret ctret  mss   mtu status
             " +(?P<direction>[S,R])"\
             " +(?P<flow_id>\d+) +(?P<begin>\d+\.\d+) +(?P<end>\d+\.\d+)"\
             " +(?P<tput>\d+\.\d+)"\
@@ -114,7 +118,9 @@ class FlowgrindRecordFactory():
             " +(?P<cwnd>\d+\.\d+) +(?P<ssth>\d+) +(?P<uack>\d+) +(?P<sack>\d+)"\
             " +(?P<lost>\d+) +(?P<fret>\d+) +(?P<tret>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
             " +(?P<krtt>\d+\.\d+) +(?P<krttvar>\d+\.\d+) +(?P<krto>\d+\.\d+)"\
-            " +(?P<castate>loss|open|disorder|recovery) +(?P<mss>\d+) +(?P<mtu>\d+)",
+            " +(?P<castate>loss|open|disorder|recovery)"\
+            " +(?P<cret>\d+) +(?P<cfret>\d+) +(?P<ctret>\d+)"\
+            " +(?P<mss>\d+) +(?P<mtu>\d+)",
             # Wed Oct 14 18:21:42 2009: controlling host = vmhost1, number of flows = 1, reporting interval = 0.10s, [tput] = 10**6 bit/second (SVN Rev 5490)
             "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2} \d{2}:\d{2}:\d{2} \d{4}): .* reporting interval = (?P<reporting_interval>\d+\.\d+)"
         ]
@@ -126,6 +132,9 @@ class FlowgrindRecordFactory():
         self.whats = dict(
             # average thruput: just sum up all summary lines
             thruput           = lambda r: sum(map(float, r['thruput'])),
+            total_retransmits      = lambda r: max(map(int, r['cret'])),
+            total_fast_retransmits = lambda r: max(map(int, r['cfret'])),
+            total_rto_retransmits  = lambda r: max(map(int, r['ctret'])),
             # list of summary lines
             thruput_list      = lambda r: map(float, r['thruput']),
 
