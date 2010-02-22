@@ -8,6 +8,8 @@ from logging import info, debug, warn, error, critical
 from twisted.internet import defer, utils, reactor
 from twisted.enterprise import adbapi
 
+from um_twisted_functions import twisted_log_failure
+
 class MeshDbPool(adbapi.ConnectionPool):
     """This class handles the database connection pool, for the mesh database"""
 
@@ -27,6 +29,7 @@ class MeshDbPool(adbapi.ConnectionPool):
                                        cp_reconnect = True)
     @staticmethod
     def _queryErrback(failure):
+        twisted_log_failure(failure, error) 
         error("Query failed: %s" %failure.getErrorMessage())
         return failure
 

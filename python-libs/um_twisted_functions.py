@@ -46,6 +46,11 @@ def twisted_call(cmd, shell=True):
     (stdout, stderr, rc) = yield twisted_execute(cmd, shell)
     defer.returnValue(rc)
 
+def twisted_log_failure(failure, *args):
+    lh = _LogHelper(*args)
+
+    failure.printTraceback(file=lh)
+
 class _ExecuteHelper(defer.Deferred):
     """This a wrapper around utils.getProcessOutputAndValue, which returns the
        signal number as negative returncode in case of errback()
@@ -60,3 +65,23 @@ class _ExecuteHelper(defer.Deferred):
         (stdout, stderr, signum) = failure.value
         self.callback((stdout, stderr, -signum))
 
+class _LogHelper():
+    """ This is a file object emulation for logging twisted failures """
+
+    def __init__(self, log=warn):
+        """ Expects a function pointer as argument """
+        self._log = log
+
+
+    def flush(self):
+        pass
+
+    def seek(self):
+        pass
+   
+    def write(self, str):
+        self._log(str.strip())
+
+    def writelines(self, sequence):
+        for line in sequence:
+            self._log(line.strip())
