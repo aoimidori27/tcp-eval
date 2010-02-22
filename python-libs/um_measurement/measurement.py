@@ -19,6 +19,7 @@ from um_application import Application
 from um_measurement.sshexec import SSHConnectionFactory
 from um_twisted_meshdb import MeshDbPool
 from um_twisted_xmlrpc import xmlrpc_many, xmlrpc
+from um_twisted_functions import twisted_sleep
 
 class Measurement(Application):
     """Framework for UMIC-Mesh measurement applications.
@@ -80,6 +81,75 @@ class Measurement(Application):
         # for convenience only
         return xmlrpc(host, cmd, *args)
 
+    def _pollNodeCallback(self, clean, d, hostname):
+        """Callback for a isNodeClean call"""
+
+        # polling stopped?
+        if not d.polling:
+            return
+
+        if clean:
+            # node is ready now, cancel timer and fire d
+            d.timer.cancel()
+            d.polling = False
+            d.callback(True)
+        else:
+            # schedule next poll in 5 seconds
+            reactor.callLater(5, self._pollNode, d, hostname) 
+            
+
+    def _pollNode(self, d, hostname):
+        """Performs a db query"""
+
+        # polling stopped?
+        if not d.polling:
+            return
+
+        # start a new poll
+        debug("Check if %s is ready now..." %hostname)
+        poll = self._dbpool.isNodeClean(hostname)
+        poll.addCallback(self._pollNodeCallback, d, hostname)
+ 
+    def _pollNodeTimeout(self, d, hostname):
+        """If a waitForNode call times out this is called"""
+       
+        # stop new polls
+        d.polling = False
+
+        debug("waitForNode(%s) timed out" %hostname)
+        
+        # return false
+        d.callback(False)
+
+    def waitForNode(self, hostname, timeout=300):
+        """Waits until the specified node has started all services
+           or returns False when timeout is hit"""
+
+        d = defer.Deferred()
+
+        # return false if timeout is hit, and store timer in deferred
+        d.timer = reactor.callLater(timeout, self._pollNodeTimeout, d, hostname)
+
+        # store boolean in deferred
+        d.polling = True
+       
+        # start polling
+        self._pollNode(d, hostname)
+
+        return d
+
+    def waitForNodes(self, hostnames, *args):
+        deferredList = []
+
+        for hostname in hostnames:
+            deferredList.append(self.waitForNode(hostname, *args))
+
+        # if a defered returns a failure, the failure instance is
+        # in the result set returnend by DeferredList
+        # so prevent "Unhandled error in Deferred" warnings by
+        # setting consumeErrors=True
+        return defer.DeferredList(deferredList, consumeErrors=True)
+
     @defer.inlineCallbacks
     def switchTestbedProfile(self, name):
         """Switches the current testbed profile
@@ -87,6 +157,7 @@ class Measurement(Application):
         """
 
         dirty_nodes = yield self._dbpool.switchTestbedProfile(name)
+        reboot_nodes = list()
 
         current = yield self._dbpool.getCurrentTestbedProfiles()
         if name not in current:
@@ -101,7 +172,8 @@ class Measurement(Application):
         succeeded = 0
         failed = 0
         reboot = 0
-        for result in results:
+
+        for i,result in enumerate(results):
             if result[0] == defer.FAILURE:
                 warn("Failed to setup %s: %s" %(dirty_nodes[i], result[1].getErrorMessage()))
                 failed = failed+1
@@ -111,13 +183,24 @@ class Measurement(Application):
                     succeeded = succeeded+1
                 elif (rc == "reboot"):
                     warn("Node %s will reboot to apply config" %dirty_nodes[i])
+                    reboot_nodes.append(dirty_nodes[i])
                     reboot = reboot + 1
                 else:
                     warn("Failed to setup %s: apply() returned: %s" %(dirty_nodes[i], rc))
                     failed = failed + 1
-            i=i+1
+        
         info("Succeeded: %d, Failed: %d, Reboot: %d" %(succeeded, failed, reboot))
+
+        if reboot != 0:
+            info("Waiting for booting nodes to become ready...")
+            results = yield self.waitForNodes(reboot_nodes)
+
+            for i,result in results:
+                if not result:
+                    warn("Node %s did not become ready after reboot (timeout)" %reboot_nodes[i])
+            
         info("Activated testbed profiles are now: %s" %current)
+
 
     def remote_execute_many(self, hosts, cmd, **kwargs):
         """Executes command cmd on hosts, returns a DeferredList"""
