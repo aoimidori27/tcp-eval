@@ -314,6 +314,19 @@ class MeshDbPool(adbapi.ConnectionPool):
         defer.returnValue(service_list)
 
     @defer.inlineCallbacks
+    def isNodeClean(self, hostname):
+        """Checks if configuration matches started services"""
+        tmp = yield self.getServicesToStop(hostname)
+        if len(tmp) != 0:
+            defer.returnValue(False)
+        tmp = yield self.getServicesToStart(hostname)
+        if len(tmp) != 0:
+            defer.returnValue(False)
+
+        defer.returnValue(True)
+        
+
+    @defer.inlineCallbacks
     def clearUpServiceStatus(self, hostname = socket.gethostname()):
         """Clears the service status table from entries of this host."""
 
