@@ -17,7 +17,10 @@ from um_analysis.analysis import Analysis
 from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot
 
 class ReorderingAnalysis(Analysis):
-    """Application for analysis of flowgrind results"""
+    """Application for analysis of flowgrind results.
+       It needs flowlogs produced by the -tcp-more-info branch to fully work.
+       Usually, you won't call this app directly, but use
+       vmesh_dumbbell_flowgrind_complete_test.pl instead."""
 
     def __init__(self):
         Analysis.__init__(self)
@@ -72,8 +75,8 @@ class ReorderingAnalysis(Analysis):
         except KeyError:
             start_time = 0
 
-        rtos           = int(record.calculate("total_fast_retransmits"))
-        frs            = int(record.calculate("total_rto_retransmits"))
+        rtos           = int(record.calculate("total_rto_retransmits"))
+        frs            = int(record.calculate("total_fast_retransmits"))
         thruput        = record.calculate("thruput")
         if not thruput:
             if not self.failed.has_key(run_label):

@@ -10,12 +10,13 @@ from twisted.internet import defer, reactor
 from um_measurement import measurement, tests
 from um_node import Node
 
-class TcpEvaluationMeasurement(measurement.Measurement):
+class DumbbellEvaluationMeasurement(measurement.Measurement):
     """This Measurement will run tests of several scenarios:
        - Each scenario is defined by it's flowgrind options.
        - One test of a scenario consists of parallel runs (flows)
          between all pairs defined in the pairs file.
-       - Each test can be iterated several times.
+       - One measurement-iteration will run one test of each scenario.
+       - The number of iterations is determined by the "iterations" variable.
     """
 	
     def __init__(self):
