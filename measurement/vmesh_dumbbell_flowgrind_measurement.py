@@ -59,8 +59,10 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
 
         # inner loop with different scenario settings
         scenarios   = [ dict( scenario_label = "Linux Native", flowgrind_cc="reno", flowgrind_opts=["-O", "s=TCP_REORDER_MODULE=native"] ),
-                        dict( scenario_label = "TCP-NCR",      flowgrind_cc="reno", flowgrind_opts=["-O", "s=TCP_REORDER_MODULE=ncr"] ),
-                        dict( scenario_label = "TCP-aNCR",     flowgrind_cc="reno", flowgrind_opts=["-O", "s=TCP_REORDER_MODULE=ancr"] ) ]
+                        dict( scenario_label = "TCP-NCR CF",   flowgrind_cc="reno", flowgrind_opts=["-O", "s=TCP_REORDER_MODULE=ncr",  "-O", "s=TCP_REORDER_MODE=1"] ),
+                        dict( scenario_label = "TCP-NCR AG",   flowgrind_cc="reno", flowgrind_opts=["-O", "s=TCP_REORDER_MODULE=ncr",  "-O", "s=TCP_REORDER_MODE=2"] ),
+                        dict( scenario_label = "TCP-aNCR CF",  flowgrind_cc="reno", flowgrind_opts=["-O", "s=TCP_REORDER_MODULE=ancr", "-O", "s=TCP_REORDER_MODE=1"] ),
+                        dict( scenario_label = "TCP-aNCR AG",  flowgrind_cc="reno", flowgrind_opts=["-O", "s=TCP_REORDER_MODULE=ancr", "-O", "s=TCP_REORDER_MODE=2"] ) ]
 
         yield self.switchTestbedProfile(testbed_profile)
 
@@ -107,4 +109,4 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         reactor.run()
     
 if __name__ == "__main__":
-    TcpEvaluationMeasurement().main()
+    DumbbellEvaluationMeasurement().main()
