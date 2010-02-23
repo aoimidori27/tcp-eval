@@ -23,12 +23,12 @@ class xpl2gpl(Application):
 
     declaration = r'''
 root        :=    timeval,title,xlabel,ylabel,(diamond / text / varrow / harrow /
-                  line / dline / dot / box / tick / color / linebreak)*,end*
+                  line / dot / box / tick / color / linebreak)*,end*
 alphanum    :=    [a-zA-Z0-9]
 punct       :=    [!@#$%^&()+=|\{}:;<>,.?/"_-]
 whitespace  :=    [ \t]
-string      :=    ( alphanum / punct / whitespace )*, linebreak
-keyword     :=    ([ A-Z]+ / int1)
+string      :=    ( alphanum / punct / whitespace )*
+keyword     :=    ( string / int1 )
 float1      :=    [0-9]+,".",[0-9]+
 float2      :=    [0-9]+,".",[0-9]+
 int1        :=    [0-9]+
@@ -36,21 +36,20 @@ int2        :=    [0-9]+
 end         :=    'go', linebreak*
 timeval     :=    ( 'timeval double' / 'timeval signed' / 'dtime signed' ),
                     linebreak
-title       :=    'title\n',string
-xlabel      :=     'xlabel\n',string
-ylabel      :=     'ylabel\n',string
+title       :=    'title\n',string, linebreak
+xlabel      :=     'xlabel\n',string, linebreak
+ylabel      :=     'ylabel\n',string, linebreak
 linebreak   :=    [ \t]*,( '\n' / '\n\r' ),[ \t]*
 color       :=    ( 'green' / 'yellow' / 'white' / 'orange' / 'blue' / 'magenta' /
                     'red' / 'purple' / 'pink' / 'window' / 'ack' / 'sack' / 'data' /
-                    'retransmit' / 'duplicate' / 'reorder'/ 'text' / 'default' / 
-                    'sinfin' / 'push' / 'ecn' / 'urgent' / 'probe' / 'a2bseg' /'b2aseg' )
+                    'retransmit' / 'duplicate' / 'reorder'/ 'text' / 'default' /
+                    'sinfin' / 'push' / 'ecn' / 'urgent' / 'probe' / 'a2bseg'
+                    /'b2aseg'/ 'nosampleack' /'ambigousack' )
 harrow      :=    ( 'larrow' / 'rarrow'),whitespace,float1,whitespace,int1,
                     linebreak
 varrow      :=    ( 'darrow' / 'uarrow'),whitespace,float1,whitespace,int1,
                     linebreak
-line        :=    ( 'line' ),whitespace,float1,whitespace,int1,whitespace,
-                    float2,whitespace,int2,linebreak
-dline       :=    ( 'dline' ),whitespace,float1,whitespace,int1,whitespace,
+line        :=    ( 'line' / 'dline' ),whitespace,float1,whitespace,int1,whitespace,
                     float2,whitespace,int2,linebreak
 dot         :=    ('dot'),whitespace,float1,whitespace,int1,(whitespace,color)*,
                     linebreak
@@ -60,8 +59,8 @@ box         :=    ('box'),whitespace,float1,whitespace,int1,(whitespace,color)*,
                     linebreak
 tick        :=    ('dtick' / 'utick' / 'ltick' / 'rtick' / 'vtick' / 'htick'),
                     whitespace,float1,whitespace,int1,linebreak
-text        :=    ('atext' / 'btext' / 'ltext' / 'rtext' ),whitespace,float1,whitespace,
-                    int1,linebreak,keyword,linebreak
+text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
+                    whitespace,int1,(whitespace,color)*,linebreak,keyword,linebreak
         '''
 
     def __init__(self):
@@ -78,9 +77,18 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext' ),whitespace,float1,whi
         self.parser.add_option("--xlabel", metavar = "text",
                     action = "store", dest = "xlabel",
                     help = "gnuplot x label [default: use xplot xlabel]")
+        self.parser.add_option("--xmax", metavar = "NUM", type = "int",
+                    action = "store", dest = "xmax",
+                    help = "gnuplot x range [default: let gnuplot decide]")
         self.parser.add_option("--ylabel", metavar = "text",
                     action = "store", dest = "ylabel",
                     help = "gnuplot y label [default: use yplot xlabel]")
+        self.parser.add_option("--ymax", metavar = "NUM", type = "int",
+                    action = "store", dest = "ymax",
+                    help = "gnuplot y range [default: let gnuplot decide]")
+        self.parser.add_option("--microview",
+                    action = "store", dest = "microview",
+                    help = "enable microview (use arrowheads etc) [default: no]")
         self.parser.add_option('-O', '--output', metavar="OutDir",
                     action = 'store', type = 'string', dest = 'outdir',
                     help = 'Set outputdirectory [default: %default]')
@@ -88,6 +96,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext' ),whitespace,float1,whi
                     action = "store", dest = "cfgfile",
                     help = "use the file as config file for LaTeX. "\
                     "No default packages will be loaded.")
+
 
     def main(self):
         self.prepare()
@@ -100,7 +109,6 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext' ),whitespace,float1,whi
     def prepare(self):
         self.parse_option()
         Application.set_option(self)
-
         for entry in self.args:
             if not os.path.isfile(entry):
                 error("%s not found." %entry)
@@ -114,7 +122,6 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext' ),whitespace,float1,whi
         simpleparser = generator.buildParser(self.declaration).parserbyname('root')
 
         gploutput = UmXPlot(basename)
-        dataoutput = open ( "%s.datasets" %(basename) , 'w')
         labelsoutput = open ( "%s.labels" %(basename) , 'w')
 
         # start the work
@@ -134,15 +141,30 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext' ),whitespace,float1,whi
                         ypoint = xplfile[subbeg:subend]
                     elif subtag == 'keyword':
                         label = xplfile[subbeg:subend]
+                    elif subtag == 'color':
+                        currentcolor = xplfile[subbeg:subend]
+
                 if xplfile[beg:beg+1] == 'l': # 'l'text
                     position = "right"
                 elif xplfile[beg:beg+1] == 'r':
                     position = "left"
                 else:
                     position = "center"
+                # label options
+                # default
+                labelxoffset = 1;
+                labelcolor = "black";
+                # special cases
+                if label == "R":
+                    labelcolor = "red";
+                elif label == "3":
+                    labelxoffset = -1;
+                # escape _
+                label = label.replace("_","\\\_")
                 # write label out
-                labelsoutput.write('set label "%s" at (%s-946684800.000000), %s %s\n' %(label,xpoint,ypoint,position) )
-
+                labelsoutput.write('set label "%s" at %s, %s '\
+                        '%s offset 0, %i tc rgbcolor "%s"\n' %(label,
+                            xpoint,ypoint,position,labelxoffset,labelcolor) )
             # read colors
             elif tag == 'color':
                 currentcolor = xplfile[beg:end]
@@ -236,21 +258,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext' ),whitespace,float1,whi
                         x2point = xplfile[subbeg:subend]
                     elif subtag == 'int2':
                         y2point = xplfile[subbeg:subend]
-                data.append( ( ('line',currentcolor), "%s %s\n%s %s\n\n" %(x1point, y1point, x2point, y2point) ) )
-
-            elif tag == 'dline':
-                if ('dline',currentcolor) not in datasources:
-                    datasources.append( ('dline',currentcolor) )
-                for subtag, subbeg, subend, subparts in subtags:
-                    if subtag == 'float1':
-                        x1point = xplfile[subbeg:subend]
-                    elif subtag == 'int1':
-                        y1point = xplfile[subbeg:subend]
-                    elif subtag == 'float2':
-                        x2point = xplfile[subbeg:subend]
-                    elif subtag == 'int2':
-                        y2point = xplfile[subbeg:subend]
-                data.append( ( ('dline',currentcolor), "%s %s\n%s %s\n\n" %(x1point, y1point, x2point, y2point) ) )
+                data.append( ( ('line',currentcolor), "%s %s %s %s\n" %(x1point, y1point, x2point, y2point) ) )
 
             # read title
             elif tag == 'title':
@@ -259,32 +267,52 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext' ),whitespace,float1,whi
 
             # read axis labels
             elif tag == 'xlabel':
-                if self.options.xlabel == '':
+                if not self.options.xlabel:
                     xlabel = xplfile[beg+len("xlabel\n"):end-len("\n")]
 
             elif tag == 'ylabel':
-                if self.options.xlabel == '':
+                if not self.options.ylabel:
                     ylabel = xplfile[beg+len("ylabel\n"):end-len("\n")]
 
-        #write optons to gpl file
-        #gploutput.plot('set title "%s"\n' %title )
-        gploutput.setXLabel(xlabel)
-        gploutput.setYLabel(ylabel)
-        gploutput.gplot('load "%s.labels"\n' %basename)
+        # finish close
+        labelsoutput.close()
+        info("data parsing complete")
+        # offset maybe changed
+        xlabeloffset = 0,0.5
+        ylabeloffset = 5,0
+        # write optons to gpl file
+        gploutput.setXLabel(xlabel,offset=xlabeloffset)
+        if self.options.xmax:
+            gploutput.setXRange("[0:%i]" %self.options.xmax)
 
-        #iterate over data sources
+        gploutput.setYLabel(ylabel,offset=ylabeloffset)
+        if self.options.ymax:
+            gploutput.setYRange("[0:%i]" %self.options.ymax)
+
+        if self.options.microview:
+            gploutput.arrowheads();
+
+        #iterate over data sources (color x plottype) and write file
         for index,datasource in enumerate(datasources):
-	    info("new data source")
-            gploutput.plot(basename+".datasets", index, datasource[0], datasource[1])
-
-            # write data with same source in order
+            datafilename = "%s.dataset.%s.%s" %(basename, datasource[1],
+                    datasource[0])
+            dataoutput = open ( datafilename , 'w')
+            wrotedata = False
+            # iterate over all data and write approciate  lines to target file
             for dataline in data:
                 if dataline[0] == datasource:
                     dataoutput.write("%s" %dataline[1] )
-            dataoutput.write("\n \n")
+                    if (wrotedata == False):
+                        wrotedata = True
+            dataoutput.close()
+            # only plot datasource if wrote data, else remove target file
+            if (wrotedata == True):
+                gploutput.plot(basename, datasource[1], datasource[0],
+                        self.options.microview)
+            else:
+                os.remove(datafilename)
 
-        dataoutput.close()
-        labelsoutput.close()
+        gploutput.gplot('load "%s.labels"\n' %basename)
         gploutput.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
     def debugparser(self, filename):
