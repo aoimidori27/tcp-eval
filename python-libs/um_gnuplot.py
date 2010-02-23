@@ -252,39 +252,131 @@ class UmXPlot(UmGnuplot):
 
     def __init__(self, *args, **kwargs):
         UmGnuplot.__init__(self, *args, **kwargs)
+        self.gplot(
+        """
+        set terminal epslatex color solid colortext "default" 5
+        
+        set tics border out mirror;
+        unset x2tics;
+        unset y2tics;
+        set mxtics;
+        set mytics;
 
-    def plot(self, file, index, datatype="default", color="default"):
+        set format x "$%.2f$";
+        set format y "$%.0f$";
+
+        # set position of legend
+        set key on left top box lt rgb "gray50" width -1
+        #
+""")
+        # edit here
+        self.gplot("""
+        # line width
+        LW = 2
+        # styles, nohead for line, heads for arrows
+        set style arrow 1 nohead lw LW lc rgb "blue" #window
+        set style arrow 2 nohead lw LW lc rgb "green" #ack
+        set style arrow 3 nohead lw LW lc rgb "black" #data
+        set style arrow 4 nohead lw LW lc rgb "red" #retransmit
+        set style arrow 5 nohead lw LW lc rgb "pink" #reorder
+        set style arrow 6 nohead lw LW lc rgb "blue" #hw_dup
+        set style arrow 10 nohead lw LW lc rgb "orange" #sinfin
+
+        """)
+
+    def arrowheads(self):
+        self.gplot("""
+        # override definitions with arrowheads
+        set style arrow 3 heads back nofilled size 0.003,90 lw LW lc rgb "black" #data
+        set style arrow 4 heads back nofilled size 0.003,90 lw LW lc rgb "red" #retransmit
+        set style arrow 5 heads back nofilled size 0.003,90 lw LW lc rgb "pink" #reorder
+        set style arrow 6 heads back nofilled size 0.003,90 lw LW lc rgb "blue" #hw_dup
+        set style arrow 10 heads back nofilled size 0.003,90 lw LW lc rgb "orange" #sinfin
+
+        """)
+    def plot(self, basename, color, datatype, microview=False):
+        # defaults settings
         title = ""
-        # generate style, default colors for backward compat
+        plot = False
         if datatype == "line":
-            style = 'lines'
-        elif datatype == "dot":
-            style = 'dots'
-        elif datatype == "box":
-            style = 'points pt 3'
-        elif datatype == "diamond":
-            style = 'points pt 1'
-        elif datatype == "varrow":
-            style = 'points pt 1'
-        elif datatype == "harrow":
-            style = 'points pt 5'
-        elif datatype == "dline":
-            style = 'linepoints pt 4'
-        # um "colors"
-        
-        # dont know what to do
-        
+            style = 'vectors'
         else:
-	        style = "points pt 2"
+            style = 'points'
 
-        # concat plot command
+        # um "colors" override standard definitions (therefore if instead of elif)
+        #window data divided in line and tick
+        if (color == 'window' and datatype == 'line'):
+            style = 'vectors arrowstyle 1'
+            title = 'Advertised Window'
+            plot = True
+        elif (color == 'window' and datatype == 'tick'):
+            style = 'points lw LW lc rgb "blue"'
+            plot = False
+        # ack data: line, tick
+        elif (color == 'ack' and datatype == 'line'):
+            style = 'vectors arrowstyle 2'
+            title = 'Cumulative ACK'
+            plot = True
+        elif (color == 'ack' and datatype == 'tick'):
+            style == 'points lw LW lc rgb "green"'
+            plot = False
+        # data data diamond, line, varrow
+        elif (color == 'data' and datatype == 'line'):
+            style = 'vectors arrowstyle 3'
+            title = "Sent Segments"
+            if microview:
+                plot = True
+        elif (color == 'data' and datatype == 'varrow'):
+            style = 'points pt 8 ps 0.2 lw 2 lc rgb "black"'
+            title = "Sent Segment"
+            if not microview:
+                plot = True
+
+        # misc data points, print diamonds in standardview, 
+        # arrows in microview
+        elif (color == 'retransmit' and datatype =='line'):
+            style = 'vectors arrowstyle 4'
+            title = "Retransmitted Segment"
+            if microview:
+                plot = True
+        elif (color == 'retransmit' and datatype == 'varrow'):
+            style = 'points pt 8 ps 1 lw 2 lc rgb "red"'
+            title = "Retransmitted Segment"
+            if not microview:
+                plot = True
+        elif (color == 'reorder' and datatype == 'line'):
+            style = 'vectors arrowstyle 5'
+            title = "Reordered Segment"
+            plot = True
+        elif (color == 'duplicate' and datatype == 'line'):
+            style = 'vectors arrowstyle 5'
+            title = "Duplicate Segment"
+            plot = True
+
+        # garbade datatypes, you usually dont plot them
+        # sinfin
+        elif (color == 'sinfin' and datatype == 'line'):
+            style = 'vectors arrowstyle 10'
+            title = ""
+            plot = False
+        elif (color == 'sinfin' and datatype == 'dots'):
+            plot = False
+
+        # if no title is defined, set "notitle"
         if title:
-            titlestr = "title \"%s\"" %title
+            title = "title \"%s\"" %title
         else:
-            titlestr = "notitle"
-        cmd = '"%s" index %s using ($1-946684800.0):2 with %s %s' %(file,
-                index, style,titlestr)
-        UmGnuplot.plot(self, cmd)
+            title = "notitle"
+        # concat plotcmd, for line data use 4 parameter style, else 2 parameter
+        if datatype == 'line':
+            cmd = '"%s.dataset.%s.%s" using 1:2:($3-$1):($4-$2) with %s %s' %(basename,
+                color, datatype, style, title)
+        else:
+            cmd = '"%s.dataset.%s.%s" using 1:2 with %s %s' %(basename,
+                            color, datatype, style, title)
+
+        if (plot == True):
+            UmGnuplot.plot(self, cmd)
 
     def rawPlot(self, *args, **kwargs):
         UmGnuplot.plot(self, *args, **kwargs)
