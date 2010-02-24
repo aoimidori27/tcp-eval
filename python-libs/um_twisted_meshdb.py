@@ -3,6 +3,7 @@
 
 # python imports
 import socket
+import time
 from logging import info, debug, warn, error, critical
 
 from twisted.internet import defer, utils, reactor
@@ -27,6 +28,35 @@ class MeshDbPool(adbapi.ConnectionPool):
                                        cp_max = 3,
                                        cp_openfun = initConnection,
                                        cp_reconnect = True)
+        # interactive timeout of mysql server
+        self._conn_timeout = 5
+
+        # connections starttime, key is threadid
+        self._conn_starttime = dict()
+
+    def connect(self, *args, **kwargs):
+        """Overrides ConnectionPool.connect to avoid LostConnection errors
+           with MySQLdb, even with cp_reconnect=True"""
+        
+        conn = adbapi.ConnectionPool.connect(self, *args, **kwargs)
+    
+        tid = self.threadID()
+
+        start = self._conn_starttime.get(tid)
+        now = time.time()
+        if not start:
+            # new connection
+            debug("%u: Established new DB connection." %tid)
+        elif (now - start >= self._conn_timeout):
+            debug("%u: DB Connection not used for %s seconds reconnecting..." %(tid, self._conn_timeout))
+            self.disconnect(conn)
+            conn = adbapi.ConnectionPool.connect(self, *args, **kwargs)
+
+        # update start time
+        self._conn_starttime[tid] = now
+
+        return conn
+
     @staticmethod
     def _queryErrback(failure):
         twisted_log_failure(failure, error) 
