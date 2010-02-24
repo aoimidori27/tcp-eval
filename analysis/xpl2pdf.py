@@ -87,7 +87,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     action = "store", dest = "ymax",
                     help = "gnuplot y range [default: let gnuplot decide]")
         self.parser.add_option("--microview",
-                    action = "store", dest = "microview",
+                    action = "store_true", dest = "microview",
                     help = "enable microview (use arrowheads etc) [default: no]")
         self.parser.add_option('-O', '--output', metavar="OutDir",
                     action = 'store', type = 'string', dest = 'outdir',
@@ -152,18 +152,18 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     position = "center"
                 # label options
                 # default
-                labelxoffset = 1;
+                labelxoffset = 0.5;
                 labelcolor = "black";
                 # special cases
                 if label == "R":
                     labelcolor = "red";
                 elif label == "3":
-                    labelxoffset = -1;
+                    labelxoffset = -0.8;
                 # escape _
                 label = label.replace("_","\\\_")
                 # write label out
                 labelsoutput.write('set label "%s" at %s, %s '\
-                        '%s offset 0, %i tc rgbcolor "%s"\n' %(label,
+                        '%s offset 0, %f tc rgbcolor "%s"\n' %(label,
                             xpoint,ypoint,position,labelxoffset,labelcolor) )
             # read colors
             elif tag == 'color':
@@ -279,7 +279,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         info("data parsing complete")
         # offset maybe changed
         xlabeloffset = 0,0.5
-        ylabeloffset = 5,0
+        ylabeloffset = 4,0
         # write optons to gpl file
         gploutput.setXLabel(xlabel,offset=xlabeloffset)
         if self.options.xmax:
