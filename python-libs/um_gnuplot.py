@@ -392,6 +392,12 @@ class UmXPlot(UmGnuplot):
             if not microview:
                 plot = True
 
+        elif (color == 'icmp' and datatype == 'diamond'):
+            style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "yellow"'
+            title = "ICMP"
+            if not microview:
+                plot = True
+
         # garbade datatypes, you usually dont plot them
         # sinfin
         elif (color == 'sinfin' and datatype == 'line'):
