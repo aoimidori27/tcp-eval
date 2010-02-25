@@ -21,7 +21,10 @@ from um_application import Application
 class xpl2gpl(Application):
     """Class to convert xplot/tcptrace files to gnuplot files"""
 
-    declaration = r'''
+    def __init__(self):
+        Application.__init__(self)
+
+        self.declaration = r'''
 root        :=    timeval,title,xlabel,ylabel,(diamond / text / varrow / harrow /
                   line / dot / box / tick / color / linebreak)*,end*
 alphanum    :=    [a-zA-Z0-9]
@@ -63,9 +66,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     whitespace,int1,(whitespace,color)*,linebreak,keyword,linebreak
         '''
 
-    def __init__(self):
         # initialization of the option parser
-        Application.__init__(self)
         self.parser.set_usage("usage: %prog [options] <file1> <file2> ..")
         self.parser.set_defaults(parseroutput = False, outdir = "./")
         self.parser.add_option("-p", "--parseroutput",
@@ -100,17 +101,9 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     help = "use the file as config file for LaTeX. "\
                     "No default packages will be loaded.")
 
+    def set_option(self):
+        """Set the options"""
 
-    def main(self):
-        self.prepare()
-        for arg in self.args:
-            if self.options.parseroutput:
-                self.debugparser(arg)
-            else:
-                self.work(arg)
-
-    def prepare(self):
-        self.parse_option()
         Application.set_option(self)
         for entry in self.args:
             if not os.path.isfile(entry):
@@ -328,6 +321,19 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         pprint.pprint(debugparser.parse(file))
         info("completed debug parsing")
         exit(0)
+
+    def run(self):
+        for arg in self.args:
+            if self.options.parseroutput:
+                self.debugparser(arg)
+            else:
+                self.work(arg)
+
+    def main(self):
+        self.parse_option()
+        self.set_option()
+        self.run()
+
 
 if __name__ == "__main__":
     xpl2gpl().main()
