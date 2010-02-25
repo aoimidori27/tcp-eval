@@ -29,7 +29,7 @@ class MeshDbPool(adbapi.ConnectionPool):
                                        cp_openfun = initConnection,
                                        cp_reconnect = True)
         # interactive timeout of mysql server
-        self._conn_timeout = 5
+        self._conn_timeout = 27000
 
         # connections starttime, key is threadid
         self._conn_starttime = dict()
