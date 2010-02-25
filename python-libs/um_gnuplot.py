@@ -79,6 +79,9 @@ class UmGnuplot():
     def setTimeFmt(self, timefmt):
         self.gplot("set timefmt %s" %timefmt)
 
+    def setRatio(self, ratio):
+        self.gplot('set size ratio %f' %ratio)
+
     def plot(self, cmd):
         """Extends plotcmd with cmd"""
 
