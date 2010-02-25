@@ -70,7 +70,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         self.parser.set_defaults(parseroutput = False, outdir = "./")
         self.parser.add_option("-p", "--parseroutput",
                     action = "store_true", dest = "parseroutput",
-                    help = "debug parsing [default: %default]")
+                    help = "debug parsing [default: no]")
         self.parser.add_option("--title", metavar = "text",
                     action = "store", dest = "title",
                     help = "gnuplot title [default: use xplot title]")
@@ -82,10 +82,13 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     help = "gnuplot x range [default: let gnuplot decide]")
         self.parser.add_option("--ylabel", metavar = "text",
                     action = "store", dest = "ylabel",
-                    help = "gnuplot y label [default: use yplot xlabel]")
+                    help = "gnuplot y label [default: use xplot ylabel]")
         self.parser.add_option("--ymax", metavar = "NUM", type = "int",
                     action = "store", dest = "ymax",
                     help = "gnuplot y range [default: let gnuplot decide]")
+        self.parser.add_option("--ratio", metavar = "FRAC", type = "float",
+                    action = "store", dest = "ratio",
+                    help = "gnuplot aspect ratio [default: let gnuplot decide]")
         self.parser.add_option("--microview",
                     action = "store_true", dest = "microview",
                     help = "enable microview (use arrowheads etc) [default: no]")
@@ -289,6 +292,8 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         if self.options.ymax:
             gploutput.setYRange("[0:%i]" %self.options.ymax)
 
+        if self.options.ratio:
+            gploutput.setRatio(self.options.ratio);
         if self.options.microview:
             gploutput.arrowheads();
 
