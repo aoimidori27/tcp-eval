@@ -47,7 +47,7 @@ color       :=    ( 'green' / 'yellow' / 'white' / 'orange' / 'blue' / 'magenta'
                     'red' / 'purple' / 'pink' / 'window' / 'ack' / 'sack' / 'data' /
                     'retransmit' / 'duplicate' / 'reorder'/ 'text' / 'default' /
                     'sinfin' / 'push' / 'ecn' / 'urgent' / 'probe' / 'a2bseg'
-                    /'b2aseg'/ 'nosampleack' /'ambigousack' )
+                    /'b2aseg'/ 'nosampleack' /'ambigousack' / 'icmp' )
 harrow      :=    ( 'larrow' / 'rarrow'),whitespace,float1,whitespace,int1,
                     linebreak
 varrow      :=    ( 'darrow' / 'uarrow'),whitespace,float1,whitespace,int1,
