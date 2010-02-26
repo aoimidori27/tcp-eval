@@ -251,12 +251,7 @@ def test_flowgrind(mrs,
             warn("Failed to start tcpdump on %s: %s" %(dst.getHostname(),
                                                        dres[1].getErrorMessage()))
 
-    # TODO(hannemann): maybe a timeout needs to be implemented
-    (stdout, stderr, rc) = yield twisted_execute(cmd, shell = False)
-    # TODO(hannemann): use pipes instead
-    log_file.write(stdout)
-  
-    result = rc
+    result = yield mrs.local_execute(" ".join(cmd), log_file, timeout=flowgrind_duration+3)
 
     if flowgrind_dump:
         yield mrs.xmlrpc_many([src.getHostname(),dst.getHostname()],

@@ -217,6 +217,10 @@ class Measurement(Application):
         return defer.DeferredList(deferredList, consumeErrors=True)
 
 
+    def local_execute(self, cmd, log_file, *args, **kwargs):
+        """Execute command locally"""
+        return self.remote_execute("localhost", cmd, log_file, *args, **kwargs)
+
 
     @defer.inlineCallbacks
     def remote_execute(self, host, cmd, log_file=None, **kwargs):
