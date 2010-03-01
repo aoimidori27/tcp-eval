@@ -154,8 +154,10 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 # special cases
                 if label == "R":
                     labelcolor = "red";
-                elif label == "3":
+                elif label == "3" or label == "2" or label == "1":
                     labelxoffset = -0.8;
+                elif label == "S":
+                    labelxoffset = +0.8;
                 # escape _
                 label = label.replace("_","\\\_")
                 # write label out
