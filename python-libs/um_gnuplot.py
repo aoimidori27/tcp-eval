@@ -109,8 +109,12 @@ class UmGnuplot():
         self.setOutput(texfilename)
 
         # do the actual plotting
-        debug(self._plotcmd)
-        self.gplot(self._plotcmd)
+        if self._plotcmd:
+            debug(self._plotcmd)
+            self.gplot(self._plotcmd)
+        else:
+            error("Nothing to plot, maybe not a xplot-color file?")
+            quit(1)
 
         info("Generating %s" %gplotfilename)
         self.gplot.save(gplotfilename)
