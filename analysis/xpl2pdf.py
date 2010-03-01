@@ -264,12 +264,13 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
             # read axis labels
             elif tag == 'xlabel':
                 if not self.options.xlabel:
-                    xlabel = xplfile[beg+len("xlabel\n"):end-len("\n")]
+                    # xlabel = xplfile[beg+len("xlabel\n"):end-len("\n")
+                    xlabel = "Time [$\\\\si{\\\\second}$]"
 
             elif tag == 'ylabel':
                 if not self.options.ylabel:
-                    ylabel = xplfile[beg+len("ylabel\n"):end-len("\n")]
-
+                    # ylabel = xplfile[beg+len("ylabel\n"):end-len("\n")]
+                    ylabel = "Sequence Offset [$\\\\si{\\\\byte}$]"
         # finish close
         labelsoutput.close()
         info("data parsing complete")
