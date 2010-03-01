@@ -27,13 +27,11 @@ class NeighborsEvaluationMeasurement(measurement.Measurement):
         # common options used for all tests
         opts = dict( ping_size        = 100,
                      ping_interval    = 0.07,
-                     ping_count       = 1000,
+                     ping_count       = 200,
                     )
 
         # test nodes 1-45
-        #testnodes = range(1,46)
- 	testnodes = [ 47, 48 ]
-        
+        testnodes = range(1,46)
 
         runs = self.generate_pair_permutations(testnodes)
 
@@ -43,7 +41,7 @@ class NeighborsEvaluationMeasurement(measurement.Measurement):
         # inner loop with different scenario settings
         scenario   =  dict( scenario_label = "Neighbor", tprofile = "minimum"  )
 
-        #yield self.switchTestbedProfile(scenario["tprofile"])
+        yield self.switchTestbedProfile(scenario["tprofile"])
 
         for it in iterations:
             for run_no in range(len(runs)):
