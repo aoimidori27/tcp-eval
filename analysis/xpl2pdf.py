@@ -149,19 +149,24 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     position = "center"
                 # label options
                 # default
-                labelxoffset = 0.5;
-                labelcolor = "black";
+                printthis = True
+                labelxoffset = 0.5
+                labelcolor = "black"
                 # special cases
                 if label == "R":
                     labelcolor = "red";
                 elif label == "3" or label == "2" or label == "1":
-                    labelxoffset = -0.8;
+                    printthis = False
+                elif label == "3DUPACK":
+                    labelxoffset = -0.8
+                # dont print S (sack) labels
                 elif label == "S":
-                    labelxoffset = +0.8;
+                    printthis = False
                 # escape _
                 label = label.replace("_","\\\_")
                 # write label out
-                labelsoutput.write('set label "%s" at %s, %s '\
+                if printthis:
+                    labelsoutput.write('set label "%s" at %s, %s '\
                         '%s offset 0, %f tc rgbcolor "%s"\n' %(label,
                             xpoint,ypoint,position,labelxoffset,labelcolor) )
             # read colors
