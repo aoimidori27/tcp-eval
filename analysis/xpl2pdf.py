@@ -78,9 +78,6 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         self.parser.add_option("--xlabel", metavar = "text",
                     action = "store", dest = "xlabel",
                     help = "gnuplot x label [default: use xplot xlabel]")
-        self.parser.add_option("--xmax", metavar = "NUM", type = "int",
-                    action = "store", dest = "xmax",
-                    help = "gnuplot x range [default: let gnuplot decide]")
         self.parser.add_option("--ylabel", metavar = "text",
                     action = "store", dest = "ylabel",
                     help = "gnuplot y label [default: use xplot ylabel]")
@@ -126,6 +123,10 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         info("starting parsing")
         taglist = TextTools.tag(xplfile, simpleparser)
         currentcolor = title = xlabel = ylabel = ""
+        # used to generate default XRange 
+        xmin = sys.maxint
+        xmax = 0.0
+
         for tag, beg, end, subtags in taglist[1]:
         # read options and labels from parse tree
         # convert keyword labels
@@ -247,11 +248,15 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     datasources.append( ('line',currentcolor) )
                 for subtag, subbeg, subend, subparts in subtags:
                     if subtag == 'float1':
-                        x1point = xplfile[subbeg:subend]
+                        x1point = float(xplfile[subbeg:subend])
+                        if x1point < xmin:
+                            xmin = x1point
                     elif subtag == 'int1':
                         y1point = xplfile[subbeg:subend]
                     elif subtag == 'float2':
-                        x2point = xplfile[subbeg:subend]
+                        x2point = float(xplfile[subbeg:subend])
+                        if x2point > xmax:
+                            xmax = x2point
                     elif subtag == 'int2':
                         y2point = xplfile[subbeg:subend]
                 data.append( ( ('line',currentcolor), "%s %s %s %s\n" %(x1point, y1point, x2point, y2point) ) )
@@ -279,17 +284,19 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         ylabeloffset = 4,0
         # write optons to gpl file
         gploutput.setXLabel(xlabel,offset=xlabeloffset)
-        if self.options.xmax:
-            gploutput.setXRange("[0:%i]" %self.options.xmax)
+        debug("XRange [%s:%s]" %(xmin,xmax) )
+        gploutput.setXRange("[%s:%s]" %(xmin,xmax) )
 
         gploutput.setYLabel(ylabel,offset=ylabeloffset)
+
         if self.options.ymax:
-            gploutput.setYRange("[0:%i]" %self.options.ymax)
+            debug("YRange [*:%s]" %self.options.ymax )
+            gploutput.setYRange("[*:%s]" %self.options.ymax )
 
         if self.options.ratio:
-            gploutput.setRatio(self.options.ratio);
+            gploutput.setRatio(self.options.ratio)
         if self.options.microview:
-            gploutput.arrowheads();
+            gploutput.arrowheads()
 
         #iterate over data sources (color x plottype) and write file
         for index,datasource in enumerate(datasources):
