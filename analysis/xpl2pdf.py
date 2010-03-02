@@ -154,11 +154,12 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 labelcolor = "black"
                 # special cases
                 if label == "R":
-                    labelcolor = "red";
+                    labelcolor = "red"
                 elif label == "3" or label == "2" or label == "1":
                     printthis = False
                 elif label == "3DUP":
                     labelxoffset = -0.8
+                    labelcolor = "green"
                 # dont print S (sack) labels
                 elif label == "S":
                     printthis = False
