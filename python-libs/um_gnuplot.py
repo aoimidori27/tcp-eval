@@ -284,13 +284,16 @@ class UmXPlot(UmGnuplot):
         OTHERPS = 0.8 #retransmit, reorders etc are plotted big
 
         # styles, nohead for line, heads for arrows
+        # for aditional colors check
+        # http://www.uni-hamburg.de/Wiss/FB/15/Sustainability/schneider/gnuplot/colors.htm
+        #
         set style arrow 1 nohead lw LW lc rgb "blue" #window
         set style arrow 2 nohead lw LW lc rgb "green" #ack
         set style arrow 3 nohead lw LW lc rgb "black" #data
         set style arrow 4 nohead lw LW lc rgb "red" #retransmit
         set style arrow 5 nohead lw LW lc rgb "cyan" #reorder
         set style arrow 6 nohead lw LW lc rgb "magenta" #hw_dup
-        set style arrow 7 nohead lw LW lc rgb "pink" #sack
+        set style arrow 7 nohead lw LW lc rgb "purple" #sack
         set style arrow 10 nohead lw LW lc rgb "orange" #sinfin
         """)
 
@@ -301,7 +304,7 @@ class UmXPlot(UmGnuplot):
         set style arrow 4 heads back nofilled size 0.004,90 lw LW lc rgb "red" #retransmit
         set style arrow 5 heads back nofilled size 0.004,90 lw LW lc rgb "cyan" #reorder
         set style arrow 6 heads back nofilled size 0.004,90 lw LW lc rgb "magenta" #hw_dup
-        set style arrow 7 heads back nofilled size 0.004,90 lw LW lc rgb "pink" #reorde
+        set style arrow 7 heads back nofilled size 0.004,90 lw LW lc rgb "purple" #sack
         set style arrow 10 heads back nofilled size 0.004,90 lw LW lc rgb "orange" #sinfin
 
         """)
@@ -409,15 +412,15 @@ class UmXPlot(UmGnuplot):
             title = ''
             if microview:
                 plot = True
-                UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "pink" title "SACK"')
+                UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "purple" title "SACK"')
 
         # single acks, plot only in microview
         elif (color == 'sack' and datatype == 'tick'):
-            style = 'points pointtype 7 pointsize OTHERPS linewidth LW linecolor rgb "pink"'
+            style = 'points pointtype 7 pointsize OTHERPS linewidth LW linecolor rgb "purple"'
             title = ""
             if not microview:
                 plot = True
-                UmGnuplot.plot(self, '1/0 with points pointtype 7 pointsize OTHERPS linewidth LW linecolor rgb "pink" title "SACK"')
+                UmGnuplot.plot(self, '1/0 with points pointtype 7 pointsize OTHERPS linewidth LW linecolor rgb "purple" title "SACK"')
 
         # garbade datatypes, you usually dont plot them
         # sinfin
