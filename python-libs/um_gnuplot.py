@@ -287,8 +287,10 @@ class UmXPlot(UmGnuplot):
         # for aditional colors check
         # http://www.uni-hamburg.de/Wiss/FB/15/Sustainability/schneider/gnuplot/colors.htm
         #
+        # reminder: label defaults are in xpl2pdf.py
+        #
         set style arrow 1 nohead lw LW lc rgb "blue" #window
-        set style arrow 2 nohead lw LW lc rgb "green" #ack
+        set style arrow 2 nohead lw LW lc rgb "#32CD32" #ack
         set style arrow 3 nohead lw LW lc rgb "black" #data
         set style arrow 4 nohead lw LW lc rgb "red" #retransmit
         set style arrow 5 nohead lw LW lc rgb "cyan" #reorder
@@ -337,7 +339,7 @@ class UmXPlot(UmGnuplot):
             plot = True
         # single acks, plot only in microview
         elif (color == 'ack' and datatype == 'tick'):
-            style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "green"'
+            style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "#32CD32"'
             title = ""
             if microview:
                 plot = True
