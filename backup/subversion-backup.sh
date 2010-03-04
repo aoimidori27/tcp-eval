@@ -1,4 +1,7 @@
 #!/bin/bash
+########################################
+# Subversion incremental dumps         #
+########################################
 
 umask 027
 BACKUP_DIR=${1:-/dumps/subversion}
