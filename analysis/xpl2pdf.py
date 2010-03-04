@@ -170,7 +170,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     printthis = False
                 elif label == "3DUP":
                     labelxoffset = -1
-                    labelcolor = "green"
+                    labelcolor = "#32CD32"
                     labelrotation = 90
                 # dont print S (sack) labels
                 elif label == "S":
