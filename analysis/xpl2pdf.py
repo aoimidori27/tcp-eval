@@ -7,6 +7,7 @@ import math
 import optparse
 import sys
 import subprocess
+import glob
 from logging import info, debug, warn, error
 from simpleparse import generator
 from simpleparse.parser import Parser
@@ -87,9 +88,10 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         self.parser.add_option("--ratio", metavar = "FRAC", type = "float",
                     action = "store", dest = "ratio",
                     help = "gnuplot aspect ratio [default: let gnuplot decide]")
-        self.parser.add_option("--microview",
-                    action = "store_true", dest = "microview",
+        self.parser.add_option("--microview", action = "store_true", dest = "microview",
                     help = "enable microview (use arrowheads etc) [default: no]")
+        self.parser.add_option("--save", action = "store_true", dest = "save",
+                    help = "save gnuplot and tex files [default: clean up]")
         self.parser.add_option('-O', '--output', metavar="OutDir",
                     action = 'store', type = 'string', dest = 'outdir',
                     help = 'Set outputdirectory [default: %default]')
@@ -106,16 +108,19 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
             if not os.path.isfile(entry):
                 error("%s not found." %entry)
                 exit(1)
+        if not os.path.exists(self.options.outdir):
+            info("%s does not exist, creating. " % self.options.outdir)
+            os.mkdir(self.options.outdir)
 
     def work(self, filename):
-
+        outdir = self.options.outdir
         basename = os.path.splitext(os.path.basename( filename ))[0]
         xplfile = open ( filename ).read()
 
         simpleparser = generator.buildParser(self.declaration).parserbyname('root')
 
         gploutput = UmXPlot(basename)
-        labelsoutput = open ( "%s.labels" %(basename) , 'w')
+        labelsoutput = open ( "%s/%s.labels" %(outdir,basename) , 'w')
 
         # start the work
         datasources = list()
@@ -154,12 +159,12 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 labelcolor = "black"
                 # special cases
                 if label == "R":
-                    labelcolor = "red"
+                    labelcolor = "red";
                 elif label == "3" or label == "2" or label == "1":
                     printthis = False
                 elif label == "3DUP":
                     labelxoffset = -0.8
-                    labelcolor = "green"
+                    labelcolor = "green";
                 # dont print S (sack) labels
                 elif label == "S":
                     printthis = False
@@ -168,7 +173,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 # write label out
                 if printthis:
                     labelsoutput.write('set label "%s" at %s, %s '\
-                        '%s offset 0, %f tc rgbcolor "%s"\n' %(label,
+                            '%s offset 0, %f tc rgbcolor "%s"\n' %(label,
                             xpoint,ypoint,position,labelxoffset,labelcolor) )
             # read colors
             elif tag == 'color':
@@ -308,8 +313,8 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
 
         #iterate over data sources (color x plottype) and write file
         for index,datasource in enumerate(datasources):
-            datafilename = "%s.dataset.%s.%s" %(basename, datasource[1],
-                    datasource[0])
+            datafilename = "%s/%s.dataset.%s.%s" %(outdir, 
+                    basename, datasource[1], datasource[0])
             dataoutput = open ( datafilename , 'w')
             wrotedata = False
             # iterate over all data and write approciate  lines to target file
@@ -321,13 +326,24 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
             dataoutput.close()
             # only plot datasource if wrote data, else remove target file
             if (wrotedata == True):
-                gploutput.plot(basename, datasource[1], datasource[0],
+                gploutput.plot(outdir, basename, datasource[1], datasource[0],
                         self.options.microview)
             else:
                 os.remove(datafilename)
 
-        gploutput.gplot('load "%s.labels"\n' %basename)
-        gploutput.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        gploutput.gplot('load "%s/%s.labels"\n' %(outdir,basename) )
+        gploutput.save(outdir, self.options.debug, self.options.cfgfile)
+
+    def cleanup(self, filename):
+        os.chdir(self.options.outdir)
+        basename = os.path.splitext(os.path.basename( filename ))[0]
+        info("Cleaning Up %s/%s, use --save if you want to prevent this" %(self.options.outdir,basename) )
+        os.remove("%s.labels" %basename )
+        os.remove("%s.eps" %basename )
+        os.remove("%s.gplot" %basename )
+        os.remove("%s.tex" %basename )
+        for filename in glob.glob("%s.dataset.*" %basename):
+            os.remove(filename)
 
     def debugparser(self, filename):
         file = open(filename).read()
@@ -344,6 +360,8 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 self.debugparser(arg)
             else:
                 self.work(arg)
+                if not self.options.debug and not self.options.save:
+                    self.cleanup(arg)
 
     def main(self):
         self.parse_option()
