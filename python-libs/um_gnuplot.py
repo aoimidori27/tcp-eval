@@ -105,7 +105,7 @@ class UmGnuplot():
 
         info("Generating %s" %texfilename)
         # always epslatex output
-        self.gplot('set terminal epslatex color solid "default" 9')
+        self.gplot('set terminal epslatex input color solid "default" 9')
         self.setOutput(texfilename)
 
         # do the actual plotting
@@ -308,7 +308,7 @@ class UmXPlot(UmGnuplot):
         set style arrow 10 heads back nofilled size 0.004,90 lw LW lc rgb "orange" #sinfin
 
         """)
-    def plot(self, basename, color, datatype, microview=False):
+    def plot(self, outdir, basename, color, datatype, microview=False):
         # defaults settings
         title = ""
         plot = False
@@ -439,11 +439,11 @@ class UmXPlot(UmGnuplot):
 
         # concat plotcmd, for line data use 4 parameter style, else 2 parameter
         if datatype == 'line':
-            cmd = '"%s.dataset.%s.%s" using 1:2:($3-$1):($4-$2) with %s %s' %(basename,
-                color, datatype, style, title)
+            cmd = '"%s/%s.dataset.%s.%s" using 1:2:($3-$1):($4-$2) with %s %s' %(outdir,
+                    basename, color, datatype, style, title)
         else:
-            cmd = '"%s.dataset.%s.%s" using 1:2 with %s %s' %(basename,
-                            color, datatype, style, title)
+            cmd = '"%s/%s.dataset.%s.%s" using 1:2 with %s %s' %(outdir, basename,
+                    color, datatype, style, title)
 
         if (plot == True):
             UmGnuplot.plot(self, cmd)
