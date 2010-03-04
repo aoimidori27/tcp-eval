@@ -155,16 +155,17 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 # label options
                 # defaults
                 printthis = True
-                labelxoffset = 0.3
+                labelxoffset = 0.4
                 labelyoffset = 0.0
                 labelcolor = "black"
                 labelrotation = 0
                 labelsize = 5
                 # special cases
                 if label == "R":
-                    labelcolor = "red";
-                    labelxoffset = -0.15
-                    labelyoffset = 0.7
+                    labelcolor = "red"
+                    if self.options.microview:
+                        labelxoffset = -0.15
+                        labelyoffset = 0.7
                 elif label == "3" or label == "2" or label == "1":
                     printthis = False
                 elif label == "3DUP":
