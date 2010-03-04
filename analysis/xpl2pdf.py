@@ -125,10 +125,10 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         # start the work
         datasources = list()
         data = list()
-        info("starting parsing")
+        info("starting parsing of %s" %(filename) )
         taglist = TextTools.tag(xplfile, simpleparser)
         currentcolor = title = xlabel = ylabel = ""
-        # used to generate default XRange 
+        # used to generate default XRange
         xmin = sys.maxint
         xmax = 0.0
 
@@ -153,18 +153,24 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 else:
                     position = "center"
                 # label options
-                # default
+                # defaults
                 printthis = True
-                labelxoffset = 0.5
+                labelxoffset = 0.3
+                labelyoffset = 0.0
                 labelcolor = "black"
+                labelrotation = 0
+                labelsize = 5
                 # special cases
                 if label == "R":
                     labelcolor = "red";
+                    labelxoffset = -0.15
+                    labelyoffset = 0.7
                 elif label == "3" or label == "2" or label == "1":
                     printthis = False
                 elif label == "3DUP":
-                    labelxoffset = -0.8
-                    labelcolor = "green";
+                    labelxoffset = -1
+                    labelcolor = "green"
+                    labelrotation = 90
                 # dont print S (sack) labels
                 elif label == "S":
                     printthis = False
@@ -172,9 +178,9 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 label = label.replace("_","\\\_")
                 # write label out
                 if printthis:
-                    labelsoutput.write('set label "%s" at %s, %s '\
-                            '%s offset 0, %f tc rgbcolor "%s"\n' %(label,
-                            xpoint,ypoint,position,labelxoffset,labelcolor) )
+                    labelsoutput.write('set label "\\\\fontsize{%s}{%s}\\\\selectfont %s" at %s, %s '\
+                            '%s offset %f, %f tc rgbcolor "%s" rotate by %s\n' %(labelsize, labelsize/1.2, label,
+                            xpoint,ypoint,position,labelyoffset,labelxoffset,labelcolor,labelrotation) )
             # read colors
             elif tag == 'color':
                 currentcolor = xplfile[beg:end]
@@ -337,7 +343,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
     def cleanup(self, filename):
         os.chdir(self.options.outdir)
         basename = os.path.splitext(os.path.basename( filename ))[0]
-        info("Cleaning Up %s/%s, use --save if you want to prevent this" %(self.options.outdir,basename) )
+        info("Cleaning Up %s/%s" %(self.options.outdir,basename) )
         os.remove("%s.labels" %basename )
         os.remove("%s.eps" %basename )
         os.remove("%s.gplot" %basename )
@@ -360,8 +366,13 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 self.debugparser(arg)
             else:
                 self.work(arg)
-                if not self.options.debug and not self.options.save:
-                    self.cleanup(arg)
+
+        if not self.options.debug and not self.options.save:
+            for arg in self.args:
+                self.cleanup(arg)
+            info("use --save if you want to prevent this")
+
+        info("work complete")
 
     def main(self):
         self.parse_option()
