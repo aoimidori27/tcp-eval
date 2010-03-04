@@ -69,7 +69,8 @@ Remarks:
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
                                  multicast = "224.66.66.66", offset = 0, staticroutes=False,
-                                 multipath=False, maxpath=2, dry_run=False)
+                                 multipath=False, maxpath=2, dry_run=False,
+                                 userscriptspath="%s/config/vmesh-helper" %os.environ["HOME"])
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
                                help = "Apply settings for all hosts in config")
@@ -92,7 +93,10 @@ Remarks:
         self.parser.add_option("-u", "--userscripts",
                                action = "store_true", dest = "userscripts",
                                help = "Execute user scripts for every node if available "\
-                                      "(located in ~/config/vmesh_helper/vmrouter<NUMBER>)")
+                                      "(located in userscripts-path)")
+        self.parser.add_option("--userscripts-path",
+                               action = "store", dest = "userscriptspath", metavar="PATH",
+                               help = "Path for the userscripts (default: %default)")
         self.parser.add_option("-s", "--staticroutes",
                                action = "store_true", dest = "staticroutes",
                                help = "Setup static routing according to topology "\
@@ -518,7 +522,7 @@ Remarks:
 
     def setup_user_helper(self):
         if self.options.userscripts:
-            cmd = ["%s/config/vmesh-helper/%s" %(os.environ["HOME"], self.node.getHostname())]
+            cmd = ["%s/%s" %(self.options.userscriptspath, self.node.getHostname())]
             if os.path.isfile(cmd[0]):
                 info("Executing user-provided helper program...")
                 try:
@@ -567,6 +571,9 @@ Remarks:
 
                 if self.options.userscripts:
                     cmd.append("-u")
+
+                if self.options.userscriptspath:
+                    cmd.append("--userscripts-path=%s" %self.options.userscriptspath)
 
                 if self.options.offset:
                     cmd.append("-o")
