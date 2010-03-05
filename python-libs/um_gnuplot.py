@@ -157,7 +157,8 @@ class UmHistogram(UmGnuplot):
         self.setXRange((left,right))
 
         # background rect
-        self.gplot('set object 2 rect from %f, graph 0, 0 to %f, graph 1, 0 behind lw 1.0 fc rgb "#98E2E7" fillstyle solid 0.15 border -1' %(left,right))
+        self.gplot('set object 2 rect from %f, graph 0, 0 to %f, graph 1, 0 '\
+                'behind lw 1.0 fc rgb "#98E2E7" fillstyle solid 0.15 border -1' %(left,right))
 
         self._clusters = clusters
 
@@ -262,7 +263,7 @@ class UmXPlot(UmGnuplot):
         self.gplot(
         """
         set terminal epslatex color solid colortext "default" 5
-        
+
         set tics border out mirror;
         unset x2tics;
         unset y2tics;
@@ -310,8 +311,10 @@ class UmXPlot(UmGnuplot):
         set style arrow 10 heads back nofilled size 0.004,90 lw LW lc rgb "orange" #sinfin
 
         """)
+
     def plot(self, outdir, basename, color, datatype, microview=False):
         # defaults settings
+        # no title and dont plot (we use a whitelist for what to plot)
         title = ""
         plot = False
         if datatype == "line":
@@ -360,7 +363,8 @@ class UmXPlot(UmGnuplot):
             if not microview:
                 plot = True
                 # hack for key
-                UmGnuplot.plot(self, '1/0 with points pointtype 7 pointsize OTHERPS linewidth LW linecolor rgb "black" title "Sent Segments"')
+                UmGnuplot.plot(self, '1/0 with points pointtype 7 pointsize OTHERPS '\
+                        'linewidth LW linecolor rgb "black" title "Sent Segments"')
 
         # misc data points, print points in standardview,
         # arrows in microview
@@ -370,7 +374,8 @@ class UmXPlot(UmGnuplot):
             if microview:
                 plot = True
                 # key hack
-                UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "red" title "Retransmitted Segment"')
+                UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "red" '\
+                        'title "Retransmitted Segment"')
 
         elif (color == 'retransmit' and datatype == 'varrow'):
             style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "red"'
@@ -383,7 +388,9 @@ class UmXPlot(UmGnuplot):
             if microview:
                 plot = True
                 # key hack
-                UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "cyan" title "Reordered Segment"')
+                UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "cyan" '\
+                        'title "Reordered Segment"')
+
         elif (color == 'reorder' and datatype == 'varrow'):
             style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "cyan"'
             title = "Reordered Segment"
@@ -395,7 +402,8 @@ class UmXPlot(UmGnuplot):
             title = ""
             if microview:
                 plot = True
-                UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "magenta" title "Duplicate Segment"')
+                UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "magenta" '\
+                        'title "Duplicate Segment"')
 
         elif (color == 'duplicate' and datatype == 'varrow'):
             style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "magenta"'
@@ -406,8 +414,7 @@ class UmXPlot(UmGnuplot):
         elif (color == 'icmp' and datatype == 'diamond'):
             style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "yellow"'
             title = "ICMP"
-            if not microview:
-                plot = True
+            plot = True
 
         elif (color == 'sack' and datatype == 'line'):
             style = 'vectors arrowstyle 7'
@@ -422,7 +429,8 @@ class UmXPlot(UmGnuplot):
             title = ""
             if not microview:
                 plot = True
-                UmGnuplot.plot(self, '1/0 with points pointtype 7 pointsize OTHERPS linewidth LW linecolor rgb "purple" title "SACK"')
+                UmGnuplot.plot(self, '1/0 with points pointtype 7 pointsize OTHERPS '\
+                                'linewidth LW linecolor rgb "purple" title "SACK"')
 
         # garbade datatypes, you usually dont plot them
         # sinfin
