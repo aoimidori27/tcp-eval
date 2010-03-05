@@ -102,17 +102,10 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
 
     def set_option(self):
         """Set the options"""
-
         Application.set_option(self)
-        for entry in self.args:
-            if not os.path.isfile(entry):
-                error("%s not found." %entry)
-                exit(1)
-        if not os.path.exists(self.options.outdir):
-            info("%s does not exist, creating. " % self.options.outdir)
-            os.mkdir(self.options.outdir)
 
     def work(self, filename):
+        """work, work"""
         outdir = self.options.outdir
         basename = os.path.splitext(os.path.basename( filename ))[0]
         xplfile = open ( filename ).read()
@@ -281,49 +274,37 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                         y2point = xplfile[subbeg:subend]
                 data.append( ( ('line',currentcolor), "%s %s %s %s\n" %(x1point, y1point, x2point, y2point) ) )
 
-            # read title
-            elif tag == 'title':
-                if self.options.title == '':
-                    title = xplfile[beg+len("title\n "):end-len("\n")]
-
-            # read axis labels
-            elif tag == 'xlabel':
-                if not self.options.xlabel:
-                    # xlabel = xplfile[beg+len("xlabel\n"):end-len("\n")
-                    xlabel = "Time [$\\\\si{\\\\second}$]"
-
-            elif tag == 'ylabel':
-                if not self.options.ylabel:
-                    # ylabel = xplfile[beg+len("ylabel\n"):end-len("\n")]
-                    ylabel = "Sequence Offset [$\\\\si{\\\\byte}$]"
         # finish close
         labelsoutput.close()
         info("data parsing complete")
-        # offset maybe changed
-        xlabeloffset = 0,0.5
-        ylabeloffset = 4,0
-        # write optons to gpl file
-        gploutput.setXLabel(xlabel,offset=xlabeloffset)
+
+        # write options to gpl file
+        # labels
+        gploutput.setXLabel(self.xlabel,offset=self.xaxislabeloffset)
+        gploutput.setYLabel(self.ylabel,offset=self.yaxislabeloffset)
+
+        # range
         debug("XRange [%s:%s]" %(xmin,xmax) )
         gploutput.setXRange("[%s:%s]" %(xmin,xmax) )
-
-        gploutput.setYLabel(ylabel,offset=ylabeloffset)
 
         if self.options.ymax:
             debug("YRange [*:%s]" %self.options.ymax )
             gploutput.setYRange("[*:%s]" %self.options.ymax )
 
+        # aspect ratio
         if self.options.ratio:
             gploutput.setRatio(self.options.ratio)
+
         if self.options.microview:
             gploutput.arrowheads()
 
         #iterate over data sources (color x plottype) and write file
         for index,datasource in enumerate(datasources):
-            datafilename = "%s/%s.dataset.%s.%s" %(outdir, 
+            datafilename = "%s/%s.dataset.%s.%s" %(outdir,
                     basename, datasource[1], datasource[0])
             dataoutput = open ( datafilename , 'w')
             wrotedata = False
+
             # iterate over all data and write approciate  lines to target file
             for dataline in data:
                 if dataline[0] == datasource:
@@ -331,6 +312,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     if (wrotedata == False):
                         wrotedata = True
             dataoutput.close()
+
             # only plot datasource if wrote data, else remove target file
             if (wrotedata == True):
                 gploutput.plot(outdir, basename, datasource[1], datasource[0],
@@ -340,6 +322,35 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
 
         gploutput.gplot('load "%s/%s.labels"\n' %(outdir,basename) )
         gploutput.save(outdir, self.options.debug, self.options.cfgfile)
+
+    def prepare(self):
+        # checks
+        Application.set_option(self)
+        for entry in self.args:
+            if not os.path.isfile(entry):
+                error("%s not found." %entry)
+                exit(1)
+
+        if not os.path.exists(self.options.outdir):
+            info("%s does not exist, creating. " % self.options.outdir)
+            os.mkdir(self.options.outdir)
+
+        # global configuration for all input files
+
+        # axis labels
+        if self.options.xlabel:
+            self.xlabel = self.options.xlabel
+        else:
+            self.xlabel = "Time [$\\\\si{\\\\second}$]"
+
+        if self.options.ylabel:
+            self.ylabel = self.options.ylabel
+        else:
+            self.ylabel = "Sequence Offset [$\\\\si{\\\\byte}$]"
+
+        # offset may be changed
+        self.xaxislabeloffset = 0,0.5
+        self.yaxislabeloffset = 4,0
 
     def cleanup(self, filename):
         os.chdir(self.options.outdir)
@@ -362,6 +373,8 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         exit(0)
 
     def run(self):
+        self.prepare()
+
         for arg in self.args:
             if self.options.parseroutput:
                 self.debugparser(arg)
@@ -371,7 +384,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         if not self.options.debug and not self.options.save:
             for arg in self.args:
                 self.cleanup(arg)
-            info("use --save if you want to prevent this")
+            info("use --save to prevent this")
 
         info("work complete")
 
