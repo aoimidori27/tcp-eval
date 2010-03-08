@@ -341,15 +341,15 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         if self.options.xlabel:
             self.xlabel = self.options.xlabel
         else:
-            self.xlabel = "Time [$\\\\si{\\\\second}$]"
+            self.xlabel = "Time $[\\\\si{\\\\second}]$"
 
         if self.options.ylabel:
             self.ylabel = self.options.ylabel
         else:
-            self.ylabel = "Sequence Offset [$\\\\si{\\\\byte}$]"
+            self.ylabel = "Sequence Offset $[\\\\si{\\\\byte}]$"
 
         # offset may be changed
-        self.xaxislabeloffset = 0,0.5
+        self.xaxislabeloffset = 0,0.3
         self.yaxislabeloffset = 4,0
 
     def cleanup(self, filename):
