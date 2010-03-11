@@ -43,9 +43,6 @@ class FlowgrindRecordFactory():
                      'krttvar' : float,
                      'krto'    : float,
                      'castate' : lambda x:x,
-                     'cret'    : int,
-                     'cfret'   : int,
-                     'ctret'   : int,
                      'mss'     : int,
                      'mtu'     : int }
 
@@ -119,8 +116,9 @@ class FlowgrindRecordFactory():
             " +(?P<lost>\d+) +(?P<fret>\d+) +(?P<tret>\d+) +(?P<fack>\d+) +(?P<reor>\d+)"\
             " +(?P<krtt>\d+\.\d+) +(?P<krttvar>\d+\.\d+) +(?P<krto>\d+\.\d+)"\
             " +(?P<castate>loss|open|disorder|recovery)"\
-            " +(?P<cret>\d+) +(?P<cfret>\d+) +(?P<ctret>\d+)"\
-            " +(?P<mss>\d+) +(?P<mtu>\d+)",
+            " +(?P<mss>\d+) +(?P<mtu>\d+)"\
+            # optional extension
+            "( +(?P<cret>\d+) +(?P<cfret>\d+) +(?P<ctret>\d+))?",
             # Wed Oct 14 18:21:42 2009: controlling host = vmhost1, number of flows = 1, reporting interval = 0.10s, [tput] = 10**6 bit/second (SVN Rev 5490)
             "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2} \d{2}:\d{2}:\d{2} \d{4}): .* reporting interval = (?P<reporting_interval>\d+\.\d+)"
         ]
