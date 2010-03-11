@@ -59,6 +59,7 @@ class Flowgrindd(RPCService):
         self._name = "flowgrindd"
         self._config = None
         self._daemon = None
+        self._daemon_path = "/usr/local/sbin"
 
     @defer.inlineCallbacks
     def reread_config(self):
@@ -75,7 +76,7 @@ class Flowgrindd(RPCService):
             defer.returnValue(-1)
 
         self._config = assoc
-        self._daemon = "/usr/local/sbin/flowgrindd"
+        self._daemon = os.path.join(self._daemon_path, assoc['exename'])
 
         if not self._config["port"]: self._config["port"] = 5999
 
