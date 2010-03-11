@@ -72,8 +72,11 @@ class FlowgrindRecordFactory():
                             try:
                                 flow[key].append(convert(r[key][i]))
                             except KeyError, inst:
-                                # honor optional values
-                                if not (key == 'dupthresh' and not (r.has_key('dupthresh') and r[key].has_key(i))):
+                                warn('Failed to get r["%s"][%u]' %(key,i))
+                                raise inst
+                            except TypeError, inst:
+                                # ignore optional dupthresh
+                                if not (key == 'dupthresh'):
                                     warn('Failed to get r["%s"][%u]' %(key,i))
                                     raise inst
                     flow['size'] += 1
