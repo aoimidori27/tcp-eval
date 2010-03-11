@@ -123,9 +123,6 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
                     else:
                         yield self.run_test(tests.test_flowgrind, **kwargs)
 
-                    # count overall iterations
-                    self.count += 1
-
                 if parallel:
                     yield defer.DeferredList(tasks)
 
@@ -141,6 +138,9 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
                         """testbed_param_variable=%s\n"""          %(limit, rdelay, reorder, reorder_mode, var))
                     logfile.write(old)
                     logfile.close()
+
+            # count overall iterations
+            self.count += 1
 
     @defer.inlineCallbacks
     def run(self):
