@@ -3,6 +3,7 @@
 
 # python imports
 from logging import info, debug, warn, error, critical
+import os
 
 # twisted imports
 from twisted.internet import defer, threads, protocol, utils
