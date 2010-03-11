@@ -47,22 +47,22 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         info("Setting netem..")
 
         #forward path delay
-        rc = yield self.remote_execute(fdnode, "sudo tc qdisc %s dev eth0 parent 1:2 handle 20: netem delay %ums" %(mode,delay), log_file=sys.stdout)
+        rc = yield self.remote_execute(fdnode, "sudo tc qdisc %s dev eth0 parent 1:2 handle 20: netem delay %ums %ums 20%%" %(mode, delay, (int)(delay * 0.1)), log_file=sys.stdout)
 
         #forward path reordering
-        rc = yield self.remote_execute(frnode, "sudo /home/schulte/tc qdisc %s dev eth0 parent 1:2 handle 10: netem \
-                                                            reorder %u%% reorderdelay %ums" %(mode, reorder, rdelay), log_file=sys.stdout)
+        rc = yield self.remote_execute(frnode, "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:2 handle 10: netem \
+                                                            reorder %u%% reorderdelay %ums %ums 20%%" %(mode, reorder, rdelay, (int)(rdelay * 0.1)), log_file=sys.stdout)
 
         #queue limit
         rc = yield self.remote_execute(qlnode, "sudo tc qdisc %s dev eth0 parent 1:1 handle 10: netem limit %u; \
                                                 sudo tc qdisc %s dev eth0 parent 1:2 handle 20: netem limit %u" %(mode, limit, mode, limit), log_file=sys.stdout)
 
         #reverse path reordering
-        #rc = yield self.remote_execute(rrnode, "sudo /home/schulte/tc qdisc %s dev eth0 parent 1:1 handle 10: netem \
-        #                                                    reorder %u%% reorderdelay %ums" %(mode, reorder, rdelay), log_file=sys.stdout)
+        rc = yield self.remote_execute(rrnode, "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:1 handle 10: netem \
+                                                            reorder %u%% reorderdelay %ums %ums 20%%" %(mode, reorder, rdelay, (int)(rdelay * 0.1)), log_file=sys.stdout)
 
         #reverse path delay
-        rc = yield self.remote_execute(rdnode, "sudo tc qdisc %s dev eth0 parent 1:1 handle 10: netem delay %ums" %(mode, delay), log_file=sys.stdout)
+        rc = yield self.remote_execute(rdnode, "sudo tc qdisc %s dev eth0 parent 1:1 handle 10: netem delay %ums %ums 20%%" %(mode, delay, (int)(delay * 0.1)), log_file=sys.stdout)
 
     @defer.inlineCallbacks
     def run_measurement(self, reorder_mode, var, reorder, rdelay, delay, limit):
@@ -84,17 +84,17 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         iterations  = range(1)
 
         # parallel or consecutive flows?
-        parallel = True
+        parallel    = True
 
         # inner loop with different scenario settings
         scenarios   = [ dict( scenario_label = "Linux Native", flowgrind_cc="reno" ) ]
 
-
         yield self.run_netem(reorder, rdelay, delay, limit, "change")
 
         for it in iterations:
-            tasks = list()
             for scenario_no in range(len(scenarios)):
+                tasks = list()
+                logs = list()
                 for run_no in range(len(runs)):
                     kwargs = dict()
 
@@ -110,6 +110,7 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
 
                     # set logging prefix, tests append _testname
                     self.logprefix="i%03u_s%u_r%u" % (self.count, scenario_no, run_no)
+                    logs.append(self.logprefix)
 
                     # merge parameter configuration for the tests
                     kwargs.update(scenarios[scenario_no])
@@ -122,38 +123,24 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
                     else:
                         yield self.run_test(tests.test_flowgrind, **kwargs)
 
-                        # header for analyze script
-                        logfile = open("%s/%s_test_flowgrind" %(self.options.log_dir, self.logprefix), "r+")
-                        old = logfile.read() # read everything in the file
-                        logfile.seek(0) # rewind
-                        logfile.write("""testbed_param_qlimit=%u
-testbed_param_rdelay=%u
-testbed_param_rrate=%u
-testbed_param_reordering=%s
-testbed_param_variable=%s
-""" %(limit, rdelay, reorder, reorder_mode, var))
-                        logfile.write(old)
-                        logfile.close()
-                        self.count += 1
+                    # count overall iterations
+                    self.count += 1
 
                 if parallel:
                     yield defer.DeferredList(tasks)
 
-                    # header for analyze script
-                    logfile = open("%s/%s_test_flowgrind" %(self.options.log_dir, self.logprefix), "r+")
+                # header for analyze script
+                for prefix in logs:
+                    logfile = open("%s/%s_test_flowgrind" %(self.options.log_dir, prefix), "r+")
                     old = logfile.read() # read everything in the file
                     logfile.seek(0) # rewind
-                    logfile.write("""testbed_param_qlimit=%u
-testbed_param_rdelay=%u
-testbed_param_rrate=%u
-testbed_param_reordering=%s
-testbed_param_variable=%s
-""" %(limit, rdelay, reorder, reorder_mode, var))
+                    logfile.write("""testbed_param_qlimit=%u\n""" \
+                        """testbed_param_rdelay=%u\n"""           \
+                        """testbed_param_rrate=%u\n"""            \
+                        """testbed_param_reordering=%s\n"""       \
+                        """testbed_param_variable=%s\n"""          %(limit, rdelay, reorder, reorder_mode, var))
                     logfile.write(old)
                     logfile.close()
-                    self.count += 1
-
-
 
     @defer.inlineCallbacks
     def run(self):

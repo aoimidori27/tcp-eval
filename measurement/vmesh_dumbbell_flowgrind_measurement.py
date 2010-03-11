@@ -51,6 +51,8 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         # test nodes load from file
         runs = self.load_pairs_from_file(self.options.pairfile)
 
+        yield self.preInit(["localhost"])
+
         # repeat loop
         iterations  = range(2)
 
@@ -64,7 +66,7 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
                         dict( scenario_label = "TCP-aNCR CF",  flowgrind_cc="reno", flowgrind_opts=["-O", "s=TCP_REORDER_MODULE=ancr", "-O", "s=TCP_REORDER_MODE=1"] ),
                         dict( scenario_label = "TCP-aNCR AG",  flowgrind_cc="reno", flowgrind_opts=["-O", "s=TCP_REORDER_MODULE=ancr", "-O", "s=TCP_REORDER_MODE=2"] ) ]
 
-        yield self.switchTestbedProfile(testbed_profile)
+        #yield self.switchTestbedProfile(testbed_profile)
 
         for it in iterations:
             tasks = list()
