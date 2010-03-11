@@ -44,7 +44,9 @@ class FlowgrindRecordFactory():
                      'krto'    : float,
                      'castate' : lambda x:x,
                      'mss'     : int,
-                     'mtu'     : int }
+                     'mtu'     : int,
+                     # optional values
+                     'dupthresh':int }
 
             flow_ids = map(int, set(r['flow_id']))
             flow_map = dict()
@@ -70,8 +72,10 @@ class FlowgrindRecordFactory():
                             try:
                                 flow[key].append(convert(r[key][i]))
                             except KeyError, inst:
-                                warn('Failed to get r["%s"][%u]' %(key,i))
-                                raise inst
+                                # honor optional values
+                                if not (key == 'dupthresh' and not (r.has_key('dupthresh') and r[key].has_key(i))):
+                                    warn('Failed to get r["%s"][%u]' %(key,i))
+                                    raise inst
                     flow['size'] += 1
 
             return flow_map.values()
@@ -118,7 +122,7 @@ class FlowgrindRecordFactory():
             " +(?P<castate>loss|open|disorder|recovery)"\
             " +(?P<mss>\d+) +(?P<mtu>\d+)"\
             # optional extension
-            "( +(?P<cret>\d+) +(?P<cfret>\d+) +(?P<ctret>\d+))?",
+            "( +(?P<cret>\d+) +(?P<cfret>\d+) +(?P<ctret>\d+) *(?P<dupthresh>\d+)?)?",
             # Wed Oct 14 18:21:42 2009: controlling host = vmhost1, number of flows = 1, reporting interval = 0.10s, [tput] = 10**6 bit/second (SVN Rev 5490)
             "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2} \d{2}:\d{2}:\d{2} \d{4}): .* reporting interval = (?P<reporting_interval>\d+\.\d+)"
         ]
