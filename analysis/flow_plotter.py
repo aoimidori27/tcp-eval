@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vim:softtabstop=4:shiftwidth=4:expandtab
 
 # python imports
 import sys
@@ -50,7 +51,7 @@ class FlowPlotter(Application):
         self.parser.add_option("-G", "--graphics", metavar = "list",
                         action = 'store', dest = 'graphics',
                         help = 'Graphics that will be plotted '\
-                               '[default: %default]')
+                                '[default: %default; optional: dupthresh]')
 
     def set_option(self):
         """Set options"""
@@ -186,24 +187,27 @@ class FlowPlotter(Application):
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
         # header
-        fh.write("# start_time end_time forward_tput reverse_tput forward_cwnd reverse_cwnd ssth krtt krto lost reor fret tret fack\n")
+        fh.write("# start_time end_time forward_tput reverse_tput forward_cwnd reverse_cwnd ssth krtt krto lost reor fret tret dupthresh\n")
         for i in range(nosamples):
-            fh.write("%f %f %f %f %f %f %f %f %f %f %f %f %f\n"
-                                                    %(
-                                                    flow['S']['begin'][i],
-                                                    flow['S']['end'][i],
-                                                    flow['S']['tput'][i],
-                                                    flow['R']['tput'][i],
-                                                    flow['S']['cwnd'][i],
-                                                    flow['R']['cwnd'][i],
-                                                    ssth_max(flow['S']['ssth'][i]),
-                                                    flow['S']['krtt'][i],
-                                                    rto_max(flow['S']['krto'][i]),
-                                                    flow['S']['lost'][i],
-                                                    flow['S']['reor'][i],
-                                                    flow['S']['fret'][i],
-                                                    flow['S']['tret'][i],
-                                                    ) )
+            formatfields = (flow['S']['begin'][i],
+                            flow['S']['end'][i],
+                            flow['S']['tput'][i],
+                            flow['R']['tput'][i],
+                            flow['S']['cwnd'][i],
+                            flow['R']['cwnd'][i],
+                            ssth_max(flow['S']['ssth'][i]),
+                            flow['S']['krtt'][i],
+                            rto_max(flow['S']['krto'][i]),
+                            flow['S']['lost'][i],
+                            flow['S']['reor'][i],
+                            flow['S']['fret'][i],
+                            flow['S']['tret'][i] )
+            formatstring = "%f %f %f %f %f %f %f %f %f %f %f %f %f"
+            if 'dupthresh' in self.graphics_array:
+                formatfields += tuple([flow['S']['dupthresh'][i]])
+                formatstring += " %f"
+            formatstring += "\n"
+            fh.write( formatstring % formatfields )
         fh.close()
 
         if 'tput' in self.graphics_array:
@@ -249,6 +253,16 @@ class FlowPlotter(Application):
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
+        if 'dupthresh' in self.graphics_array:
+            # dupthresh, tp->reordering
+            p = UmLinePlot(plotname+'_reordering_dupthresh')
+            p.setYLabel(r"dupack threshold $\\mathit{metric}$")
+            p.setXLabel(r"time ($\\si{\\second}$)")
+            p.plot(valfilename, "tp->reordering", using="2:11", linestyle=2)
+            p.plot(valfilename, "module dupthresh", using="2:14", linestyle=3)
+            # output plot
+            p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+           
 
     def run(self):
         """Run..."""
