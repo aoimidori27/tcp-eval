@@ -47,22 +47,33 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         info("Setting netem..")
 
         #forward path delay
-        rc = yield self.remote_execute(fdnode, "sudo tc qdisc %s dev eth0 parent 1:2 handle 20: netem delay %ums %ums 20%%" %(mode, delay, (int)(delay * 0.1)), log_file=sys.stdout)
+        tc_cmd = "sudo tc qdisc %s dev eth0 parent 1:2 handle 20: netem delay %ums %ums 20%%" %(mode, delay, (int)(delay * 0.1))
+        rc = yield self.remote_execute(fdnode, tc_cmd, log_file=sys.stdout)
 
         #forward path reordering
-        rc = yield self.remote_execute(frnode, "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:2 handle 10: netem \
-                                                            reorder %u%% reorderdelay %ums %ums 20%%" %(mode, reorder, rdelay, (int)(rdelay * 0.1)), log_file=sys.stdout)
+        if reorder == 0:
+            tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:2 handle 10: netem reorder 0%" %(mode)
+        else
+            tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:2 handle 10: netem reorder %u%% \
+                      reorderdelay %ums %ums 20%%" %(mode, reorder, rdelay, (int)(rdelay * 0.1))
+        rc = yield self.remote_execute(frnode, tc_cmd, log_file=sys.stdout)
 
         #queue limit
-        rc = yield self.remote_execute(qlnode, "sudo tc qdisc %s dev eth0 parent 1:1 handle 10: netem limit %u; \
-                                                sudo tc qdisc %s dev eth0 parent 1:2 handle 20: netem limit %u" %(mode, limit, mode, limit), log_file=sys.stdout)
+        tc_cmd = "sudo tc qdisc %s dev eth0 parent 1:1 handle 10: netem limit %u; \
+                  sudo tc qdisc %s dev eth0 parent 1:2 handle 20: netem limit %u" %(mode, limit, mode, limit)
+        rc = yield self.remote_execute(qlnode, tc_cmd, log_file=sys.stdout)
 
         #reverse path reordering
-        rc = yield self.remote_execute(rrnode, "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:1 handle 10: netem \
-                                                            reorder %u%% reorderdelay %ums %ums 20%%" %(mode, reorder, rdelay, (int)(rdelay * 0.1)), log_file=sys.stdout)
+        if reorder == 0:
+            tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:1 handle 10: netem reorder 0%" %(mode)
+        else
+            tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:1 handle 10: netem \
+                      reorder %u%% reorderdelay %ums %ums 20%%" %(mode, reorder, rdelay, (int)(rdelay * 0.1))
+        rc = yield self.remote_execute(rrnode, tc_cmd, log_file=sys.stdout)
 
         #reverse path delay
-        rc = yield self.remote_execute(rdnode, "sudo tc qdisc %s dev eth0 parent 1:1 handle 10: netem delay %ums %ums 20%%" %(mode, delay, (int)(delay * 0.1)), log_file=sys.stdout)
+        tc_cmd = "sudo tc qdisc %s dev eth0 parent 1:1 handle 10: netem delay %ums %ums 20%%" %(mode, delay, (int)(delay * 0.1))
+        rc = yield self.remote_execute(rdnode, tc_cmd, log_file=sys.stdout)
 
     @defer.inlineCallbacks
     def run_measurement(self, reorder_mode, var, reorder, rdelay, delay, limit):
