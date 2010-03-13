@@ -20,6 +20,9 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
          between all pairs defined in the pairs file.
        - One measurement-iteration will run one test of each scenario.
        - The number of iterations is determined by the "iterations" variable.
+
+       - All of this can be repeated with changing dumbbell/netem parameters
+         Edit the loops in the run function for that
     """
 
     def __init__(self):
@@ -52,8 +55,8 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
 
         #forward path reordering
         if reorder == 0:
-            tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:2 handle 10: netem reorder 0%" %(mode)
-        else
+            tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:2 handle 10: netem reorder 0%%" %(mode)
+        else:
             tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:2 handle 10: netem reorder %u%% \
                       reorderdelay %ums %ums 20%%" %(mode, reorder, rdelay, (int)(rdelay * 0.1))
         rc = yield self.remote_execute(frnode, tc_cmd, log_file=sys.stdout)
@@ -65,8 +68,8 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
 
         #reverse path reordering
         if reorder == 0:
-            tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:1 handle 10: netem reorder 0%" %(mode)
-        else
+            tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:1 handle 10: netem reorder 0%%" %(mode)
+        else:
             tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:1 handle 10: netem \
                       reorder %u%% reorderdelay %ums %ums 20%%" %(mode, reorder, rdelay, (int)(rdelay * 0.1))
         rc = yield self.remote_execute(rrnode, tc_cmd, log_file=sys.stdout)
@@ -158,30 +161,30 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         """Main method"""
 
         self.count = 0
-        delay = 10
+        delay = 50
         #self.testbed_profile = "profilename!"
         #yield self.switchTestbedProfile(self.testbed_profile)
 
         #initial settings for netem
         yield self.run_netem(0, 0, 0, 1000, "add")
 
-        #for qlimit in [42]:         #reorder_mode,   var,   reorder,rdelay,delay, limit
-            #yield self.run_measurement("congestion", "qlimit",   0,     0,   delay, qlimit)
+        for qlimit in range(15):      #reorder_mode, var,         reorder,     rdelay, delay, limit
+            yield self.run_measurement("congestion", "qlimit",          0,          0, delay, qlimit + 1)
 
-        for reorder in [1]:         #reorder_mode,   var,   reorder,rdelay,delay, limit
-            yield self.run_measurement("reordering", "rrate", reorder, 10,   delay, 1000)
+        for reorder in range(26):     #reorder_mode, var,         reorder,     rdelay, delay, limit
+            yield self.run_measurement("reordering", "rrate", 2 * reorder,         30, delay, 1000)
 
-        #for rdelay in [10,20]:        #reorder_mode,   var,   reorder,rdelay,delay, limit
-            #yield self.run_measurement("reordering", "rdelay",   5,   rdelay,delay, 1000)
+        for rdelay in range(16):      #reorder_mode, var,         reorder,     rdelay, delay, limit
+            yield self.run_measurement("reordering", "rdelay",          5, 5 * rdelay, delay, 1000)
 
-        #for qlimit in [5,8]:          #reorder_mode,   var,   reorder,rdelay,delay, limit
-            #yield self.run_measurement("both",       "qlimit",   5,     30,  delay, qlimit)
+        for qlimit in range(15):      #reorder_mode, var,         reorder,     rdelay, delay, limit
+            yield self.run_measurement("both",       "qlimit",          5,         30, delay, qlimit + 1)
 
-        #for reorder in [1,3]:         #reorder_mode,   var,   reorder,rdelay,delay, limit
-            #yield self.run_measurement("both",       "rrate", reorder,  30,  delay, 10)
+        for reorder in range(26):     #reorder_mode, var,         reorder,     rdelay, delay, limit
+            yield self.run_measurement("both",       "rrate", 2 * reorder,         30, delay, 10)
 
-        #for rdelay in [10,20]:        #reorder_mode,   var,   reorder,rdelay,delay, limit
-            #yield self.run_measurement("both",       "rdelay",   5,   rdelay,delay, 10)
+        for rdelay in range(16):      #reorder_mode, var,         reorder,     rdelay, delay, limit
+            yield self.run_measurement("both",       "rdelay",          5, 5 * rdelay, delay, 10)
 
         # switch back to minimum when done
         # yield self.switchTestbedProfile("minimum")
