@@ -114,27 +114,30 @@ class ReorderingAnalysis(Analysis):
         dbcur = self.dbcon.cursor()
 
         outdir = self.options.outdir
-        p = UmLinePlot("%s_over_%s" % (y, x))
+        p = UmLinePlot("%s_%s_over_%s" % (rotype, y, x))
         p.setXLabel(self.plotlabels[x])
         p.setYLabel(self.plotlabels[y])
 
         for scenarioNo in scenarios.keys():
-            # first, aggregate the parallel runs by sum() to get the total y of a single iteration
-            # second, aggregate the iterations by avg() to get the average total y of one test
+            # 1) aggregate the iterations of each run of one scenario under one testbed
+            #    configuration by avg() to get the average total y of such flows
+            # 2) sum() up these average values of each scenario under one testbed
+            #    configuration to get the total average y of one scenario under one
+            #    testbed configuration
             dbcur.execute('''
-            SELECT %s, avg(total_y) AS avg_total_y
+            SELECT %s, sum(avg_y) AS total_avg_y
             FROM
             (
-                SELECT %s, iterationNo, sum(%s) AS total_y
+                SELECT %s, runNo, avg(%s) AS avg_y
                 FROM tests
                 WHERE scenarioNo=%u AND variable='%s' AND reordering='%s'
-                GROUP BY iterationNo
+                GROUP BY runNo
             )
             GROUP BY %s
             ORDER BY %s
             ''' % (x, x, y, scenarioNo, x, rotype, x, x))
 
-            plotname = "%s_over_%s_s%u" % (y, x, scenarioNo)
+            plotname = "%s_%s_over_%s_s%u" % (rotype, y, x, scenarioNo)
             valfilename = os.path.join(outdir, plotname+".values")
 
             info("Generating %s..." % valfilename)
