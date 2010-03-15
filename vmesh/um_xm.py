@@ -36,7 +36,7 @@ class Xen(Application):
 
         # object variables
         self._range = []
-        self.serverlist = ['vmhost1', 'vmhost2', 'vmhost11']
+        self.serverlist = ['vmhost1', 'vmhost2']
 
         # initialization of the option parser
         usage = "usage: \t%prog [options] list \n" \
