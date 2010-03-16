@@ -74,9 +74,8 @@ class ReorderingAnalysis(Analysis):
             start_time = int(float(recordHeader["test_start_time"]))
         except KeyError:
             start_time = 0
-
-        rtos           = int(record.calculate("total_rto_retransmits"))
-        frs            = int(record.calculate("total_fast_retransmits"))
+        rtos           = record.calculate("total_rto_retransmits")
+        frs            = record.calculate("total_fast_retransmits")
         thruput        = record.calculate("thruput")
         if not thruput:
             if not self.failed.has_key(run_label):
@@ -85,8 +84,18 @@ class ReorderingAnalysis(Analysis):
                 self.failed[run_label] = self.failed[run_label]+1
             return
 
+        try:
+            rtos = int(rtos)
+        except TypeError, inst:
+            rtos = "NULL"
+
+        try:
+            frs = int(frs)
+        except TypeError, inst:
+            frs = "NULL"
+
         dbcur.execute("""
-                      INSERT INTO tests VALUES ("%s", "%s", %u, %u, %u, %u, %u, %u, %u, %u, "%s", "%s", %f, %u, "$%s$", "%s", "%s")
+                      INSERT INTO tests VALUES ("%s", "%s", %u, %u, %u, %s, %s, %u, %u, %u, "%s", "%s", %f, %u, "$%s$", "%s", "%s")
                       """ % (variable, reordering, qlimit, rrate, rdelay, rtos, frs, iterationNo, scenarioNo, runNo, src, dst, thruput,
                              start_time, run_label, scenario_label, test))
 

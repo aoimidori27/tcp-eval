@@ -133,13 +133,20 @@ class FlowgrindRecordFactory():
         # compile regexes
         self.regexes = map(re.compile, regexes)
 
+        def extInt(a):
+            try:
+                ret = int(a)
+            except TypeError, inst:
+                ret = None
+            return None
+
         # phase 2 result calculation
         self.whats = dict(
             # average thruput: just sum up all summary lines
             thruput           = lambda r: sum(map(float, r['thruput'])),
-            total_retransmits      = lambda r: max(map(int, r['cret'])),
-            total_fast_retransmits = lambda r: max(map(int, r['cfret'])),
-            total_rto_retransmits  = lambda r: max(map(int, r['ctret'])),
+            total_retransmits      = lambda r: max(map(extInt, r['cret'])),
+            total_fast_retransmits = lambda r: max(map(extInt, r['cfret'])),
+            total_rto_retransmits  = lambda r: max(map(extInt, r['ctret'])),
             # list of summary lines
             thruput_list      = lambda r: map(float, r['thruput']),
 
