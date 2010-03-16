@@ -156,10 +156,17 @@ class ReorderingAnalysis(Analysis):
             fhv.write("# %s %s\n" % (x, y))
 
             # data
+            success = False
             for row in dbcur:
                 (x_value, y_value) = row
-                fhv.write("%u %f\n" %(x_value, y_value))
+                try:
+                    fhv.write("%u %f\n" %(x_value, y_value))
+                except TypeError:
+                    continue
+                success = True
             fhv.close()
+            if not success:
+                return
 
             p.plot(valfilename, scenarios[scenarioNo], linestyle=scenarioNo + 1, using="1:2")
 
