@@ -133,18 +133,20 @@ class ReorderingAnalysis(Analysis):
             # 2) sum() up these average values of each scenario under one testbed
             #    configuration to get the total average y of one scenario under one
             #    testbed configuration
-            dbcur.execute('''
-            SELECT %s, sum(avg_y) AS total_avg_y
-            FROM
-            (
-                SELECT %s, runNo, avg(%s) AS avg_y
-                FROM tests
-                WHERE scenarioNo=%u AND variable='%s' AND reordering='%s'
-                GROUP BY runNo
-            )
-            GROUP BY %s
-            ORDER BY %s
-            ''' % (x, x, y, scenarioNo, x, rotype, x, x))
+            query = '''
+                SELECT %s, sum(avg_y) AS total_avg_y
+                FROM
+                (
+                    SELECT %s, runNo, avg(%s) AS avg_y
+                    FROM tests
+                    WHERE scenarioNo=%u AND variable='%s' AND reordering='%s'
+                    GROUP BY %s, runNo
+                )
+                GROUP BY %s
+                ORDER BY %s
+            ''' % (x, x, y, scenarioNo, x, rotype, x, x, x)
+            debug("\n\n" + query + "\n\n")
+            dbcur.execute(query)
 
             plotname = "%s_%s_over_%s_s%u" % (rotype, y, x, scenarioNo)
             valfilename = os.path.join(outdir, plotname+".values")
