@@ -138,7 +138,7 @@ class FlowgrindRecordFactory():
                 ret = int(a)
             except TypeError, inst:
                 ret = None
-            return None
+            return ret
 
         # phase 2 result calculation
         self.whats = dict(
