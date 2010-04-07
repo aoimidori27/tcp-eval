@@ -24,12 +24,23 @@ class ReorderingAnalysis(Analysis):
 
     def __init__(self):
         Analysis.__init__(self)
+
+        self.parser.set_usage("Usage:  %prog [options]\n"\
+                              "Creates graphs showing thruput, frs and rtos over the "\
+                              "variable given by the option -V.\n"\
+                              "For this all flowgrind logs out of input folder are used "\
+                              "which have the type given by the parameter -T.")
+
         self.parser.add_option('-V', '--variable', metavar="Variable",
                          action = 'store', type = 'string', dest = 'variable',
                          help = 'The variable of the measurement [qlimit|rrate|rdelay].')
         self.parser.add_option('-T', '--type', metavar="Type",
                          action = 'store', type = 'string', dest = 'rotype',
                          help = 'The type of the measurement [reordering|congestion|both].')
+
+        self.parser.add_option('-d', '--dry-run',
+                        action = "store_true", dest = "dry_run",
+                        help = "Test the flowlogs only")
 
         self.plotlabels = dict()
         self.plotlabels["qlimit"]  = r"bottleneck queue length [packets]";
@@ -58,7 +69,7 @@ class ReorderingAnalysis(Analysis):
     def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
         dbcur = self.dbcon.cursor()
 
-        recordHeader = record.getHeader()
+        recordHeader   = record.getHeader()
         src            = recordHeader["flowgrind_src"]
         dst            = recordHeader["flowgrind_dst"]
         run_label      = recordHeader["run_label"]
@@ -77,6 +88,7 @@ class ReorderingAnalysis(Analysis):
         rtos           = record.calculate("total_rto_retransmits")
         frs            = record.calculate("total_fast_retransmits")
         thruput        = record.calculate("thruput")
+
         if not thruput:
             if not self.failed.has_key(run_label):
                 self.failed[run_label] = 1
@@ -93,6 +105,18 @@ class ReorderingAnalysis(Analysis):
             frs = int(frs)
         except TypeError, inst:
             frs = "NULL"
+
+        # check for lost SYN or long connection establishing
+        c = 0
+        flow_S = record.calculate("flows")[0]['S']
+        for tput in flow_S['tput']:
+            if tput == 0.000000:
+                c += 1
+            else: break
+        if flow_S['end'][c] > 1:
+            warn("Long connection establishment (%ss): %s" %(flow_S['end'][c], record.filename))
+
+
 
         dbcur.execute("""
                       INSERT INTO tests VALUES ("%s", "%s", %u, %u, %u, %s, %s, %u, %u, %u, "%s", "%s", %f, %u, "$%s$", "%s", "%s")
@@ -210,6 +234,11 @@ class ReorderingAnalysis(Analysis):
             # only load flowgrind test records
             self.loadRecords(tests=["flowgrind"])
             self.dbcon.commit()
+        else:
+            info("Database already exists, don't load records.")
+
+        if self.options.dry_run:
+            return
 
         # Do Plots
         for y in ("thruput", "frs", "rtos"):
