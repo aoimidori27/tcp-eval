@@ -113,6 +113,8 @@ class FlowgrindRecordFactory():
             #0: 169.254.9.1/mrouter1, MSS = 536, ws = 16384/16384 (0/0), bs = 8192/8192, delay = 0.00s/0.00s, duration = 15.00s/0.00s, thruput = 0.607300Mb/s (139 blocks), cc = cubic
             "thruput = (?P<thruput>\d+\.\d+)(\/(?P<thruput_back>\d+\.\d+))?Mb/s",
 
+            "listen port =\s*(?P<lport>\d+)",
+
             #  ID    begin     end   through min RTT avg RTT max RTT min IAT avg IAT max IAT    cwnd        ssth uack sack lost fret tret fack reor   rtt rttvar     rto   castate cret cfret ctret  mss   mtu status
             " +(?P<direction>[S,R])"\
             " +(?P<flow_id>\d+) +(?P<begin>\d+\.\d+) +(?P<end>\d+\.\d+)"\
@@ -149,7 +151,7 @@ class FlowgrindRecordFactory():
             total_rto_retransmits  = lambda r: max(map(extInt, r['ctret'])),
             # list of summary lines
             thruput_list      = lambda r: map(float, r['thruput']),
-
+            lport_list        = lambda r: map(int, r['lport']),
             flow_ids          = lambda r: map(int, set(r['flow_id'])),
             flows             = group_flows,
             flow_id_list      = lambda r: map(int, r['flow_id']),
