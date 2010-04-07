@@ -21,7 +21,8 @@ class FlowPlotter(Application):
         self.factory = FlowgrindRecordFactory()
 
         # initialization of the option parser
-        usage = "usage: %prog [options] file [file]..."
+        usage = "Usage: %prog [options] flowgrind-log [flowgrind-log] ...\n"\
+                "Creates graphs given by -G for every flowgrind-log specified."
 
         self.parser.set_usage(usage)
         self.parser.set_defaults(outdir = "./", flownumber="0", resample='0',
@@ -262,7 +263,6 @@ class FlowPlotter(Application):
             p.plot(valfilename, "module dupthresh", using="2:14", linestyle=3)
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
-           
 
     def run(self):
         """Run..."""
@@ -273,6 +273,7 @@ class FlowPlotter(Application):
         self.parse_option()
         self.set_option()
         self.run()
+
 
 # this only runs if the module was *not* imported
 if __name__ == '__main__':

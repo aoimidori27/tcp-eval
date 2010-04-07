@@ -15,7 +15,10 @@ class XplotCut(Application):
         Application.__init__(self)
 
         # initialization of the option parser
-        usage = "usage: %prog [options] xpl-file"
+        usage = "Usage: %prog [options] xpl-file\n"\
+                "The xpl-file is opened with xplot. The modified version should print the start\n"\
+                "and end time of the current view to stdout when 'c' is pressed. This script then\n"\
+                "grabs the output and creates a new xpl-file with the given start and end time."
 
         self.parser.set_usage(usage)
         #self.parser.set_defaults( )

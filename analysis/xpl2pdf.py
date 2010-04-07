@@ -68,7 +68,8 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         '''
 
         # initialization of the option parser
-        self.parser.set_usage("usage: %prog [options] <file1> <file2> ..")
+        self.parser.set_usage("Usage: %prog [options] xpl-file [xpl-file] ..\n"\
+                              "Creates pdfs for every xpl-file specified.")
         self.parser.set_defaults(parseroutput = False, outdir = "./")
         self.parser.add_option("-p", "--parseroutput",
                     action = "store_true", dest = "parseroutput",
@@ -102,7 +103,18 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
 
     def set_option(self):
         """Set the options"""
+
         Application.set_option(self)
+
+        # checks
+        if len(self.args) == 0:
+            error("You should give at least one xpl-file.")
+            sys.exit(1)
+
+        for entry in self.args:
+            if not os.path.isfile(entry):
+                error("%s not found." %entry)
+                exit(1)
 
     def work(self, filename):
         """work, work"""
@@ -324,18 +336,11 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         gploutput.save(outdir, self.options.debug, self.options.cfgfile)
 
     def prepare(self):
-        # checks
-        Application.set_option(self)
-        for entry in self.args:
-            if not os.path.isfile(entry):
-                error("%s not found." %entry)
-                exit(1)
+        """ global configuration for all input files """
 
         if not os.path.exists(self.options.outdir):
             info("%s does not exist, creating. " % self.options.outdir)
             os.mkdir(self.options.outdir)
-
-        # global configuration for all input files
 
         # axis labels
         if self.options.xlabel:
