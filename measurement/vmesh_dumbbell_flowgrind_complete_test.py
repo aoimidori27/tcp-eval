@@ -66,6 +66,11 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
                   sudo tc qdisc %s dev eth0 parent 1:2 handle 20: netem limit %u" %(mode, limit, mode, limit)
         rc = yield self.remote_execute(qlnode, tc_cmd, log_file=sys.stdout)
 
+        #bottleneck bandwidth
+        tc_cmd = "sudo tc class %s dev eth0 parent 1: classid 1:1 htb rate %umbit; \
+                  sudo tc class %s dev eth0 parent 1: classid 1:2 htb rate %umbit" %(mode, bottleneckbw, mode, bottleneckbw)
+        rc = yield self.remote_execute(qlnode, tc_cmd, log_file=sys.stdout)
+
         #reverse path reordering
         if reorder == 0:
             tc_cmd = "sudo tc-enhanced-netem qdisc %s dev eth0 parent 1:1 handle 10: netem reorder 0%%" %(mode)
@@ -79,7 +84,7 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         rc = yield self.remote_execute(rdnode, tc_cmd, log_file=sys.stdout)
 
     @defer.inlineCallbacks
-    def run_measurement(self, reorder_mode, var, reorder, rdelay, delay, limit):
+    def run_measurement(self, reorder_mode, var, reorder, rdelay, delay, limit, bottleneckbw):
         # this must be adjusted for the specific measurement
         node_type = "vmeshrouter"
 
@@ -103,7 +108,7 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         # inner loop with different scenario settings
         scenarios   = [ dict( scenario_label = "Linux Native", flowgrind_cc="reno" ) ]
 
-        yield self.run_netem(reorder, rdelay, delay, limit, "change")
+        yield self.run_netem(reorder, rdelay, delay, limit, bottleneckbw, "change")
 
         for it in iterations:
             for scenario_no in range(len(scenarios)):
@@ -149,7 +154,8 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
                         """testbed_param_rdelay=%u\n"""           \
                         """testbed_param_rrate=%u\n"""            \
                         """testbed_param_reordering=%s\n"""       \
-                        """testbed_param_variable=%s\n"""          %(limit, rdelay, reorder, reorder_mode, var))
+                        """testbed_param_variable=%s\n"""         \
+                        """testbed_param_bottleneckbw=%u\n"""       %(limit, rdelay, reorder, reorder_mode, var, bottleneckbw))
                     logfile.write(old)
                     logfile.close()
 
@@ -166,25 +172,31 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         #yield self.switchTestbedProfile(self.testbed_profile)
 
         #initial settings for netem
-        yield self.run_netem(0, 0, 0, 1000, "add")
+        yield self.run_netem(0, 0, 0, 1000, 100, "add")
 
-        for qlimit in range(15):      #reorder_mode, var,         reorder,     rdelay, delay, limit
-            yield self.run_measurement("congestion", "qlimit",          0,          0, delay, qlimit + 1)
+                                      #reorder_mode, var     , reorder    , rdelay    , delay, limit     , bottleneckbw
+        for qlimit in range(15):
+            yield self.run_measurement("congestion", "qlimit", 0          , 0         , delay, qlimit + 1, 100)
 
-        for reorder in range(26):     #reorder_mode, var,         reorder,     rdelay, delay, limit
-            yield self.run_measurement("reordering", "rrate", 2 * reorder,         30, delay, 1000)
+        for reorder in range(26):
+            yield self.run_measurement("reordering", "rrate" , 2 * reorder, 30        , delay, 1000      , 100)
 
-        for rdelay in range(16):      #reorder_mode, var,         reorder,     rdelay, delay, limit
-            yield self.run_measurement("reordering", "rdelay",          5, 5 * rdelay, delay, 1000)
+        for rdelay in range(16):
+            yield self.run_measurement("reordering", "rdelay", 5          , 5 * rdelay, delay, 1000      , 100)
 
-        for qlimit in range(15):      #reorder_mode, var,         reorder,     rdelay, delay, limit
-            yield self.run_measurement("both",       "qlimit",          5,         30, delay, qlimit + 1)
+        for qlimit in range(15):
+            yield self.run_measurement("both"      , "qlimit", 5          , 30        , delay, qlimit + 1, 100)
 
-        for reorder in range(26):     #reorder_mode, var,         reorder,     rdelay, delay, limit
-            yield self.run_measurement("both",       "rrate", 2 * reorder,         30, delay, 10)
+        for reorder in range(26):
+            yield self.run_measurement("both"      , "rrate" , 2 * reorder, 30        , delay, 10        , 100)
 
-        for rdelay in range(16):      #reorder_mode, var,         reorder,     rdelay, delay, limit
-            yield self.run_measurement("both",       "rdelay",          5, 5 * rdelay, delay, 10)
+        for rdelay in range(16):
+            yield self.run_measurement("both"      , "rdelay", 5          , 5 * rdelay, delay, 10        , 100)
+
+        # example using bottleneckbw to cause congestion
+        for bnbw in range(10):
+            yield self.run_measurement("congestion" , "bnbw" , 0          , 0         , delay, 10        , 6 * (bnbw + 1))
+
 
         # switch back to minimum when done
         # yield self.switchTestbedProfile("minimum")
