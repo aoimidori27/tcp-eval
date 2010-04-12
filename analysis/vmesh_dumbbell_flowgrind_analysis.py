@@ -33,7 +33,7 @@ class ReorderingAnalysis(Analysis):
 
         self.parser.add_option('-V', '--variable', metavar="Variable",
                          action = 'store', type = 'string', dest = 'variable',
-                         help = 'The variable of the measurement [qlimit|rrate|rdelay].')
+                         help = 'The variable of the measurement [bnbw|qlimit|rrate|rdelay].')
         self.parser.add_option('-T', '--type', metavar="Type",
                          action = 'store', type = 'string', dest = 'rotype',
                          help = 'The type of the measurement [reordering|congestion|both].')
@@ -43,6 +43,7 @@ class ReorderingAnalysis(Analysis):
                         help = "Test the flowlogs only")
 
         self.plotlabels = dict()
+        self.plotlabels["bnbw"]    = r"bottleneck bandwidth [$\\si[per=frac,fraction=nice]{\\Mbps}$]";
         self.plotlabels["qlimit"]  = r"bottleneck queue length [packets]";
         self.plotlabels["rrate"]   = r"reordering rate [$\\si{\\percent}$]";
         self.plotlabels["rdelay"]  = r"reordering delay [$\\si{\\milli\\second}$]";
@@ -58,7 +59,7 @@ class ReorderingAnalysis(Analysis):
         if not self.options.variable:
             error("Please provide me with the variable and type of the measurement!")
             sys.exit(1)
-        if self.options.variable != "rrate" and self.options.variable != "rdelay" and self.options.variable != "qlimit":
+        if self.options.variable != "rrate" and self.options.variable != "rdelay" and self.options.variable != "qlimit" and self.options.variable != "bnbw":
             error("I did not recognize the variable you gave me!")
             sys.exit(1)
         if self.options.rotype != "reordering" and self.options.rotype != "congestion" and self.options.rotype != "both":
@@ -79,6 +80,11 @@ class ReorderingAnalysis(Analysis):
         qlimit         = int(recordHeader["testbed_param_qlimit"])
         rrate          = int(recordHeader["testbed_param_rrate"])
         rdelay         = int(recordHeader["testbed_param_rdelay"])
+
+        try:
+            bnbw       = int(recordHeader["testbed_param_bottleneckbw"])
+        except KeyError:
+            bnbw       = "NULL"
 
         # test_start_time was introduced later in the header, so its not in old test logs
         try:
@@ -119,8 +125,8 @@ class ReorderingAnalysis(Analysis):
 
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES ("%s", "%s", %u, %u, %u, %s, %s, %u, %u, %u, "%s", "%s", %f, %u, "$%s$", "%s", "%s")
-                      """ % (variable, reordering, qlimit, rrate, rdelay, rtos, frs, iterationNo, scenarioNo, runNo, src, dst, thruput,
+                      INSERT INTO tests VALUES ("%s", "%s", %s, %u, %u, %u, %s, %s, %u, %u, %u, "%s", "%s", %f, %u, "$%s$", "%s", "%s")
+                      """ % (variable, reordering, bnbw, qlimit, rrate, rdelay, rtos, frs, iterationNo, scenarioNo, runNo, src, dst, thruput,
                              start_time, run_label, scenario_label, test))
 
 
@@ -213,6 +219,7 @@ class ReorderingAnalysis(Analysis):
             dbcur.execute("""
             CREATE TABLE tests (variable    VARCHAR(15),
                                 reordering  VARCHAR(15),
+                                bnbw        INTEGER,
                                 qlimit      INTEGER,
                                 rrate       INTEGER,
                                 rdelay      INTEGER,
