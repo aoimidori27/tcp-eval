@@ -142,21 +142,20 @@ class ReorderingAnalysis(Analysis):
 
         # get all scenario labels
         dbcur.execute('''
-        SELECT DISTINCT scenarioNo, scenario_label
-        FROM tests ORDER BY scenarioNo'''
+            SELECT DISTINCT scenarioNo, scenario_label
+            FROM tests ORDER BY scenarioNo'''
         )
         scenarios = dict()
         for row in dbcur:
             (key,val) = row
             scenarios[key] = val
 
-        dbcur = self.dbcon.cursor()
-
         outdir = self.options.outdir
         p = UmLinePlot("%s_%s_over_%s" % (rotype, y, x))
         p.setXLabel(self.plotlabels[x])
         p.setYLabel(self.plotlabels[y])
 
+        max_y_value = 0
         for scenarioNo in scenarios.keys():
             # 1) aggregate the iterations of each run of one scenario under one testbed
             #    configuration by avg() to get the average total y of such flows
@@ -196,11 +195,18 @@ class ReorderingAnalysis(Analysis):
                 except TypeError:
                     continue
                 success = True
+                if y_value > max_y_value:
+                    max_y_value = y_value
             fhv.close()
             if not success:
                 return
 
+            # plot
             p.plot(valfilename, scenarios[scenarioNo], linestyle=scenarioNo + 1, using="1:2")
+
+        # make room for the legend
+        if max_y_value:
+            p.setYRange("[*:%u]" % int(max_y_value + ((25 * max_y_value) / 100 )))
 
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
