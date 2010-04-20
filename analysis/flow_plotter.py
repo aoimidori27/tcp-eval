@@ -259,8 +259,10 @@ class FlowPlotter(Application):
             p = UmLinePlot(plotname+'_reordering_dupthresh')
             p.setYLabel(r"dupack threshold $\\mathit{metric}$")
             p.setXLabel(r"time ($\\si{\\second}$)")
+            max_y_value = max(flow['S']['dupthresh'])
+            p.setYRange("[*:%u]" % int(max_y_value + ((20 * max_y_value) / 100 )))
             p.plot(valfilename, "tp->reordering", using="2:11", linestyle=2)
-            p.plot(valfilename, "module dupthresh", using="2:14", linestyle=3)
+            p.plot(valfilename, "Algorithm DupThresh", using="2:14", linestyle=3)
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
