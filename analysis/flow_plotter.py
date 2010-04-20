@@ -10,7 +10,7 @@ from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_analysis.testrecords_flowgrind import FlowgrindRecordFactory
-from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot
+from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmStepPlot, UmBoxPlot
 from um_application import Application
 
 class FlowPlotter(Application):
@@ -256,10 +256,10 @@ class FlowPlotter(Application):
 
         if 'dupthresh' in self.graphics_array:
             # dupthresh, tp->reordering
-            p = UmLinePlot(plotname+'_reordering_dupthresh')
-            p.setYLabel(r"dupack threshold $\\mathit{metric}$")
-            p.setXLabel(r"time ($\\si{\\second}$)")
-            max_y_value = max(flow['S']['dupthresh'])
+            p = UmStepPlot(plotname+'_reordering_dupthresh')
+            p.setYLabel(r"dupack threshold $[\\#]$")
+            p.setXLabel(r"time $[\\si{\\second}]$")
+            max_y_value = max(flow['S']['reor'] + flow['S']['dupthresh'])
             p.setYRange("[*:%u]" % int(max_y_value + ((20 * max_y_value) / 100 )))
             p.plot(valfilename, "tp->reordering", using="2:11", linestyle=2)
             p.plot(valfilename, "Algorithm DupThresh", using="2:14", linestyle=3)
