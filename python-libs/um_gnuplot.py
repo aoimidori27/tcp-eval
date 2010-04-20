@@ -226,7 +226,7 @@ class UmPointPlot(UmGnuplot):
 
 
 class UmLinePlot(UmGnuplot):
-    """Represents a plot with points"""
+    """Represents a plot with points connected by lines"""
 
     def __init__(self, *args, **kwargs):
         UmGnuplot.__init__(self, *args, **kwargs)
@@ -236,6 +236,20 @@ class UmLinePlot(UmGnuplot):
         if using:
             usingstr = "using %s" %using
         cmd = '"%s" %s title "%s" with lines ls %u' %(values, usingstr, title, linestyle)
+        UmGnuplot.plot(self, cmd)
+
+
+class UmStepPlot(UmGnuplot):
+    """Represents a plot with points connected by steps"""
+
+    def __init__(self, *args, **kwargs):
+        UmGnuplot.__init__(self, *args, **kwargs)
+
+    def plot(self, values, title, using=None, linestyle=3):
+        usingstr = ""
+        if using:
+            usingstr = "using %s" %using
+        cmd = '"%s" %s title "%s" with steps ls %u' %(values, usingstr, title, linestyle)
         UmGnuplot.plot(self, cmd)
 
 
@@ -254,6 +268,7 @@ class UmBoxPlot(UmGnuplot):
 
     def rawPlot(self, *args, **kwargs):
         UmGnuplot.plot(self, *args, **kwargs)
+
 
 class UmXPlot(UmGnuplot):
     """Plots a xplot file, used for xpl2pdf.py"""
