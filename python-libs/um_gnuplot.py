@@ -239,6 +239,20 @@ class UmLinePlot(UmGnuplot):
         UmGnuplot.plot(self, cmd)
 
 
+class UmLinePointPlot(UmGnuplot):
+    """Represents a plot with shaped points connected by lines"""
+
+    def __init__(self, *args, **kwargs):
+        UmGnuplot.__init__(self, *args, **kwargs)
+
+    def plot(self, values, title, using=None, linestyle=3):
+        usingstr = ""
+        if using:
+            usingstr = "using %s" %using
+        cmd = '"%s" %s title "%s" with linespoints ls %u' %(values, usingstr, title, linestyle)
+        UmGnuplot.plot(self, cmd)
+
+
 class UmStepPlot(UmGnuplot):
     """Represents a plot with points connected by steps"""
 

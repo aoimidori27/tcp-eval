@@ -14,7 +14,7 @@ import sys
 # umic-mesh imports
 from um_functions import call
 from um_analysis.analysis import Analysis
-from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot
+from um_gnuplot import UmGnuplot, UmLinePointPlot
 
 class ReorderingAnalysis(Analysis):
     """Application for analysis of flowgrind results.
@@ -151,7 +151,7 @@ class ReorderingAnalysis(Analysis):
             scenarios[key] = val
 
         outdir = self.options.outdir
-        p = UmLinePlot("%s_%s_over_%s" % (rotype, y, x))
+        p = UmLinePointPlot("%s_%s_over_%s" % (rotype, y, x))
         p.setXLabel(self.plotlabels[x])
         p.setYLabel(self.plotlabels[y])
 
