@@ -330,14 +330,14 @@ class Xen(Application):
                 error(exception)
 
             # delete node entries from database
-            if self.dbconn:
-                cursor = self.dbconn.cursor()
-                query = "DELETE FROM nodes_vmesh "\
-                        "WHERE nodeID = (SELECT nodeID FROM nodes WHERE nodes.name='%s');" %vmeshnode.getHostname()
-                cursor.execute(query)
-                query = "DELETE FROM nodes "\
-                        "WHERE name='%s';" %vmeshnode.getHostname()
-                cursor.execute(query)
+            #if self.dbconn:
+            #    cursor = self.dbconn.cursor()
+            #    query = "DELETE FROM nodes_vmesh "\
+            #            "WHERE nodeID = (SELECT nodeID FROM nodes WHERE nodes.name='%s');" %vmeshnode.getHostname()
+            #    cursor.execute(query)
+            #    query = "DELETE FROM nodes "\
+            #            "WHERE name='%s';" %vmeshnode.getHostname()
+            #    cursor.execute(query)
 
     def run_list(self):
         def vmr_compare(x, y):
