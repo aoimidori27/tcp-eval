@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
+# vim:softtabstop=4:shiftwidth=4:expandtab
 
 # python imports
 import os
@@ -49,22 +50,27 @@ color       :=    ( 'green' / 'yellow' / 'white' / 'orange' / 'blue' / 'magenta'
                     'retransmit' / 'duplicate' / 'reorder'/ 'text' / 'default' /
                     'sinfin' / 'push' / 'ecn' / 'urgent' / 'probe' / 'a2bseg'
                     /'b2aseg'/ 'nosampleack' /'ambigousack' / 'icmp' )
+localcolor  :=    ( 'green' / 'yellow' / 'white' / 'orange' / 'blue' / 'magenta' /
+                    'red' / 'purple' / 'pink' / 'window' / 'ack' / 'sack' / 'data' /
+                    'retransmit' / 'duplicate' / 'reorder'/ 'text' / 'default' /
+                    'sinfin' / 'push' / 'ecn' / 'urgent' / 'probe' / 'a2bseg'
+                    /'b2aseg'/ 'nosampleack' /'ambigousack' / 'icmp' )
 harrow      :=    ( 'larrow' / 'rarrow'),whitespace,float1,whitespace,int1,
                     linebreak
 varrow      :=    ( 'darrow' / 'uarrow'),whitespace,float1,whitespace,int1,
                     linebreak
 line        :=    ( 'line' / 'dline' ),whitespace,float1,whitespace,int1,whitespace,
                     float2,whitespace,int2,linebreak
-dot         :=    ('dot'),whitespace,float1,whitespace,int1,(whitespace,color)*,
+dot         :=    ('dot'),whitespace,float1,whitespace,int1,(whitespace,localcolor)*,
                     linebreak
 diamond     :=    ('diamond'),whitespace,float1,whitespace,int1,(whitespace,
-                    color)*,linebreak
-box         :=    ('box'),whitespace,float1,whitespace,int1,(whitespace,color)*,
+                    localcolor)*,linebreak
+box         :=    ('box'),whitespace,float1,whitespace,int1,(whitespace,localcolor)*,
                     linebreak
 tick        :=    ('dtick' / 'utick' / 'ltick' / 'rtick' / 'vtick' / 'htick'),
                     whitespace,float1,whitespace,int1,linebreak
 text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
-                    whitespace,int1,(whitespace,color)*,linebreak,keyword,linebreak
+                    whitespace,int1,(whitespace,localcolor)*,linebreak,keyword,linebreak
         '''
 
         # initialization of the option parser
@@ -140,7 +146,10 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         for tag, beg, end, subtags in taglist[1]:
         # read options and labels from parse tree
         # convert keyword labels
+            localcolor = 0
             if tag == 'text':
+                # default color for labels
+                localcolor = "black"
                 for subtag, subbeg, subend, subparts in subtags:
                     if subtag == 'float1':
                         xpoint = xplfile[subbeg:subend]
@@ -148,8 +157,8 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                         ypoint = xplfile[subbeg:subend]
                     elif subtag == 'keyword':
                         label = xplfile[subbeg:subend]
-                    elif subtag == 'color':
-                        currentcolor = xplfile[subbeg:subend]
+                    elif subtag == 'localcolor':
+                        localcolor = xplfile[subbeg:subend]
 
                 if xplfile[beg:beg+1] == 'l': # 'l'text
                     position = "right"
@@ -162,12 +171,11 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 printthis = True
                 labelxoffset = 0.4
                 labelyoffset = 0.0
-                labelcolor = "black"
                 labelrotation = 0
                 labelsize = 5
                 # special cases
                 if label == "R":
-                    labelcolor = "red"
+                    localcolor = "red"
                     if self.options.microview:
                         labelxoffset = -0.15
                         labelyoffset = 0.7
@@ -175,7 +183,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     printthis = False
                 elif label == "3DUP":
                     labelxoffset = -1
-                    labelcolor = "#32CD32"
+                    localcolor = "#32CD32"
                     labelrotation = 90
                 # dont print S (sack) labels
                 elif label == "S":
@@ -186,91 +194,99 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 if printthis:
                     labelsoutput.write('set label "\\\\fontsize{%s}{%s}\\\\selectfont %s" at %s, %s '\
                             '%s offset %f, %f tc rgbcolor "%s" rotate by %s\n' %(labelsize, labelsize/1.2, label,
-                            xpoint,ypoint,position,labelyoffset,labelxoffset,labelcolor,labelrotation) )
+                            xpoint,ypoint,position,labelyoffset,labelxoffset,localcolor,labelrotation) )
             # read colors
             elif tag == 'color':
                 currentcolor = xplfile[beg:end]
 
             # read l/r arrow
             elif tag == 'varrow':
-                if ('varrow',currentcolor) not in datasources:
-                    datasources.append( ('varrow',currentcolor) )
                 for subtag, subbeg, subend, subparts in subtags:
                     if subtag == 'float1':
                         xpoint = xplfile[subbeg:subend]
                     elif subtag == 'int1':
                         ypoint = xplfile[subbeg:subend]
-                    elif subtag == 'color':
-                        currentcolor = xplfile[subbeg:subend]
-                data.append( ( ('varrow', currentcolor), "%s %s\n" %(xpoint, ypoint) ) )
+                    elif subtag == 'localcolor':
+                        localcolor = xplfile[subbeg:subend]
+                if not localcolor:
+                    localcolor = currentcolor
+                if ('varrow',localcolor) not in datasources:
+                    datasources.append( ('varrow',localcolor) )
+                data.append( ( ('varrow', localcolor), "%s %s\n" %(xpoint, ypoint) ) )
 
             elif tag == 'harrow':
-                if ('harrow',currentcolor) not in datasources:
-                    datasources.append( ('harrow',currentcolor) )
                 for subtag, subbeg, subend, subparts in subtags:
                     if subtag == 'float1':
                         xpoint = xplfile[subbeg:subend]
                     elif subtag == 'int1':
                         ypoint = xplfile[subbeg:subend]
-                    elif subtag == 'color':
-                        currentcolor = xplfile[subbeg:subend]
-                data.append( ( ('harrow', currentcolor), "%s %s\n" %(xpoint, ypoint) ) )
+                    elif subtag == 'localcolor':
+                        localcolor = xplfile[subbeg:subend]
+                if not localcolor:
+                    localcolor = currentcolor
+                if ('harrow',localcolor) not in datasources:
+                    datasources.append( ('harrow',localcolor) )
+                data.append( ( ('harrow', localcolor), "%s %s\n" %(xpoint, ypoint) ) )
 
             # read dot
             elif tag == 'dot':
-                if ('dot',currentcolor) not in datasources:
-                    datasources.append( ('dot',currentcolor) )
                 for subtag, subbeg, subend, subparts in subtags:
                     if subtag == 'float1':
                         xpoint = xplfile[subbeg:subend]
                     elif subtag == 'int1':
                         ypoint = xplfile[subbeg:subend]
-                    elif subtag == 'color':
-                        currentcolor = xplfile[subbeg:subend]
-                data.append( ( ('dot', currentcolor), "%s %s\n" %(xpoint, ypoint) ) )
+                    elif subtag == 'localcolor':
+                        localcolor = xplfile[subbeg:subend]
+                if not localcolor:
+                    localcolor = currentcolor
+                if ('dot',localcolor) not in datasources:
+                    datasources.append( ('dot',localcolor) )
+                data.append( ( ('dot', localcolor), "%s %s\n" %(xpoint, ypoint) ) )
 
             # diamonds
             elif tag == 'diamond':
-                if ('diamond',currentcolor) not in datasources:
-                    datasources.append( ('diamond',currentcolor) )
                 for subtag, subbeg, subend, subparts in subtags:
                     if subtag == 'float1':
                         xpoint = xplfile[subbeg:subend]
                     elif subtag == 'int1':
                         ypoint = xplfile[subbeg:subend]
-                    elif subtag == 'color':
-                        currentcolor = xplfile[subbeg:subend]
-                data.append( ( ('diamond', currentcolor), "%s %s\n" %(xpoint, ypoint) ) )
+                    elif subtag == 'localcolor':
+                        localcolor = xplfile[subbeg:subend]
+                if not localcolor:
+                    localcolor = currentcolor
+                if ('diamond',localcolor) not in datasources:
+                    datasources.append( ('diamond',localcolor) )
+                data.append( ( ('diamond', localcolor), "%s %s\n" %(xpoint, ypoint) ) )
 
 
             elif tag == 'box':
-                if ('box',currentcolor) not in datasources:
-                    datasources.append( ('box',currentcolor) )
                 for subtag, subbeg, subend, subparts in subtags:
                     if subtag == 'float1':
                         xpoint = xplfile[subbeg:subend]
                     elif subtag == 'int1':
                         ypoint = xplfile[subbeg:subend]
-                    elif subtag == 'color':
-                        currentcolor = xplfile[subbeg:subend]
+                    elif subtag == 'localcolor':
+                        localcolor = xplfile[subbeg:subend]
+                if ('box',currentcolor) not in datasources:
+                    datasources.append( ('box',currentcolor) )
                 data.append( ( ('box',currentcolor), "%s %s\n" %(xpoint, ypoint) ) )
 
 
             elif tag == 'tick':
-                if ('tick',currentcolor) not in datasources:
-                    datasources.append( ('tick',currentcolor) )
                 for subtag, subbeg, subend, subparts in subtags:
                     if subtag == 'float1':
                         xpoint = xplfile[subbeg:subend]
                     elif subtag == 'int1':
                         ypoint = xplfile[subbeg:subend]
-                    elif subtag == 'color':
-                        currentcolor = xplfile[subbeg:subend]
-                data.append( ( ('tick',currentcolor), "%s %s\n" %(xpoint, ypoint) ) )
+                    elif subtag == 'localcolor':
+                        localcolor = xplfile[subbeg:subend]
+                if not localcolor:
+                    localcolor = currentcolor
+                if ('tick',localcolor) not in datasources:
+                    datasources.append( ('tick',localcolor) )
+                data.append( ( ('tick',localcolor), "%s %s\n" %(xpoint, ypoint) ) )
 
             elif tag == 'line':
-                if ('line',currentcolor) not in datasources:
-                    datasources.append( ('line',currentcolor) )
                 for subtag, subbeg, subend, subparts in subtags:
                     if subtag == 'float1':
                         x1point = float(xplfile[subbeg:subend])
@@ -284,6 +300,8 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                             xmax = x2point
                     elif subtag == 'int2':
                         y2point = xplfile[subbeg:subend]
+                if ('line',currentcolor) not in datasources:
+                    datasources.append( ('line',currentcolor) )
                 data.append( ( ('line',currentcolor), "%s %s %s %s\n" %(x1point, y1point, x2point, y2point) ) )
 
         # finish close
