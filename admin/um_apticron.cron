@@ -1,6 +1,6 @@
 #!/bin/sh
 
-ONLYDEFAULT=TRUE
+#ONLYDEFAULT=TRUE
 
 RANGE=3600
 NUMBER=`od -vAn -N2 -tu4 < /dev/urandom`
