@@ -3,6 +3,7 @@
 # image path 
 IMAGEDIR_EDGY="/opt/umic-mesh/images/vmeshnode/edgy"
 IMAGEDIR_HARDY="/opt/umic-mesh/images/vmeshhost/hardy"
+IMAGEDIR_LUCID="/opt/umic-mesh/images/vmeshhost/lucid"
 
 # destination -$IMAGE will be appended to this
 INITRD_DST=/opt/umic-mesh/boot/initrd/initramfs
@@ -42,6 +43,10 @@ LIBS_EDGY="ld-2.4.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.4.so,lib
 
 
 LIBS_HARDY="ld-2.7.so,ld-linux.so.2,libblkid.so.1,libblkid.so.1.0,libc-2.7.so,libcap.so.1,libcap.so.1.10,libcrypto.so.0.9.8,libc.so.6,libdl-2.7.so,libdl.so.2,liblzo.so.1,liblzo.so.1.0.0,libncurses.so.5,libncurses.so.5.6,libnsl.so.1,libnss_dns.so.2,libnss_dns-2.7.so,libnss_files.so.2,libnss_files-2.7.so,libproc-3.2.7.so,libpthread-2.7.so,libpthread.so.0,libresolv-2.7.so,libresolv.so.2,librt-2.7.so,librt.so.1,libssl.so.0.9.8,libutil-2.7.so,libutil.so.1,libuuid.so.1,libuuid.so.1.2,libwrap.so.0,libwrap.so.0.7.6,libz.so.1,libz.so.1.2.3.3,libacl.so.1,libacl.so.1.1.0,libselinux.so.1,libattr.so.1,libattr.so.1.1.0,libsepol.so.1,libnsl.so.1,libnsl-2.7.so,libnss_compat.so.2,libnss_compat-2.7.so,libsysfs.so.2,libsysfs.so.2.0.1,klibc-B9LS-Gjx2D7BYcbQig0RlgHKO9Y.so"
+
+# lucid
+
+LIBS_LUCID="ld-2.11.1.so,libc-2.11.1.so,libdl-2.11.1.so,libnss_dns-2.11.1.so,libnss_files-2.11.1.so,libnss_compat-2.11.1.so,libpthread-2.11.1.so,libresolv-2.11.1.so,librt-2.11.1.so,libutil-2.11.1.so,libnsl-2.11.1.so,libutil.so.1,libdl.so.2,libc.so.6,ld-linux.so.2,libcap.so.2.17,libcap.so.2,libcrypto.so.0.9.8,liblzo.so.1.0.0,liblzo.so.1,liblzo2.so.2.0.0,liblzo2.so.2,liblzo2.so,libtermcap.so,libncurses.so.5.7,libncurses.so.5,libncurses.so,libtermcap.so,libnsl.so.1,libnsl.so,libnss_dns.so.2,libnss_dns.so,libnss_files.so.2,libnss_compat.so.2,libproc-3.2.8.so,libpthread.so.0,libresolv.so.2,librt.so.1,libssl.so.0.9.8,libuuid.so.1,libuuid.so.1.3.0,libwrap.so.0,libwrap.so.0.7.6,libz.so.1,libz.so.1.2.3.3,libacl.so.1,libacl.so.1.1.0,libselinux.so.1,libattr.so.1,libattr.so.1.1.0,libsepol.so.1,libsysfs.so.2,libsysfs.so,klibc-3l753vPzJwYEL0GJGYa3oGaUPp4.so,libblkid.so.1,libblkid.so.1.1.0,libevtlog.so.0,libevtlog.so.0.0.0,libpcre.so.3,libpcre.so.3.12.1"
 
 function makedev() {
    cd $INITRD_TMP/dev
@@ -85,7 +90,7 @@ options:
   -h        Print this help summary and exit.
   -v        Be more verbose.
 
-image should be edgy or hardy.
+image should be edgy, hardy or lucid.
 !EOF!
 }
 
@@ -126,6 +131,9 @@ case $IMAGE in
     hardy)
 	LIBS=$LIBS_HARDY
 	IMAGEDIR=$IMAGEDIR_HARDY ;;
+    lucid)
+    	LIBS=$LIBS_LUCID
+	IMAGEDIR=$IMAGEDIR_LUCID ;;
     *)
         echo "Unknown image type: $IMAGE"; usage; exit 2; ;;
 esac
