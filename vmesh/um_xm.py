@@ -224,6 +224,11 @@ class Xen(Application):
         ramdisk = os.path.join(Image.initrdPrefix(), self.options.ramdisk)
         kernel = os.path.join(Image.kernelPrefix(), self.options.kernel)
 
+        if self.options.console and len(self._range) > 1:
+            warn("starting more than one node with attached console is almost"\
+            " certainly not what you want, so i deactivated console for you")
+            self.options.console = False
+
         # create the desired number of vmeshnodes
         for number in self._range:
             # create a vmeshnode object
