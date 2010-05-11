@@ -257,6 +257,7 @@ class Xen(Application):
                     "ramdisk = '%s' \n"\
                     "kernel = '%s' \n"\
                     "memory = %s \n"\
+                    "cpus = '2-15' \n"\
                     "root = '/dev/ram0 console=hvc0' \n"\
                     "vif = ['mac=00:16:3E:00:%02x:%02x', 'bridge=br0'] \n"\
                     "extra = 'id=default image=%s nodetype=%s hostname=%s "\
