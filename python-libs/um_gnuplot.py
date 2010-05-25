@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vim:softtabstop=4:shiftwidth=4:expandtab
 
 # python imports
 import gc
@@ -244,6 +245,13 @@ class UmLinePointPlot(UmGnuplot):
 
     def __init__(self, *args, **kwargs):
         UmGnuplot.__init__(self, *args, **kwargs)
+
+    def plotYerror(self, values, title, using=None, linestyle=3):
+        usingstr = ""
+        if using:
+            usingstr = "using %s" %using
+        cmd = '"%s" %s title "%s" with yerrorbars ls %u' %(values, usingstr, title, linestyle)
+        UmGnuplot.plot(self, cmd)
 
     def plot(self, values, title, using=None, linestyle=3):
         usingstr = ""

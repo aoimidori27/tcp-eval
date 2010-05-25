@@ -37,6 +37,9 @@ class ReorderingAnalysis(Analysis):
         self.parser.add_option('-T', '--type', metavar="Type",
                          action = 'store', type = 'string', dest = 'rotype',
                          help = 'The type of the measurement [reordering|congestion|both].')
+        self.parser.add_option('-E', '--plot-error', metavar="PlotError",
+                         action = 'store_true', dest = 'plot_error',
+                         help = "Plot error bars")
 
         self.parser.add_option('-d', '--dry-run',
                         action = "store_true", dest = "dry_run",
@@ -191,7 +194,11 @@ class ReorderingAnalysis(Analysis):
             for row in dbcur:
                 (x_value, y_value) = row
                 try:
-                    fhv.write("%u %f\n" %(x_value, y_value))
+                    if self.options.plot_error:
+                        stddev = self.calculateStdDev(y, x_value, scenarioNo)
+                        fhv.write("%u %f %f\n" %(x_value, y_value, stddev))
+                    else:
+                        fhv.write("%u %f\n" %(x_value, y_value))
                 except TypeError:
                     continue
                 success = True
@@ -202,7 +209,11 @@ class ReorderingAnalysis(Analysis):
                 return
 
             # plot
-            p.plot(valfilename, scenarios[scenarioNo], linestyle=scenarioNo + 1, using="1:2")
+            if self.options.plot_error:
+                p.plotYerror(valfilename, scenarios[scenarioNo], linestyle=scenarioNo + 1, using="1:2:3")
+                p.plot(valfilename, title="", linestyle=scenarioNo + 1, using="1:2")
+            else:
+                p.plot(valfilename, scenarios[scenarioNo], linestyle=scenarioNo + 1, using="1:2")
 
         # make room for the legend
         if max_y_value:
@@ -210,6 +221,25 @@ class ReorderingAnalysis(Analysis):
 
         p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
+
+    def calculateStdDev(self, y, x_value, scenarioNo):
+        """Calculates the standarddeviation for the values of the YoverXPlot
+        """
+
+        x      = self.options.variable
+        rotype = self.options.rotype
+        dbcur = self.dbcon.cursor()
+
+        query = '''
+            SELECT sum(%s) AS sum_y
+            FROM tests
+            WHERE %s=%u AND scenarioNo=%u AND variable='%s' AND reordering='%s'
+            GROUP BY iterationNo
+        ''' % (y, x, x_value, scenarioNo, x, rotype)
+
+        dbcur.execute(query)
+        ary = numpy.array(dbcur.fetchall())
+        return ary.std()
 
     def run(self):
         """Main Method"""
