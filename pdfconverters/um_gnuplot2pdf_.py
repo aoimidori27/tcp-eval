@@ -1,4 +1,4 @@
-#!/usr/bin/env python -W ignore::DeprecationWarning
+#!/usr/bin/env /usr/bin/python
 # -*- coding: utf-8 -*-
 
 # python imports
@@ -75,7 +75,7 @@ class Gnuplot2PDF(Application):
         srcdir = os.getcwd()
         destdir = self.options.outdir
         tempdir = tempfile.mkdtemp()   
-
+        target = "" 
         # work in tempdir
         if self.options.debug:
             debug("Change directory %s" %tempdir)
@@ -95,26 +95,20 @@ class Gnuplot2PDF(Application):
                     fileSrc = os.path.join(gplotSrc, entry)
                     # create symlinks into the temp directory
                     os.symlink(fileSrc, entry)
-
                     # get file extension
                     ext = os.path.splitext(entry)[1]
                     if ext == ".gpl" or ext == ".gplot":
-                        if not os.path.isfile(gplotSrc):
-                            gplotSrc = os.path.join(entry)
-                        else:
-                            warn("%s contains more than one *.gpl or gplot file. "\
-                                 "Directory skipped." %gplot)
-                            break
-                
-                if not os.path.isfile(gplotSrc):
-                    warn("%s does not contain one *.gpl or *.gplot file. "\
-                         "Directory skipped." %gplot)
-                    continue
+                        target=os.path.join(entry)
                 
             # 'gplotSrc' is neither a directory nor file
             elif not os.path.isfile(gplotSrc):
                 warn("%s is not a regular file or directory. Skipped." %gplot)
                 continue
+            else:
+                target=gplotSrc
+               
+            if not target:
+                exit("no gnuplot files found")
                 
             # get the basename (without extension)
             if self.options.basename:
@@ -132,7 +126,9 @@ class Gnuplot2PDF(Application):
             # be safe; print a new line if the load file include a "pause" command
             info("Run gnuplot on %s..." %gplot)            
             gp = Gnuplot.Gnuplot(debug = int(self.options.debug))
-            gp.load(gplotSrc)
+            gp('set terminal epslatex color solid "default" %s' %self.options.fontsize)
+            gp('set output "%s"'%gplotTex)
+            gp.load(target)
             gp("\n")
             
             # replot with epslatex terminal
