@@ -26,7 +26,8 @@ class UmGnuplot():
 
         # empty title use caption instead
         self.gplot('set title ""')
-
+        # default size
+        self.size = "14cm,5cm"
         # name of the plot (for building filenames)
         self._plotname = plotname
 
@@ -80,8 +81,8 @@ class UmGnuplot():
     def setTimeFmt(self, timefmt):
         self.gplot("set timefmt %s" %timefmt)
 
-    def setRatio(self, ratio):
-        self.gplot('set size ratio %f' %ratio)
+    def setSize(self, size):
+        self.size = size;
 
     def plot(self, cmd):
         """Extends plotcmd with cmd"""
@@ -106,7 +107,10 @@ class UmGnuplot():
 
         info("Generating %s" %texfilename)
         # always epslatex output
-        self.gplot('set terminal epslatex input color solid "default" 9')
+        if self.size:
+            self.gplot('set terminal epslatex input color solid "default" size %s font 6' %self.size)
+        else:
+            self.gplot('set terminal epslatex input color solid "default" font 6')
         self.setOutput(texfilename)
 
         # do the actual plotting
@@ -319,7 +323,7 @@ class UmXPlot(UmGnuplot):
         LW = 1
         # point size (used in macroview for segments)
         STANDARDPS = 0.1 #standardsegments
-        OTHERPS = 0.8 #retransmit, reorders etc are plotted big
+        OTHERPS = 0.4 #retransmit, reorders etc are plotted big
 
         # styles, nohead for line, heads for arrows
         # for aditional colors check
