@@ -60,7 +60,7 @@ class Gnuplot2PDF(Application):
         # initialization of the option parser
         usage = "usage: %prog [options] BASENAME"
         self.parser.set_usage(usage)
-        self.parser.set_defaults(force = False, fontsize = 7, serif = False,
+        self.parser.set_defaults(force = False, fontsize = 5, serif = False,
                                  texsuffix = 'tex', epssuffix = 'eps')
 
         self.parser.add_option("-f", "--force",

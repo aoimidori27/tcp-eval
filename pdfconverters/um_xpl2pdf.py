@@ -92,9 +92,9 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         self.parser.add_option("--ymax", metavar = "NUM", type = "int",
                     action = "store", dest = "ymax",
                     help = "gnuplot y range [default: let gnuplot decide]")
-        self.parser.add_option("--ratio", metavar = "FRAC", type = "float",
-                    action = "store", dest = "ratio",
-                    help = "gnuplot aspect ratio [default: let gnuplot decide]")
+        self.parser.add_option("--size", metavar = "xsize,ysize", type = "string",
+                    action = "store", dest = "size",
+                    help = "gnuplot output size [default: 14cm,5cm]")
         self.parser.add_option("--microview", action = "store_true", dest = "microview",
                     help = "enable microview (use arrowheads etc) [default: no]")
         self.parser.add_option("--save", action = "store_true", dest = "save",
@@ -182,9 +182,16 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 elif label == "3" or label == "2" or label == "1":
                     printthis = False
                 elif label == "3DUP":
+                    printthis = False
                     labelxoffset = -1
                     localcolor = "#32CD32"
                     labelrotation = 90
+                elif label == "SYN" or label == "RST_IN":
+                    printthis = False # edit if you want
+                    localcolor = "black"
+                    if self.options.microview:
+                        labelxoffset = -0.15
+                        labelyoffset = 0.7
                 # dont print S (sack) labels
                 elif label == "S":
                     printthis = False
@@ -321,9 +328,9 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
             debug("YRange [*:%s]" %self.options.ymax )
             gploutput.setYRange("[*:%s]" %self.options.ymax )
 
-        # aspect ratio
-        if self.options.ratio:
-            gploutput.setRatio(self.options.ratio)
+        # size 
+        if self.options.size:
+            gploutput.setSize(self.options.size)
 
         if self.options.microview:
             gploutput.arrowheads()
