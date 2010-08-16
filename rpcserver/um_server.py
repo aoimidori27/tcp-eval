@@ -1,6 +1,19 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
 
+# XMLRPC Server to invoke rpc-modules.
+#
+# Copyright (C) 2007 - 2010 Arnd Hannemann <arnd@arndnet.de>
+# 
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
+
 # python imports
 import os
 import imp

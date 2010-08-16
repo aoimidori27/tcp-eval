@@ -2,6 +2,21 @@
 # -*- coding: utf-8 -*-
 # vim:softtabstop=4:shiftwidth=4:expandtab
 
+# Script to plot a flowgrind log with gnuplot.
+#
+# Copyright (C) 2010 Carsten Wolff <carsten@wolffcarsten.de>
+# Copyright (C) 2009, 2010 Christian Samsel <christian.samsel@rwth-aachen.de>
+# Copyright (C) 2008 - 2010 Lennart Schulte <lennart.schulte@rwth-aachen.de>
+# 
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
+
 # python imports
 import sys
 import os.path

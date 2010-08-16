@@ -1,4 +1,20 @@
 #!/bin/bash
+# vim:softtabstop=4:shiftwidth=4:expandtab
+
+# Script to generate a initial ramfs.
+#
+# Copyright (C) 2010 Christian Samsel <christian.samsel@rwth-aachen.de>
+# Copyright (C) 2006 Alexander Zimmermann <alexander.zimmermann@rwth-aachen.de>
+# Copyright (C) 2006 Arnd Hannemann <arnd@arndnet.de>
+# 
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
 
 # image path 
 IMAGEDIR_EDGY="/opt/umic-mesh/images/vmeshnode/edgy"
@@ -14,7 +30,7 @@ INITRD_TMP=/tmp/initrd
 # path of configuration files etc, to copy in
 FILE_DIR=/opt/checkout/boot/initrd
 
-# directorys to create
+# directories to create
 DIRS="/usr/sbin,/newroot,/proc,/sbin,/dev/net,/var/lib/dhcp"
 DIRS="$DIRS,/var/lib/dhcp3,/var/log,/var/run,/etc"
 DIRS="$DIRS,/bin,/lib,/etc,/lib/dhcp3-client"

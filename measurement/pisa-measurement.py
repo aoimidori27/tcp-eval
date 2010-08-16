@@ -1,5 +1,19 @@
 #!/usr/bin/env python2.5
 # -*- coding: utf-8 -*-
+# vim:softtabstop=4:shiftwidth=4:expandtab
+
+# Script to read quota settings from ldap and apply these to the filesystem.
+#
+# Copyright (C) 2007 Arnd Hannemann <arnd@arndnet.de>
+# 
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
 
 # python imports
 from twisted.internet import defer, reactor
