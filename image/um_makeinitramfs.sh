@@ -66,16 +66,7 @@ LIBS_LUCID="ld-2.11.1.so,libc-2.11.1.so,libdl-2.11.1.so,libnss_dns-2.11.1.so,lib
 
 function makedev() {
    cd $INITRD_TMP/dev
-   MAKEDEV std
-
-   mknod $INITRD_TMP/dev/console c 5 1
-   mknod $INITRD_TMP/dev/tty12   c 4 12
-
-   # net tun
-   mknod $INITRD_TMP/dev/net/tun c 10 200
-
-   # watchdog
-   mknod $INITRD_TMP/dev/watchdog c 10 130 
+   MAKEDEV std console net/tun watchdog watchdogs/0
 }
 
 # filecopy "$files" "$searchpath" "$dstdir"
