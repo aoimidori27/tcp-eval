@@ -20,6 +20,7 @@
 import os
 import re
 from logging import info, debug, warn, error
+from tempfile import mkstemp
 
 # umic-mesh imports
 from um_application import Application
@@ -54,6 +55,8 @@ class Chroot(Application):
                                 "mapfile" : "ldap ou=auto.home,ou=automount,"\
                                             "ou=admin,dc=umic-mesh,dc=net",
                                 "args" : "--timeout=60 --ghost"}]
+
+        self._piddir = "/var/run"
 
         # get the current user name
         if os.environ.has_key("SUDO_USER"):
@@ -118,14 +121,25 @@ class Chroot(Application):
             mountpoint = os.path.join(self._image.getImagePath(),
                                       automount["mountpoint"])
             mapfile = automount["mapfile"]
+            pidfile = "automount_chroot_%s_%s_%s" %(automount["mountpoint"],
+                                                    self._image.getType(),
+                                                    self._image.getVersion())
+            pidfile = os.path.join(self._piddir, pidfile)
             args = automount["args"]
+        
+            # create temporary auto.master for this mount
+            (temp_fd, auto_master) = mkstemp(".master", "um_chroot")
+            tempfile = os.fdopen(temp_fd, 'w')
+            tempfile.write("%s %s %s" %(mountpoint, mapfile, args))
+            tempfile.close()
 
             # check mountpoint
             if not self.checkMount(mountpoint):
-                cmd = "%s %s %s %s" % (self._executables["automount"],
-                                       mountpoint, mapfile, args)
+                cmd = "%s -C -p %s %s" % (self._executables["automount"], 
+                                                pidfile, auto_master)
                 info(cmd)
                 call(cmd, shell = True)
+                
 
     def mount(self):
         """Mount all devices that are denoted in the object variable "mount_map" """
