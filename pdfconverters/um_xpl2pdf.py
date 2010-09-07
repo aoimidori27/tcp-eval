@@ -6,7 +6,7 @@
 #
 # Copyright (C) 2009 - 2010 Christian Samsel <christian.samsel@rwth-aachen.de>
 # 
-# This program is free software; you can redistribute it and/or modify it
+#+ This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
 #
@@ -105,9 +105,12 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         self.parser.add_option("--ymax", metavar = "NUM", type = "int",
                     action = "store", dest = "ymax",
                     help = "gnuplot y range [default: let gnuplot decide]")
-        self.parser.add_option("--size", metavar = "xsize,ysize", type = "string",
-                    action = "store", dest = "size",
-                    help = "gnuplot output size [default: 14cm,5cm]")
+        self.parser.add_option("--plotsize", metavar = "xsize,ysize", type = "string",
+                    action = "store", dest = "plotsize",
+                    help = "plot size [default: 14cm,9.8cm], alternative: 14cm,5cm")
+        self.parser.add_option("--fontsize", metavar = "", type = "int",
+                    action = "store", dest = "fontsize",
+                    help = "target fontsize [default: 6]")
         self.parser.add_option("--microview", action = "store_true", dest = "microview",
                     help = "enable microview (use arrowheads etc) [default: no]")
         self.parser.add_option("--save", action = "store_true", dest = "save",
@@ -185,7 +188,10 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 labelxoffset = 0.4
                 labelyoffset = 0.0
                 labelrotation = 0
-                labelsize = 5
+                if not self.options.fontsize:
+                    labelsize = 5
+                else:
+                    labelsize = self.options.fontsize-1
                 # special cases
                 if label == "R":
                     localcolor = "red"
@@ -341,9 +347,12 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
             debug("YRange [*:%s]" %self.options.ymax )
             gploutput.setYRange("[*:%s]" %self.options.ymax )
 
-        # size 
-        if self.options.size:
-            gploutput.setSize(self.options.size)
+        # size
+        if self.options.plotsize:
+            gploutput.setPlotSize(self.options.plotsize)
+
+        if self.options.fontsize:
+            gploutput.setFontSize(self.options.fontsize)
 
         if self.options.microview:
             gploutput.arrowheads()
@@ -393,7 +402,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
 
         # offset may be changed
         self.xaxislabeloffset = 0,0.3
-        self.yaxislabeloffset = 4,0
+        self.yaxislabeloffset = 3.5,0
 
     def cleanup(self, filename):
         os.chdir(self.options.outdir)
