@@ -388,6 +388,13 @@ class UmXPlot(UmGnuplot):
             title = ""
             if microview:
                 plot = True
+        #draw ambigous ack as normal ack
+        elif (color == 'ambigousack' and datatype == 'diamond'):
+            style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "#32CD32"'
+            title = ""
+            if microview:
+                plot = True
+
 
         # data vectors use in microview
         elif (color == 'data' and datatype == 'line'):
