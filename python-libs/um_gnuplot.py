@@ -26,8 +26,10 @@ class UmGnuplot():
 
         # empty title use caption instead
         self.gplot('set title ""')
-        # default size
-        self.size = "14cm,5cm"
+        # default sizes
+        self.plotsize = "14cm,9.8cm"
+        self.fontsize = 6
+
         # name of the plot (for building filenames)
         self._plotname = plotname
 
@@ -81,8 +83,11 @@ class UmGnuplot():
     def setTimeFmt(self, timefmt):
         self.gplot("set timefmt %s" %timefmt)
 
-    def setSize(self, size):
-        self.size = size;
+    def setPlotSize(self, plotsize):
+        self.plotsize = plotsize
+
+    def setFontSize(self, fontsize):
+        self.fontsize = fontsize
 
     def plot(self, cmd):
         """Extends plotcmd with cmd"""
@@ -107,10 +112,7 @@ class UmGnuplot():
 
         info("Generating %s" %texfilename)
         # always epslatex output
-        if self.size:
-            self.gplot('set terminal epslatex input color solid "default" size %s font 6' %self.size)
-        else:
-            self.gplot('set terminal epslatex input color solid "default" font 6')
+        self.gplot('set terminal epslatex input color solid "default" size %s font %u' %(self.plotsize,(int(round(self.fontsize*1.2)) )) )
         self.setOutput(texfilename)
 
         # do the actual plotting
@@ -129,7 +131,8 @@ class UmGnuplot():
         gc.collect()
 
         info("Generating %s" %pdffilename)
-        cmd = ["um_gnuplot2pdf", "-f", "-p", pdffilename]
+        cmd = ["um_gnuplot2pdf", "-f", "-p", pdffilename, "-z",
+                str(self.fontsize)]
         if cfgfile:
             cmd.extend(["-c", cfgfile])
         if verbose:
@@ -303,8 +306,6 @@ class UmXPlot(UmGnuplot):
         UmGnuplot.__init__(self, *args, **kwargs)
         self.gplot(
         """
-        set terminal epslatex color solid colortext "default" 5
-
         set tics border out mirror;
         unset x2tics;
         unset y2tics;
@@ -314,7 +315,7 @@ class UmXPlot(UmGnuplot):
         set format y "$%.0f$";
 
         # set position of legend
-        set key on left top box lt rgb "gray50" samplen 3 width -6
+        set key on left top box lt rgb "gray50" samplen 3 width -2 spacing 1.05
         #
 """)
         # edit here
