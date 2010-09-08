@@ -219,8 +219,8 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 # write label out
                 if printthis:
                     labelsoutput.write('set label "\\\\fontsize{%s}{%s}\\\\selectfont %s" at %s, %s '\
-                            '%s offset %f, %f tc rgbcolor "%s" rotate by %s\n' %(labelsize, labelsize/1.2, label,
-                            xpoint,ypoint,position,labelyoffset,labelxoffset,localcolor,labelrotation) )
+                            '%s offset %f, %f tc rgbcolor "%s" rotate by %s\n'
+                            %(labelsize, int(round(labelsize/1.2)),label,xpoint,ypoint,position,labelyoffset,labelxoffset,localcolor,labelrotation) )
             # read colors
             elif tag == 'color':
                 currentcolor = xplfile[beg:end]
