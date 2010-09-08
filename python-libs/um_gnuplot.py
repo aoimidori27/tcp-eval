@@ -112,7 +112,7 @@ class UmGnuplot():
 
         info("Generating %s" %texfilename)
         # always epslatex output
-        self.gplot('set terminal epslatex input color solid "default" size %s font %u' %(self.plotsize,(int(round(self.fontsize*1.2)) )) )
+        self.gplot('set terminal epslatex input color colortext solid "default" size %s font %u' %(self.plotsize,(int(round(self.fontsize*1.2)) )) )
         self.setOutput(texfilename)
 
         # do the actual plotting
