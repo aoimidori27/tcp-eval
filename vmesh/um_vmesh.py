@@ -6,7 +6,7 @@
 #
 # Copyright (C) 2007 Arnd Hannemann <arnd@arndnet.de>
 # Copyright (C) 2007 Lars Noschinski <lars.noschinski@rwth-aachen.de>
-# 
+#
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
@@ -22,6 +22,7 @@ import socket
 import sys
 import subprocess
 import os
+import string
 from logging import info, debug, warn, error, critical
 
 # umic-mesh imports
@@ -83,7 +84,7 @@ Remarks:
         self.parser.set_usage(usage)
         self.parser.set_defaults(remote = True, interface = "ath0",
                                  multicast = "224.66.66.66", offset = 0, staticroutes=False,
-                                 multipath=False, maxpath=2, dry_run=False,
+                                 multipath=False, maxpath=2, dry_run=False, ipprefix = "172.16",
                                  userscriptspath="%s/config/vmesh-helper" %os.environ["HOME"])
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
@@ -92,15 +93,15 @@ Remarks:
                                action = "store_false", dest = "remote",
                                help = "Apply just the settings for the local host")
         self.parser.add_option("-i", "--interface",
-                               action = "store", dest = "interface", metavar="IFACE",
+                               action = "store", dest = "interface", metavar = "IFACE",
                                help = "Interface to use for the GRE tunnel "\
                                       "(default: %default)")
         self.parser.add_option("-m", "--multicast",
-                               action = "store", dest = "multicast", metavar="IP",
+                               action = "store", dest = "multicast", metavar = "IP",
                                help = "Multicast IP to use for GRE tunnel "\
                                       "(default: %default)")
         self.parser.add_option("-o", "--offset",
-                               action = "store", dest = "offset", metavar="OFFSET",
+                               action = "store", dest = "offset", metavar = "OFFSET",
                                type = int,
                                help = "Add this offset to all hosts in the config "\
                                       "(default: %default)")
@@ -109,7 +110,7 @@ Remarks:
                                help = "Execute user scripts for every node if available "\
                                       "(located in userscripts-path)")
         self.parser.add_option("--userscripts-path",
-                               action = "store", dest = "userscriptspath", metavar="PATH",
+                               action = "store", dest = "userscriptspath", metavar = "PATH",
                                help = "Path for the userscripts (default: %default)")
         self.parser.add_option("-s", "--staticroutes",
                                action = "store_true", dest = "staticroutes",
@@ -120,16 +121,20 @@ Remarks:
                                help = "Setup equal cost multipath routes. For use with -s "\
                                    "(default:%default)")
         self.parser.add_option("-x", "--maxpath",
-                                action="store", dest="maxpath", type = int,
+                                action = "store", dest = "maxpath", type = int,
                                 help = "Maximum number of parallel paths to set up. \
                                         Use only in connection with --multipath. "\
                                         "(default:%default)")
         self.parser.add_option("-R", "--rate",
-                               action = "store", dest = "rate", metavar="RATE",
+                               action = "store", dest = "rate", metavar = "RATE",
                                help = "Rate limit in mbps")
         self.parser.add_option("-d", "--dry-run",
                                action = "store_true", dest = "dry_run",
                                help = "Test the config only (default:%default)")
+        self.parser.add_option("-n", "--ipprefix",
+                              action = "store", dest = "ipprefix", metavar = "IPPREFIX",
+                              help = "Use to select different ip address ranges. "\
+                                     "(default.%default")
 
     def set_option(self):
         """Set the options for the BuildVmesh object"""
@@ -281,38 +286,59 @@ Remarks:
             warn("Visualizing topology failed.")
             warn("Visualizing failed: RC=%s, Error=%s" % (inst.rc, inst.stderr))
 
-    def gre_ip(self, hostnum, mask=False):
+    def net_num(self, interface):
+        num = interface.lstrip(string.letters)
+        return int(num)
+
+
+    def gre_ip(self, hostnum, mask = False):
         """Gets the gre ip for host with number "hostnum" """
+        ip_address_prefix = self.options.ipprefix
 
         if mask:
-            return "172.16.%s.%s/16" %( (hostnum-1)/254, (hostnum-1)%254+1 ) # FIXME - do not hardcode this.
+            return "%s.%s.%s/16" %( ip_address_prefix, (hostnum-1)/254, (hostnum-1)%254+1 )
         else:
-            return "172.16.%s.%s" %( (hostnum-1)/254, (hostnum-1)%254+1 )
+            return "%s.%s.%s" %( ip_address_prefix, (hostnum-1)/254, (hostnum-1)%254+1 )
 
 
     def gre_net(self, mask = True):
         """Gets the gre network address"""
+        ip_address_prefix = self.options.ipprefix
 
         if mask:
-            return "172.16.0.0/16"
+            return "%s.0.0/16" %( ip_address_prefix )
         else:
-            return "172.16.0.0"
+            return "%s.16.0.0" %( ip_address_prefix )
 
+    def gre_broadcast(self, mask = True):
+        """Gets the gre broadcast network address"""
+        ip_address_prefix = self.options.ipprefix
+        return "%s.255.255" %( ip_address_prefix )
+
+    def gre_multicast(self, multicast, interface):
+        last_ip_block = multicast[multicast.rfind('.') + 1:len(multicast)]
+        net_count = self.net_num(interface)
+
+        new_ip_block = (int(last_ip_block) + net_count - 1)%254 + 1
+        return "%s.%s" %(multicast[:multicast.rfind('.')], str(new_ip_block))
 
     def setup_gre(self):
         hostnum = self.node.getNumber()
         public_ip = self.node.getIPaddress(device = None)
-        gre_ip = self.gre_ip(hostnum, mask=True)
+        gre_ip = self.gre_ip(hostnum, mask = True)
+        gre_broadcast = self.gre_broadcast(mask = True)
 
         try:
             iface = self.options.interface
+            gre_multicast = self.gre_multicast(self.options.multicast, iface)
+
             info("setting up GRE Broadcast tunnel for %s" % hostnum )
             execute('ip tunnel del %s' % iface, True, False)
             execute('ip tunnel add %(iface)s mode gre local %(public)s remote %(mcast)s ttl 1 \
-                     && ip addr add %(gre)s broadcast 172.16.255.255 dev %(iface)s \
+                     && ip addr add %(gre)s broadcast %(broadcast)s dev %(iface)s \
                      && ip link set %(iface)s up' %
-                     {"public": public_ip, "gre": gre_ip, "iface": iface, "mcast": self.options.multicast},
-                     True)
+                     {"public": public_ip, "gre": gre_ip, "iface": iface, "broadcast": gre_broadcast,
+                      "mcast": gre_multicast}, True)
         except CommandFailed, inst:
             error("Setting up GRE tunnel %s (%s, %s) failed." % (hostnum, public_ip, gre_ip))
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -408,29 +434,34 @@ Remarks:
         peers = self.conf.get(hostnum, set())
         prefix = self.node.getHostnamePrefix()
         mcast = self.options.multicast
+        iface = self.options.interface
+        gre_multicast = self.gre_multicast(mcast, iface)
+
+        mesh_name = "mesh_gre_%s_in" %(iface)
+
 
         try:
-            execute('iptables -D INPUT -j mesh_gre_in -d %s;' % mcast
-                    + 'iptables -F mesh_gre_in;'
-                    + 'iptables -X mesh_gre_in;'
-                    + 'iptables -N mesh_gre_in', True)
+            execute('iptables -D INPUT -j %s -d %s;' %( mesh_name, gre_multicast)
+                    + 'iptables -F %s;' % mesh_name
+                    + 'iptables -X %s;' % mesh_name
+                    + 'iptables -N %s' % mesh_name, True)
         except CommandFailed, inst:
-            error('Could not create iptables chain "mesh_gre_in"')
+            error('Could not create iptables chain "%s"' % mesh_name)
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
             raise
 
         for p in peers:
             try:
                 info("Add iptables entry: %s reaches %s" % (p, hostnum))
-                execute('iptables -A mesh_gre_in -s %s%s -j ACCEPT' %(prefix,p), True)
+                execute('iptables -A %s -s %s%s -j ACCEPT' %(mesh_name, prefix, p), True)
             except CommandFailed, inst:
                 error('Adding iptables entry "%s reaches %s" failed.' % (p, hostnum))
                 error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
                 raise
 
         try:
-            execute('iptables -A mesh_gre_in -j DROP &&'
-                    'iptables -A INPUT -d %s -j mesh_gre_in' % mcast, True)
+            execute("iptables -A %s -j DROP &&" % mesh_name
+                    + "iptables -A INPUT -d %s -j %s" %(gre_multicast, mesh_name), True)
         except CommandFailed, inst:
             error("Inserting iptables chain into INPUT failed.")
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -566,8 +597,8 @@ Remarks:
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh",
-                                                "-i", self.options.interface, "-l", "-"]
+                cmd = ["ssh", h, "sudo", "./um_vmesh",
+                       "-i", self.options.interface, "-l", "-"]
                 if self.options.debug:
                     cmd.append("--debug")
 
@@ -592,6 +623,10 @@ Remarks:
                 if self.options.offset:
                     cmd.append("-o")
                     cmd.append(str(self.options.offset))
+
+                if self.options.ipprefix > 0:
+                     cmd.append("--ipprefix");
+                     cmd.append(str(self.options.ipprefix));
 
                 debug("Executing: %s", cmd)
                 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
