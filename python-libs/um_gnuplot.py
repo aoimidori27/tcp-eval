@@ -342,17 +342,19 @@ class UmXPlot(UmGnuplot):
         set style arrow 10 nohead lw LW lc rgb "orange" #sinfin
         """)
 
+        self.arrowsize = "0.004"
+
     def arrowheads(self):
         self.gplot("""
         # override definitions with arrowheads
-        set style arrow 3 heads back nofilled size 0.004,90 lw LW lc rgb "black" #data
-        set style arrow 4 heads back nofilled size 0.004,90 lw LW lc rgb "red" #retransmit
-        set style arrow 5 heads back nofilled size 0.004,90 lw LW lc rgb "cyan" #reorder
-        set style arrow 6 heads back nofilled size 0.004,90 lw LW lc rgb "magenta" #hw_dup
-        set style arrow 7 heads back nofilled size 0.004,90 lw LW lc rgb "purple" #sack
-        set style arrow 10 heads back nofilled size 0.004,90 lw LW lc rgb "orange" #sinfin
+        set style arrow 3 heads back nofilled size %s,90 lw LW lc rgb "black" #data
+        set style arrow 4 heads back nofilled size %s,90 lw LW lc rgb "red" #retransmit
+        set style arrow 5 heads back nofilled size %s,90 lw LW lc rgb "cyan" #reorder
+        set style arrow 6 heads back nofilled size %s,90 lw LW lc rgb "magenta" #hw_dup
+        set style arrow 7 heads back nofilled size %s,90 lw LW lc rgb "purple" #sack
+        set style arrow 10 heads back nofilled size %s,90 lw LW lc rgb "orange" #sinfin
 
-        """)
+        """ %(self.arrowsize,self.arrowsize,self.arrowsize,self.arrowsize,self.arrowsize,self.arrowsize) )
 
     def plot(self, outdir, basename, color, datatype, microview=False):
         # defaults settings

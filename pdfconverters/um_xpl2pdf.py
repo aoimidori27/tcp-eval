@@ -108,6 +108,9 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         self.parser.add_option("--plotsize", metavar = "xsize,ysize", type = "string",
                     action = "store", dest = "plotsize",
                     help = "plot size [default: 14cm,9.8cm], alternative: 14cm,5cm")
+        self.parser.add_option("--arrowsize", metavar = "size", type = "string",
+                    action = "store", dest = "arrowsize",
+                    help = "arrow size [default: 0.004]")
         self.parser.add_option("--fontsize", metavar = "", type = "int",
                     action = "store", dest = "fontsize",
                     help = "target fontsize [default: 6]")
@@ -147,6 +150,8 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         simpleparser = generator.buildParser(self.declaration).parserbyname('root')
 
         gploutput = UmXPlot(basename)
+        if self.options.arrowsize:
+            gploutput.arrowsize = self.options.arrowsize
         labelsoutput = open ( "%s/%s.labels" %(outdir,basename) , 'w')
 
         # start the work
