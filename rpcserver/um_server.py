@@ -27,10 +27,10 @@ from twisted.internet import reactor, defer
 from twisted.enterprise import adbapi
 
 # umic-mesh imports
-import um_twisted_xmlrpc
 from um_application import Application
 from um_twisted_functions import twisted_call
 from um_twisted_meshdb import MeshDbPool
+from um_twisted_xmlrpc import xmlrpc_meshconf
 
 class RPCServer(xmlrpc.XMLRPC):
     """RPC Server"""
