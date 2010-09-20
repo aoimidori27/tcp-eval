@@ -17,6 +17,7 @@
 # python imports
 import os
 import imp
+import socket
 import sys
 from logging import info, debug, warn, error, critical
 
@@ -26,6 +27,7 @@ from twisted.internet import reactor, defer
 from twisted.enterprise import adbapi
 
 # umic-mesh imports
+import um_twisted_xmlrpc
 from um_application import Application
 from um_twisted_functions import twisted_call
 from um_twisted_meshdb import MeshDbPool
@@ -115,8 +117,7 @@ class RPCServer(xmlrpc.XMLRPC):
 
         text = "Starting services..."
         info(text)
-        yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
-                shell=False)
+        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeConfigChanged", socket.gethostname())
 
 
         services = yield self._dbpool.getServicesToStart()
@@ -137,8 +138,7 @@ class RPCServer(xmlrpc.XMLRPC):
                 error("I'm supposed to start %s, which is not there!" %service)
                 rc = -1
         text = "Done."
-        yield twisted_call(["/sbin/usplash_write", "TEXT %s" % text ],
-                shell=False)
+        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeOnlined", socket.gethostname())
 
         defer.returnValue(0)
 

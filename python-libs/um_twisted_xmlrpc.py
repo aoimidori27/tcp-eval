@@ -24,3 +24,10 @@ def xmlrpc(host, cmd, *args):
     proxy = Proxy('http://%s:7080' %(host))
     debug("Calling %s on %s with args %s" %(cmd,host,args))
     return proxy.callRemote(cmd, *args)
+
+def xmlrpc_meshconf(cmd, *args):
+    """Calls a remote procedure via http on the MeshConf webserver"""
+    
+    proxy = Proxy('http://webserver:8180/MeshConf/meshconf/xmlrpc')
+    debug("Calling on webserver: %s(%s)" %(cmd, args))
+    return proxy.callRemote(cmd, *args)
