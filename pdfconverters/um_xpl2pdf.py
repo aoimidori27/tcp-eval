@@ -107,7 +107,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     help = "gnuplot y range [default: let gnuplot decide]")
         self.parser.add_option("--plotsize", metavar = "xsize,ysize", type = "string",
                     action = "store", dest = "plotsize",
-                    help = "plot size [default: 14cm,9.8cm], alternative: 14cm,5cm")
+                    help = "plot size [default: 14.8cm,11.8cm], alternative: 14.8cm,9cm")
         self.parser.add_option("--arrowsize", metavar = "size", type = "string",
                     action = "store", dest = "arrowsize",
                     help = "arrow size [default: 0.004]")
@@ -190,7 +190,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 # label options
                 # defaults
                 printthis = True
-                labelxoffset = 0.4
+                labelxoffset = 0.5
                 labelyoffset = 0.0
                 labelrotation = 0
                 if not self.options.fontsize:

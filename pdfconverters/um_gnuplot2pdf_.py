@@ -1,4 +1,4 @@
-#!/usr/bin/env /usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # Generates pdfs from gnuplot epslatex files.
@@ -39,7 +39,7 @@ class Gnuplot2PDF(Application):
         self._latex = None
 
         # initialization of the option parser
-        usage = "usage: %prog [options] <gplot> | <gplotdir> ...\n"\
+        usage = "usage: %prog [options] <gplotdir> ...\n"\
                 "       where 'gplotdir' is directory which contains one *.gpl or *.gplot file"
 
         self.parser.set_usage(usage)
@@ -63,7 +63,9 @@ class Gnuplot2PDF(Application):
         self.parser.add_option("-z", "--font-size", metavar = "NUM", type = int,
                                action = "store", dest = "fontsize",
                                help = "set font size [default: %default]")
-
+        self.parser.add_option("-t", "--dont-replot",
+                                dest = "dontreplot", action = "store_true",
+                                help = "dont replot file, use previous eps")
     def set_option(self):
         """Set options"""
 
@@ -80,7 +82,7 @@ class Gnuplot2PDF(Application):
         # use sans serif font and set the correct font size
         self._latex.setDocumentclass("scrartcl", "fontsize=%spt" %self.options.fontsize)
         self._latex.addSetting(r"\renewcommand{\familydefault}{\sfdefault}")
-
+        self._latex.addSetting(r"\usepackage{sfmath}")
     def run(self):
         """Main method of the Gnuplot2PDF object"""
 
@@ -125,30 +127,32 @@ class Gnuplot2PDF(Application):
                 
             # get the basename (without extension)
             if self.options.basename:
-                basename = "%s_%s" %(self.options.basename, index)
+                basename = "%s-%s" %(self.options.basename, index)
             else:
-                basename = os.path.basename(gplot)
+                basename = os.path.basename(target)
                 basename = os.path.splitext(basename)[0]
                 
             # build names for output files
-            gplotEps = "%s_gplot.eps" %basename
-            gplotPdf = "%s_gplot.pdf" %basename
-            gplotTex = "%s_gplot.tex" %basename
+            gplotEps = "%s.eps" %basename
+            gplotPdf = "%s.pdf" %basename
+            gplotTex = "%s.tex" %basename
 
             # build gnuplot object and load the given gnuplot file
             # be safe; print a new line if the load file include a "pause" command
             info("Run gnuplot on %s..." %gplot)            
             gp = Gnuplot.Gnuplot(debug = int(self.options.debug))
-            gp('set terminal epslatex color solid "default" %s' %self.options.fontsize)
-            gp('set output "%s"'%gplotTex)
-            gp.load(target)
-            gp("\n")
+            if not self.options.dontreplot:
+                gp('set terminal epslatex color colortext solid "default" %s' %self.options.fontsize)
+                gp('set output "%s"'%gplotTex)
+                gp.load(target)
+                gp("\n")
             
             # replot with epslatex terminal
-            gp('set terminal epslatex color solid "default" %s' %self.options.fontsize)
-            gp('set output "%s"' %gplotTex)
-            gp("replot")
-            gp.close()
+            if not self.options.dontreplot:
+                gp('set terminal epslatex color colortext solid "default" %s' %self.options.fontsize)
+                gp('set output "%s"' %gplotTex)
+                gp("replot")
+                gp.close()
                         
             # convert the EPS file to a PDF file   
             info("Run epstopdf on %s..." %gplot)
