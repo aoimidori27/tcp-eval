@@ -108,7 +108,7 @@ class RPCServer(xmlrpc.XMLRPC):
         for service in services:
             text = "Stopping service %s" % service
             debug(text)
-            yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.serviceStopped", socket.gethostname(), text)
+            yield xmlrpc_meshconf("XmlRpcNodeEventHandler.serviceStopped", socket.gethostname(), text)
             if self._services.has_key(service):
                 yield self._services[service].xmlrpc_stop()
             else:
@@ -124,7 +124,7 @@ class RPCServer(xmlrpc.XMLRPC):
         for service in services:
             text = "Starting service %s" % service
             info(text)
-            yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.serviceStarted", socket.gethostname(), text)
+            yield xmlrpc_meshconf("XmlRpcNodeEventHandler.serviceStarted", socket.gethostname(), text)
             if self._services.has_key(service):
                 rc = yield self._services[service].xmlrpc_start()
                 info("Service returned RC=%s" %rc)
