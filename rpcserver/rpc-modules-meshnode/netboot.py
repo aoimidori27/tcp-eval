@@ -12,7 +12,7 @@ from twisted.web import xmlrpc
 # umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
-from um_twisted_xmlrpc import xmlrpc
+from um_twisted_xmlrpc import xmlrpc, xmlrpc_meshconf
 
 class Netboot(RPCService):
     """Class for managing the netboot module"""
@@ -119,6 +119,7 @@ class Netboot(RPCService):
             rc = yield xmlrpc("bootserver", "bootscripts.updateNodelink", socket.gethostname() ) 
             if (rc != 0):
                 warn("Failed to update nodelink RC=%s" %rc)
+            yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeRebooted", socket.gethostname())
             yield twisted_execute(["/sbin/shutdown", "-r","now"], shell=False)
             defer.returnValue("reboot")
         else:
