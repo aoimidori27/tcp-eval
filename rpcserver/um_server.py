@@ -137,6 +137,7 @@ class RPCServer(xmlrpc.XMLRPC):
                 rc = -1
         text = "Done."
         yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeOnlined", socket.gethostname())
+        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeConfigChanged", socket.gethostname())
 
         defer.returnValue(0)
 
