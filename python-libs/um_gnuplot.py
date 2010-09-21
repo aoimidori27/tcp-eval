@@ -27,7 +27,7 @@ class UmGnuplot():
         # empty title use caption instead
         self.gplot('set title ""')
         # default sizes
-        self.plotsize = "14cm,9.8cm"
+        self.plotsize = "14.8cm,11.8cm"
         self.fontsize = 6
 
         # name of the plot (for building filenames)
@@ -54,6 +54,7 @@ class UmGnuplot():
         set border 31 front linetype -1 linewidth 1.000
         set grid noxtics ytics nopolar back
         set boxwidth 0.9 relative
+        set clip points
         set style fill solid 1.00 border -1
         """)
 
@@ -131,13 +132,13 @@ class UmGnuplot():
         gc.collect()
 
         info("Generating %s" %pdffilename)
-        cmd = ["um_gnuplot2pdf", "-f", "-p", pdffilename, "-z",
+        cmd = ["um_gnuplot2pdf_", "-t", "-f", ".", "-z",
                 str(self.fontsize)]
         if cfgfile:
             cmd.extend(["-c", cfgfile])
         if verbose:
             cmd.append("--debug")
-        cmd.append(os.path.join(outdir,plotname))
+        debug(cmd)
         call(cmd, shell=False)
 
 
@@ -313,7 +314,6 @@ class UmXPlot(UmGnuplot):
         #set mytics;
         set format x "$%.2f$";
         set format y "$%.0f$";
-
         # set position of legend
         set key on left top box lt rgb "gray50" samplen 3 width -2 spacing 1.05
         #
@@ -324,7 +324,7 @@ class UmXPlot(UmGnuplot):
         LW = 1
         # point size (used in macroview for segments)
         STANDARDPS = 0.1 #standardsegments
-        OTHERPS = 0.4 #retransmit, reorders etc are plotted big
+        OTHERPS = 0.6 #retransmit, reorders etc are plotted big
 
         # styles, nohead for line, heads for arrows
         # for aditional colors check
@@ -463,7 +463,7 @@ class UmXPlot(UmGnuplot):
                 plot = True
 
         elif (color == 'icmp' and datatype == 'diamond'):
-            style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "yellow"'
+            style = 'points pointtype 6 pointsize OTHERPS linewidth LW linecolor rgb "yellow"'
             title = "ICMP"
             plot = True
 
@@ -474,14 +474,14 @@ class UmXPlot(UmGnuplot):
                 plot = True
                 UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "purple" title "SACK"')
 
-        # single acks, plot only in microview
-        elif (color == 'sack' and datatype == 'tick'):
-            style = 'points pointtype 7 pointsize OTHERPS linewidth LW linecolor rgb "purple"'
-            title = ""
-            if not microview:
-                plot = True
-                UmGnuplot.plot(self, '1/0 with points pointtype 7 pointsize OTHERPS '\
-                                'linewidth LW linecolor rgb "purple" title "SACK"')
+#        # single acks, plot only in macroview
+#        elif (color == 'sack' and datatype == 'tick'):
+#            style = 'points pointtype 7 pointsize OTHERPS linewidth LW linecolor rgb "purple"'
+#            title = ""
+#            if not microview:
+#                plot = True
+#                UmGnuplot.plot(self, '1/0 with points pointtype 7 pointsize OTHERPS '\
+#                                'linewidth LW linecolor rgb "purple" title "SACK"')
 
         # garbade datatypes, you usually dont plot them
         # sinfin
