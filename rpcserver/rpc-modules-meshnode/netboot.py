@@ -61,10 +61,13 @@ class Netboot(RPCService):
         self._name = "netboot"
         self._config = None
 
-    @defer.inlineCallbacks
     def reboot(self):
-        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeRebooted", socket.gethostname())
-        yield twisted_execute(["/sbin/shutdown", "-r","now"], shell=False)
+        deferredList = list()
+        deferredList.append(xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeRebooted",
+                            socket.gethostname()))
+        deferredList.append(twisted_execute(["/sbin/shutdown", "-r","now"],
+                            shell=False))
+        return defer.DeferredList(deferredList)
 
     @defer.inlineCallbacks
     def reread_config(self):
