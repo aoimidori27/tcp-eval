@@ -108,7 +108,8 @@ class RPCServer(xmlrpc.XMLRPC):
         for service in services:
             text = "Stopping service %s" % service
             debug(text)
-            yield xmlrpc_meshconf("XmlRpcNodeEventHandler.serviceStopped", socket.gethostname(), text)
+            yield xmlrpc_meshconf("XmlRpcNodeEventHandler.serviceStopped", 
+                                  socket.gethostname(), text)
             if self._services.has_key(service):
                 yield self._services[service].xmlrpc_stop()
             else:
@@ -116,7 +117,8 @@ class RPCServer(xmlrpc.XMLRPC):
 
         text = "Starting services..."
         info(text)
-        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeConfigChanged", socket.gethostname())
+        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeConfigChanged", 
+                              socket.gethostname())
 
 
         services = yield self._dbpool.getServicesToStart()
@@ -124,7 +126,8 @@ class RPCServer(xmlrpc.XMLRPC):
         for service in services:
             text = "Starting service %s" % service
             info(text)
-            yield xmlrpc_meshconf("XmlRpcNodeEventHandler.serviceStarted", socket.gethostname(), text)
+            yield xmlrpc_meshconf("XmlRpcNodeEventHandler.serviceStarted",
+                                  socket.gethostname(), text)
             if self._services.has_key(service):
                 rc = yield self._services[service].xmlrpc_start()
                 info("Service returned RC=%s" %rc)
@@ -135,9 +138,15 @@ class RPCServer(xmlrpc.XMLRPC):
             else:
                 error("I'm supposed to start %s, which is not there!" %service)
                 rc = -1
-        text = "Done."
-        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeOnlined", socket.gethostname())
-        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeConfigChanged", socket.gethostname())
+
+        # set MeshConf bootmsg to "Done"
+        yield xmlrpc_meshconf("XmlRpcNodeEventHandler.serviceStarted", 
+                              socket.gethostname(), "Done")
+        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeOnlined", 
+                              socket.gethostname())
+        # forces MeshConf to update its data (expensive, don't do it often)
+        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeConfigChanged", 
+                              socket.gethostname())
 
         defer.returnValue(0)
 
