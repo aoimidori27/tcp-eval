@@ -41,6 +41,10 @@ class Netboot(RPCService):
     def xmlrpc_stop(self):
         return self.stop()
 
+    def xmlrpc_reboot(self):
+        """ Force a call to reboot """
+        return self.reboot()
+
     @defer.inlineCallbacks
     def xmlrpc_isAlive(self):
         """Check if kernel is loaded ;-)"""
@@ -56,6 +60,11 @@ class Netboot(RPCService):
         # servicename in database
         self._name = "netboot"
         self._config = None
+
+    @defer.inlineCallbacks
+    def reboot(self):
+        yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeRebooted", socket.gethostname())
+        yield twisted_execute(["/sbin/shutdown", "-r","now"], shell=False)
 
     @defer.inlineCallbacks
     def reread_config(self):
@@ -119,8 +128,7 @@ class Netboot(RPCService):
             rc = yield xmlrpc("bootserver", "bootscripts.updateNodelink", socket.gethostname() ) 
             if (rc != 0):
                 warn("Failed to update nodelink RC=%s" %rc)
-            yield xmlrpc_meshconf("XmlRpcNodeStatusHandler.nodeRebooted", socket.gethostname())
-            yield twisted_execute(["/sbin/shutdown", "-r","now"], shell=False)
+            yield self.reboot()
             defer.returnValue("reboot")
         else:
             info("Config and /proc/cmdline match, doing nothing.")
