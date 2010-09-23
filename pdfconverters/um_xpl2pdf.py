@@ -200,9 +200,9 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 # special cases
                 if label == "R":
                     localcolor = "red"
-                    if self.options.microview:
-                        labelxoffset = -0.15
-                        labelyoffset = 0.7
+                    #if self.options.microview:
+                    #    labelxoffset = -0.15
+                    #    labelyoffset = 0.7
                 elif label == "3" or label == "2" or label == "1":
                     printthis = False
                 elif label == "3DUP":
