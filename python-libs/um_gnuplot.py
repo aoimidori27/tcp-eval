@@ -132,7 +132,7 @@ class UmGnuplot():
         gc.collect()
 
         info("Generating %s" %pdffilename)
-        cmd = ["um_gnuplot2pdf_", "-t", "-f", ".", "-z",
+        cmd = ["um_gnuplot2pdf", "-t", "-f", ".", "-z",
                 str(self.fontsize)]
         if cfgfile:
             cmd.extend(["-c", cfgfile])
@@ -324,7 +324,7 @@ class UmXPlot(UmGnuplot):
         LW = 1
         # point size (used in macroview for segments)
         STANDARDPS = 0.1 #standardsegments
-        OTHERPS = 0.6 #retransmit, reorders etc are plotted big
+        OTHERPS = 0.8 #retransmit, reorders etc are plotted big
 
         # styles, nohead for line, heads for arrows
         # for aditional colors check
@@ -429,7 +429,7 @@ class UmXPlot(UmGnuplot):
                         'title "Retransmitted Segment"')
 
         elif (color == 'retransmit' and datatype == 'varrow'):
-            style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "red"'
+            style = 'points pointtype 1 pointsize OTHERPS linewidth LW linecolor rgb "red"'
             title = "Retransmitted Segment"
             if not microview:
                 plot = True
@@ -463,7 +463,7 @@ class UmXPlot(UmGnuplot):
                 plot = True
 
         elif (color == 'icmp' and datatype == 'diamond'):
-            style = 'points pointtype 6 pointsize OTHERPS linewidth LW linecolor rgb "yellow"'
+            style = 'points pointtype 6 pointsize 1 linewidth LW linecolor rgb "brown"'
             title = "ICMP"
             plot = True
 
