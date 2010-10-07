@@ -90,6 +90,10 @@ class Flowgrindd(RPCService):
         args = ["-p", "%u" %self._config["port"]]
         if (self._config["verbose"]):
             args.extend("-D")
+        if (self._config["dumpdir"]):
+            args.extend("-w")
+            args.extent(self._config["dumppdir"])
+
         cmd = [ "start-stop-daemon", "--start",
                 "--exec", self._daemon,
                 "--"]
