@@ -87,12 +87,9 @@ class Flowgrindd(RPCService):
     def start(self):
         """This function invokes start-stop daemon to bring up flowgrindd"""
 
-        args = ["-p", "%u" %self._config["port"]]
+        args = ["-p", "%u" %self._config["port"], "-w", "%s" %self._config["dumpdir"] ]
         if (self._config["verbose"]):
             args.extend("-D")
-        if (self._config["dumpdir"]):
-            args.extend("-w")
-            args.extent(self._config["dumppdir"])
 
         cmd = [ "start-stop-daemon", "--start",
                 "--exec", self._daemon,
