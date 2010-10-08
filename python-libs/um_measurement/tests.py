@@ -173,6 +173,7 @@ def test_flowgrind(mrs,
                    log_file,
                    flowgrind_src,
                    flowgrind_dst,
+                   flowgrind_timeout = 3,
                    flowgrind_duration = 15,
                    flowgrind_cc     = "reno",
                    flowgrind_dump   = False,
@@ -251,7 +252,7 @@ def test_flowgrind(mrs,
             warn("Failed to start tcpdump on %s: %s" %(dst.getHostname(),
                                                        dres[1].getErrorMessage()))
 
-    result = yield mrs.local_execute(" ".join(cmd), log_file, timeout=flowgrind_duration+3)
+    result = yield mrs.local_execute(" ".join(cmd), log_file, timeout=flowgrind_duration + flowgrind_timeout)
 
     if flowgrind_dump:
         yield mrs.xmlrpc_many([src.getHostname(),dst.getHostname()],
