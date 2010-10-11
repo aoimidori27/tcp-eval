@@ -176,7 +176,9 @@ class FlowPlotter(Application):
         flows = record.calculate("flows")
 
         cwnd_max = 0
-
+        if not flows:
+            error("parse error")
+            sys.exit(1)
         if flownumber > len(flows):
             error("requested flow number %i greater then flows in file: %i"
                     %(flownumber,len(flows) ) )
