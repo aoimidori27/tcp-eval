@@ -36,12 +36,26 @@ class FlowPlotter(Application):
         self.factory = FlowgrindRecordFactory()
 
         # initialization of the option parser
-        usage = "Usage: %prog [options] flowgrind-log [flowgrind-log] ...\n"\
-                "Creates graphs given by -G for every flowgrind-log specified."
+        usage = "Usage: %prog [options] flowgrind-log[,flowgrind-log,..] [flowgrind-log[,flowgrind-log,..]] ...\n"\
+                "Creates graphs given by -G for every flowgrind-log specified.\n"\
+                "For a set of comma-seperated log files an average is built (throughput only!)"
 
         self.parser.set_usage(usage)
-        self.parser.set_defaults(outdir = "./", flownumber="0", resample='0',
-                                 plotsrc='True', plotdst='False', graphics='tput,cwnd,rtt,segments' )
+        self.parser.set_defaults(outdir = "./", flownumber="0", resample='0', all = False, aname = "out",
+                                 plotsrc='True', plotdst='False', graphics='tput,cwnd,rtt,segments', startat=0, endat=0)
+
+        self.parser.add_option('-S', '--startat', metavar="time",
+                        action = 'store', type = 'float', dest = 'startat',
+                        help = 'Start at this point in time [default: %default]')
+        self.parser.add_option('-E', '--endat', metavar="time",
+                        action = 'store', type = 'float', dest = 'endat',
+                        help = 'Start at this point in time [default: %default]')
+        self.parser.add_option('-A', '--aname', metavar="filename",
+                        action = 'store', type = 'string', dest = 'aname',
+                        help = 'Set output filename for usage with -a [default: %default]')
+        self.parser.add_option('-a', '--all',
+                        action = 'store_true', dest = 'all',
+                        help = 'Print all flowlogs in one graph')
         self.parser.add_option('-O', '--output', metavar="OutDir",
                         action = 'store', type = 'string', dest = 'outdir',
                         help = 'Set outputdirectory [default: %default]')
@@ -52,7 +66,7 @@ class FlowPlotter(Application):
         self.parser.add_option("-n", "--number", metavar = "Flownumber",
                         action = 'store', type = 'int', dest = 'flownumber',
                         help = 'print flow number [default: %default]')
-        self.parser.add_option("-r", "--resample", metavar = "Count",
+        self.parser.add_option("-r", "--resample", metavar = "Rate",
                         action = 'store', type = 'float', dest = 'resample',
                         help = 'resample to this sample rate [default:'\
                                ' dont resample]')
@@ -153,8 +167,89 @@ class FlowPlotter(Application):
         else: return nosamples  # resample == 0
 
 
-    def plot(self, infile, outdir=None):
-        """Plot one file"""
+    def load_values(self, infile):
+
+        flow_array = []
+
+        for file in infile.split(','):
+            # create record from given file
+            flownumber = self.options.flownumber
+            record = self.factory.createRecord(file, "flowgrind")
+            flows = record.calculate("flows")
+
+            if flownumber > len(flows):
+                error("requested flow number %i greater then flows in file: %i"
+                        %(flownumber,len(flows) ) )
+                sys.exit(1)
+            flow = flows[flownumber]
+
+            plotname = os.path.splitext(os.path.basename(file))[0]
+
+            # to avoid code duplicates
+            directions = ['S', 'R']
+            nosamples = min(flow['S']['size'], flow['R']['size'])
+            debug("nosamples: %i" %nosamples)
+        if not flows:
+            error("parse error")
+            sys.exit(1)
+            # resampling
+            nosamples = self.resample(record, directions, nosamples, flow)  # returns the new value for nosamples if anything was changed
+
+            flow_array.append([plotname, flow, record, nosamples])
+
+        #build average, save it to flow_array[0]
+        if len(flow_array) > 1:
+            for i in range(len(flow_array[0][1]['S']['tput'])):
+                avg_S = 0
+                avg_R = 0
+                for l in range(len(flow_array)):
+                    avg_S += flow_array[l][1]['S']['tput'][i]
+                    avg_R += flow_array[l][1]['R']['tput'][i]
+                flow_array[0][1]['S']['tput'][i] = avg_S/len(flow_array)
+                flow_array[0][1]['R']['tput'][i] = avg_R/len(flow_array)
+
+        plotname = flow_array[0][0] #just take one
+        flow = flow_array[0][1]        #average for all files
+        record = flow_array[0][2]      #hopefully the used parameter is always the same :)
+        nosamples = min([flow_array[i][3] for i in range(len(flow_array))])
+
+        #delete all data BEFORE some given time
+        if self.options.startat > 0:
+            for i in range(nosamples):
+                if flow['S']['begin'][i] > self.options.startat: #get point where the time is over the threshold
+                    for d in directions:    #delete all entries before this point
+                        for key in flow[d].keys():
+                            try:
+                                len(flow[d][key])
+                            except: continue
+                            flow[d][key] = flow[d][key][i:nosamples]
+                    break
+            nosamples = nosamples-i
+
+        #delete all data AFTER some given time
+        if self.options.endat > 0:
+            for i in range(nosamples):
+                if flow['S']['begin'][i] > self.options.endat: #get point where the time is over the threshold
+                    for d in directions:    #delete all entries before this point
+                        for key in flow[d].keys():
+                            try:
+                                len(flow[d][key])
+                            except: continue
+                            flow[d][key] = flow[d][key][0:i]
+                    break
+            nosamples = i
+
+        # get max cwnd for ssth output
+        cwnd_max = 0
+        for i in range(nosamples):
+            for dir in directions:
+                if flow[dir]['cwnd'][i] > cwnd_max:
+                    cwnd_max = flow[dir]['cwnd'][i]
+
+        return plotname, flow, cwnd_max, record, nosamples
+
+    def write_values(self, infile):
+        """Write values of one file"""
 
         def ssth_max(ssth):
             SSTHRESH_MAX = 2147483647
@@ -167,44 +262,18 @@ class FlowPlotter(Application):
             if rto == 3000: return 0
             else:           return rto
 
-        if not outdir:
-            outdir=self.options.outdir
+        plotname, flow, cwnd_max, record, nosamples = self.load_values(infile)
 
-        # create record from given file
-        flownumber = self.options.flownumber
-        record = self.factory.createRecord(infile, "flowgrind")
-        flows = record.calculate("flows")
-
-        cwnd_max = 0
-        if not flows:
-            error("parse error")
-            sys.exit(1)
-        if flownumber > len(flows):
-            error("requested flow number %i greater then flows in file: %i"
-                    %(flownumber,len(flows) ) )
-            sys.exit(1)
-        flow = flows[flownumber]
-
-        plotname = os.path.splitext(os.path.basename(infile))[0]
+        outdir=self.options.outdir
         valfilename = os.path.join(outdir, plotname+".values")
-
-        # to avoid code duplicates
-        directions = ['S', 'R']
-        nosamples = min(flow['S']['size'], flow['R']['size'])
-        debug("nosamples: %i" %nosamples)
-
-        # get max cwnd for ssth output
-        for i in range(nosamples):
-            for dir in directions:
-                if flow[dir]['cwnd'][i] > cwnd_max:
-                    cwnd_max = flow[dir]['cwnd'][i]
-
-        # resampling
-        nosamples = self.resample(record, directions, nosamples, flow)  # returns the new value for nosamples if anything was changed
-
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
         # header
+        recordHeader = record.getHeader()
+        try:
+            label        = recordHeader["scenario_label"]
+        except:
+            label = ""
         fh.write("# start_time end_time forward_tput reverse_tput forward_cwnd reverse_cwnd ssth krtt krto lost reor fret tret dupthresh\n")
         for i in range(nosamples):
             formatfields = (flow['S']['begin'][i],
@@ -228,65 +297,106 @@ class FlowPlotter(Application):
             fh.write( formatstring % formatfields )
         fh.close()
 
+        return [plotname, label]
+
+
+    def plot(self, *plotnameList):
+        outdir = self.options.outdir
+
+        outname = plotnameList[0][0]
+        if len(plotnameList) > 1:
+            outname = self.options.aname
+
         if 'tput' in self.graphics_array:
             # tput
-            p = UmLinePlot(plotname+'_tput')
+            p = UmLinePlot(outname+'_tput')
             p.setYLabel(r"Throughput ($\\si[per=frac,fraction=nice]{\\Mbps}$)")
             p.setXLabel(r"time ($\\si{\\second}$)")
-            if self.options.plotsrc == 'True': p.plot(valfilename, "forward path", using="2:3", linestyle=2)
-            if self.options.plotdst == 'True': p.plot(valfilename, "reverse path", using="2:4", linestyle=3)
+
+            count = 0
+            for plotname, label in plotnameList:
+                count += 1
+                valfilename = os.path.join(outdir, plotname+".values")
+                if self.options.plotsrc == 'True': p.plot(valfilename, "forward path %s" %label, using="2:3", linestyle=2*count)
+                if self.options.plotdst == 'True': p.plot(valfilename, "reverse path %s" %label, using="2:4", linestyle=2*count+1)
+
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
         if 'cwnd' in self.graphics_array:
             # cwnd
-            p = UmLinePlot(plotname+'_cwnd_ssth')
+            p = UmLinePlot(outname+'_cwnd_ssth')
             p.setYLabel(r"$\\#$")
             p.setXLabel(r"time ($\\si{\\second}$)")
-            if self.options.plotsrc == 'True': p.plot(valfilename, "Sender CWND", using="2:5", linestyle=2)
-            if self.options.plotdst == 'True': p.plot(valfilename, "Receiver CWND", using="2:6", linestyle=3)
-            p.plot(valfilename, "SSTH", using="2:7", linestyle=1)
+            count = 0
+            for plotname, label in plotnameList:
+                valfilename = os.path.join(outdir, plotname+".values")
+                if self.options.plotsrc == 'True': p.plot(valfilename, "Sender CWND %s" %label, using="2:5", linestyle=3*count+1)
+                if self.options.plotdst == 'True': p.plot(valfilename, "Receiver CWND %s" %label, using="2:6", linestyle=3*count+2)
+                p.plot(valfilename, "SSTH %s" %label, using="2:7", linestyle=3*count+3)
+                count += 1
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
         if 'rtt' in self.graphics_array:
             # rto, rtt
-            p = UmLinePlot(plotname+'_rto_rtt')
+            p = UmLinePlot(outname+'_rto_rtt')
             p.setYLabel(r"$\\si{\\milli\\second}$")
             p.setXLabel(r"time ($\\si{\\second}$)")
-            p.plot(valfilename, "RTO", using="2:9", linestyle=2)
-            p.plot(valfilename, "RTT", using="2:8", linestyle=3)
+            count = 0
+            for plotname, label in plotnameList:
+                count += 1
+                valfilename = os.path.join(outdir, plotname+".values")
+                p.plot(valfilename, "RTO %s" %label, using="2:9", linestyle=2*count)
+                p.plot(valfilename, "RTT %s" %label, using="2:8", linestyle=2*count+1)
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
         if 'segments' in self.graphics_array:
             # lost, reorder, retransmit
-            p = UmLinePlot(plotname+'_lost_reor_retr')
+            p = UmLinePlot(outname+'_lost_reor_retr')
             p.setYLabel(r"$\\#$")
             p.setXLabel(r"time ($\\si{\\second}$)")
-            p.plot(valfilename, "lost segments", using="2:10", linestyle=2)
-            p.plot(valfilename, "reordered segments", using="2:11", linestyle=3)
-            p.plot(valfilename, "fast retransmits", using="2:12", linestyle=4)
-            p.plot(valfilename, "timeout retransmits", using="2:13", linestyle=5)
+            count = 0
+            for plotname, label in plotnameList:
+                valfilename = os.path.join(outdir, plotname+".values")
+                p.plot(valfilename, "lost segments %s" %label, using="2:10", linestyle=4*count+1)
+                p.plot(valfilename, "dupthresh %s" %label, using="2:11", linestyle=4*count+2)
+                p.plot(valfilename, "fast retransmits %s" %label, using="2:12", linestyle=4*count+3)
+                p.plot(valfilename, "timeout retransmits %s" %label, using="2:13", linestyle=4*count+4)
+                count += 1
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
         if 'dupthresh' in self.graphics_array:
             # dupthresh, tp->reordering
-            p = UmStepPlot(plotname+'_reordering_dupthresh')
+            p = UmStepPlot(outname+'_reordering_dupthresh')
             p.setYLabel(r"dupack threshold $[\\#]$")
             p.setXLabel(r"time $[\\si{\\second}]$")
-            max_y_value = max(flow['S']['reor'] + flow['S']['dupthresh'])
-            p.setYRange("[*:%u]" % int(max_y_value + ((20 * max_y_value) / 100 )))
-            p.plot(valfilename, "tp->reordering", using="2:11", linestyle=2)
-            p.plot(valfilename, "Algorithm DupThresh", using="2:14", linestyle=3)
+            #max_y_value = max(flow['S']['reor'] + flow['S']['dupthresh'])
+            #p.setYRange("[*:%u]" % int(max_y_value + ((20 * max_y_value) / 100 )))
+            count = 0
+            for plotname, label in plotnameList:
+                count += 1
+                valfilename = os.path.join(outdir, plotname+".values")
+                p.plot(valfilename, "tp->reordering %s" %label, using="2:11", linestyle=2*count)
+                p.plot(valfilename, "Algorithm DupThresh %s" %label, using="2:14", linestyle=2*count+1)
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
     def run(self):
         """Run..."""
-        for infile in self.args:
-            self.plot(infile)
+
+        if not self.options.all:
+            for infile in self.args:
+                plotname = self.write_values(infile)
+                self.plot(plotname)
+        else:
+            plotnameList = []
+            for infile in self.args:
+                plotnameList.append(self.write_values(infile))
+
+            self.plot(*plotnameList)
 
     def main(self):
         self.parse_option()
