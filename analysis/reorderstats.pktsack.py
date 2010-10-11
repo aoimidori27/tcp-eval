@@ -20,6 +20,7 @@ import dpkt
 import struct
 import socket
 from logging import info, debug, warn, error
+from collections import deque
 
 # umic-mesh imports
 from um_application import Application
@@ -289,9 +290,9 @@ class ReorderInfo(Application):
             pkt_all += con['all']
             print "%s\t%s\t%s\t%s\t  %s   %s   %s\t%s\t%s\t%s\t%s\t%s\t%f" %(con['src'],con['sport'],con['dst'],con['dport'],\
                                                        con['syn'],con['rst'],con['fin'],con['sack'],con['dsack'],\
-                                                       con['all'],con['reorder'],con['dreorder'],float(con['reorder']+con['dreorder'])/con['all'])
-        print "No. connections with reordering: %u out of %u (%f)" %(con_reordered, len(info.connections), float(con_reordered)/len(info.connections))
-        print "Packets reordered: %u out of %u (%f)" %(pkt_reordered, pkt_all, float(pkt_reordered)/pkt_all)
+                                                       con['all'],con['reorder'],con['dreorder'],float(con['reorder']+con['dreorder'])/con['all']*100)
+        print "No. connections with reordering: %u out of %u (%f%%)" %(con_reordered, len(info.connections), float(con_reordered)/len(info.connections)*100)
+        print "Packets reordered: %u out of %u (%f%%)" %(pkt_reordered, pkt_all, float(pkt_reordered)/pkt_all*100)
 
 
     def main(self):
