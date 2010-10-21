@@ -192,10 +192,11 @@ class FlowPlotter(Application):
         if not flows:
             error("parse error")
             sys.exit(1)
-            # resampling
-            nosamples = self.resample(record, directions, nosamples, flow)  # returns the new value for nosamples if anything was changed
 
-            flow_array.append([plotname, flow, record, nosamples])
+        # resampling
+        nosamples = self.resample(record, directions, nosamples, flow)  # returns the new value for nosamples if anything was changed
+
+        flow_array.append([plotname, flow, record, nosamples])
 
         #build average, save it to flow_array[0]
         if len(flow_array) > 1:
@@ -311,7 +312,7 @@ class FlowPlotter(Application):
             # tput
             p = UmLinePlot(outname+'_tput')
             p.setYLabel(r"Throughput ($\\si[per=frac,fraction=nice]{\\Mbps}$)")
-            p.setXLabel(r"time ($\\si{\\second}$)")
+            p.setXLabel(r"Time ($\\si{\\second}$)")
 
             count = 0
             for plotname, label in plotnameList:
@@ -327,7 +328,7 @@ class FlowPlotter(Application):
             # cwnd
             p = UmLinePlot(outname+'_cwnd_ssth')
             p.setYLabel(r"$\\#$")
-            p.setXLabel(r"time ($\\si{\\second}$)")
+            p.setXLabel(r"Time ($\\si{\\second}$)")
             count = 0
             for plotname, label in plotnameList:
                 valfilename = os.path.join(outdir, plotname+".values")
@@ -342,7 +343,7 @@ class FlowPlotter(Application):
             # rto, rtt
             p = UmLinePlot(outname+'_rto_rtt')
             p.setYLabel(r"$\\si{\\milli\\second}$")
-            p.setXLabel(r"time ($\\si{\\second}$)")
+            p.setXLabel(r"Time ($\\si{\\second}$)")
             count = 0
             for plotname, label in plotnameList:
                 count += 1
@@ -356,7 +357,7 @@ class FlowPlotter(Application):
             # lost, reorder, retransmit
             p = UmLinePlot(outname+'_lost_reor_retr')
             p.setYLabel(r"$\\#$")
-            p.setXLabel(r"time ($\\si{\\second}$)")
+            p.setXLabel(r"Time ($\\si{\\second}$)")
             count = 0
             for plotname, label in plotnameList:
                 valfilename = os.path.join(outdir, plotname+".values")
@@ -371,16 +372,16 @@ class FlowPlotter(Application):
         if 'dupthresh' in self.graphics_array:
             # dupthresh, tp->reordering
             p = UmStepPlot(outname+'_reordering_dupthresh')
-            p.setYLabel(r"dupack threshold $[\\#]$")
-            p.setXLabel(r"time $[\\si{\\second}]$")
+            p.setYLabel(r"Dupthresh $[\\#]$")
+            p.setXLabel(r"Time $[\\si{\\second}]$")
             #max_y_value = max(flow['S']['reor'] + flow['S']['dupthresh'])
             #p.setYRange("[*:%u]" % int(max_y_value + ((20 * max_y_value) / 100 )))
             count = 0
             for plotname, label in plotnameList:
                 count += 1
                 valfilename = os.path.join(outdir, plotname+".values")
-                p.plot(valfilename, "tp->reordering %s" %label, using="2:11", linestyle=2*count)
-                p.plot(valfilename, "Algorithm DupThresh %s" %label, using="2:14", linestyle=2*count+1)
+                #p.plot(valfilename, "Linux", using="2:11", linestyle=2*count)
+                p.plot(valfilename, "%s" %label, using="2:14", linestyle=2*count+1)
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
 
