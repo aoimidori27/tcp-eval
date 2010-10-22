@@ -46,8 +46,14 @@ class BuildVmesh(Application):
         self.conf = None
         self.confstr = None
         self.linkinfo = dict()
+        self.shapecmd_multiple = """\
+tc class add dev %(iface)s parent 1: classid 1:%(parentNr)d%(nr)02d htb rate %(rate)smbit; \
+tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
+    match ip protocol 47 0xff flowid 1:%(parentNr)d%(nr)02d \
+    match ip dst %(dst)s"""
+
         self.shapecmd = """\
-tc class  add dev %(iface)s parent 1: classid 1:%(nr)d htb rate %(rate)smbit && \
+tc class add dev %(iface)s parent 1: classid 1:%(nr)d htb rate %(rate)smbit && \
 tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
     match ip protocol 47 0xff flowid 1:%(nr)d \
     match ip dst %(dst)s"""
@@ -85,7 +91,8 @@ Remarks:
         self.parser.set_defaults(remote = True, interface = "ath0",
                                  multicast = "224.66.66.66", offset = 0, staticroutes=False,
                                  multipath=False, maxpath=2, dry_run=False, ipprefix = "172.16",
-                                 userscriptspath="%s/config/vmesh-helper" %os.environ["HOME"])
+                                 userscriptspath="%s/config/vmesh-helper" %os.environ["HOME"],
+                                 multiple_topology=False, multiple_topology_reset=False)
         self.parser.add_option("-r", "--remote",
                                action = "store_true", dest = "remote",
                                help = "Apply settings for all hosts in config")
@@ -135,6 +142,16 @@ Remarks:
                               action = "store", dest = "ipprefix", metavar = "IPPREFIX",
                               help = "Use to select different ip address ranges. "\
                                      "(default.%default")
+        self.parser.add_option("-e", "--multipleTopology",
+                              action = "store_true", dest = "multiple_topology",
+                              help = "Activate multiple Toplogy support. \
+                                      Is neccessary if you want to deploy serveral \
+                                      topolgies at once. (default:%default)")
+        self.parser.add_option("-E", "--multipleTopologyReset",
+                               action = "store_true", dest = "multiple_topology_reset",
+                               help = "Activate multiple Toplogy support. \
+                                       Is neccessary if you want to deploy serveral \
+                                       topolgies at once and reset the root node. (default:%default)")
 
     def set_option(self):
         """Set the options for the BuildVmesh object"""
@@ -376,12 +393,23 @@ Remarks:
         hostnum = self.node.getNumber()
         peers = self.conf.get(hostnum, set())
         prefix = self.node.getHostnamePrefix()
+        parent_num = self.net_num(self.options.interface) + 1
 
         # Add qdisc
         try:
-            execute("tc qdisc del dev %s root; " % iface +
-                    "tc qdisc add dev %s root handle 1: htb default 100" % iface
-                    ,True)
+            if self.options.multiple_topology or self.options.multiple_topology_reset:
+                if self.options.multiple_topology_reset:
+                    execute("tc qdisc del dev %s root; " % iface +
+                            "tc qdisc add dev %s root handle 1: htb default 1100;" % iface
+                            , True)
+                else:
+                    execute("tc qdisc ls dev %(iface)s | grep root | grep -o pfifo_fast | xargs --replace=STR bash -c \" \
+                            tc qdisc del dev %(iface)s root; \
+                            tc qdisc add dev %(iface)s root handle 1: htb default 1100;\"" % {'iface' : iface}, True)
+            else:
+                execute("tc qdisc del dev %s root; " % iface +
+                        "tc qdisc add dev %s root handle 1: htb default 100" % iface
+                        ,True)
         except CommandFailed, inst:
             error('Could not install queuing discipline')
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -402,15 +430,30 @@ Remarks:
 
                 info("Limiting rate of link %s -> %s to %s mbit" % (hostnum,p,rate))
 
-                execute(self.shapecmd % {
+                netem_str = ''
+                if self.options.multiple_topology or self.options.multiple_topology_reset:
+                    #TODO: Can lead to problems if one destionation is reachable from serveral devices!
+                    #Need to check for such links and combine them to one
+                    execute(self.shapecmd_multiple % {
+                        'iface' : iface,
+                        'nr' : i,
+                        'parentNr' : parent_num,
+                        'dst' : socket.gethostbyname('%s%s' % (prefix,p)),
+                        'rate' : rate}
+                        ,True)
+                    netem_str = 'tc qdisc add dev %s parent 1:%d%02d handle %d%02d: netem' % (iface, parent_num, i, parent_num, i)
+
+                else:
+                    execute(self.shapecmd % {
                         'iface' : iface,
                         'nr' : i,
                         'dst' : socket.gethostbyname('%s%s' % (prefix,p)),
                         'rate' : rate}
                         ,True)
+                    netem_str = 'tc qdisc add dev %s parent 1:%s handle %s0: netem' % (iface, i, i)
+
 
                 # netem for queue length, delay and loss
-                netem_str = 'tc qdisc add dev %s parent 1:%s handle %s0: netem' % (iface, i, i)
                 if self.linkinfo[hostnum][p]['limit'] != '':
                     netem_str += ' limit %s' %self.linkinfo[hostnum][p]['limit']
                 if self.linkinfo[hostnum][p]['delay'] != '':
@@ -598,7 +641,6 @@ Remarks:
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
                 cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh",
-                       "-i", self.options.interface, "-l", "-"]
                 if self.options.debug:
                     cmd.append("--debug")
 
@@ -627,6 +669,12 @@ Remarks:
                 if self.options.ipprefix > 0:
                      cmd.append("--ipprefix");
                      cmd.append(str(self.options.ipprefix));
+
+                if self.options.multiple_topology:
+                    cmd.append("-e")
+
+                if self.options.multiple_topology_reset:
+                    cmd.append("-E")
 
                 debug("Executing: %s", cmd)
                 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
