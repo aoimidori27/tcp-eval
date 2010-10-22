@@ -640,7 +640,7 @@ Remarks:
             for host in self.conf.keys():
                 h = "vmrouter%s" % host
                 info("Configuring host %s" % h)
-                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh",
+                cmd = ["ssh", h, "sudo", "/usr/local/sbin/um_vmesh","-i", self.options.interface, "-l", "-"]
                 if self.options.debug:
                     cmd.append("--debug")
 
