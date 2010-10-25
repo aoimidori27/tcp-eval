@@ -169,6 +169,88 @@ def test_thrulay(mrs,
     defer.returnValue(rc)
 
 @defer.inlineCallbacks
+def test_multiflowgrind(mrs,
+                        log_file,
+                        flowgrind_subflows,
+                        flowgrind_bin = "flowgrind",
+                        flowgrind_timeout = 3,
+                        flowgrind_opts = [],
+                        nodetype    = "meshrouter",
+                        **kwargs ):
+    """This test perfoms many flowgrind tests with one tcp flow per each flowgrind
+       from a given source to a given destination
+
+       required arguments:
+            log_file            : file descriptor where the results are written to
+            mrs                 : reference to parent measurement class
+            flowgrind_subflows  : a dict list of flowgrind settings for each subflow
+
+       optional arguments:
+            flowgrind_bin       : flowgrind binary
+            flowgrind_timeout    : additional time to wait after duration before stopping the subflow
+            flowgrind_opts      : additional command line agruments for all flows
+            nodetype            : the nodetype ("e.g. vmeshrouter")
+
+        required subflow settings for each flow:
+           flowgrind_src        : sender of the flow
+           flowgrind_dst        : receiver of the flow
+           flowgrind_iface      : iface to get ipaddress
+           flowgrind_duration   : duration of the flow in seconds
+
+        optional subflow settings for each flow
+           flowgrind_opts       : additiona command line agruments
+           flowgrind_cc         : congestion control method to use
+    """
+
+    # number of subflows
+    num = len(flowgrind_subflows)
+    max_duration = 0
+    count = 0
+
+    # path of executeable
+    cmd = [ flowgrind_bin ]
+
+    # set number of parallel subflows
+    cmd.extend(["-n", "%s" % num])
+
+    # subflow independent options
+    if flowgrind_opts:
+        cmd.extend(flowgrind_opts)
+
+    # subflows
+    for subflow in flowgrind_subflows:
+        # for convenience accept numbers as src and ds
+        src = Node(flowgrind_subflows[subflow]['flowgrind_src'], node_type=nodetype)
+        dst = Node(flowgrind_subflows[subflow]['flowgrind_dst'], node_type=nodetype)
+
+        # ips of the measurement interfaces
+        src_ip = yield mrs.getIp(src.getHostname(), flowgrind_subflows[subflow]['flowgrind_iface'])
+        dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_subflows[subflow]['flowgrind_iface'])
+
+        # classify subflow
+        cmd.extend(["-F","%s" % count])
+        count += 1
+
+        # options
+        if 'flowgrind_cc' in flowgrind_subflows[subflow]:
+            cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_subflows[subflow]['flowgrind_cc']])
+
+        cmd.extend(["-T", "s=%.3f" % flowgrind_subflows[subflow]['flowgrind_duration']])
+        max_duration = max(max_duration, flowgrind_subflows[subflow]['flowgrind_duration'])
+
+        # build host specifiers
+        cmd.extend(["-H", "s=%s/%s,d=%s/%s" % (src_ip, src.getHostname(),
+                    dst_ip, dst.getHostname()) ])
+
+        # just add additional parameters
+        if 'flowgrind_opts' in flowgrind_subflows[subflow]:
+            cmd.extend(flowgrind_subflows[subflow]['flowgrind_opts'])
+
+    result = yield mrs.local_execute(" ".join(cmd), log_file, timeout=max_duration + flowgrind_timeout)
+
+    defer.returnValue(result)
+
+@defer.inlineCallbacks
 def test_flowgrind(mrs,
                    log_file,
                    flowgrind_src,
@@ -201,6 +283,7 @@ def test_flowgrind(mrs,
             flowgrind_bport    : flowgrind base port
             flowgrind_bin      : flowgrind binary
             flowgrind_opts     : additional command line arguments
+            flowgrind_timeout  : additional time to wait after duration before stopping the flow
             gzip_dumps         : gzip dumps to save space
             nodetype           : the nodetype ("e.g. vmeshrouter")
     """
@@ -212,12 +295,12 @@ def test_flowgrind(mrs,
     # ips of the measurement interfaces
     src_ip = yield mrs.getIp(src.getHostname(), flowgrind_iface)
     dst_ip = yield mrs.getIp(dst.getHostname(), flowgrind_iface)
-   
+
     # path of executable
     cmd = [ flowgrind_bin ]
-    
+
     # options
-    cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_cc])    
+    cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_cc])
     cmd.extend(["-T", "s=%.3f" % flowgrind_duration])
 
     # build host specifiers
