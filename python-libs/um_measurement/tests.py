@@ -173,7 +173,7 @@ def test_multiflowgrind(mrs,
                         log_file,
                         flowgrind_subflows,
                         flowgrind_bin = "flowgrind",
-                        flowgrind_timeout = 3,
+                        flowgrind_timeout = 10,
                         flowgrind_opts = [],
                         nodetype    = "meshrouter",
                         **kwargs ):
@@ -196,6 +196,7 @@ def test_multiflowgrind(mrs,
            flowgrind_dst        : receiver of the flow
            flowgrind_iface      : iface to get ipaddress
            flowgrind_duration   : duration of the flow in seconds
+           flowgrind_warmup     : warmup time for flow
 
         optional subflow settings for each flow
            flowgrind_opts       : additiona command line agruments
@@ -235,8 +236,10 @@ def test_multiflowgrind(mrs,
         if 'flowgrind_cc' in flowgrind_subflows[subflow]:
             cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_subflows[subflow]['flowgrind_cc']])
 
-        cmd.extend(["-T", "s=%.3f" % flowgrind_subflows[subflow]['flowgrind_duration']])
-        max_duration = max(max_duration, flowgrind_subflows[subflow]['flowgrind_duration'])
+        cmd.extend(["-T", "s=%f" % flowgrind_subflows[subflow]['flowgrind_duration']])
+        cmd.extend(["-Y", "s=%f" % flowgrind_subflows[subflow]['flowgrind_warmup']])
+
+        max_duration = max(max_duration, (flowgrind_subflows[subflow]['flowgrind_duration'] + flowgrind_subflows[subflow]['flowgrind_warmup']) )
 
         # build host specifiers
         cmd.extend(["-H", "s=%s/%s,d=%s/%s" % (src_ip, src.getHostname(),
@@ -246,7 +249,8 @@ def test_multiflowgrind(mrs,
         if 'flowgrind_opts' in flowgrind_subflows[subflow]:
             cmd.extend(flowgrind_subflows[subflow]['flowgrind_opts'])
 
-    result = yield mrs.local_execute(" ".join(cmd), log_file, timeout=max_duration + flowgrind_timeout)
+    result = yield mrs.local_execute(" ".join(cmd), log_file,
+            timeout=(max_duration + flowgrind_timeout) )
 
     defer.returnValue(result)
 
@@ -255,8 +259,9 @@ def test_flowgrind(mrs,
                    log_file,
                    flowgrind_src,
                    flowgrind_dst,
-                   flowgrind_timeout = 3,
+                   flowgrind_timeout = 10,
                    flowgrind_duration = 15,
+                   flowgrind_warmup = 0,
                    flowgrind_cc     = "reno",
                    flowgrind_dump   = False,
                    flowgrind_iface  = "ath0",
@@ -277,6 +282,7 @@ def test_flowgrind(mrs,
 
        optional arguments:
             flowgrind_duration : duration of the flow in seconds
+            flowgrind_warmup   : warmup time for flow in seconds
             flowgrind_cc       : congestion control method to use
             flowgrind_dump     : turn on tcpdump on src and sender
             flowgrind_iface    : iface to get ipaddress
@@ -301,8 +307,8 @@ def test_flowgrind(mrs,
 
     # options
     cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_cc])
-    cmd.extend(["-T", "s=%.3f" % flowgrind_duration])
-
+    cmd.extend(["-T", "s=%f" % flowgrind_duration])
+    cmd.extend(["-Y", "s=%f" % flowgrind_warmup])
     # build host specifiers
     cmd.extend(["-H", "s=%s/%s,d=%s/%s" % (src_ip, src.getHostname(),
                                            dst_ip, dst.getHostname()) ])
@@ -335,7 +341,8 @@ def test_flowgrind(mrs,
             warn("Failed to start tcpdump on %s: %s" %(dst.getHostname(),
                                                        dres[1].getErrorMessage()))
 
-    result = yield mrs.local_execute(" ".join(cmd), log_file, timeout=flowgrind_duration + flowgrind_timeout)
+    result = yield mrs.local_execute(" ".join(cmd), log_file,
+            timeout=(flowgrind_duration + flowgrind_warmup + flowgrind_timeout) )
 
     if flowgrind_dump:
         yield mrs.xmlrpc_many([src.getHostname(),dst.getHostname()],
