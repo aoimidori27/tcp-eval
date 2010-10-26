@@ -48,7 +48,8 @@ class FlowgrindRecordFactory():
                      'mss'     : int,
                      'mtu'     : int,
                      # optional values
-                     'dupthresh':int }
+                     'dupthresh':int,
+                     }
 
             flow_ids = map(int, set(r['flow_id']))
             flow_map = dict()
@@ -115,6 +116,9 @@ class FlowgrindRecordFactory():
             #   0 S: mrouter4/169.254.9.4, MSS = 1448, MTU = 1500 (Ethernet/PPP), sbuf = 16384/0, rbuf = 87380/0 (real/req), delay = 5.00s/0.00s, duration = 60.00s/0.00s, through = 0.645530/0.000000Mb/s, 591/0 request blocks, 0/0 response blocks (out/in)
             "through = (?P<thruput>\d+\.\d+)(\/(?P<thruput_back>\d+\.\d+))?Mb/s",
 
+            # blocks
+            "(?P<requ_in_sum>\d+)/(?P<requ_out_sum>\d+) request blocks, "\
+            "(?P<resp_in_sum>\d+)/(?P<resp_out_sum>\d+) response blocks",
             # "listen port =\s*(?P<lport>\d+)",
 
             # # ID begin   end  through requ resp min RTT avg RTT max RTT min IAT avg IAT max IAT cwnd    ssth uack sack lost fret tret fack reor  rtt rttvar   rto   ca state   mss   mtu statu
@@ -131,7 +135,9 @@ class FlowgrindRecordFactory():
             "(?P<castate>loss|open|disrdr|rcvry)\s+"\
             "(?P<mss>\d+)\s+(?P<mtu>\d+)\s+"\
             # optional extension -wolff
-            "(\s+(?P<cret>\d+)\s+(?P<cfret>\d+)\s+(?P<ctret>\d+)\s+(?P<dupthresh>\d+))?",
+            "((?P<cret>\d+)\s+(?P<cfret>\d+)\s+(?P<ctret>\d+)\s+(?P<dupthresh>\d+)\s+)?"\
+            # sporious retransmissions
+            "(?P<srx>\d+)?",
             # Fri Oct  8 16:50:11 2010: controlling host = vmhost2, number of flows = 1, reporting interval = 0.05s, [tput] = 10**6 bit/second (SVN Rev 6595)
             "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) +\d{1,2} \d{2}:\d{2}:\d{2} \d{4}): .* reporting interval = (?P<reporting_interval>\d+\.\d+)"
         ]
