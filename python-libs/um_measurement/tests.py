@@ -211,6 +211,9 @@ def test_multiflowgrind(mrs,
     # path of executeable
     cmd = [ flowgrind_bin ]
 
+    # add -p for numerical output
+    cmd.extend("-p")
+
     # set number of parallel subflows
     cmd.extend(["-n", "%s" % num])
 
@@ -304,6 +307,9 @@ def test_flowgrind(mrs,
 
     # path of executable
     cmd = [ flowgrind_bin ]
+
+    # add p for numerical output
+    cmd.extend("-p")
 
     # options
     cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_cc])
