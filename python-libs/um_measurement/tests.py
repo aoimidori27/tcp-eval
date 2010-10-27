@@ -243,14 +243,11 @@ def test_multiflowgrind(mrs,
 
         if 'flowgrind_cc' in flowgrind_subflows[subflow]:
             cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_subflows[subflow]['flowgrind_cc']])
-        else:
-            cmd.extend(["-O", "s=TCP_CONG_MODULE=reno"])
 
         if 'flowgrind_warmup' in flowgrind_subflows[subflow]:
                 cmd.extend(["-Y", "s=%f" % flowgrind_subflows[subflow]['flowgrind_warmup']])
                 max_duration = max(max_duration, (flowgrind_subflows[subflow]['flowgrind_duration'] + flowgrind_subflows[subflow]['flowgrind_warmup']) )
         else:
-            cmd.extend(["-Y", "s=0"])
             max_duration = max(max_duration, flowgrind_subflows[subflow]['flowgrind_duration'])
 
         cmd.extend(["-T", "s=%f" % flowgrind_subflows[subflow]['flowgrind_duration']])
@@ -272,7 +269,7 @@ def test_flowgrind(mrs,
                    flowgrind_timeout = 10,
                    flowgrind_duration = 15,
                    flowgrind_warmup = 0,
-                   flowgrind_cc     = "reno",
+                   flowgrind_cc     = None,
                    flowgrind_dump   = False,
                    flowgrind_iface  = "ath0",
                    flowgrind_bport  = 5999,
@@ -319,7 +316,8 @@ def test_flowgrind(mrs,
     cmd.extend(["-p"])
 
     # options
-    cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_cc])
+    if not flowgrind_cc == None:
+        cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_cc])
     cmd.extend(["-T", "s=%f" % flowgrind_duration])
     cmd.extend(["-Y", "s=%f" % flowgrind_warmup])
     # build host specifiers
