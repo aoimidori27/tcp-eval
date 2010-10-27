@@ -196,11 +196,11 @@ def test_multiflowgrind(mrs,
            flowgrind_dst        : receiver of the flow
            flowgrind_iface      : iface to get ipaddress
            flowgrind_duration   : duration of the flow in seconds
-           flowgrind_warmup     : warmup time for flow
 
         optional subflow settings for each flow
            flowgrind_opts       : additiona command line agruments
            flowgrind_cc         : congestion control method to use
+           flowgrind_warmup     : warmup time for flow
     """
 
     # number of subflows
@@ -236,21 +236,28 @@ def test_multiflowgrind(mrs,
         count += 1
 
         # options
-        if 'flowgrind_cc' in flowgrind_subflows[subflow]:
-            cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_subflows[subflow]['flowgrind_cc']])
-
-        cmd.extend(["-T", "s=%f" % flowgrind_subflows[subflow]['flowgrind_duration']])
-        cmd.extend(["-Y", "s=%f" % flowgrind_subflows[subflow]['flowgrind_warmup']])
-
-        max_duration = max(max_duration, (flowgrind_subflows[subflow]['flowgrind_duration'] + flowgrind_subflows[subflow]['flowgrind_warmup']) )
-
-        # build host specifiers
-        cmd.extend(["-H", "s=%s/%s,d=%s/%s" % (src_ip, src.getHostname(),
-                    dst_ip, dst.getHostname()) ])
 
         # just add additional parameters
         if 'flowgrind_opts' in flowgrind_subflows[subflow]:
             cmd.extend(flowgrind_subflows[subflow]['flowgrind_opts'])
+
+        if 'flowgrind_cc' in flowgrind_subflows[subflow]:
+            cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_subflows[subflow]['flowgrind_cc']])
+        else:
+            cmd.extend(["-O", "s=TCP_CONG_MODULE=reno"])
+
+        if 'flowgrind_warmup' in flowgrind_subflows[subflow]:
+                cmd.extend(["-Y", "s=%f" % flowgrind_subflows[subflow]['flowgrind_warmup']])
+                max_duration = max(max_duration, (flowgrind_subflows[subflow]['flowgrind_duration'] + flowgrind_subflows[subflow]['flowgrind_warmup']) )
+        else:
+            cmd.extend(["-Y", "s=0"])
+            max_duration = max(max_duration, flowgrind_subflows[subflow]['flowgrind_duration'])
+
+        cmd.extend(["-T", "s=%f" % flowgrind_subflows[subflow]['flowgrind_duration']])
+
+        # build host specifiers
+        cmd.extend(["-H", "s=%s/%s,d=%s/%s" % (src_ip, src.getHostname(),
+                    dst_ip, dst.getHostname()) ])
 
     result = yield mrs.local_execute(" ".join(cmd), log_file,
             timeout=(max_duration + flowgrind_timeout) )
