@@ -82,6 +82,11 @@ class FlowPlotter(Application):
                         action = 'store', dest = 'graphics',
                         help = 'Graphics that will be plotted '\
                                 '[default: %default; optional: dupthresh]')
+        self.parser.add_option("-f", "--force",
+                        action = "store_true", dest = "force",
+                        help = "overwrite existing output")
+        self.parser.add_option("--save", action = "store_true", dest = "save",
+                        help = "save gnuplot and tex files [default: clean up]")
 
     def set_option(self):
         """Set options"""
@@ -310,9 +315,9 @@ class FlowPlotter(Application):
 
         if 'tput' in self.graphics_array:
             # tput
-            p = UmLinePlot(outname+'_tput')
-            p.setYLabel(r"Throughput ($\\si[per=frac,fraction=nice]{\\Mbps}$)")
-            p.setXLabel(r"Time ($\\si{\\second}$)")
+            p = UmLinePlot(outname+'_tput', self.options.outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
+            p.setYLabel(r"Throughput [$\\si[per=frac,fraction=nice]{\\Mbps}$]")
+            p.setXLabel(r"Time [$\\si{\\second}$]")
 
             count = 0
             for plotname, label in plotnameList:
@@ -322,19 +327,19 @@ class FlowPlotter(Application):
                 if self.options.plotdst == 'True': p.plot(valfilename, "reverse path %s" %label, using="2:4", linestyle=2*count+1)
 
             # output plot
-            p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+            p.save()
 
         if 'cwnd' in self.graphics_array:
             # cwnd
             p = UmLinePlot(outname+'_cwnd_ssth')
             p.setYLabel(r"$\\#$")
-            p.setXLabel(r"Time ($\\si{\\second}$)")
+            p.setXLabel(r"Time [$\\si{\\second}$]")
             count = 0
             for plotname, label in plotnameList:
                 valfilename = os.path.join(outdir, plotname+".values")
                 if self.options.plotsrc == 'True': p.plot(valfilename, "Sender CWND %s" %label, using="2:5", linestyle=3*count+1)
                 if self.options.plotdst == 'True': p.plot(valfilename, "Receiver CWND %s" %label, using="2:6", linestyle=3*count+2)
-                p.plot(valfilename, "SSTH %s" %label, using="2:7", linestyle=3*count+3)
+                p.plot(valfilename, "SSTHRESH %s" %label, using="2:7", linestyle=3*count+3)
                 count += 1
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
@@ -343,7 +348,7 @@ class FlowPlotter(Application):
             # rto, rtt
             p = UmLinePlot(outname+'_rto_rtt')
             p.setYLabel(r"$\\si{\\milli\\second}$")
-            p.setXLabel(r"Time ($\\si{\\second}$)")
+            p.setXLabel(r"Time [$\\si{\\second}$]")
             count = 0
             for plotname, label in plotnameList:
                 count += 1
@@ -357,7 +362,7 @@ class FlowPlotter(Application):
             # lost, reorder, retransmit
             p = UmLinePlot(outname+'_lost_reor_retr')
             p.setYLabel(r"$\\#$")
-            p.setXLabel(r"Time ($\\si{\\second}$)")
+            p.setXLabel(r"Time [$\\si{\\second$]")
             count = 0
             for plotname, label in plotnameList:
                 valfilename = os.path.join(outdir, plotname+".values")
@@ -380,7 +385,7 @@ class FlowPlotter(Application):
             for plotname, label in plotnameList:
                 count += 1
                 valfilename = os.path.join(outdir, plotname+".values")
-                #p.plot(valfilename, "Linux", using="2:11", linestyle=2*count)
+                p.plot(valfilename, "Linux", using="2:11", linestyle=2*count)
                 p.plot(valfilename, "%s" %label, using="2:14", linestyle=2*count+1)
             # output plot
             p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
@@ -388,16 +393,21 @@ class FlowPlotter(Application):
     def run(self):
         """Run..."""
 
+        plotnameList = []
         if not self.options.all:
             for infile in self.args:
                 plotname = self.write_values(infile)
                 self.plot(plotname)
+                os.remove(infile+".values")
         else:
-            plotnameList = []
             for infile in self.args:
                 plotnameList.append(self.write_values(infile))
 
             self.plot(*plotnameList)
+
+            if not self.options.save:
+                for plotname, label in plotnameList:
+                    os.remove(plotname+".values")
 
     def main(self):
         self.parse_option()
