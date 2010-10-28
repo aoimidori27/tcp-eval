@@ -125,6 +125,9 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                     action = "store", dest = "cfgfile",
                     help = "use the file as config file for LaTeX. "\
                     "No default packages will be loaded.")
+        self.parser.add_option("-f", "--force",
+                    action = "store_true", dest = "force",
+                    help = "overwrite existing output")
 
     def set_option(self):
         """Set the options"""
@@ -149,7 +152,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
 
         simpleparser = generator.buildParser(self.declaration).parserbyname('root')
 
-        gploutput = UmXPlot(basename)
+        gploutput = UmXPlot(basename, outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
         if self.options.arrowsize:
             gploutput.arrowsize = self.options.arrowsize
         labelsoutput = open ( "%s/%s.labels" %(outdir,basename) , 'w')
@@ -341,8 +344,8 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
 
         # write options to gpl file
         # labels
-        gploutput.setXLabel(self.xlabel,offset=self.xaxislabeloffset)
-        gploutput.setYLabel(self.ylabel,offset=self.yaxislabeloffset)
+        gploutput.setXLabel(self.xlabel)
+        gploutput.setYLabel(self.ylabel)
 
         # range
         debug("XRange [%s:%s]" %(xmin,xmax) )
@@ -385,7 +388,9 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 os.remove(datafilename)
 
         gploutput.gplot('load "%s/%s.labels"\n' %(outdir,basename) )
-        gploutput.save(outdir, self.options.debug, self.options.cfgfile)
+
+        gploutput.arrowheads()
+        gploutput.save()
 
     def prepare(self):
         """ global configuration for all input files """
@@ -405,18 +410,11 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         else:
             self.ylabel = "Sequence Offset $[\\\\si{\\\\byte}]$"
 
-        # offset may be changed
-        self.xaxislabeloffset = 0,0.3
-        self.yaxislabeloffset = 3.5,0
-
     def cleanup(self, filename):
         os.chdir(self.options.outdir)
         basename = os.path.splitext(os.path.basename( filename ))[0]
         info("Cleaning Up %s/%s" %(self.options.outdir,basename) )
         os.remove("%s.labels" %basename )
-        os.remove("%s.eps" %basename )
-        os.remove("%s.gplot" %basename )
-        os.remove("%s.tex" %basename )
         for filename in glob.glob("%s.dataset.*" %basename):
             os.remove(filename)
 
