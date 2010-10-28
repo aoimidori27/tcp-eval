@@ -100,15 +100,14 @@ class UmLatex():
             #self.addSetting(r"\newunit{\GB}{\giga\byte}")
             #self.addSetting(r"\newunit{\kbps}{\kb\per\second}")
             #self.addSetting(r"\newunit{\Mbps}{\Mb\per\second}")
-            #self.addSetting(r"\newunit{\Gbps}{\Gb\per\second}")            
-            
+            #self.addSetting(r"\newunit{\Gbps}{\Gb\per\second}")
+
             self.addPackage("xfrac")
             self.addPackage("siunitx")
-            self.addSetting(r"\sisetup{detect-weight,per-mode=fraction,fraction-function=\sfrac,\
-            	separate-uncertainty,load-configurations=binary,load-configurations=abbreviations}")            
-            self.addSetting(r"\sisetup{per=fraction,fraction=nice,seperr}")
+            self.addSetting(r"\sisetup{detect-weight,per-mode=fraction,fraction-function=\sfrac," \
+                            "separate-uncertainty,load-configurations=binary,load-configurations=abbreviations}")
 
-            self.addSetting(r"\DeclareSIUnit{\Second}{Sekunden}")            
+            self.addSetting(r"\DeclareSIUnit{\Second}{Sekunden}")
             self.addSetting(r"\DeclareSIUnit{\mps}{\meter\per\second}")
             self.addSetting(r"\DeclareSIUnit{\kmps}{\km\per\second}")
             self.addSetting(r"\DeclareSIUnit{\bit}{b}")
@@ -121,13 +120,13 @@ class UmLatex():
             self.addSetting(r"\DeclareSIUnit{\MB}{\mega\byte}")
             self.addSetting(r"\DeclareSIUnit{\GB}{\giga\byte}")
             self.addSetting(r"\DeclareSIUnit{\bps}{\bit\per\second}")
-			self.addSetting(r"\DeclareSIUnit{\Bitps}{\Bit\per\second}")
-			self.addSetting(r"\DeclareSIUnit{\Bps}{\byte\per\second}")
-			self.addSetting(r"\DeclareSIUnit{\Byteps}{\Byte\per\second}")
-            self.addSetting(r"\newunit{\kbps}{\kb\per\second}")
-            self.addSetting(r"\newunit{\Mbps}{\Mb\per\second}")
-            self.addSetting(r"\newunit{\Gbps}{\Gb\per\second}")
-        
+            self.addSetting(r"\DeclareSIUnit{\Bitps}{\Bit\per\second}")
+            self.addSetting(r"\DeclareSIUnit{\Bps}{\byte\per\second}")
+            self.addSetting(r"\DeclareSIUnit{\Byteps}{\Byte\per\second}")
+            self.addSetting(r"\DeclareSIUnit{\kbps}{\kb\per\second}")
+            self.addSetting(r"\DeclareSIUnit{\Mbps}{\Mb\per\second}")
+            self.addSetting(r"\DeclareSIUnit{\Gbps}{\Gb\per\second}")
+
         # load tikz
         if tikz:
             self.addPackage("tikz")
@@ -138,8 +137,8 @@ class UmLatex():
         settings = "\n".join(self._settings)
         content  = "\n".join(self._content)
         document = "%s\n%s\n%s\n\\begin{document}\n%s\n\\end{document}"\
-            %(self._documentclass , packages, settings, content)  
-        
+            %(self._documentclass , packages, settings, content)
+
         return document
 
     def __getValidTexfile(self, texfile):
