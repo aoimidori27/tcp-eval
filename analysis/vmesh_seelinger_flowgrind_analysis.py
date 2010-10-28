@@ -45,9 +45,6 @@ class MultipathTCPAnalysis(Analysis):
         self.parser.add_option('-V', '--variable', metavar="Variable",
                          action = 'store', type = 'string', dest = 'variable',
                          help = 'The variable of the measurement [bnbw|qlimit|rate|delay].')
-        self.parser.add_option('-T', '--type', metavar="Type",
-                         action = 'store', type = 'string', dest = 'rotype',
-                         help = 'The type of the measurement [bandwidth|delay|both].')
         self.parser.add_option('-E', '--plot-error', metavar="PlotError",
                          action = 'store_true', dest = 'plot_error',
                          help = "Plot error bars")
@@ -63,7 +60,8 @@ class MultipathTCPAnalysis(Analysis):
         #self.plotlabels["rdelay"]  = r"Reordering Delay [$\\si{\\milli\\second}$]";
         #self.plotlabels["rtos"]    = r"RTO Retransmissions [$\\#$]";
         #self.plotlabels["frs"]     = r"Fast Retransmissions [$\\#$]";
-        self.plotlabels["thruput"] = r"Throughput [$\\si[per=frac,fraction=nice]{\\Mbps}$]";
+        self.plotlabels["thruput"] = r"Avarage Throughput [$\\si[per=frac,fraction=nice]{\\Mbps}$]";
+        self.plotlabels["rtt"]     = r"Avarage Round Trip Time";
         #self.plotlabels["fairness"]= r"Fairness"
         self.plotlabels["delay"]   = r"RTT [$\\si{\\milli\\second}$]"
         #self.plotlabels["ackreor"] = r"ACK Reordering Rate [$\\si{\\percent}$]"
@@ -74,8 +72,8 @@ class MultipathTCPAnalysis(Analysis):
         "Set options"
         Analysis.set_option(self)
 
-        if not self.options.variable or not self.options.rotype:
-            error("Please provide me with the variable and type of the measurement!")
+        if not self.options.variable:
+            error("Please provide me with the variable")
             sys.exit(1)
         #if self.options.variable != "rrate" and self.options.variable != "rdelay" and self.options.variable != "qlimit" and self.options.variable != "bnbw" and self.options.variable != "delay" and self.options.variable != "ackreor" and self.options.variable != "ackloss":
         #    error("I did not recognize the variable you gave me!")
@@ -92,15 +90,15 @@ class MultipathTCPAnalysis(Analysis):
             recordHeader   = record.getHeader()
             src            = recordHeader["flowgrind_src"]
             dst            = recordHeader["flowgrind_dst"]
-            run_label      = recordHeader["run_label"]
             scenario_label = recordHeader["scenario_label"]
             variable       = recordHeader["testbed_param_variable"]
-            reordering     = recordHeader["testbed_param_reordering"]
-            qlimit         = int(recordHeader["testbed_param_qlimit"])
-            rrate          = int(recordHeader["testbed_param_rrate"])
-            rdelay         = int(recordHeader["testbed_param_rdelay"])
         except:
             return
+
+        try:
+            qlimit     = int(recordHeader["testbed_param_qlimit"])
+        except KeyError:
+            qlimit     = "NULL"
 
         try:
             bnbw       = int(recordHeader["testbed_param_bottleneckbw"])
@@ -112,31 +110,27 @@ class MultipathTCPAnalysis(Analysis):
         except KeyError:
             delay      = "NULL"
 
-        try:
-            ackreor    = int(recordHeader["testbed_param_ackreor"])
-        except KeyError:
-            ackreor    = "NULL"
-
-        try:
-            ackloss    = int(recordHeader["testbed_param_ackloss"])
-        except KeyError:
-            ackloss    = "NULL"
-
         # test_start_time was introduced later in the header, so its not in old test logs
         try:
             start_time = int(float(recordHeader["test_start_time"]))
         except KeyError:
             start_time = 0
+
         rtos           = record.calculate("total_rto_retransmits")
         frs            = record.calculate("total_fast_retransmits")
+        #todo check
+        #rtt            = record.calculate("...")
+        rtt            = 0
+
         thruput        = record.calculate("thruput")
 
         if not thruput:
-            if not self.failed.has_key(run_label):
-                self.failed[run_label] = 1
+            if not self.failed.has_key(scenario_label):
+                self.failed[scenario_label] = 1
             else:
-                self.failed[run_label] = self.failed[run_label]+1
+                self.failed[rscenario_label] = self.failed[scenario_label]+1
             return
+
         if thruput == 0:
             warn("Throughput is 0 in %s!" %record.filename)
 
@@ -150,6 +144,10 @@ class MultipathTCPAnalysis(Analysis):
         except TypeError, inst:
             frs = "NULL"
 
+        try:
+            rtt = float(rtt)
+        except TypeError, inst:
+            rtt = 0
         # check for lost SYN or long connection establishing
         #c = 0
         #flow_S = record.calculate("flows")[0]['S']
@@ -161,9 +159,8 @@ class MultipathTCPAnalysis(Analysis):
         #    warn("Long connection establishment (%ss): %s" %(flow_S['end'][c], record.filename))
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES ("%s", "%s", %s, %u, %u, %u, %u, %u, %u, %s, %s, %u, %u, %u, "%s", "%s", %f, %u, "$%s$", "%s", "%s")
-                      """ % (variable, reordering, bnbw, qlimit, delay, rrate, rdelay, ackreor, ackloss, rtos, frs, iterationNo, scenarioNo, runNo, src, dst, thruput,
-                             start_time, run_label, scenario_label, test))
+                      INSERT INTO tests VALUES ("%s", %s, %s, %s, %u, "%s", %u, %u, %u, "%s", "%s","%s", %f, %s, %s, %f)
+                      """ % (variable,  bnbw, qlimit, delay, start_time, scenario_label, iterationNo, scenarioNo, runNo, test, src, dst, thruput, rtos, frs, rtt))
 
     def generateYOverXLinePlot(self, y):
         """Generates a line plot of the DB column y over the DB column x
@@ -171,7 +168,6 @@ class MultipathTCPAnalysis(Analysis):
         """
 
         x      = self.options.variable
-        rotype = self.options.rotype
 
         dbcur = self.dbcon.cursor()
 
@@ -186,7 +182,7 @@ class MultipathTCPAnalysis(Analysis):
             scenarios[key] = val
 
         outdir = self.options.outdir
-        p = UmLinePointPlot("%s_%s_over_%s" % (rotype, y, x))
+        p = UmLinePointPlot("%s_over_%s" % (y, x))
         p.setXLabel(self.plotlabels[x])
         p.setYLabel(self.plotlabels[y])
 
@@ -198,21 +194,21 @@ class MultipathTCPAnalysis(Analysis):
             #    configuration to get the total average y of one scenario under one
             #    testbed configuration
             query = '''
-                SELECT %s, sum(avg_y) AS total_avg_y
+                SELECT %(x)s, sum(avg_y) AS total_avg_y
                 FROM
                 (
-                    SELECT %s, runNo, avg(%s) AS avg_y
+                    SELECT %(x)s, runNo, avg(%(y)s) AS avg_y
                     FROM tests
-                    WHERE scenarioNo=%u AND variable='%s' AND reordering='%s'
-                    GROUP BY %s, runNo
+                    WHERE scenarioNo=%(scenarioNo)u AND variable='%(x)s'
+                    GROUP BY %(x)s, runNo
                 )
-                GROUP BY %s
-                ORDER BY %s
-            ''' % (x, x, y, scenarioNo, x, rotype, x, x, x)
+                GROUP BY %(x)s
+                ORDER BY %(x)s
+            ''' % {'x' : x, 'y' : y, 'scenarioNo' : scenarioNo}
             debug("\n\n" + query + "\n\n")
             dbcur.execute(query)
 
-            plotname = "%s_%s_over_%s_s%u" % (rotype, y, x, scenarioNo)
+            plotname = "%s_over_%s_s%u" % (y, x, scenarioNo)
             valfilename = os.path.join(outdir, plotname+".values")
 
             info("Generating %s..." % valfilename)
@@ -258,15 +254,14 @@ class MultipathTCPAnalysis(Analysis):
         """
 
         x      = self.options.variable
-        rotype = self.options.rotype
         dbcur = self.dbcon.cursor()
 
         query = '''
             SELECT sum(%s) AS sum_y
             FROM tests
-            WHERE %s=%u AND scenarioNo=%u AND variable='%s' AND reordering='%s'
+            WHERE %s=%u AND scenarioNo=%u AND variable='%s'
             GROUP BY iterationNo
-        ''' % (y, x, x_value, scenarioNo, x, rotype)
+        ''' % (y, x, x_value, scenarioNo, x)
 
         dbcur.execute(query)
         ary = numpy.array(dbcur.fetchall())
@@ -284,27 +279,22 @@ class MultipathTCPAnalysis(Analysis):
         if not dbexists:
             dbcur = self.dbcon.cursor()
             dbcur.execute("""
-            CREATE TABLE tests (variable    VARCHAR(15),
-                                reordering  VARCHAR(15),
-                                bnbw        INTEGER,
-                                qlimit      INTEGER,
-                                delay       INTEGER,
-                                rrate       INTEGER,
-                                rdelay      INTEGER,
-                                ackreor     INTEGER,
-                                ackloss     INTEGER,
-                                rtos        INTEGER,
-                                frs         INTEGER,
-                                iterationNo INTEGER,
-                                scenarioNo  INTEGER,
-                                runNo       INTEGER,
-                                src         INTEGER,
-                                dst         INTEGER,
-                                thruput     DOUBLE,
-                                start_time  INTEGER,
-                                run_label   VARCHAR(70),
-                                scenario_label VARCHAR(70),
-                                test        VARCHAR(50))
+            CREATE TABLE tests (variable        VARCHAR(15),
+                                bnbw            INTEGER,
+                                qlimit          INTEGER,
+                                delay           INTEGER,
+                                start_time      VARCHAR(70),
+                                scenario_lable  VARCHAR(70),
+                                iterationNo     INTEGER,
+                                scenarioNo      INTEGER,
+                                runNo           INTEGER,
+                                test            VARCHAR(50)
+                                src             VARCHAR(4),
+                                dst             VARCHAR(4),
+                                thruput         DOUBLE,
+                                rtos            INTEGER,
+                                frs             INTEGER,
+                                rtt             DOUBLE))
             """)
             # store failed test as a mapping from run_label to number
             self.failed = dict()
@@ -321,7 +311,7 @@ class MultipathTCPAnalysis(Analysis):
         if self.options.fairness:
             self.generateFairnessOverXLinePlot()
         else:
-            for y in ("thruput", "frs", "rtos"):
+            for y in ("thruput", "rtt", "frs", "rtos"):
                 self.generateYOverXLinePlot(y)
 
 
