@@ -10,14 +10,19 @@ from logging import info, debug, warn, error
 
 # umic-mesh imports
 from um_functions import call
+from um_latex import UmLatex
 
 """Module for gnuplot scripting."""
 
 class UmGnuplot():
     """A specific umic-mesh plot with convenience functions"""
 
-    def __init__(self, plotname):
+    def __init__(self, plotname, outdir, debug = False, saveit=None, force=False):
         """Plotname is for filename generation"""
+        self.debug = debug
+        self.saveit = saveit
+        self.outdir = outdir
+        self.force = force
 
         self.gplot = Gnuplot.Gnuplot()
 
@@ -26,8 +31,15 @@ class UmGnuplot():
 
         # empty title use caption instead
         self.gplot('set title ""')
-        # default sizes
-        self.plotsize = "14.8cm,11.8cm"
+
+        # default size
+        self.plotsize = "14.4cm,9.7cm"
+        # for 2 pictures with subcaption, one line caption
+        #self.plotsize = "14.4cm,9.3cm"
+        # for 2 pictures with subcaption, two line caption
+        #self.plotsize = "14.4cm,8.7cm"
+
+        # font size
         self.fontsize = 6
 
         # name of the plot (for building filenames)
@@ -56,12 +68,35 @@ class UmGnuplot():
         set boxwidth 0.9 relative
         set clip points
         set style fill solid 1.00 border -1
+        set key on right top box lt rgb "gray50" samplen 3 width -6 spacing 1.05
         """)
 
+        # offset may be changed
+        self.xaxislabeloffset = 0,0.3
+        self.yaxislabeloffset = 3.5,0
+
+        # latex object
+        save_name = "main.tex"
+        if self.saveit:
+            save_name = "%s_main.tex" %plotname
+        self._latex = UmLatex(save_name, self.outdir, self.force, self.debug, tikz = False)
+        # use sans serif font and set the correct font size
+        self._latex.setDocumentclass("scrartcl", "fontsize=%spt" %self.fontsize)
+        self._latex.addSetting(r"\renewcommand{\familydefault}{\sfdefault}")
+        self._latex.addSetting(r"\usepackage{sfmath}")
+
     def setYLabel(self, *args, **kwargs):
+        try:
+            tmp = kwargs['offset']
+        except:
+            kwargs['offset'] = self.yaxislabeloffset
         self.gplot.set_label("ylabel", *args, **kwargs)
 
     def setXLabel(self, *args, **kwargs):
+        try:
+            tmp = kwargs['offset']
+        except:
+            kwargs['offset'] = self.xaxislabeloffset
         self.gplot.set_label("xlabel", *args, **kwargs)
 
     def setOutput(self, output):
@@ -99,17 +134,18 @@ class UmGnuplot():
         else:
             self._plotcmd = "%s, %s" %(self._plotcmd, cmd)
 
-    def save(self, outdir, verbose=False, cfgfile=None):
+    def save(self):
         """Generates .gplot and .pdf file of this plot.
            After this this object is not usable anymore,
            because the underlying Gnuplot instance is destroyed.
         """
-
         plotname = self._plotname
 
-        texfilename   = os.path.join(outdir, plotname+".tex")
-        gplotfilename = os.path.join(outdir, plotname+".gplot")
-        pdffilename   = os.path.join(outdir, plotname+".pdf")
+        texfilename   = os.path.join(self.outdir, plotname+"_eps.tex")
+        gplotfilename = os.path.join(self.outdir, plotname+".gplot")
+        pdffilename   = os.path.join(self.outdir, plotname+".pdf")
+        epsfilename   = os.path.join(self.outdir, plotname+"_eps.eps")
+        epspdffilename = os.path.join(self.outdir, plotname+"_eps.pdf")
 
         info("Generating %s" %texfilename)
         # always epslatex output
@@ -131,15 +167,31 @@ class UmGnuplot():
         self.gplot = None
         gc.collect()
 
-        info("Generating %s" %pdffilename)
-        cmd = ["um_gnuplot2pdf", "-t", "-f", ".", "-z",
-                str(self.fontsize)]
-        if cfgfile:
-            cmd.extend(["-c", cfgfile])
-        if verbose:
-            cmd.append("--debug")
-        debug(cmd)
-        call(cmd, shell=False)
+        # convert the EPS file to a PDF file
+        info("Run epstopdf on %s..." %plotname)
+        if self.debug:
+            cmd = "epstopdf --debug --outfile=%s %s" %(epspdffilename, epsfilename)
+            call(cmd)
+        else:
+            cmd = "epstopdf --outfile=%s %s" %(epspdffilename, epsfilename)
+            call(cmd, noOutput = True)
+
+        self._latex.addLatexFigure(texfilename, plotname)
+
+        # should we save generated main latex file for further purpose?
+        if self.saveit:
+           info("Save main LaTeX file...")
+           self._latex.save()
+
+        # build pdf graphics
+        info("Generate PDF files...")
+        self._latex.toPdf()
+
+        if not self.saveit:
+            os.remove(epsfilename)
+            os.remove(gplotfilename)
+            os.remove(texfilename)
+            os.remove(epspdffilename)
 
 
 class UmHistogram(UmGnuplot):
@@ -307,14 +359,14 @@ class UmXPlot(UmGnuplot):
         UmGnuplot.__init__(self, *args, **kwargs)
         self.gplot(
         """
-        set tics border out mirror;
+        set tics border in mirror;
         unset x2tics;
         unset y2tics;
         #set mxtics;
         #set mytics;
         set format x "$%.2f$";
         set format y "$%.0f$";
-        # set position of legend
+        # set key to the left side
         set key on left top box lt rgb "gray50" samplen 3 width -2 spacing 1.05
         #
 """)
