@@ -71,7 +71,7 @@ class UmLatex():
             self.addPackage("textcomp")
             self.addPackage("graphicx")
             self.addPackage("xcolor")
- 
+             
         if defaultSettings:     
             self.addSetting(r"\pagestyle{empty}")
 
@@ -84,19 +84,46 @@ class UmLatex():
 
         # load siunitx
         if siunitx:
-            self.addPackage("siunitx", "alsoload=accepted", "alsoload=binary")
+            #self.addPackage("siunitx", "alsoload=accepted", "alsoload=binary")
+            #self.addSetting(r"\sisetup{per=fraction,fraction=nice,seperr}")
+            #self.addSetting(r"\sisetup{per=fraction,fraction=nice,seperr}")
+            #self.addSetting(r"\newunit{\mps}{\meter\per\second}")
+            #self.addSetting(r"\newunit{\kmps}{\km\per\second}")
+            #self.addSetting(r"\renewunit{\bit}{b}")
+            #self.addSetting(r"\newunit{\Bit}{bit}")
+            #self.addSetting(r"\newunit{\kb}{\kilo\bit}")
+            #self.addSetting(r"\newunit{\Mb}{\mega\bit}")
+            #self.addSetting(r"\newunit{\Gb}{\giga\bit}")
+            #self.addSetting(r"\newunit{\Byte}{byte}")
+            #self.addSetting(r"\newunit{\kB}{\kilo\byte}")
+            #self.addSetting(r"\newunit{\MB}{\mega\byte}")
+            #self.addSetting(r"\newunit{\GB}{\giga\byte}")
+            #self.addSetting(r"\newunit{\kbps}{\kb\per\second}")
+            #self.addSetting(r"\newunit{\Mbps}{\Mb\per\second}")
+            #self.addSetting(r"\newunit{\Gbps}{\Gb\per\second}")            
+            
+            self.addPackage("xfrac")
+            self.addPackage("siunitx")
+            self.addSetting(r"\sisetup{detect-weight,per-mode=fraction,fraction-function=\sfrac,\
+            	separate-uncertainty,load-configurations=binary,load-configurations=abbreviations}")            
             self.addSetting(r"\sisetup{per=fraction,fraction=nice,seperr}")
-            self.addSetting(r"\newunit{\mps}{\meter\per\second}")
-            self.addSetting(r"\newunit{\kmps}{\km\per\second}")
-            self.addSetting(r"\renewunit{\bit}{b}")
-            self.addSetting(r"\newunit{\Bit}{bit}")
-            self.addSetting(r"\newunit{\kb}{\kilo\bit}")
-            self.addSetting(r"\newunit{\Mb}{\mega\bit}")
-            self.addSetting(r"\newunit{\Gb}{\giga\bit}")
-            self.addSetting(r"\newunit{\Byte}{byte}")
-            self.addSetting(r"\newunit{\kB}{\kilo\byte}")
-            self.addSetting(r"\newunit{\MB}{\mega\byte}")
-            self.addSetting(r"\newunit{\GB}{\giga\byte}")
+
+            self.addSetting(r"\DeclareSIUnit{\Second}{Sekunden}")            
+            self.addSetting(r"\DeclareSIUnit{\mps}{\meter\per\second}")
+            self.addSetting(r"\DeclareSIUnit{\kmps}{\km\per\second}")
+            self.addSetting(r"\DeclareSIUnit{\bit}{b}")
+            self.addSetting(r"\DeclareSIUnit{\Bit}{bit}")
+            self.addSetting(r"\DeclareSIUnit{\kb}{\kilo\bit}")
+            self.addSetting(r"\DeclareSIUnit{\Mb}{\mega\bit}")
+            self.addSetting(r"\DeclareSIUnit{\Gb}{\giga\bit}")
+            self.addSetting(r"\DeclareSIUnit{\Byte}{byte}")
+            self.addSetting(r"\DeclareSIUnit{\kB}{\kilo\byte}")
+            self.addSetting(r"\DeclareSIUnit{\MB}{\mega\byte}")
+            self.addSetting(r"\DeclareSIUnit{\GB}{\giga\byte}")
+            self.addSetting(r"\DeclareSIUnit{\bps}{\bit\per\second}")
+			self.addSetting(r"\DeclareSIUnit{\Bitps}{\Bit\per\second}")
+			self.addSetting(r"\DeclareSIUnit{\Bps}{\byte\per\second}")
+			self.addSetting(r"\DeclareSIUnit{\Byteps}{\Byte\per\second}")
             self.addSetting(r"\newunit{\kbps}{\kb\per\second}")
             self.addSetting(r"\newunit{\Mbps}{\Mb\per\second}")
             self.addSetting(r"\newunit{\Gbps}{\Gb\per\second}")
@@ -104,7 +131,7 @@ class UmLatex():
         # load tikz
         if tikz:
             self.addPackage("tikz")
-            self.addSetting(r"\usetikzlibrary{backgrounds,arrows,calc}")
+            self.addSetting(r"\usetikzlibrary{backgrounds,arrows,calc,positioning,fit}")
 
     def __buildDocument(self):
         packages = "\n".join(self._packages)
