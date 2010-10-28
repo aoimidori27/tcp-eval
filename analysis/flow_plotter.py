@@ -316,7 +316,7 @@ class FlowPlotter(Application):
         if 'tput' in self.graphics_array:
             # tput
             p = UmLinePlot(outname+'_tput', self.options.outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
-            p.setYLabel(r"Throughput [$\\si[per=frac,fraction=nice]{\\Mbps}$]")
+            p.setYLabel(r"Throughput [$\\si{\\Mbps}$]")
             p.setXLabel(r"Time [$\\si{\\second}$]")
 
             count = 0

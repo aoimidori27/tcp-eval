@@ -63,13 +63,13 @@ class ReorderingAnalysis(Analysis):
                         help = "Plot fairness instead")
 
         self.plotlabels = dict()
-        self.plotlabels["bnbw"]    = r"Bottleneck Bandwidth [$\\si[per=frac,fraction=nice]{\\Mbps}$]";
+        self.plotlabels["bnbw"]    = r"Bottleneck Bandwidth [$\\si{\\Mbps}$]";
         self.plotlabels["qlimit"]  = r"Bottleneck Queue Length [packets]";
         self.plotlabels["rrate"]   = r"Reordering Rate [$\\si{\\percent}$]";
         self.plotlabels["rdelay"]  = r"Reordering Delay [$\\si{\\milli\\second}$]";
         self.plotlabels["rtos"]    = r"RTO Retransmissions [$\\#$]";
         self.plotlabels["frs"]     = r"Fast Retransmissions [$\\#$]";
-        self.plotlabels["thruput"] = r"Throughput [$\\si[per=frac,fraction=nice]{\\Mbps}$]";
+        self.plotlabels["thruput"] = r"Throughput [$\\si{\\Mbps}$]";
         self.plotlabels["fairness"]= r"Fairness"
         self.plotlabels["delay"]   = r"RTT [$\\si{\\milli\\second}$]"
         self.plotlabels["ackreor"] = r"ACK Reordering Rate [$\\si{\\percent}$]"
