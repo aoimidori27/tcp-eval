@@ -86,7 +86,7 @@ class Flowgrindd(RPCService):
     @defer.inlineCallbacks
     def start(self):
         """This function invokes start-stop daemon to bring up flowgrindd"""
-        args = ["-p", "%u" %self._config["port"], "-w", "%s" %self._config["dumpdir"] ]
+        args = ["-p", "%u" %self._config["port"] ]
         if (self._config["verbose"]):
             args.append("-d")
         if (self._config["dumpdir"]):
