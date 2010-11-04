@@ -18,38 +18,44 @@ class FlowgrindRecord(TestRecord):
 
 class FlowgrindRecordFactory():
     def __init__(self):
+        # keys
+         # raw_values and there convert function
+        keys = { 'begin' : float,
+                 'end'   : float,
+                 'tput' : float,
+                 'requ' : int,
+                 'resp' : int,
+                 'rtt_min' : float,
+                 'rtt_avg' : float,
+                 'rtt_max' : float,
+                 'iat_min' : float,
+                 'iat_avg' : float,
+                 'iat_max' : float,
+                 'cwnd'    : float,
+                 'ssth'    : int,
+                 'uack'    : int,
+                 'sack'    : int,
+                 'lost'    : int,
+                 'fret'    : int,
+                 'tret'    : int,
+                 'fack'    : int,
+                 'reor'    : int,
+                 'krtt'    : float,
+                 'krttvar' : float,
+                 'krto'    : float,
+                 'castate' : lambda x:x,
+                 'mss'     : int,
+                 'mtu'     : int,
+                 # optional values
+                 'dupthresh':int,
+                 }
+
+        def removeInf(val):
+            return str(val) != 'inf'
+
+
         # convenience function to group flows
         def group_flows(r):
-            # raw_values and there convert function
-            keys = { 'begin' : float,
-                     'end'   : float,
-                     'tput' : float,
-                     'requ' : int,
-                     'resp' : int,
-                     'rtt_min' : float,
-                     'rtt_avg' : float,
-                     'rtt_max' : float,
-                     'iat_min' : float,
-                     'iat_avg' : float,
-                     'iat_max' : float,
-                     'cwnd'    : float,
-                     'ssth'    : int,
-                     'uack'    : int,
-                     'sack'    : int,
-                     'lost'    : int,
-                     'fret'    : int,
-                     'tret'    : int,
-                     'fack'    : int,
-                     'reor'    : int,
-                     'krtt'    : float,
-                     'krttvar' : float,
-                     'krto'    : float,
-                     'castate' : lambda x:x,
-                     'mss'     : int,
-                     'mtu'     : int,
-                     # optional values
-                     'dupthresh':int,
-                     }
 
             flow_ids = map(int, set(r['flow_id']))
             flow_map = dict()
@@ -65,26 +71,44 @@ class FlowgrindRecordFactory():
 
             # iterate over all entries, shuffle and convert
             for i in range(len(r['flow_id'])):
-                    if r['direction'][i] == 'S':
-                        dir = 'S'
-                    else:
-                        dir = 'R'
+                if r['direction'][i] == 'S':
+                    dir = 'S'
+                else:
+                    dir = 'R'
 
-                    flow = flow_map[int(r['flow_id'][i])][dir]
-                    for (key, convert) in keys.iteritems():
-                            try:
-                                flow[key].append(convert(r[key][i]))
-                            except KeyError, inst:
-                                warn('Failed to get r["%s"][%u]' %(key,i))
-                                raise inst
-                            except TypeError, inst:
-                                # ignore optional dupthresh
-                                if not (key == 'dupthresh'):
-                                    warn('Failed to get r["%s"][%u]' %(key,i))
-                                    raise inst
-                    flow['size'] += 1
+                flow = flow_map[int(r['flow_id'][i])][dir]
+                for (key, convert) in keys.iteritems():
+                    try:
+                        flow[key].append(convert(r[key][i]))
+                    except KeyError, inst:
+                        warn('Failed to get r["%s"][%u]' %(key,i))
+                        raise inst
+                    except TypeError, inst:
+                        # ignore optional dupthresh
+                        if not (key == 'dupthresh'):
+                            warn('Failed to get r["%s"][%u]' %(key,i))
+                            raise inst
+                flow['size'] += 1
 
             return flow_map.values()
+
+        # combine all flows of a given directory to one list for each key
+        def filter_direction(r, direction):
+            flow_ids = map(int, set(r['flow_id']))
+            flow_map = dict()
+
+            flows = group_flows(r)
+
+            # get keys and initializa map
+            for key in keys.iterkeys():
+                flow_map[key] = list()
+
+            for flow_id in flow_ids:
+                for key in flow_map.iterkeys():
+                    flow_map[key].extend(flows[flow_id][direction][key])
+
+            return flow_map
+
 
         def outages(r, min_retr=0, min_time=0, time_abs=1):
             flow_map = dict()
@@ -114,7 +138,10 @@ class FlowgrindRecordFactory():
         # phase 1 data gathering
         regexes = [
             #   0 S: mrouter4/169.254.9.4, MSS = 1448, MTU = 1500 (Ethernet/PPP), sbuf = 16384/0, rbuf = 87380/0 (real/req), delay = 5.00s/0.00s, duration = 60.00s/0.00s, through = 0.645530/0.000000Mb/s, 591/0 request blocks, 0/0 response blocks (out/in)
-            "through = (?P<thruput>\d+\.\d+)(\/(?P<thruput_back>\d+\.\d+))?Mb/s",
+            "S: .* through = (?P<thruput>\d+\.\d+)(\/(?P<thruput_back>\d+\.\d+))?Mb/s",
+
+            # receiver calculated thruput
+            "R: .* through = (?P<thruput_recv>\d+\.\d+)(\/(?P<thruput_back_recv>\d+\.\d+))?Mb/s",
 
             # blocks
             "(?P<requ_in_sum>\d+)/(?P<requ_out_sum>\d+) request blocks, "\
@@ -152,10 +179,18 @@ class FlowgrindRecordFactory():
                 ret = None
             return ret
 
+        def average(val):
+            return sum(val) / len(val)
+
         # phase 2 result calculation
         self.whats = dict(
-            # average thruput: just sum up all summary lines
+            # average thruput: just sum up all summary lines (calculated from sender estimate)
             thruput           = lambda r: sum(map(float, r['thruput'])),
+            # average thruput: just sum up all summary lines (calculated from receiver estimate)
+            thruput_recv      = lambda r: sum(map(float, r['thruput_back_recv'])),
+            rtt_min           = lambda r: min(map(float, filter(removeInf,  filter_direction(r, 'S')['rtt_min']))),
+            rtt_max           = lambda r: max(map(float, filter(removeInf, filter_direction(r, 'S')['rtt_max']))),
+            rtt_avg           = lambda r: average(map(float, filter(removeInf, filter_direction(r, 'S')['rtt_avg']))),
             total_retransmits      = lambda r: max(map(extInt, r['cret'])),
             total_fast_retransmits = lambda r: max(map(extInt, r['cfret'])),
             total_rto_retransmits  = lambda r: max(map(extInt, r['ctret'])),
