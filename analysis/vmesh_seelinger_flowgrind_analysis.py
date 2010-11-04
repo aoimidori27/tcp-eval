@@ -19,7 +19,7 @@
 # python imports
 import os
 import os.path
-from logging import info, debug, warn, error
+from logging import warn, debug, warn, error
 from sqlite3 import dbapi2 as sqlite
 import numpy
 import scipy.stats
@@ -28,7 +28,7 @@ import sys
 # umic-mesh imports
 from um_functions import call
 from um_analysis.analysis import Analysis
-from um_gnuplot import UmGnuplot, UmLinePointPlot
+from um_gnuplot import UmGnuplot, UmLinePointPlot, UmLinePlot
 
 class MultipathTCPAnalysis(Analysis):
     """Application for analysis of flowgrind results for multipath tcp."""
@@ -45,6 +45,9 @@ class MultipathTCPAnalysis(Analysis):
         self.parser.add_option('-V', '--variable', metavar="Variable",
                          action = 'store', type = 'string', dest = 'variable',
                          help = 'The variable of the measurement [bnbw|qlimit|rate|delay].')
+        self.parser.add_option('-T', '--type', metavar="Type",
+                         action = 'store', type = 'string', dest = 'rotype',
+                        help = 'The type of the measurement [reordering|congestion|both].')
         self.parser.add_option('-E', '--plot-error', metavar="PlotError",
                          action = 'store_true', dest = 'plot_error',
                          help = "Plot error bars")
@@ -54,14 +57,22 @@ class MultipathTCPAnalysis(Analysis):
                         help = "Test the flowlogs only")
 
         self.plotlabels = dict()
-        self.plotlabels["bnbw"]    = r"Bottleneck Bandwidth [$\\si[per=frac,fraction=nice]{\\Mbps}$]";
-        self.plotlabels["qlimit"]  = r"Bottleneck Queue Length [packets]";
+        self.plotlabels["bnbw"]    = r"bottleneck bandwidth [$\\si[per=frac,fraction=nice]{\\Mbps}$]";
+        self.plotlabels["qlimit"]  = r"bottleneck queue length [packets]";
+        self.plotlabels["rrate"]   = r"reordering rate [$\\si{\\percent}$]";
+        self.plotlabels["rdelay"]  = r"reordering delay [$\\si{\\milli\\second}$]";
+        self.plotlabels["rtos"]    = r"RTO retransmissions [$\\#$]";
+        self.plotlabels["frs"]     = r"fast retransmissions [$\\#$]";
+        self.plotlabels["thruput"] = r"throughput [$\\si[per=frac,fraction=nice]{\\Mbps}$]";
+
+        #self.plotlabels["bnbw"]    = r"Bottleneck Bandwidth [$\\si{\\Mbps}$]";
+        #self.plotlabels["qlimit"]  = r"Bottleneck Queue Length [packets]";
         #self.plotlabels["rrate"]   = r"Reordering Rate [$\\si{\\percent}$]";
         #self.plotlabels["rdelay"]  = r"Reordering Delay [$\\si{\\milli\\second}$]";
         #self.plotlabels["rtos"]    = r"RTO Retransmissions [$\\#$]";
         #self.plotlabels["frs"]     = r"Fast Retransmissions [$\\#$]";
-        self.plotlabels["thruput"] = r"Avarage Throughput [$\\si[per=frac,fraction=nice]{\\Mbps}$]";
-        self.plotlabels["rtt"]     = r"Avarage Round Trip Time";
+        #self.plotlabels["thruput"] = r"Throughput [$\\si{\\Mbps}$]";
+        self.plotlabels["rtt"]     = r"Avarage Round Trip Time on Application Layer";
         #self.plotlabels["fairness"]= r"Fairness"
         self.plotlabels["delay"]   = r"RTT [$\\si{\\milli\\second}$]"
         #self.plotlabels["ackreor"] = r"ACK Reordering Rate [$\\si{\\percent}$]"
@@ -101,7 +112,8 @@ class MultipathTCPAnalysis(Analysis):
             qlimit     = "NULL"
 
         try:
-            bnbw       = int(recordHeader["testbed_param_bottleneckbw"])
+ #            bnbw       = int(recordHeader["testbed_param_bottleneckbw"])
+            bnbw       = int(recordHeader["testbed_bottleneckbw"])
         except KeyError:
             bnbw       = "NULL"
 
@@ -116,38 +128,36 @@ class MultipathTCPAnalysis(Analysis):
         except KeyError:
             start_time = 0
 
-        rtos           = record.calculate("total_rto_retransmits")
-        frs            = record.calculate("total_fast_retransmits")
-        #todo check
-        #rtt            = record.calculate("...")
-        rtt            = 0
+        rtt             = record.calculate("rtt_avg")
+        rtt_min         = record.calculate("rtt_min")
+        rtt_max         = record.calculate("rtt_max")
 
-        thruput        = record.calculate("thruput")
+        thruput        = record.calculate("thruput_recv")
 
         if not thruput:
             if not self.failed.has_key(scenario_label):
                 self.failed[scenario_label] = 1
             else:
-                self.failed[rscenario_label] = self.failed[scenario_label]+1
+                self.failed[scenario_label] = self.failed[scenario_label]+1
             return
 
         if thruput == 0:
             warn("Throughput is 0 in %s!" %record.filename)
 
         try:
-            rtos = int(rtos)
+            rtt_min = float(rtt_min)
         except TypeError, inst:
-            rtos = "NULL"
+            rtt_min = "NULL"
 
         try:
-            frs = int(frs)
+            rtt_max = float(rtt_max)
         except TypeError, inst:
-            frs = "NULL"
+            rtt_max = "NULL"
 
         try:
             rtt = float(rtt)
         except TypeError, inst:
-            rtt = 0
+            rtt = "NULL"
         # check for lost SYN or long connection establishing
         #c = 0
         #flow_S = record.calculate("flows")[0]['S']
@@ -159,13 +169,14 @@ class MultipathTCPAnalysis(Analysis):
         #    warn("Long connection establishment (%ss): %s" %(flow_S['end'][c], record.filename))
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES ("%s", %s, %s, %s, %u, "%s", %u, %u, %u, "%s", "%s","%s", %f, %s, %s, %f)
-                      """ % (variable,  bnbw, qlimit, delay, start_time, scenario_label, iterationNo, scenarioNo, runNo, test, src, dst, thruput, rtos, frs, rtt))
+                      INSERT INTO tests VALUES ("%s", %s, %s, %s, %u, "%s", %u, %u, %u, "%s", "%s","%s", %f, %s, %s, %s)
+                      """ % (variable,  bnbw, qlimit, delay, start_time, scenario_label, iterationNo, scenarioNo, runNo, test, src, dst, thruput, rtt_min, rtt_max, rtt))
 
     def generateYOverXLinePlot(self, y):
         """Generates a line plot of the DB column y over the DB column x
            reordering rate. One line for each scenario.
         """
+        warn("generateYOverXLinePlot with y = %s" % y)
 
         x      = self.options.variable
 
@@ -183,6 +194,7 @@ class MultipathTCPAnalysis(Analysis):
 
         outdir = self.options.outdir
         p = UmLinePointPlot("%s_over_%s" % (y, x))
+        #p = UmLinePlot("test_%s_over_%s" % (y, x))
         p.setXLabel(self.plotlabels[x])
         p.setYLabel(self.plotlabels[y])
 
@@ -205,13 +217,13 @@ class MultipathTCPAnalysis(Analysis):
                 GROUP BY %(x)s
                 ORDER BY %(x)s
             ''' % {'x' : x, 'y' : y, 'scenarioNo' : scenarioNo}
-            debug("\n\n" + query + "\n\n")
+            warn("\n\n" + query + "\n\n")
             dbcur.execute(query)
 
             plotname = "%s_over_%s_s%u" % (y, x, scenarioNo)
             valfilename = os.path.join(outdir, plotname+".values")
 
-            info("Generating %s..." % valfilename)
+            warn("Generating %s..." % valfilename)
             fhv = file(valfilename, "w")
 
             # header
@@ -284,35 +296,34 @@ class MultipathTCPAnalysis(Analysis):
                                 qlimit          INTEGER,
                                 delay           INTEGER,
                                 start_time      VARCHAR(70),
-                                scenario_lable  VARCHAR(70),
+                                scenario_label  VARCHAR(70),
                                 iterationNo     INTEGER,
                                 scenarioNo      INTEGER,
                                 runNo           INTEGER,
-                                test            VARCHAR(50)
+                                test            VARCHAR(50),
                                 src             VARCHAR(4),
                                 dst             VARCHAR(4),
                                 thruput         DOUBLE,
-                                rtos            INTEGER,
-                                frs             INTEGER,
-                                rtt             DOUBLE))
+                                rtt_min         DOUBLE,
+                                rtt_max         DOUBLE,
+                                rtt_avg         DOUBLE)
             """)
             # store failed test as a mapping from run_label to number
             self.failed = dict()
             # only load flowgrind test records
-            self.loadRecords(tests=["multiflowgrind"])
+            self.loadRecords(tests=["flowgrind"])
             self.dbcon.commit()
         else:
-            info("Database already exists, don't load records.")
+            warn("Database already exists, don't load records.")
 
         if self.options.dry_run:
             return
 
         # Do Plots
-        if self.options.fairness:
-            self.generateFairnessOverXLinePlot()
-        else:
-            for y in ("thruput", "rtt", "frs", "rtos"):
-                self.generateYOverXLinePlot(y)
+        for y in ("thruput", "rtt_max"):
+            if y == "rtt_max":
+                break
+            self.generateYOverXLinePlot(y)
 
 
     def main(self):
@@ -323,4 +334,4 @@ class MultipathTCPAnalysis(Analysis):
 
 # this only runs if the module was *not* imported
 if __name__ == '__main__':
-    self.main()
+    MultipathTCPAnalysis().main()
