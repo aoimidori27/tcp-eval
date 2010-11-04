@@ -331,7 +331,7 @@ class FlowPlotter(Application):
 
         if 'cwnd' in self.graphics_array:
             # cwnd
-            p = UmLinePlot(outname+'_cwnd_ssth')
+            p = UmLinePlot(outname+'_cwnd_ssth', self.options.outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
             p.setYLabel(r"$\\#$")
             p.setXLabel(r"Time [$\\si{\\second}$]")
             count = 0
@@ -342,11 +342,11 @@ class FlowPlotter(Application):
                 p.plot(valfilename, "SSTHRESH %s" %label, using="2:7", linestyle=3*count+3)
                 count += 1
             # output plot
-            p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+            p.save()
 
         if 'rtt' in self.graphics_array:
             # rto, rtt
-            p = UmLinePlot(outname+'_rto_rtt')
+            p = UmLinePlot(outname+'_rto_rtt', self.options.outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
             p.setYLabel(r"$\\si{\\milli\\second}$")
             p.setXLabel(r"Time [$\\si{\\second}$]")
             count = 0
@@ -356,11 +356,11 @@ class FlowPlotter(Application):
                 p.plot(valfilename, "RTO %s" %label, using="2:9", linestyle=2*count)
                 p.plot(valfilename, "RTT %s" %label, using="2:8", linestyle=2*count+1)
             # output plot
-            p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+            p.save()
 
         if 'segments' in self.graphics_array:
             # lost, reorder, retransmit
-            p = UmLinePlot(outname+'_lost_reor_retr')
+            p = UmLinePlot(outname+'_lost_reor_retr', self.options.outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
             p.setYLabel(r"$\\#$")
             p.setXLabel(r"Time [$\\si{\\second$]")
             count = 0
@@ -372,11 +372,11 @@ class FlowPlotter(Application):
                 p.plot(valfilename, "timeout retransmits %s" %label, using="2:13", linestyle=4*count+4)
                 count += 1
             # output plot
-            p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+            p.save()
 
         if 'dupthresh' in self.graphics_array:
             # dupthresh, tp->reordering
-            p = UmStepPlot(outname+'_reordering_dupthresh')
+            p = UmStepPlot(outname+'_reordering_dupthresh', self.options.outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
             p.setYLabel(r"Dupthresh $[\\#]$")
             p.setXLabel(r"Time $[\\si{\\second}]$")
             #max_y_value = max(flow['S']['reor'] + flow['S']['dupthresh'])
@@ -388,7 +388,7 @@ class FlowPlotter(Application):
                 p.plot(valfilename, "Linux", using="2:11", linestyle=2*count)
                 p.plot(valfilename, "%s" %label, using="2:14", linestyle=2*count+1)
             # output plot
-            p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+            p.save()
 
     def run(self):
         """Run..."""
