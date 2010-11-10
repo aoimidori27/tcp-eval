@@ -19,7 +19,7 @@
 # python imports
 import os
 import os.path
-from logging import warn, debug, warn, error
+from logging import debug, warn, error
 from sqlite3 import dbapi2 as sqlite
 import numpy
 import scipy.stats
@@ -72,7 +72,9 @@ class MultipathTCPAnalysis(Analysis):
         #self.plotlabels["rtos"]    = r"RTO Retransmissions [$\\#$]";
         #self.plotlabels["frs"]     = r"Fast Retransmissions [$\\#$]";
         #self.plotlabels["thruput"] = r"Throughput [$\\si{\\Mbps}$]";
-        self.plotlabels["rtt"]     = r"Avarage Round Trip Time on Application Layer";
+        self.plotlabels["rtt_max"] = r"Maximal Round Trip Time on Application Layer";
+        self.plotlabels["rtt_min"] = r"Minimal Rount Trip Time on Application Layer";
+        self.plotlabels["rtt_avg"]     = r"Avarage Round Trip Time on Application Layer";
         #self.plotlabels["fairness"]= r"Fairness"
         self.plotlabels["delay"]   = r"RTT [$\\si{\\milli\\second}$]"
         #self.plotlabels["ackreor"] = r"ACK Reordering Rate [$\\si{\\percent}$]"
@@ -112,8 +114,7 @@ class MultipathTCPAnalysis(Analysis):
             qlimit     = "NULL"
 
         try:
- #            bnbw       = int(recordHeader["testbed_param_bottleneckbw"])
-            bnbw       = int(recordHeader["testbed_bottleneckbw"])
+            bnbw       = int(recordHeader["testbed_param_bottleneckbw"])
         except KeyError:
             bnbw       = "NULL"
 
@@ -217,13 +218,13 @@ class MultipathTCPAnalysis(Analysis):
                 GROUP BY %(x)s
                 ORDER BY %(x)s
             ''' % {'x' : x, 'y' : y, 'scenarioNo' : scenarioNo}
-            warn("\n\n" + query + "\n\n")
+            debug("\n\n" + query + "\n\n")
             dbcur.execute(query)
 
             plotname = "%s_over_%s_s%u" % (y, x, scenarioNo)
             valfilename = os.path.join(outdir, plotname+".values")
 
-            warn("Generating %s..." % valfilename)
+            debug("Generating %s..." % valfilename)
             fhv = file(valfilename, "w")
 
             # header
@@ -311,7 +312,7 @@ class MultipathTCPAnalysis(Analysis):
             # store failed test as a mapping from run_label to number
             self.failed = dict()
             # only load flowgrind test records
-            self.loadRecords(tests=["flowgrind"])
+            self.loadRecords(tests=["multiflowgrind"])
             self.dbcon.commit()
         else:
             warn("Database already exists, don't load records.")
@@ -320,9 +321,7 @@ class MultipathTCPAnalysis(Analysis):
             return
 
         # Do Plots
-        for y in ("thruput", "rtt_max"):
-            if y == "rtt_max":
-                break
+        for y in ("thruput", "rtt_max","rtt_min","rtt_avg"):
             self.generateYOverXLinePlot(y)
 
 
