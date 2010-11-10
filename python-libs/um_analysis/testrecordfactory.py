@@ -23,7 +23,7 @@ class TestRecordFactory:
             factory = PingRecordFactory()
         elif test=="fping":
             factory = FpingRecordFactory()
-        elif test=="flowgrind":
+        elif test=="flowgrind" or test=="multiflowgrind":
             factory = FlowgrindRecordFactory()
         elif test=="rate":
             factory = RateRecordFactory()
