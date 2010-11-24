@@ -30,17 +30,20 @@ class TcpMeasurement(measurement.Measurement):
         # common options used for all tests
         opts = dict( flowgrind_cc = "reno",
                      flowgrind_bin = "flowgrind-lcd",
-                     flowgrind_duration = 60,
+                     flowgrind_duration = 240,
                      flowgrind_warmup = 5,
                      )
 
         brokenhosts = ["mrouter12", "mrouter22", "mrouter23", "mrouter24", "mrouter28", "mrouter41", "mrouter43"]
-        srchosts = [ "mrouter4" ]
-        middlehosts = [ "mrouter5" ]
+        srchosts = [ "mrouter14" ]
+        middlehosts = [ "mrouter15" ]
         # inner loop configurations
         runs = [
-                 dict( run_label = r"src4-dst11", src=4, dst=11 ),
-                 dict( run_label = r"src4-dst26", src=4, dst=26 ),
+                 dict( run_label = r"src14-dst8", src=14, dst=8 ),
+                 dict( run_label = r"src14-dst27", src=14, dst=27 ),
+                 dict( run_label = r"src14-dst30", src=14, dst=30 ),
+                 dict( run_label = r"src14-dst18", src=14, dst=18 ),
+                 dict( run_label = r"src14-dst2", src=14, dst=2 )
                ]
 
         # repeat loop
@@ -50,14 +53,14 @@ class TcpMeasurement(measurement.Measurement):
         scenarios   = [
         dict( scenario_label = "bulk",
             flowgrind_opts ="-n 2 -M s -F 1 -O b=TCP_LCD".split()),
-        dict( scenario_label = "rr-http",
-            flowgrind_opts="-r 123456 -n 2 -G s=q,C,350 -G s=p,L,9055,115.17 -U 100000 -F1 -O b=TCP_LCD".split() ),
-        dict( scenario_label = "rr-smtp",
-            flowgrind_opts="-r 654321 -n 2 -G s=q,U,500,20000 -G s=p,C,80 -F1 -O b=TCP_LCD".split() ),
-        dict( scenario_label = "rr-telnet",
-            flowgrind_opts="-r 123654 -n 2 -G s=q,U,40,1000 -G s=q,U,40,1000 -F1 -O b=TCP_LCD,TCP_NODELAY -F2 b=TCP_NODELAY".split() ),
-        dict( scenario_label = "limited-normal-800kbs",
-            flowgrind_opts="-r 987654 -n 2 -G s=g,N,0.08192,0.1 -F1 -O b=TCP_LCD,TCP_NODELAY -F2 b=TCP_NODELAY".split() ),
+        #dict( scenario_label = "rr-http",
+        #    flowgrind_opts="-r 123456 -n 2 -G s=q,C,350 -G s=p,L,9055,115.17 -U 100000 -F1 -O b=TCP_LCD".split() ),
+        #dict( scenario_label = "rr-smtp",
+        #    flowgrind_opts="-r 654321 -n 2 -G s=q,U,500,20000 -G s=p,C,80 -F1 -O b=TCP_LCD".split() ),
+        #dict( scenario_label = "rr-telnet",
+        #    flowgrind_opts="-r 123654 -n 2 -G s=q,U,40,1000 -G s=q,U,40,1000 -F1 -O b=TCP_LCD,TCP_NODELAY -F2 b=TCP_NODELAY".split() ),
+        #dict( scenario_label = "limited-normal-800kbs",
+        #    flowgrind_opts="-r 987654 -n 2 -G s=g,N,0.08192,0.1 -F1 -O b=TCP_LCD,TCP_NODELAY -F2 b=TCP_NODELAY".split() ),
         ]
 
         # configure testbed
@@ -72,12 +75,12 @@ class TcpMeasurement(measurement.Measurement):
         # adjust routing
         yield self.remote_execute_many(allhosts, "sudo ip route del 169.254.9.0/24 dev ath0")
         yield self.remote_execute_many(allhosts, "sudo ip route del default via 137.226.54.1 dev eth0")
+        yield self.remote_execute_many(allhosts, "sudo ip route del default via 137.226.54.1 dev eth0")
 
-        yield self.remote_execute_many(srchosts, "sudo killall olsrd-0.6.0")
-        yield self.remote_execute_many(srchosts, "sudo ip route add 169.254.9.5 dev ath0")
-        yield self.remote_execute_many(srchosts, "sudo ip route add 169.254.9.0/24 via 169.254.9.5")
+        yield self.remote_execute_many(srchosts, "sudo ip route add 169.254.9.15 dev ath0")
+        yield self.remote_execute_many(srchosts, "sudo ip route add 169.254.9.0/24 via 169.254.9.15")
 
-        yield self.remote_execute_many(middlehosts, "sudo ip route add 169.254.9.4 dev ath0")
+        yield self.remote_execute_many(middlehosts, "sudo ip route add 169.254.9.14 dev ath0")
         # wait a few minutes to let olsr converge
         yield twisted_sleep(2)
 
