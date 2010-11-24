@@ -36,7 +36,7 @@ class TcpMeasurement(measurement.Measurement):
 
         brokenhosts = ["mrouter12", "mrouter22", "mrouter23", "mrouter24", "mrouter28", "mrouter41", "mrouter43"]
         srchosts = [ "mrouter4" ]
-        middlehosts = [ "moruter5" ]
+        middlehosts = [ "mrouter5" ]
         # inner loop configurations
         runs = [
                  dict( run_label = r"src4-dst11", src=4, dst=11 ),
