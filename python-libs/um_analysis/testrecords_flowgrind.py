@@ -63,17 +63,17 @@ class FlowgrindRecordFactory():
             for flow_id in flow_ids:
                 flow_map[flow_id] = dict()
                 flow_map[flow_id]['S'] = StrictStruct(direction='S', size=0, **keys)
-                flow_map[flow_id]['R'] = StrictStruct(direction='R', size=0, **keys)
+                flow_map[flow_id]['D'] = StrictStruct(direction='D', size=0, **keys)
                 for key in keys.iterkeys():
                     flow_map[flow_id]['S'][key] = list()
-                    flow_map[flow_id]['R'][key] = list()
+                    flow_map[flow_id]['D'][key] = list()
 
             # iterate over all entries, shuffle and convert
             for i in range(len(r['flow_id'])):
                 if r['direction'][i] == 'S':
                     dir = 'S'
                 else:
-                    dir = 'R'
+                    dir = 'D'
 
                 flow = flow_map[int(r['flow_id'][i])][dir]
                 for (key, convert) in keys.iteritems():
@@ -90,24 +90,6 @@ class FlowgrindRecordFactory():
                 flow['size'] += 1
 
             return flow_map.values()
-
-        # combine all flows of a given directory to one list for each key
-        def filter_direction(r, direction):
-            flow_ids = map(int, set(r['flow_id']))
-            flow_map = dict()
-
-            flows = group_flows(r)
-
-            # get keys and initializa map
-            for key in keys.iterkeys():
-                flow_map[key] = list()
-
-            for flow_id in flow_ids:
-                for key in flow_map.iterkeys():
-                    flow_map[key].extend(flows[flow_id][direction][key])
-
-            return flow_map
-
 
         def outages(r, min_retr=0, min_time=0, time_abs=1):
             flow_map = dict()
@@ -136,19 +118,33 @@ class FlowgrindRecordFactory():
 
         # phase 1 data gathering
         regexes = [
-            #   0 S: mrouter4/169.254.9.4, MSS = 1448, MTU = 1500 (Ethernet/PPP), sbuf = 16384/0, rbuf = 87380/0 (real/req), delay = 5.00s/0.00s, duration = 60.00s/0.00s, through = 0.645530/0.000000Mb/s, 591/0 request blocks, 0/0 response blocks (out/in)
-            "S: .* through = (?P<thruput>\d+\.\d+)(\/(?P<thruput_back>\d+\.\d+))?Mb/s",
+            #  0 S: 10.0.1.147/vmrouter401, sbuf = 16384/0, rbuf = 87380/0 (real/req), SMSS = 1420, Path MTU = 1472, Interface MTU = 1472 (unknown), flow duration 30.004s/30.000s (real/req), through = 8.457316/0.024688Mbit/s (out/in), 128.58 transactions/s, 3872/0 request blocks (out/in), 0/3858 response blocks (out/in), 39.744/115.262/170.705 RTT (min/avg/max)
+            "S: .*sbuf = (?P<s_sbuf_real>\d+)(\/(?P<s_sbuf_req>\d+)), rbuf = (?P<s_rbuf_real>\d+)(\/(?P<s_rbuf_req>\d+)) \(real\/req\),\s+"\
+            "SMSS = (?P<s_smss>\d+), Path MTU = (?P<s_path_mtu>\d+), Interface MTU = (?P<s_interface_mtu>\d+) \(\w+\),\s+"\
+            "flow duration (?P<s_duration_real>\d+\.\d+)s\/(?P<s_duration_req>\d+\.\d+)s \(real\/req\),\s+"\
+            "through = (?P<s_thruput_in>\d+\.\d+)(\/(?P<s_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\),\s+"\
+            "(?P<s_transac>\d+\.\d+) transactions\/s,\s+"\
+            "(?P<s_requ_out_sum>\d+)\/(?P<s_requ_in_sum>\d+) request blocks \(out\/in\),\s+"\
+            "(?P<s_resp_out_sum>\d+)/(?P<s_resp_in_sum>\d+) response blocks \(out\/in\),\s+",
 
             # receiver calculated thruput
-            "R: .* through = (?P<thruput_recv>\d+\.\d+)(\/(?P<thruput_back_recv>\d+\.\d+))?Mb/s",
+            "D: .* sbuf = (?P<d_sbuf_real>\d+)(\/(?P<d_sbuf_req>\d+)), rbuf = (?P<d_rbuf_real>\d+)(\/(?P<d_rbuf_req>\d+)) \(real\/req\),\s+"\
+            "SMSS = (?P<d_smss>\d+), Path MTU = (?P<d_path_mtu>\d+),\s+"\
+            "through = (?P<d_thruput_in>\d+\.\d+)(\/(?P<d_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\),\s+"\
+            "(?P<d_requ_out_sum>\d+)\/(?P<d_requ_in_sum>\d+) request blocks \(out\/in\),\s+"\
+            "(?P<d_resp_out_sum>\d+)/(?P<d_resp_in_sum>\d+) response blocks \(out\/in\),\s+",
 
-            # blocks
-            "(?P<requ_in_sum>\d+)/(?P<requ_out_sum>\d+) request blocks, "\
-            "(?P<resp_in_sum>\d+)/(?P<resp_out_sum>\d+) response blocks",
-            # "listen port =\s*(?P<lport>\d+)",
+            # optional calculated source rtt
+            "S: .* (?P<s_rtt_min>\d+\.\d+)\/(?P<s_rtt_avg>\d+\.\d+)\/(?P<s_rtt_max>\d+\.\d+) RTT",
+            #optional calculated source iat
+            "S: .* (?P<s_iat_min>\d+\.\d+)\/(?P<s_iat_avg>\d+\.\d+)\/(?P<s_iat_max>\d+\.\d+) IAT",
+            # optional calculated destination rtt
+            "D: .* (?P<d_rtt_min>\d+\.\d+)\/(?P<d_rtt_avg>\d+\.\d+)\/(?P<d_rtt_max>\d+\.\d+) RTT",
+            #optional calculated destination iat
+            "D: .* (?P<d_iat_min>\d+\.\d+)\/(?P<d_iat_avg>\d+\.\d+)\/(?P<d_iat_max>\d+\.\d+) IAT",
 
-            # # ID begin   end  through transac min RTT avg RTT max RTT min IAT avg IAT max IAT cwnd ssth uack sack lost retr tret fack reor rtt rttvar rto ca state mss mtu
-            "(?P<direction>[S,R])\s+"\
+            # # ID begin   end  through transac min RTT avg RTT max RTT min IAT avg IAT max IAT cwnd ssth uack sack lost retr tret fack reor back rtt rttvar rto ca state mss mtu
+            "(?P<direction>[S,D])\s+"\
             "(?P<flow_id>\d+)\s+"\
             "(?P<begin>\d+\.\d+)\s+(?P<end>\d+\.\d+)\s+"\
             "(?P<tput>\d+\.\d+)\s+"\
@@ -156,9 +152,9 @@ class FlowgrindRecordFactory():
             "(?P<rtt_min>\d+\.\d+|inf)\s+(?P<rtt_avg>\d+\.\d+|inf)\s+(?P<rtt_max>\d+\.\d+|inf)\s+"\
             "(?P<iat_min>\d+\.\d+|inf)\s+(?P<iat_avg>\d+\.\d+|inf)\s+(?P<iat_max>\d+\.\d+|inf)\s+"\
             "(?P<cwnd>\d+)\s+(?P<ssth>\d+|INT_MAX|SHRT_MAX)\s+(?P<uack>\d+)\s+(?P<sack>\d+)\s+"\
-            "(?P<lost>\d+)\s+(?P<retr>\d+)\s+(?P<tret>\d+)\s+(?P<fack>\d+)\s+(?P<reor>\d+)\s+"\
+            "(?P<lost>\d+)\s+(?P<retr>\d+)\s+(?P<tret>\d+)\s+(?P<fack>\d+)\s+(?P<reor>\d+)\s+(?P<back>\d+)\s+"\
             "(?P<krtt>\d+\.\d+)\s+(?P<krttvar>\d+\.\d+)\s+(?P<krto>\d+\.\d+)\s+"\
-            "(?P<castate>loss|open|disrdr|rcvry)\s+"\
+            "(?P<castate>loss|open|disrdr|rcvry)\s+"
             "(?P<mss>\d+)\s+(?P<mtu>\d+)\s+"\
             # optional extension -wolff
             "((?P<cret>\d+)\s+(?P<cfret>\d+)\s+(?P<ctret>\d+)\s+(?P<dupthresh>\d+)\s+)?"\
@@ -184,17 +180,21 @@ class FlowgrindRecordFactory():
         # phase 2 result calculation
         self.whats = dict(
             # average thruput: just sum up all summary lines (calculated from sender estimate)
-            thruput           = lambda r: sum(map(float, r['thruput'])),
+            thruput           = lambda r: sum(map(float, r['s_thruput_in'])),
             # average thruput: just sum up all summary lines (calculated from receiver estimate)
-            thruput_recv      = lambda r: sum(map(float, r['thruput_back_recv'])),
-            rtt_min           = lambda r: min(map(float, filter(removeInf,  filter_direction(r, 'S')['rtt_min']))),
-            rtt_max           = lambda r: max(map(float, filter(removeInf, filter_direction(r, 'S')['rtt_max']))),
-            rtt_avg           = lambda r: average(map(float, filter(removeInf, filter_direction(r, 'S')['rtt_avg']))),
+            thruput_recv      = lambda r: sum(map(float, r['d_thruput_out'])),
+            rtt_min           = lambda r: min(map(float, r['s_rtt_min'])),
+            rtt_max           = lambda r: max(map(float, r['s_rtt_max'])),
+            rtt_avg           = lambda r: average(map(float, r['s_rtt_avg'])),
             total_retransmits      = lambda r: max(map(extInt, r['cret'])),
             total_fast_retransmits = lambda r: max(map(extInt, r['cfret'])),
             total_rto_retransmits  = lambda r: max(map(extInt, r['ctret'])),
             # list of summary lines
-            thruput_list      = lambda r: map(float, r['thruput']),
+            thruput_list      = lambda r: map(float, r['s_thruput_in']),
+            thruput_recv_list = lambda r: map(float, r['d_thruput_out']),
+            rtt_min_list      = lambda r: map(float, r['s_rtt_min']),
+            rtt_max_list      = lambda r: map(float, r['s_rtt_max']),
+            rtt_avg_list      = lambda r: map(float, r['s_rtt_avg']),
             lport_list        = lambda r: map(int, r['lport']),
             flow_ids          = lambda r: map(int, set(r['flow_id'])),
             flows             = group_flows,
