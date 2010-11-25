@@ -23,8 +23,7 @@ class FlowgrindRecordFactory():
         keys = { 'begin' : float,
                  'end'   : float,
                  'tput' : float,
-                 'requ' : int,
-                 'resp' : int,
+                 'transac' : float,
                  'rtt_min' : float,
                  'rtt_avg' : float,
                  'rtt_max' : float,
@@ -36,7 +35,7 @@ class FlowgrindRecordFactory():
                  'uack'    : int,
                  'sack'    : int,
                  'lost'    : int,
-                 'fret'    : int,
+                 'retr'    : int,
                  'tret'    : int,
                  'fack'    : int,
                  'reor'    : int,
@@ -148,16 +147,16 @@ class FlowgrindRecordFactory():
             "(?P<resp_in_sum>\d+)/(?P<resp_out_sum>\d+) response blocks",
             # "listen port =\s*(?P<lport>\d+)",
 
-            # # ID begin   end  through requ resp min RTT avg RTT max RTT min IAT avg IAT max IAT cwnd    ssth uack sack lost fret tret fack reor  rtt rttvar   rto   ca state   mss   mtu statu
+            # # ID begin   end  through transac min RTT avg RTT max RTT min IAT avg IAT max IAT cwnd ssth uack sack lost retr tret fack reor rtt rttvar rto ca state mss mtu
             "(?P<direction>[S,R])\s+"\
             "(?P<flow_id>\d+)\s+"\
             "(?P<begin>\d+\.\d+)\s+(?P<end>\d+\.\d+)\s+"\
             "(?P<tput>\d+\.\d+)\s+"\
-            "(?P<requ>\d+)\s+(?P<resp>\d+)\s+"\
+            "(?P<transac>\d+\.\d+)\s+"\
             "(?P<rtt_min>\d+\.\d+|inf)\s+(?P<rtt_avg>\d+\.\d+|inf)\s+(?P<rtt_max>\d+\.\d+|inf)\s+"\
             "(?P<iat_min>\d+\.\d+|inf)\s+(?P<iat_avg>\d+\.\d+|inf)\s+(?P<iat_max>\d+\.\d+|inf)\s+"\
             "(?P<cwnd>\d+)\s+(?P<ssth>\d+|INT_MAX|SHRT_MAX)\s+(?P<uack>\d+)\s+(?P<sack>\d+)\s+"\
-            "(?P<lost>\d+)\s+(?P<fret>\d+)\s+(?P<tret>\d+)\s+(?P<fack>\d+)\s+(?P<reor>\d+)\s+"\
+            "(?P<lost>\d+)\s+(?P<retr>\d+)\s+(?P<tret>\d+)\s+(?P<fack>\d+)\s+(?P<reor>\d+)\s+"\
             "(?P<krtt>\d+\.\d+)\s+(?P<krttvar>\d+\.\d+)\s+(?P<krto>\d+\.\d+)\s+"\
             "(?P<castate>loss|open|disrdr|rcvry)\s+"\
             "(?P<mss>\d+)\s+(?P<mtu>\d+)\s+"\
