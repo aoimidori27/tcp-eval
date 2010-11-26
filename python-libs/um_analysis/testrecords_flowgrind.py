@@ -119,16 +119,13 @@ class FlowgrindRecordFactory():
         # phase 1 data gathering
         regexes = [
             #  0 S: 10.0.1.147/vmrouter401, sbuf = 16384/0, rbuf = 87380/0 (real/req), SMSS = 1420, Path MTU = 1472, Interface MTU = 1472 (unknown), flow duration 30.004s/30.000s (real/req), through = 8.457316/0.024688Mbit/s (out/in), 128.58 transactions/s, 3872/0 request blocks (out/in), 0/3858 response blocks (out/in), 39.744/115.262/170.705 RTT (min/avg/max)
-            # sender fixed output
-            "S: .*sbuf = (?P<s_sbuf_real>\d+)(\/(?P<s_sbuf_req>\d+)), rbuf = (?P<s_rbuf_real>\d+)(\/(?P<s_rbuf_req>\d+)) \(real\/req\),\s+"\
-            "SMSS = (?P<s_smss>\d+), Path MTU = (?P<s_path_mtu>\d+), Interface MTU = (?P<s_interface_mtu>\d+) \(\w+\),\s+"\
-            "flow duration (?P<s_duration_real>\d+\.\d+)s\/(?P<s_duration_req>\d+\.\d+)s \(real\/req\),\s+"\
-            "through = (?P<s_thruput_in>\d+\.\d+)(\/(?P<s_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\),\s+",
+            # sender buffers and throughput
+            "S: .*sbuf = (?P<s_sbuf_real>\d+)(\/(?P<s_sbuf_req>\d+)), rbuf = (?P<s_rbuf_real>\d+)(\/(?P<s_rbuf_req>\d+)) \(real\/req\)",
+            "S: .* through = (?P<s_thruput_in>\d+\.\d+)(\/(?P<s_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\)",
 
-            # destination fixed output
-            "D: .* sbuf = (?P<d_sbuf_real>\d+)(\/(?P<d_sbuf_req>\d+)), rbuf = (?P<d_rbuf_real>\d+)(\/(?P<d_rbuf_req>\d+)) \(real\/req\),\s+"\
-            "SMSS = (?P<d_smss>\d+), Path MTU = (?P<d_path_mtu>\d+),\s+"\
-            "through = (?P<d_thruput_in>\d+\.\d+)(\/(?P<d_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\),\s+",
+            # destination buffers and throughput
+            "D: .* sbuf = (?P<d_sbuf_real>\d+)(\/(?P<d_sbuf_req>\d+)), rbuf = (?P<d_rbuf_real>\d+)(\/(?P<d_rbuf_req>\d+)) \(real\/req\)",
+            "D: .* through = (?P<d_thruput_in>\d+\.\d+)(\/(?P<d_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\)",
 
             # optional calculated source transactions
             "S: .* (?P<s_transac>\d+\.\d+) transactions\/s,\s+",
