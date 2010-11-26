@@ -243,7 +243,8 @@ class MultipathTCPAnalysis(Analysis):
         if self.options.per_subflow:
             filename += "_per_subflow"
         if len(self.options.scenarios) != 0:
-            filename += str(self.options.scenarios)
+            for i in self.options.scenarios:
+                filename += '_%u' % i
         return filename
 
     def generateYOverXLinePlot(self, y):
@@ -316,7 +317,6 @@ class MultipathTCPAnalysis(Analysis):
                     plotname = "%s_over_%s_s%u_f%u" % (y, x, scenarioNo, flow_id)
                     valfilename = os.path.join(outdir, plotname+".values")
                     title = '%s (flow %u)' %(scenarios[scenarioNo], flow_id)
-                    warn(title)
 
                     success, max_y_value = self.writeValueTable(x, y, scenarioNo, query, valfilename, max_y_value)
 
@@ -345,7 +345,6 @@ class MultipathTCPAnalysis(Analysis):
 
                 success, max_y_value = self.writeValueTable(x, y, scenarioNo, query, valfilename, max_y_value)
 
-                warn('return values success %s, max_y_value %u' %(str(success), max_y_value))
                 if success:
                     self.plotValues(p, scenarios[scenarioNo], valfilename, scenarioNo, linestyle[scenarioNo])
 
