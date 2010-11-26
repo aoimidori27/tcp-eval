@@ -37,20 +37,24 @@ class MultipathTCPAnalysis(Analysis):
         Analysis.__init__(self)
 
         self.parser.set_usage("Usage:  %prog [options]\n"\
-                              "Creates graphs showing thruput, frs and rtos over the "\
+                              "Creates graphs showing thruput, rtt, rtt_min and rtt_max over the "\
                               "variable given by the option -V.\n"\
                               "For this all flowgrind logs out of input folder are used "\
                               "which have the type given by the parameter -T.")
 
-        self.parser.add_option('-V', '--variable', metavar="Variable",
-                         action = 'store', type = 'string', dest = 'variable',
-                         help = 'The variable of the measurement [bnbw|qlimit|rate|delay].')
-        self.parser.add_option('-T', '--type', metavar="Type",
-                         action = 'store', type = 'string', dest = 'rotype',
-                        help = 'The type of the measurement [reordering|congestion|both].')
-        self.parser.add_option('-E', '--plot-error', metavar="PlotError",
-                         action = 'store_true', dest = 'plot_error',
-                         help = "Plot error bars")
+        self.parser.add_option('-V', '--variable', metavar = "Variable",
+                        action = 'store', type = 'string', dest = 'variable',
+                        help = 'The variable of the measurement [bnbw|delay].')
+        self.parser.add_option('-E', '--plot-error', metavar = "PlotError",
+                        action = 'store_true', dest = 'plot_error',
+                        help = "Plot error bars [default: %default]")
+        self.parser.add_option('-s', '--per-subflow', metavar = "Subflows",
+                        action = 'store_true', dest = 'per_subflow',
+                        help = 'For senarios with mulitple subflows each subflow is '\
+                                'ploted seperate instead of an aggregation of all those subflows [default: %default]'),
+        self.parser.add_option('-f', '--filter', action = 'append',
+                        type = 'int', dest = 'scenarios',
+                        help = 'filter the scenarios to be used for a graph', default=[]),
 
         self.parser.add_option('-d', '--dry-run',
                         action = "store_true", dest = "dry_run",
@@ -74,7 +78,7 @@ class MultipathTCPAnalysis(Analysis):
         #self.plotlabels["thruput"] = r"Throughput [$\\si{\\Mbps}$]";
         self.plotlabels["rtt_max"] = r"Maximal Round Trip Time on Application Layer";
         self.plotlabels["rtt_min"] = r"Minimal Rount Trip Time on Application Layer";
-        self.plotlabels["rtt_avg"]     = r"Avarage Round Trip Time on Application Layer";
+        self.plotlabels["rtt_avg"] = r"Avarage Round Trip Time on Application Layer";
         #self.plotlabels["fairness"]= r"Fairness"
         self.plotlabels["delay"]   = r"RTT [$\\si{\\milli\\second}$]"
         #self.plotlabels["ackreor"] = r"ACK Reordering Rate [$\\si{\\percent}$]"
@@ -85,16 +89,9 @@ class MultipathTCPAnalysis(Analysis):
         "Set options"
         Analysis.set_option(self)
 
-        if not self.options.variable:
+        if not self.options.variable and not self.options.dry_run:
             error("Please provide me with the variable")
             sys.exit(1)
-        #if self.options.variable != "rrate" and self.options.variable != "rdelay" and self.options.variable != "qlimit" and self.options.variable != "bnbw" and self.options.variable != "delay" and self.options.variable != "ackreor" and self.options.variable != "ackloss":
-        #    error("I did not recognize the variable you gave me!")
-        #    sys.exit(1)
-        #if self.options.rotype != "reordering" and self.options.rotype != "congestion" and self.options.rotype != "both":
-        #    error("I did not recognize the type you gave me!")
-        #    sys.exit(1)
-
 
     def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
         dbcur = self.dbcon.cursor()
@@ -133,13 +130,14 @@ class MultipathTCPAnalysis(Analysis):
         rtt_min         = record.calculate("rtt_min")
         rtt_max         = record.calculate("rtt_max")
 
-        thruput        = record.calculate("thruput_recv")
+        thruput         = record.calculate("thruput_recv")
+        flow_ids        = record.calculate("flow_ids");
 
         if not thruput:
             if not self.failed.has_key(scenario_label):
                 self.failed[scenario_label] = 1
             else:
-                self.failed[scenario_label] = self.failed[scenario_label]+1
+                self.failed[scenario_label] = self.failed[scenario_label] + 1
             return
 
         if thruput == 0:
@@ -159,27 +157,102 @@ class MultipathTCPAnalysis(Analysis):
             rtt = float(rtt)
         except TypeError, inst:
             rtt = "NULL"
-        # check for lost SYN or long connection establishing
-        #c = 0
-        #flow_S = record.calculate("flows")[0]['S']
-        #for tput in flow_S['tput']:
-        #    if tput == 0.000000:
-        #        c += 1
-        #    else: break
-        #if flow_S['end'][c] > 1:
-        #    warn("Long connection establishment (%ss): %s" %(flow_S['end'][c], record.filename))
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES ("%s", %s, %s, %s, %u, "%s", %u, %u, %u, "%s", "%s","%s", %f, %s, %s, %s)
-                      """ % (variable,  bnbw, qlimit, delay, start_time, scenario_label, iterationNo, scenarioNo, runNo, test, src, dst, thruput, rtt_min, rtt_max, rtt))
+        INSERT INTO tests VALUES ("%s", %s, %s, %s, %u, "%s", %u, %u, %u, "%s", "%s","%s", %f, %s, %s, %s, %u)
+        """ % (variable,  bnbw, qlimit, delay, start_time, scenario_label, iterationNo, scenarioNo, runNo, test, src, dst, thruput, rtt_min, rtt_max, rtt, len(flow_ids)))
+
+        # calculate per flow values
+        if len(flow_ids) > 1:
+            for flow_id in flow_ids:
+                rtt             = record.calculate("rtt_avg_list")[flow_id]
+                rtt_min         = record.calculate("rtt_min_list")[flow_id]
+                rtt_max         = record.calculate("rtt_max_list")[flow_id]
+
+                thruput         = record.calculate("thruput_recv_list")[flow_id]
+
+                if thruput == 0:
+                    warn("Throughput is 0 in %s for subflow!" %(record.filename, flow_id))
+                    continue
+
+                try:
+                    rtt_min = float(rtt_min)
+                except TypeError, inst:
+                    rtt_min = "NULL"
+
+                try:
+                    rtt_max = float(rtt_max)
+                except TypeError, inst:
+                    rtt_max = "NULL"
+
+                try:
+                    rtt = float(rtt)
+                except TypeError, inst:
+                    rtt = "NULL"
+
+                dbcur.execute("""
+                INSERT INTO single_values VALUES (%u, %u, %u, %u,"%s", %f, %s, %s, %s)
+                """ % (iterationNo, scenarioNo, runNo, flow_id, test, thruput, rtt_min, rtt_max, rtt))
+
+
+    def writeValueTable(self, x, y, scenarioNo, query, filename, cur_max_y_value):
+        dbcur = self.dbcon.cursor()
+        max_y_value = cur_max_y_value
+
+        debug("\n\n" + query + "\n\n")
+        dbcur.execute(query)
+
+        debug("Generating %s..." % filename)
+        fhv = file(filename, "w")
+
+        # header
+        fhv.write("# %s %s\n" % (x, y))
+
+        # data
+        success = False
+        for row in dbcur:
+            (x_value, y_value) = row
+            try:
+                if self.options.plot_error:
+                    stddev = self.calculateStdDev(y, x_value, scenarioNo)
+                    fhv.write("%u %f %f\n" %(x_value, y_value, stddev))
+                else:
+                    fhv.write("%u %f\n" %(x_value, y_value))
+            except TypeError:
+                continue
+            success = True
+            if y_value > max_y_value:
+                max_y_value = y_value
+        fhv.close()
+
+        return success, max_y_value
+
+    def plotValues(self, plot, title, values, scenarioNo, style):
+        debug("plot values with title %s and scenarioNo %u" % (title, scenarioNo))
+
+        if (len(self.options.scenarios) == 0) or (scenarioNo in self.options.scenarios):
+            if self.options.plot_error:
+                plot.plotYerror(values, title, linestyle = style, using = "1:2:3")
+                plot.plot(values, title="", linestyle = style, using = "1:2")
+            else:
+                plot.plot(values, title, linestyle = style, using = "1:2")
+
+    def generateFilename(self, x, y):
+        filename = "%s_over_%s" % (y, x)
+
+        if self.options.per_subflow:
+            filename += "_per_subflow"
+        if len(self.options.scenarios) != 0:
+            filename += str(self.options.scenarios)
+        return filename
 
     def generateYOverXLinePlot(self, y):
         """Generates a line plot of the DB column y over the DB column x
            reordering rate. One line for each scenario.
         """
-        warn("generateYOverXLinePlot with y = %s" % y)
+        debug("generateYOverXLinePlot with y = %s" % y)
 
-        x      = self.options.variable
+        x = self.options.variable
 
         dbcur = self.dbcon.cursor()
 
@@ -193,8 +266,25 @@ class MultipathTCPAnalysis(Analysis):
             (key,val) = row
             scenarios[key] = val
 
+        # get all subflow count
+        dbcur.execute('''
+            SELECT DISTINCT scenarioNo, flow_count
+            FROM tests ORDER BY scenarioNo'''
+        )
+        count = 0
+        subflow_count = dict()
+        linestyle = dict()
+        for row in dbcur:
+            (key,val) = row
+            # scenarioNo could not start at 0
+            if count == 0:
+                count = key + 1
+            subflow_count[key] = val
+            linestyle[key] = count
+            count += val
+
         outdir = self.options.outdir
-        p = UmLinePointPlot("%s_over_%s" % (y, x))
+        p = UmLinePointPlot(self.generateFilename(x, y), self.options.outdir, self.options.debug)
         #p = UmLinePlot("test_%s_over_%s" % (y, x))
         p.setXLabel(self.plotlabels[x])
         p.setYLabel(self.plotlabels[y])
@@ -206,67 +296,70 @@ class MultipathTCPAnalysis(Analysis):
             # 2) sum() up these average values of each scenario under one testbed
             #    configuration to get the total average y of one scenario under one
             #    testbed configuration
-            query = '''
-                SELECT %(x)s, sum(avg_y) AS total_avg_y
-                FROM
-                (
-                    SELECT %(x)s, runNo, avg(%(y)s) AS avg_y
-                    FROM tests
-                    WHERE scenarioNo=%(scenarioNo)u AND variable='%(x)s'
-                    GROUP BY %(x)s, runNo
-                )
-                GROUP BY %(x)s
-                ORDER BY %(x)s
-            ''' % {'x' : x, 'y' : y, 'scenarioNo' : scenarioNo}
-            debug("\n\n" + query + "\n\n")
-            dbcur.execute(query)
+            if self.options.per_subflow and (subflow_count[scenarioNo] > 1):
+                for flow_id in range(subflow_count[scenarioNo]):
+                    query = '''
+                    SELECT %(x)s, sum(avg_y) AS total_avg_y
+                    FROM
+                    (
+                        SELECT t.%(x)s, t.runNo, avg(s.%(y)s) AS avg_y
+                        FROM tests t, single_values s
+                        WHERE t.scenarioNo=%(scenarioNo)u AND t.variable='%(x)s'
+                            AND t.scenarioNo=s.scenarioNo AND t.iterationNo = s.iterationNo AND t.runNo=s.runNo
+                            AND s.flowNo=%(flowNo)u
+                        GROUP BY t.%(x)s, t.runNo
+                    )
+                    GROUP BY %(x)s
+                    ORDER BY %(x)s
+                    ''' % {'x' : x, 'y' : y, 'scenarioNo' : scenarioNo, 'flowNo' : flow_id}
 
-            plotname = "%s_over_%s_s%u" % (y, x, scenarioNo)
-            valfilename = os.path.join(outdir, plotname+".values")
+                    plotname = "%s_over_%s_s%u_f%u" % (y, x, scenarioNo, flow_id)
+                    valfilename = os.path.join(outdir, plotname+".values")
+                    title = '%s (flow %u)' %(scenarios[scenarioNo], flow_id)
+                    warn(title)
 
-            debug("Generating %s..." % valfilename)
-            fhv = file(valfilename, "w")
+                    success, max_y_value = self.writeValueTable(x, y, scenarioNo, query, valfilename, max_y_value)
 
-            # header
-            fhv.write("# %s %s\n" % (x, y))
+                    if success:
+                        self.plotValues(p, title, valfilename, scenarioNo, linestyle[scenarioNo] + flow_id)
 
-            # data
-            success = False
-            for row in dbcur:
-                (x_value, y_value) = row
-                try:
-                    if self.options.plot_error:
-                        stddev = self.calculateStdDev(y, x_value, scenarioNo)
-                        fhv.write("%u %f %f\n" %(x_value, y_value, stddev))
-                    else:
-                        fhv.write("%u %f\n" %(x_value, y_value))
-                except TypeError:
-                    continue
-                success = True
-                if y_value > max_y_value:
-                    max_y_value = y_value
-            fhv.close()
-            if not success:
-                return
-
-            # plot
-            if self.options.plot_error:
-                p.plotYerror(valfilename, scenarios[scenarioNo], linestyle=scenarioNo + 1, using="1:2:3")
-                p.plot(valfilename, title="", linestyle=scenarioNo + 1, using="1:2")
             else:
-                p.plot(valfilename, scenarios[scenarioNo], linestyle=scenarioNo + 1, using="1:2")
+                query = '''
+                    SELECT %(x)s, sum(avg_y) AS total_avg_y
+                    FROM
+                    (
+                        SELECT %(x)s, runNo, avg(%(y)s) AS avg_y
+                        FROM tests
+                        WHERE scenarioNo=%(scenarioNo)u AND variable='%(x)s'
+                        GROUP BY %(x)s, runNo
+                    )
+                    GROUP BY %(x)s
+                    ORDER BY %(x)s
+                ''' % {'x' : x, 'y' : y, 'scenarioNo' : scenarioNo}
+
+                plotname = "%s_over_%s_s%u" % (y, x, scenarioNo)
+                valfilename = os.path.join(outdir, plotname+".values")
+                title = scenarios[scenarioNo]
+                if subflow_count[scenarioNo] > 1:
+                    title += ' combined'
+
+                success, max_y_value = self.writeValueTable(x, y, scenarioNo, query, valfilename, max_y_value)
+
+                warn('return values success %s, max_y_value %u' %(str(success), max_y_value))
+                if success:
+                    self.plotValues(p, scenarios[scenarioNo], valfilename, scenarioNo, linestyle[scenarioNo])
 
         # make room for the legend
         if max_y_value:
             p.setYRange("[*:%u]" % int(max_y_value + ((25 * max_y_value) / 100 )))
 
-        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        p.save()
 
     def calculateStdDev(self, y, x_value, scenarioNo):
         """Calculates the standarddeviation for the values of the YoverXPlot
         """
 
-        x      = self.options.variable
+        x = self.options.variable
         dbcur = self.dbcon.cursor()
 
         query = '''
@@ -307,7 +400,19 @@ class MultipathTCPAnalysis(Analysis):
                                 thruput         DOUBLE,
                                 rtt_min         DOUBLE,
                                 rtt_max         DOUBLE,
-                                rtt_avg         DOUBLE)
+                                rtt_avg         DOUBLE,
+                                flow_count      INTEGER)
+            """)
+            dbcur.execute("""
+            CREATE TABLE single_values (iterationNo     INTEGER,
+                                        scenarioNo      INTEGER,
+                                        runNo           INTEGER,
+                                        flowNo          INTEGER,
+                                        test            VARCHAR(50),
+                                        thruput         DOUBLE,
+                                        rtt_min         DOUBLE,
+                                        rtt_max         DOUBLE,
+                                        rtt_avg         DOUBLE)
             """)
             # store failed test as a mapping from run_label to number
             self.failed = dict()
