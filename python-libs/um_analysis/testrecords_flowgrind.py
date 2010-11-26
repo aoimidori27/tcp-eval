@@ -119,29 +119,35 @@ class FlowgrindRecordFactory():
         # phase 1 data gathering
         regexes = [
             #  0 S: 10.0.1.147/vmrouter401, sbuf = 16384/0, rbuf = 87380/0 (real/req), SMSS = 1420, Path MTU = 1472, Interface MTU = 1472 (unknown), flow duration 30.004s/30.000s (real/req), through = 8.457316/0.024688Mbit/s (out/in), 128.58 transactions/s, 3872/0 request blocks (out/in), 0/3858 response blocks (out/in), 39.744/115.262/170.705 RTT (min/avg/max)
+            # sender fixed output
             "S: .*sbuf = (?P<s_sbuf_real>\d+)(\/(?P<s_sbuf_req>\d+)), rbuf = (?P<s_rbuf_real>\d+)(\/(?P<s_rbuf_req>\d+)) \(real\/req\),\s+"\
             "SMSS = (?P<s_smss>\d+), Path MTU = (?P<s_path_mtu>\d+), Interface MTU = (?P<s_interface_mtu>\d+) \(\w+\),\s+"\
             "flow duration (?P<s_duration_real>\d+\.\d+)s\/(?P<s_duration_req>\d+\.\d+)s \(real\/req\),\s+"\
-            "through = (?P<s_thruput_in>\d+\.\d+)(\/(?P<s_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\),\s+"\
-            "(?P<s_transac>\d+\.\d+) transactions\/s,\s+"\
-            "(?P<s_requ_out_sum>\d+)\/(?P<s_requ_in_sum>\d+) request blocks \(out\/in\),\s+"\
-            "(?P<s_resp_out_sum>\d+)/(?P<s_resp_in_sum>\d+) response blocks \(out\/in\),\s+",
+            "through = (?P<s_thruput_in>\d+\.\d+)(\/(?P<s_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\),\s+",
 
-            # receiver calculated thruput
+            # destination fixed output
             "D: .* sbuf = (?P<d_sbuf_real>\d+)(\/(?P<d_sbuf_req>\d+)), rbuf = (?P<d_rbuf_real>\d+)(\/(?P<d_rbuf_req>\d+)) \(real\/req\),\s+"\
             "SMSS = (?P<d_smss>\d+), Path MTU = (?P<d_path_mtu>\d+),\s+"\
-            "through = (?P<d_thruput_in>\d+\.\d+)(\/(?P<d_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\),\s+"\
-            "(?P<d_requ_out_sum>\d+)\/(?P<d_requ_in_sum>\d+) request blocks \(out\/in\),\s+"\
-            "(?P<d_resp_out_sum>\d+)/(?P<d_resp_in_sum>\d+) response blocks \(out\/in\),\s+",
+            "through = (?P<d_thruput_in>\d+\.\d+)(\/(?P<d_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\),\s+",
 
+            # optional calculated source transactions
+            "S: .* (?P<s_transac>\d+\.\d+) transactions\/s,\s+",
+            # optional calculated source request/ respons
+            "S: .* (?P<s_requ_out_sum>\d+)\/(?P<s_requ_in_sum>\d+) request blocks \(out\/in\),\s+"\
+            "(?P<s_resp_out_sum>\d+)/(?P<s_resp_in_sum>\d+) response blocks \(out\/in\),\s+",
             # optional calculated source rtt
             "S: .* (?P<s_rtt_min>\d+\.\d+)\/(?P<s_rtt_avg>\d+\.\d+)\/(?P<s_rtt_max>\d+\.\d+) RTT",
-            #optional calculated source iat
+            # optional calculated source iat
             "S: .* (?P<s_iat_min>\d+\.\d+)\/(?P<s_iat_avg>\d+\.\d+)\/(?P<s_iat_max>\d+\.\d+) IAT",
             # optional calculated destination rtt
             "D: .* (?P<d_rtt_min>\d+\.\d+)\/(?P<d_rtt_avg>\d+\.\d+)\/(?P<d_rtt_max>\d+\.\d+) RTT",
-            #optional calculated destination iat
+            # optional calculated destination iat
             "D: .* (?P<d_iat_min>\d+\.\d+)\/(?P<d_iat_avg>\d+\.\d+)\/(?P<d_iat_max>\d+\.\d+) IAT",
+            # optional calculated destination transactions
+            "D: .* (?P<d_transac>\d+\.\d+) transactions\/s,\s+",
+            # optional calculated destination request/ respons
+            "D: .* (?P<d_requ_out_sum>\d+)\/(?P<d_requ_in_sum>\d+) request blocks \(out\/in\),\s+"\
+            "(?P<d_resp_out_sum>\d+)/(?P<d_resp_in_sum>\d+) response blocks \(out\/in\),\s+",
 
             # # ID begin   end  through transac min RTT avg RTT max RTT min IAT avg IAT max IAT cwnd ssth uack sack lost retr tret fack reor back rtt rttvar rto ca state mss mtu
             "(?P<direction>[S,D])\s+"\
