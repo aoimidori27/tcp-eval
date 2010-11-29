@@ -89,26 +89,28 @@ class Analysis(Application):
         count = 0
         failed = []
 
-        for entry in os.listdir(self.options.indir):
-            match = regex.match(entry)
-            if match:
-                groups = match.groups()
-                iterationNo = int(groups[0])
-                scenarioNo  = int(groups[1])
-                runNo       = int(groups[2])
-                test        = groups[3]
+        for root, dirs, files in os.walk(self.options.indir):
+            debug("Processing %s" %root)
+            for name in files:
+                entry = os.path.join(root, name)
+                match = regex.match(name)
+                if match:
+                    groups = match.groups()
+                    iterationNo = int(groups[0])
+                    scenarioNo  = int(groups[1])
+                    runNo       = int(groups[2])
+                    test        = groups[3]
 
-                # filter tests
-                if tests and not test in tests:
-                    continue
+                    # filter tests
+                    if tests and not test in tests:
+                        continue
 
-                count += 1
-                debug("Processing %s" %entry)
-                entry = "%s/%s" %(self.options.indir, entry)
-                record = self.factory.createRecord(entry,test)
+                    count += 1
+                    debug("Processing %s" %entry)
+                    record = self.factory.createRecord(entry,test)
 
-                # call hook
-                onLoad(record, iterationNo, scenarioNo, runNo, test)
+                    # call hook
+                    onLoad(record, iterationNo, scenarioNo, runNo, test)
 
         if (count == 0):
             warn('Found no log records in "%s" Stop.' %self.options.indir)
