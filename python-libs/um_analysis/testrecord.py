@@ -58,7 +58,7 @@ class TestRecord:
         """Returns the header as a dictionary. """
         return self.header
 
-    def calculate(self, what, **kwargs):
+    def calculate(self, what, optional = False, **kwargs):
         """Calculate the given value from parsed values.
            If calculation failes, this record is marked invalid, and None is returned.
         """
@@ -69,8 +69,11 @@ class TestRecord:
         try:
             return self.whats[what](self.results, **kwargs);
         except KeyError, inst:
-            warn("Failed get %s out of %s: KeyError:%s" %(what, self.filename, inst))
-            self.valid = False
+            if not optional:
+                warn("Failed get %s out of %s: KeyError:%s" %(what, self.filename, inst))
+                self.valid = False
+            else:
+                debug("Failed get optional %s out of %s: KeyError:%s" %(what,self.filename, inst))
             return None
 
     def isValid(self):
