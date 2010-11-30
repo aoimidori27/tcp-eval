@@ -121,11 +121,11 @@ class FlowgrindRecordFactory():
             #  0 S: 10.0.1.147/vmrouter401, sbuf = 16384/0, rbuf = 87380/0 (real/req), SMSS = 1420, Path MTU = 1472, Interface MTU = 1472 (unknown), flow duration 30.004s/30.000s (real/req), through = 8.457316/0.024688Mbit/s (out/in), 128.58 transactions/s, 3872/0 request blocks (out/in), 0/3858 response blocks (out/in), 39.744/115.262/170.705 RTT (min/avg/max)
             # sender buffers and throughput
             "S: .*sbuf = (?P<s_sbuf_real>\d+)(\/(?P<s_sbuf_req>\d+)), rbuf = (?P<s_rbuf_real>\d+)(\/(?P<s_rbuf_req>\d+)) \(real\/req\)",
-            "S: .* through = (?P<s_thruput_in>\d+\.\d+)(\/(?P<s_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\)",
+            "S: .* through = (?P<s_thruput_out>\d+\.\d+)(\/(?P<s_thruput_in>\d+\.\d+))?Mbit\/s \(out\/in\)",
 
             # destination buffers and throughput
             "D: .* sbuf = (?P<d_sbuf_real>\d+)(\/(?P<d_sbuf_req>\d+)), rbuf = (?P<d_rbuf_real>\d+)(\/(?P<d_rbuf_req>\d+)) \(real\/req\)",
-            "D: .* through = (?P<d_thruput_in>\d+\.\d+)(\/(?P<d_thruput_out>\d+\.\d+))?Mbit\/s \(out\/in\)",
+            "D: .* through = (?P<d_thruput_out>\d+\.\d+)(\/(?P<d_thruput_in>\d+\.\d+))?Mbit\/s \(out\/in\)",
 
             # optional calculated source transactions
             "S: .* (?P<s_transac>\d+\.\d+) transactions\/s,\s+",
@@ -183,7 +183,7 @@ class FlowgrindRecordFactory():
         # phase 2 result calculation
         self.whats = dict(
             # average thruput: just sum up all summary lines (calculated from sender estimate)
-            thruput           = lambda r: sum(map(float, r['s_thruput_in'])),
+            thruput           = lambda r: sum(map(float, r['s_thruput_out'])),
             # average thruput: just sum up all summary lines (calculated from receiver estimate)
             thruput_recv      = lambda r: sum(map(float, r['d_thruput_out'])),
             rtt_min           = lambda r: min(map(float, r['s_rtt_min'])),
@@ -193,8 +193,9 @@ class FlowgrindRecordFactory():
             total_fast_retransmits = lambda r: max(map(extInt, r['cfret'])),
             total_rto_retransmits  = lambda r: max(map(extInt, r['ctret'])),
             # list of summary lines
-            thruput_list      = lambda r: map(float, r['s_thruput_in']),
+            thruput_list      = lambda r: map(float, r['s_thruput_out']),
             thruput_recv_list = lambda r: map(float, r['d_thruput_out']),
+            transac_list      = lambda r: map(float, r['s_transac']),
             rtt_min_list      = lambda r: map(float, r['s_rtt_min']),
             rtt_max_list      = lambda r: map(float, r['s_rtt_max']),
             rtt_avg_list      = lambda r: map(float, r['s_rtt_avg']),
