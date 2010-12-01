@@ -185,7 +185,7 @@ class FlowgrindRecordFactory():
             # average thruput: just sum up all summary lines (calculated from sender estimate)
             thruput           = lambda r: sum(map(float, r['s_thruput_out'])),
             # average thruput: just sum up all summary lines (calculated from receiver estimate)
-            thruput_recv      = lambda r: sum(map(float, r['d_thruput_out'])),
+            thruput_recv      = lambda r: sum(map(float, r['d_thruput_in'])),
             rtt_min           = lambda r: min(map(float, r['s_rtt_min'])),
             rtt_max           = lambda r: max(map(float, r['s_rtt_max'])),
             rtt_avg           = lambda r: average(map(float, r['s_rtt_avg'])),
@@ -194,7 +194,7 @@ class FlowgrindRecordFactory():
             total_rto_retransmits  = lambda r: max(map(extInt, r['ctret'])),
             # list of summary lines
             thruput_list      = lambda r: map(float, r['s_thruput_out']),
-            thruput_recv_list = lambda r: map(float, r['d_thruput_out']),
+            thruput_recv_list = lambda r: map(float, r['d_thruput_in']),
             transac_list      = lambda r: map(float, r['s_transac']),
             rtt_min_list      = lambda r: map(float, r['s_rtt_min']),
             rtt_max_list      = lambda r: map(float, r['s_rtt_max']),
