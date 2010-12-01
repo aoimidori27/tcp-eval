@@ -46,6 +46,7 @@ class BuildVmesh(Application):
         self.conf = None
         self.confstr = None
         self.linkinfo = dict()
+        self.ipcount = dict()
         self.shapecmd_multiple = """\
 tc class add dev %(iface)s parent 1: classid 1:%(parentNr)d%(nr)02d htb rate %(rate)smbit; \
 tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
@@ -201,7 +202,7 @@ Remarks:
         comment_re = re.compile('^\s*#')
 
         # line syntax:
-        # LINE = HOST ":" REACHES
+        # LINE = HOST (COUNT)":" REACHES
         # HOST = DIGITS
         # REACHES = DIGITS REACHES | DIGITS "-" DIGITS " " REACHES
         # additional spaces are allowed everywhere, except around the "-"
@@ -212,9 +213,9 @@ Remarks:
                 %s(?:\.%s)?                         # INT "." INT
                 """ % (digits_str,digits_str)
         line_str = r"""
-                ^([0-9]+)\ *:                       # HOST ":"
+                ^(?P<host>%s)\ *\(?(?P<count>%s)?\)?:             # HOST ":"
                 \ *                                 # optional spaces
-                ( ( %s )+ )                         # REACHES
+                (?P<reaches>( %s )+)                         # REACHES
                 $"""
         reaches_str = r"""
                 (%s)(?:-(%s))?                      # DIGITS | DIGITS "-" DIGITS
@@ -222,7 +223,7 @@ Remarks:
                 (?:\ +|$)                           # optional spaces
                 """ % (digits_str,digits_str,float_str,digits_str,digits_str,digits_str)
 
-        line_re    = re.compile(line_str % reaches_str, re.VERBOSE)
+        line_re    = re.compile(line_str % (digits_str, digits_str, reaches_str), re.VERBOSE)
         reaches_re = re.compile(reaches_str, re.VERBOSE)
 
         # read (asymmetric) reachability information from the config file
@@ -252,9 +253,9 @@ Remarks:
             # get linkinfos
             # offset has to be added to every host
             offset = self.options.offset
-            host = int(lm.group(1)) + offset
+            host = int(lm.group('host')) + offset
             reaches = set()
-            for m in reaches_re.findall(lm.group(2)):
+            for m in reaches_re.findall(lm.group('reaches')):
                 first = int(m[0]) + offset
                 if m[1]: last = int(m[1]) + offset
                 else: last = first
@@ -277,6 +278,11 @@ Remarks:
                     self.linkinfo[host][i]['loss'] = info_loss
 
             asym_map[host] = reaches
+            if (lm.group('count') is None) or (lm.group('count') < 1):
+                self.ipcount[host] = 1
+            else:
+                self.ipcount[host] = lm.group('count')
+        error(self.ipcount)
 
         # Compute symmetric hull
         hosts = set(asym_map.keys()).union(reduce(lambda u,v: u.union(v), asym_map.values(), set()))
@@ -308,14 +314,14 @@ Remarks:
         return int(num)
 
 
-    def gre_ip(self, hostnum, mask = False):
+    def gre_ip(self, hostnum, mask = False, offset = 0):
         """Gets the gre ip for host with number "hostnum" """
         ip_address_prefix = self.options.ipprefix
 
         if mask:
-            return "%s.%s.%s/16" %( ip_address_prefix, (hostnum-1)/254, (hostnum-1)%254+1 )
+            return "%s.%s.%s/16" %( ip_address_prefix, ((hostnum - 1) / 254 + (20 * offset)) % 254, (hostnum - 1) % 254 + 1 )
         else:
-            return "%s.%s.%s" %( ip_address_prefix, (hostnum-1)/254, (hostnum-1)%254+1 )
+            return "%s.%s.%s" %( ip_address_prefix, ((hostnum - 1) / 254 + (20 * offset)) % 254, (hostnum - 1) % 254 + 1 )
 
 
     def gre_net(self, mask = True):
@@ -356,6 +362,11 @@ Remarks:
                      && ip link set %(iface)s up' %
                      {"public": public_ip, "gre": gre_ip, "iface": iface, "broadcast": gre_broadcast,
                       "mcast": gre_multicast}, True)
+            for i in range(1,int(self.ipcount[hostnum])):
+                add_gre_ip = self.gre_ip(hostnum, mask = True, offset = i)
+                info("setting up additional GRE address %s" % add_gre_ip)
+                execute('ip addr add %(gre)s broadcast %(broadcast)s dev %(iface)s' %
+                        {'gre': add_gre_ip, 'iface': iface, 'broadcast': gre_broadcast}, True)
         except CommandFailed, inst:
             error("Setting up GRE tunnel %s (%s, %s) failed." % (hostnum, public_ip, gre_ip))
             error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
@@ -576,37 +587,38 @@ Remarks:
             if dist==1:
                 continue
 
-            host_ip = self.gre_ip(host, mask=False)
+            for i in range(0, int(self.ipcount[host])):
+                host_ip = self.gre_ip(host, mask = False, offset = i)
 
-            cmd = ["ip", "route", "replace", host_ip]
-            if self.options.multipath:
-                for i in range(min(len(paths),self.options.maxpath)):
-                    nexthop = self.gre_ip(paths[i][0], mask=False)
-                    cmd += ["nexthop", "via", nexthop, "dev", iface]
-            else:
-                nexthop = self.gre_ip(paths[0][0], mask=False)
-                cmd += ["dev", iface, "via", nexthop, "metric", str(dist)]
-            try:
-                execute(cmd, shell=False)
-            except CommandFailed, inst:
-                error('Adding routing entry for host %s failed.' % host_ip)
-                error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
-                raise
+                cmd = ["ip", "route", "replace", host_ip]
+                if self.options.multipath:
+                    for i in range(min(len(paths),self.options.maxpath)):
+                        nexthop = self.gre_ip(paths[i][0], mask=False)
+                        cmd += ["nexthop", "via", nexthop, "dev", iface]
+                else:
+                    nexthop = self.gre_ip(paths[0][0], mask=False)
+                    cmd += ["dev", iface, "via", nexthop, "metric", str(dist)]
+                try:
+                    execute(cmd, shell=False)
+                except CommandFailed, inst:
+                    error('Adding routing entry for host %s failed.' % host_ip)
+                    error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+                    raise
 
-            # to have more control over multipath routes, add entries to distinct
-            # routing tables
-            if self.options.multipath:
-                for i in range(min(len(paths),self.options.maxpath)):
-                    nexthop = self.gre_ip(paths[i][0], mask=False)
-                    table = self._rtoffset+i
-                    cmd  = ["ip", "route", "replace", host_ip]
-                    cmd += ["via", nexthop, "table", str(table)]
-                    try:
-                        execute(cmd, shell=False)
-                    except CommandFailed, inst:
-                        error('Failed adding entry for host %s to table %s.' % (host_ip, table))
-                        error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
-                        raise
+                # to have more control over multipath routes, add entries to distinct
+                # routing tables
+                if self.options.multipath:
+                    for i in range(min(len(paths),self.options.maxpath)):
+                        nexthop = self.gre_ip(paths[i][0], mask=False)
+                        table = self._rtoffset+i
+                        cmd  = ["ip", "route", "replace", host_ip]
+                        cmd += ["via", nexthop, "table", str(table)]
+                        try:
+                            execute(cmd, shell=False)
+                        except CommandFailed, inst:
+                            error('Failed adding entry for host %s to table %s.' % (host_ip, table))
+                            error("Return code %s, Error message: %s" % (inst.rc, inst.stderr))
+                            raise
 
     def setup_user_helper(self):
         if self.options.userscripts:
