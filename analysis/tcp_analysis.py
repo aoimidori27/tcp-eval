@@ -161,7 +161,7 @@ class TcpAnalysis(Analysis):
 
         fh.close()
 
-        p = UmLinePlot(plotname)
+        p = UmLinePlot(plotname = plotname, outdir = outdir)
         p.setYLabel(r"\\si{\\Mbps}")
         if times:
             p.setXLabel("Time")
@@ -179,7 +179,7 @@ class TcpAnalysis(Analysis):
             p.plot(valfilename, "Avg. Rate", using=using_str+"2", linestyle=9)
 
         # output plot
-        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        p.save()
 
     def generateTputOverTimePerRun(self):
         """Generates a line plot where every run number gets a 
@@ -207,8 +207,9 @@ class TcpAnalysis(Analysis):
             (key,val) = row
             scenarios[key] = val
 
+        plotname = "tput_over_time_per_run"
         outdir = self.options.outdir
-        p = UmLinePlot("tput_over_time_per_run")
+        p = UmLinePlot(plotname = plotname, outdir = outdir)
         p.setYLabel(r"\\si{\Mbps}")
 
         for runNo in runs.keys():
@@ -286,7 +287,7 @@ class TcpAnalysis(Analysis):
             if rates:
                 p.plot(valfilename, "Rate "+runs[runNo], linestyle=runNo+1, using=using_str+"2")
 
-        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        p.save()
 
     def generateAccHistogram(self):
         """Generates a histogram of the 10 best pairs (avg_thruput).
@@ -337,7 +338,7 @@ class TcpAnalysis(Analysis):
         g.setBarsPerCluster(limit)
         g.plot('"%s" using 4:xtic(1) title "Throughput" ls 1' % bestfilename)
 
-        g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        g.save()
 
     def calculateStdDev(self, rlabel, slabel, key="thruput"):
         """Calculates the standarddeviation of all values of the same rlabel
@@ -451,7 +452,7 @@ class TcpAnalysis(Analysis):
                 break
         fh.close()
 
-        g = UmHistogram(plotname)
+        g = UmHistogram(plotname = plotname, outdir = outdir)
         g.setYLabel(r"Throughput in $\\si{\Mbps}$")
         g.setClusters(limit)
         g.setYRange("[ 0 : * ]")
@@ -460,7 +461,7 @@ class TcpAnalysis(Analysis):
         for i in range(len(keys)):
             key = keys[i]
             #buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
-            g.plotBar(valfilename, title=scenarios[key], using="%u:xtic(1)" %(4+(i*15)), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" combined", using="%u:xtic(1)" %(4+(i*15)), linestyle=(i+1))
             g.plotBar(valfilename, title=scenarios[key]+" Flow 0", using="%u:xtic(1)" %(9+(i*15)), linestyle=(i+1))
             g.plotBar(valfilename, title=scenarios[key]+" Flow 1", using="%u:xtic(1)" %(14+(i*15)), linestyle=(i+1))
 
@@ -477,7 +478,7 @@ class TcpAnalysis(Analysis):
                 g.plotErrorbar(valfilename, i*3+2, 14+(i*15),15+(i*15))
 
         # output plot
-        g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        g.save()
 
     def generateHistogram(self):
         """Generates a histogram "scenario_compare" with scenario labels."""
@@ -554,7 +555,7 @@ class TcpAnalysis(Analysis):
                 break
         fh.close()
 
-        g = UmHistogram(plotname)
+        g = UmHistogram(plotname = plotname, outdir = outdir)
         g.setYLabel(r"Throughput in $\\si{\Mbps}$")
         g.setClusters(limit)
         g.setYRange("[ 0 : * ]")
@@ -574,7 +575,7 @@ class TcpAnalysis(Analysis):
                 g.plotErrorbar(valfilename, i, 4+(i*5),5+(i*5))
 
         # output plot
-        g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        g.save()
 
     def generateCumulativeFractionOfPairs(self):
         dbcur = self.dbcon.cursor()
@@ -623,7 +624,7 @@ class TcpAnalysis(Analysis):
         g.plot('"%s" using 1:2 title "1-Hop" ls 1 with steps' % valfilename)
 
         # output plot
-        g.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        g.save()
 
 
     def generateTputDistributions(self):
@@ -748,8 +749,7 @@ class TcpAnalysis(Analysis):
             fh.write("%0.2f %f\n" %(bins[i], n[i]))
 
         fh.close()
-
-        p = UmBoxPlot(plotname)
+        p = UmBoxPlot(plotname = plotname, outdir = outdir)
         p.setXLabel(r"Throughput in $\\si{\Mbps}$")
         p.setYLabel("Frequency")
         p.plot(valfilename,"Frequency", using="1:2", linestyle=1)
@@ -760,7 +760,7 @@ class TcpAnalysis(Analysis):
 
         f = "exp(-0.5*((x-%f)/%f)**2)/(%f*sqrt(2*pi))" %(mu,std,std)
         p.rawPlot('%s with lines title "Normal Distribution"' %f)
-        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        p.save()
 
     def generateAccTputDistribution(self, noBins):
         dbcur = self.dbcon.cursor()
@@ -828,10 +828,10 @@ class TcpAnalysis(Analysis):
         self.generateHistogram2Flows()
         self.generateTputOverTimePerRun()
         self.generateTputOverTime()
-        self.generateTputDistributions()
-        self.generateAccTputDistribution(50)
-        self.generateAccHistogram()
-        self.generateCumulativeFractionOfPairs()
+        #self.generateTputDistributions()
+        #self.generateAccTputDistribution(50)
+        #self.generateAccHistogram()
+        #self.generateCumulativeFractionOfPairs()
 
     def main(self):
         """Main method of the ping stats object"""
