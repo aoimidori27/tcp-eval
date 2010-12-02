@@ -282,7 +282,6 @@ Remarks:
                 self.ipcount[host] = 1
             else:
                 self.ipcount[host] = lm.group('count')
-        error(self.ipcount)
 
         # Compute symmetric hull
         hosts = set(asym_map.keys()).union(reduce(lambda u,v: u.union(v), asym_map.values(), set()))
