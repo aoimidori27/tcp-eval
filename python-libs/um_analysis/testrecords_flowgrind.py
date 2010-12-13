@@ -39,6 +39,7 @@ class FlowgrindRecordFactory():
                  'tret'    : int,
                  'fack'    : int,
                  'reor'    : int,
+                 'bkof'    : int,
                  'krtt'    : float,
                  'krttvar' : float,
                  'krto'    : float,
@@ -47,6 +48,7 @@ class FlowgrindRecordFactory():
                  'mtu'     : int,
                  # optional values
                  'dupthresh':int,
+                 'revr' :int,
                  }
 
         def removeInf(val):
@@ -73,7 +75,7 @@ class FlowgrindRecordFactory():
                 if r['direction'][i] == 'S':
                     dir = 'S'
                 else:
-                    dir = 'D'
+                    dir = 'R'
 
                 flow = flow_map[int(r['flow_id'][i])][dir]
                 for (key, convert) in keys.iteritems():
@@ -119,35 +121,32 @@ class FlowgrindRecordFactory():
         # phase 1 data gathering
         regexes = [
             #  0 S: 10.0.1.147/vmrouter401, sbuf = 16384/0, rbuf = 87380/0 (real/req), SMSS = 1420, Path MTU = 1472, Interface MTU = 1472 (unknown), flow duration 30.004s/30.000s (real/req), through = 8.457316/0.024688Mbit/s (out/in), 128.58 transactions/s, 3872/0 request blocks (out/in), 0/3858 response blocks (out/in), 39.744/115.262/170.705 RTT (min/avg/max)
+
             # sender buffers and throughput
-            "S: .*sbuf = (?P<s_sbuf_real>\d+)(\/(?P<s_sbuf_req>\d+)), rbuf = (?P<s_rbuf_real>\d+)(\/(?P<s_rbuf_req>\d+)) \(real\/req\)",
+            "S: .* sbuf = (?P<s_sbuf_real>\d+)(\/(?P<s_sbuf_req>\d+)), rbuf = (?P<s_rbuf_real>\d+)(\/(?P<s_rbuf_req>\d+))",
             "S: .* through = (?P<s_thruput_out>\d+\.\d+)(\/(?P<s_thruput_in>\d+\.\d+))?Mbit\/s \(out\/in\)",
 
             # destination buffers and throughput
-            "D: .* sbuf = (?P<d_sbuf_real>\d+)(\/(?P<d_sbuf_req>\d+)), rbuf = (?P<d_rbuf_real>\d+)(\/(?P<d_rbuf_req>\d+)) \(real\/req\)",
-            "D: .* through = (?P<d_thruput_out>\d+\.\d+)(\/(?P<d_thruput_in>\d+\.\d+))?Mbit\/s \(out\/in\)",
+            "[R,D]: .* sbuf = (?P<d_sbuf_real>\d+)(\/(?P<d_sbuf_req>\d+)), rbuf = (?P<d_rbuf_real>\d+)(\/(?P<d_rbuf_req>\d+))",
+            "[R,D]: .* through = (?P<d_thruput_out>\d+\.\d+)(\/(?P<d_thruput_in>\d+\.\d+))?Mbit\/s",
 
             # optional calculated source transactions
-            "S: .* (?P<s_transac>\d+\.\d+) transactions\/s,\s+",
-            # optional calculated source request/ respons
-            "S: .* (?P<s_requ_out_sum>\d+)\/(?P<s_requ_in_sum>\d+) request blocks \(out\/in\),\s+"\
-            "(?P<s_resp_out_sum>\d+)/(?P<s_resp_in_sum>\d+) response blocks \(out\/in\),\s+",
+            "S: .* transactions\/s = (?P<s_transac>\d+\.\d+)",
+            # source request/ response blocks
+            "S: .* request blocks = (?P<s_requ_out_sum>\d+)\/(?P<s_requ_in_sum>\d+)",
+            "S: .* response blocks = (?P<s_resp_out_sum>\d+)/(?P<s_resp_in_sum>\d+)",
+            # reciever blocks
+            "[R,D]: .* request blocks = (?P<d_requ_out_sum>\d+)\/(?P<s_requ_in_sum>\d+)",
+            "[R,D]: .* response blocks = (?P<d_resp_out_sum>\d+)/(?P<s_resp_in_sum>\d+)",
+
+            # flow duration
             # optional calculated source rtt
-            "S: .* (?P<s_rtt_min>\d+\.\d+)\/(?P<s_rtt_avg>\d+\.\d+)\/(?P<s_rtt_max>\d+\.\d+) RTT",
-            # optional calculated source iat
-            "S: .* (?P<s_iat_min>\d+\.\d+)\/(?P<s_iat_avg>\d+\.\d+)\/(?P<s_iat_max>\d+\.\d+) IAT",
-            # optional calculated destination rtt
-            "D: .* (?P<d_rtt_min>\d+\.\d+)\/(?P<d_rtt_avg>\d+\.\d+)\/(?P<d_rtt_max>\d+\.\d+) RTT",
+            "S: .* RTT = (?P<s_rtt_min>\d+\.\d+)\/(?P<s_rtt_avg>\d+\.\d+)\/(?P<s_rtt_max>\d+\.\d+)",
             # optional calculated destination iat
-            "D: .* (?P<d_iat_min>\d+\.\d+)\/(?P<d_iat_avg>\d+\.\d+)\/(?P<d_iat_max>\d+\.\d+) IAT",
-            # optional calculated destination transactions
-            "D: .* (?P<d_transac>\d+\.\d+) transactions\/s,\s+",
-            # optional calculated destination request/ respons
-            "D: .* (?P<d_requ_out_sum>\d+)\/(?P<d_requ_in_sum>\d+) request blocks \(out\/in\),\s+"\
-            "(?P<d_resp_out_sum>\d+)/(?P<d_resp_in_sum>\d+) response blocks \(out\/in\),\s+",
+            "[R,D]: .* IAT = (?P<d_iat_min>\d+\.\d+)\/(?P<d_iat_avg>\d+\.\d+)\/(?P<d_iat_max>\d+\.\d+)",
 
             # # ID begin   end  through transac min RTT avg RTT max RTT min IAT avg IAT max IAT cwnd ssth uack sack lost retr tret fack reor back rtt rttvar rto ca state mss mtu
-            "(?P<direction>[S,D])\s+"\
+            "(?P<direction>[S,R,D])\s+"\
             "(?P<flow_id>\d+)\s+"\
             "(?P<begin>\d+\.\d+)\s+(?P<end>\d+\.\d+)\s+"\
             "(?P<tput>\d+\.\d+)\s+"\
@@ -155,14 +154,14 @@ class FlowgrindRecordFactory():
             "(?P<rtt_min>\d+\.\d+|inf)\s+(?P<rtt_avg>\d+\.\d+|inf)\s+(?P<rtt_max>\d+\.\d+|inf)\s+"\
             "(?P<iat_min>\d+\.\d+|inf)\s+(?P<iat_avg>\d+\.\d+|inf)\s+(?P<iat_max>\d+\.\d+|inf)\s+"\
             "(?P<cwnd>\d+)\s+(?P<ssth>\d+|INT_MAX|SHRT_MAX)\s+(?P<uack>\d+)\s+(?P<sack>\d+)\s+"\
-            "(?P<lost>\d+)\s+(?P<retr>\d+)\s+(?P<tret>\d+)\s+(?P<fack>\d+)\s+(?P<reor>\d+)\s+(?P<back>\d+)\s+"\
+            "(?P<lost>\d+)\s+(?P<retr>\d+)\s+(?P<tret>\d+)\s+(?P<fack>\d+)\s+(?P<reor>\d+)\s+(?P<bkof>\d+)\s+"\
+            # optional lcd revert count
+            "((?P<revr>\d+)\s+)?"\
             "(?P<krtt>\d+\.\d+)\s+(?P<krttvar>\d+\.\d+)\s+(?P<krto>\d+\.\d+)\s+"\
-            "(?P<castate>loss|open|disrdr|rcvry)\s+"
+            "(?P<castate>loss|open|disrdr|rcvry)\s+"\
             "(?P<mss>\d+)\s+(?P<mtu>\d+)\s+"\
             # optional extension -wolff
-            "((?P<cret>\d+)\s+(?P<cfret>\d+)\s+(?P<ctret>\d+)\s+(?P<dupthresh>\d+)\s+)?"\
-            # sporious retransmissions
-            "(?P<srx>\d+)?",
+            "((?P<cret>\d+)\s+(?P<cfret>\d+)\s+(?P<ctret>\d+)\s+(?P<dupthresh>\d+)\s+)?"
             # Fri Oct  8 16:50:11 2010: controlling host = vmhost2, number of flows = 1, reporting interval = 0.05s, [tput] = 10**6 bit/second (SVN Rev 6595)
             "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) +\d{1,2} \d{2}:\d{2}:\d{2} \d{4}): .* reporting interval = (?P<reporting_interval>\d+\.\d+)"
         ]
@@ -206,6 +205,7 @@ class FlowgrindRecordFactory():
             forward_tput_list = lambda r: map(float, r['forward_tput_list']),
             reverse_tput_list = lambda r: map(float, r['reverse_tput_list']),
             test_start_time   = lambda r: time.mktime(time.strptime(r['test_start_time'][0])),
+            revert_list       = lambda r: map(int, r['rver']),
             outages           = outages
         )
 
