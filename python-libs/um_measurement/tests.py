@@ -245,7 +245,7 @@ def test_multiflowgrind(mrs,
             cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_subflows[subflow]['flowgrind_cc']])
 
         if 'flowgrind_warmup' in flowgrind_subflows[subflow]:
-                cmd.extend(["-Y", "s=%f" % flowgrind_subflows[subflow]['flowgrind_warmup']])
+                cmd.extend(["-Y", "s=%.2f" % flowgrind_subflows[subflow]['flowgrind_warmup']])
                 max_duration = max(max_duration, (flowgrind_subflows[subflow]['flowgrind_duration'] + flowgrind_subflows[subflow]['flowgrind_warmup']) )
         else:
             max_duration = max(max_duration, flowgrind_subflows[subflow]['flowgrind_duration'])
@@ -316,10 +316,14 @@ def test_flowgrind(mrs,
     cmd.extend(["-p"])
 
     # options
-    if not flowgrind_cc == None:
+    cmd.extend(["-T", "s=%.2f" % flowgrind_duration])
+
+    if flowgrind_warmup:
+        cmd.extend(["-Y", "s=%.2f" % flowgrind_warmup])
+
+    if flowgrind_cc:
         cmd.extend(["-O", "s=TCP_CONG_MODULE=%s" % flowgrind_cc])
-    cmd.extend(["-T", "s=%f" % flowgrind_duration])
-    cmd.extend(["-Y", "s=%f" % flowgrind_warmup])
+
     # build host specifiers
     cmd.extend(["-H", "s=%s/%s,d=%s/%s" % (src_ip, src.getHostname(),
                                            dst_ip, dst.getHostname()) ])
