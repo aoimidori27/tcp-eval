@@ -69,58 +69,69 @@ class LCDAnalysis(Analysis):
 
         # hack to support two parallel flows
         thruput_list = record.calculate("thruput_list")
-        thruput_0 = thruput_list[0]
-        thruput_1 = thruput_list[1]
+        if thruput_list:
+            thruput_0 = thruput_list[0]
+            thruput_1 = thruput_list[1]
+        else:
+            thruput_0 = thruput_1 = 0.0
 
         thruput_recv_list = record.calculate("thruput_recv_list")
-        thruput_recv_0 = thruput_recv_list[0]
-        thruput_recv_1 = thruput_recv_list[1]
+        if thruput_recv_list:
+            thruput_recv_0 = thruput_recv_list[0]
+            thruput_recv_1 = thruput_recv_list[1]
+        else:
+            thruput_recv_0 = thruput_recv_1 = 0.0
 
+
+        transac_0 = transac_1 = 0
         transac_list = record.calculate(what = "transac_list", optional = True)
-        if transac_list:
+        if transac_list and len(transac_list) == 2:
             transac_0 = transac_list[0]
             transac_1 = transac_list[1]
-        else:
-            transac_0 = transac_1 = 0.0;
 
+        rtt_min_0 = rtt_min_1 = 0.0
         rtt_min_list = record.calculate(what = "rtt_min_list", optional = True)
-        if rtt_min_list:
+        if rtt_min_list and len(rtt_min_list) == 2:
             rtt_min_0 = rtt_min_list[0]
             rtt_min_1 = rtt_min_list[1]
-        else:
-            rtt_min_0 = rtt_min_1 = 0.0
 
+        rtt_avg_0 = rtt_avg_1 = 0.0;
         rtt_avg_list = record.calculate(what = "rtt_avg_list", optional = True)
-        if rtt_avg_list:
+        if rtt_avg_list and len(rtt_avg_list) == 2:
             rtt_avg_0 = rtt_avg_list[0]
             rtt_avg_1 = rtt_avg_list[1]
-        else:
-            rtt_avg_0 = rtt_avg_1 = 0.0;
 
+        rtt_max_0 = rtt_max_1 = 0.0;
         rtt_max_list = record.calculate(what = "rtt_max_list", optional = True)
-        if rtt_max_list:
+        if rtt_max_list and len(rtt_max_list) == 2:
             rtt_max_0 = rtt_max_list[0]
             rtt_max_1 = rtt_max_list[1]
-        else:
-            rtt_max_0 = rtt_max_1 = 0.0;
+
+        outages_0 =  outages_1 = 0
+        outages = record.calculate(what = "outages", optional = True)
+        if outages.has_key(0):
+            outages_0 = outages[0]['S']+outages[0]['D']
+        if outages.has_key(1):
+            outages_1 = outages[1]['S']+outages[1]['D']
+
+        reverts_0 = reverts_1 = 0;
+        reverts_list = record.calculate(what = "revert_list", optional = True)
+        if reverts_list and len(reverts_list) == 2:
+            reverts_0 = reverts_list[0]
+            reverts_1 = reverts_list[1]
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %u, "$%s$", "%s", "%s")
+                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s,
+                      %f, %f, %f, %f, %f, %f,
+                      %f, %f,
+                      %f, %f, %f, %f, %f, %f,
+                      %u, %u, %u, %u,
+                      %u, "$%s$", "%s", "%s")
                       """ % (iterationNo, scenarioNo, runNo, src, dst,
-                             thruput,
-                             thruput_recv,
-                             thruput_0,
-                             thruput_1,
-                             thruput_recv_0,
-                             thruput_recv_1,
-                             transac_0,
-                             transac_1,
-                             rtt_min_0,
-                             rtt_min_1,
-                             rtt_avg_0,
-                             rtt_avg_1,
-                             rtt_max_0,
-                             rtt_max_1,
+                             thruput, thruput_recv, thruput_0, thruput_1, thruput_recv_0, thruput_recv_1,
+                             transac_0, transac_1,
+                             rtt_min_0, rtt_min_1, rtt_avg_0, rtt_avg_1, rtt_max_0, rtt_max_1,
+                             outages_0, outages_1, reverts_0, reverts_1,
                              start_time, run_label, scenario_label, test))
 
     def generateTputOverTimePerRun(self):
@@ -221,8 +232,103 @@ class LCDAnalysis(Analysis):
         ary = numpy.array(dbcur.fetchall())
         return ary.std()
 
-    def generateHistogramLCD(self):
-        """ Generates a histogram with scenario labels for two parallel flows"""
+    def generateOutagesRevertsLCD(self):
+        """ Generate a outages and reverts histogram with scenario labels for
+        lcd """
+
+        dbcur = self.dbcon.cursor()
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests ORDER BY scenarioNo'''
+        )
+        scenarios = dict()
+        for row in dbcur:
+            (key,val) = row
+            scenarios[key] = val
+
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
+        outages_0, outages_1,
+        reverts_0, reverts_1,
+        SUM(1) as notests
+        FROM tests GROUP BY run_label, scenarioNo ORDER BY outages_0 DESC, scenarioNo ASC
+        ''')
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "lcd_analysis_reverts"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per runlabel
+        data = dict()
+
+        # columns
+        keys = scenarios.keys()
+        keys.sort()
+        for key in scenarios.keys():
+            val = scenarios[key]
+            fh.write("outages_0_%(v)s outages_1_%(v)s reverts_0_%(v)s reverts_1_%(v)s " %{ "v" : val })
+            fh.write("notests_%(v)s " %{ "v" : val })
+        fh.write("\n")
+
+        sorted_labels = list()
+        for row in dbcur:
+            (rlabel,slabel,sno,
+             outages_0, outages_1,
+             reverts_0, reverts_1,
+             notests) = row
+
+            if not data.has_key(rlabel):
+                tmp = list()
+                for key in keys:
+                    tmp.append("0 0 0 0 0")
+                data[rlabel] = tmp
+                sorted_labels.append(rlabel)
+
+            data[rlabel][sno] = "%d %d %d %d %d" %(
+                                 outages_0, outages_1,
+                                 reverts_0, reverts_1,
+                                 notests)
+            debug(row)
+
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s" %key)
+            for val in value:
+                fh.write(" %s" %val)
+            fh.write("\n")
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir)
+        g.setYLabel(r"Outages and Reverts")
+        g.setClusters(len(keys))
+        g.setYRange("[ 0 : * ]")
+
+        # bars
+        for i in range(len(keys)):
+            key = keys[i]
+            # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
+            g.plotBar(valfilename, title=scenarios[key]+" Outages LCD",
+                    using="%u:xtic(1)" %((i*5)+2), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" Outages native",
+                    using="%u:xtic(1)" %((i*5)+3), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" Reverts LCD",
+                    using="%u:xtic(1)" %((i*5)+4), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" Reverts native",
+                    using="%u:xtic(1)" %((i*5)+5), linestyle=(i+1))
+
+        # output plot
+        g.save()
+
+    def generateTputHistogramLCD(self):
+        """ Generates a tput histogram with scenario labels for lcd """
 
         dbcur = self.dbcon.cursor()
 
@@ -287,9 +393,7 @@ class LCDAnalysis(Analysis):
             if not data.has_key(rlabel):
                 tmp = list()
                 for key in keys:
-                    tmp.append("0.0 0.0 0.0 0.0 0")
-                    tmp.append("0.0 0.0 0.0 0.0 0")
-                    tmp.append("0.0 0.0 0.0 0.0 0")
+                    tmp.append("0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0")
                 data[rlabel] = tmp
                 sorted_labels.append(rlabel)
 
@@ -299,41 +403,46 @@ class LCDAnalysis(Analysis):
                                  notests)
             debug(row)
 
-        i = 0
-        # only display first LIMIT scenarios
-        limit = 6
         for key in sorted_labels:
             value = data[key]
             fh.write("%s" %key)
             for val in value:
                 fh.write(" %s" %val)
             fh.write("\n")
-            i += 1
-            if i>limit:
-                break
         fh.close()
 
         g = UmHistogram(plotname=plotname, outdir=outdir)
         g.setYLabel(r"Throughput in $\\si{\Mbps}$")
-        g.setClusters(limit)
+        g.setClusters(len(keys))
         g.setYRange("[ 0 : * ]")
 
         # bars
         for i in range(len(keys)):
             key = keys[i]
             # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
-            g.plotBar(valfilename, title=scenarios[key]+" TCP LCD", using="%u:xtic(1)" %((i*11)+1), linestyle=(i+1))
-            g.plotBar(valfilename, title=scenarios[key]+" native", using="%u:xtic(1)" %((i*11)+2), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" TCP LCD out",
+                    using="%u:xtic(1)" %( (i*9)+2 ), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" TCP LCD in",
+                    using="%u:xtic(1)" %( (i*9)+4 ), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" native out",
+                    using="%u:xtic(1)" %( (i*9)+3 ), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" native in",
+                    using="%u:xtic(1)" %( (i*9)+5 ), linestyle=(i+1))
 
         # errobars
         for i in range(len(keys)):
             # TODO: calculate offset with scenarios and gap
             if i == 0:
-                g.plotErrorbar(valfilename, 0, 6, 10, "Standard Deviation")
-                g.plotErrorbar(valfilename, 1, 7 ,10)
+                g.plotErrorbar(valfilename, 0, 6, 9, "Standard Deviation")
+                g.plotErrorbar(valfilename, 1, 8, 9)
+                g.plotErrorbar(valfilename, 2, 7, 9)
+                g.plotErrorbar(valfilename, 3, 9, 9)
+
             else:
-                g.plotErrorbar(valfilename, i*2,   (i*11)+5, (i*11)+10)
-                g.plotErrorbar(valfilename, i*2+1, (i*11)+6, (i*11)+10)
+                g.plotErrorbar(valfilename, i*4,   (i*9)+6, (i*9)+9)
+                g.plotErrorbar(valfilename, i*4+1, (i*9)+8, (i*9)+9)
+                g.plotErrorbar(valfilename, i*4+2, (i*9)+7, (i*9)+9)
+                g.plotErrorbar(valfilename, i*4+3, (i*9)+9, (i*9)+9)
 
         # output plot
         g.save()
@@ -365,6 +474,10 @@ class LCDAnalysis(Analysis):
                             rtt_avg_1       DOUBLE,
                             rtt_max_0       DOUBLE,
                             rtt_max_1       DOUBLE,
+                            outages_0       INTEGER,
+                            outages_1       INTEGER,
+                            reverts_0       INTEGER,
+                            reverts_1       INTEGER,
                             start_time      INTEGER,
                             run_label   VARCHAR(70),
                             scenario_label VARCHAR(70),
@@ -378,9 +491,9 @@ class LCDAnalysis(Analysis):
         self.loadRecords(tests=["flowgrind"])
 
         self.dbcon.commit()
-        self.generateTputOverTimePerRun()
-        self.generateHistogramLCD()
-
+        # self.generateTputOverTimePerRun()
+        self.generateOutagesRevertsLCD()
+        self.generateTputHistogramLCD()
     def main(self):
         """Main method of the the LCD Analysis script"""
 
