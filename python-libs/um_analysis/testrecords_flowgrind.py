@@ -74,8 +74,8 @@ class FlowgrindRecordFactory():
             for i in range(len(r['flow_id'])):
                 if r['direction'][i] == 'S':
                     dir = 'S'
-                else:
-                    dir = 'R'
+                else: # D,R
+                    dir = 'D'
 
                 flow = flow_map[int(r['flow_id'][i])][dir]
                 for (key, convert) in keys.iteritems():
@@ -98,7 +98,13 @@ class FlowgrindRecordFactory():
             outages = dict()
             if time_abs: time_abs = time.mktime(time.strptime(r['test_start_time'][0]))
             for i in range(len(r['begin'])):
-                flow_id, retr, dir = int(r['flow_id'][i]), int(r['retr'][i]), r['direction'][i]
+
+                if r['direction'][i] == 'S':
+                    dir = 'S'
+                else: # D,R
+                    dir = 'D'
+                flow_id = int(r['flow_id'][i])
+                retr = int(r['retr'][i]),
 
                 if flow_id not in flow_map: flow_map[flow_id] = dict()
                 if dir not in flow_map[flow_id]: flow_map[flow_id][dir] = None
@@ -113,8 +119,8 @@ class FlowgrindRecordFactory():
                         b, e, re = float(r['begin'][tmp['begin']]), float(r['begin'][i]), int(tmp['retr'])
                         if re >= min_retr and e - b >= min_time:
                             if flow_id not in outages: outages[flow_id] = dict()
-                            if dir not in outages[flow_id]: outages[flow_id][dir] = []
-                            outages[flow_id][dir].append(dict(begin=b+time_abs,end=e+time_abs,retr=re))
+                            if dir not in outages[flow_id]:outages[flow_id][dir] = 0
+                            outages[flow_id][dir] = outages[flow_id][dir] + 1
                         flow_map[flow_id][dir] = None
             return outages
 
@@ -145,7 +151,7 @@ class FlowgrindRecordFactory():
             # optional calculated destination iat
             "[R,D]: .* IAT = (?P<d_iat_min>\d+\.\d+)\/(?P<d_iat_avg>\d+\.\d+)\/(?P<d_iat_max>\d+\.\d+)",
 
-            # # ID begin   end  through transac min RTT avg RTT max RTT min IAT avg IAT max IAT cwnd ssth uack sack lost retr tret fack reor back rtt rttvar rto ca state mss mtu
+            # ID begin   end  through transac min RTT avg RTT max RTT min IAT avg IAT max IAT cwnd ssth uack sack lost retr tret fack reor bkof revr  rtt rttvar    rto ca state smss pmtu
             "(?P<direction>[S,R,D])\s+"\
             "(?P<flow_id>\d+)\s+"\
             "(?P<begin>\d+\.\d+)\s+(?P<end>\d+\.\d+)\s+"\
@@ -158,11 +164,12 @@ class FlowgrindRecordFactory():
             # optional lcd revert count
             "((?P<revr>\d+)\s+)?"\
             "(?P<krtt>\d+\.\d+)\s+(?P<krttvar>\d+\.\d+)\s+(?P<krto>\d+\.\d+)\s+"\
-            "(?P<castate>loss|open|disrdr|rcvry)\s+"\
-            "(?P<mss>\d+)\s+(?P<mtu>\d+)\s+"\
+            "(?P<castate>loss|open|disorder|recovery)\s+"\
+            "(?P<mss>\d+)\s+(?P<mtu>\d+)\s+",
             # optional extension -wolff
-            "((?P<cret>\d+)\s+(?P<cfret>\d+)\s+(?P<ctret>\d+)\s+(?P<dupthresh>\d+)\s+)?"
-            # Fri Oct  8 16:50:11 2010: controlling host = vmhost2, number of flows = 1, reporting interval = 0.05s, [tput] = 10**6 bit/second (SVN Rev 6595)
+            #"((?P<cret>\d+)\s+(?P<cfret>\d+)\s+(?P<ctret>\d+)\s+(?P<dupthresh>\d+)\s+)?"
+            # # Sat Dec 11 08:20:49 2010: controlling host = vmhost1, number of flows = 2, reporting interval = 0.05s, [through] = 10**6 bit/second (SVN Rev 6756)
+            #
             "^# (?P<test_start_time>(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) +\d{1,2} \d{2}:\d{2}:\d{2} \d{4}): .* reporting interval = (?P<reporting_interval>\d+\.\d+)"
         ]
 
@@ -184,7 +191,7 @@ class FlowgrindRecordFactory():
             # average thruput: just sum up all summary lines (calculated from sender estimate)
             thruput           = lambda r: sum(map(float, r['s_thruput_out'])),
             # average thruput: just sum up all summary lines (calculated from receiver estimate)
-            thruput_recv      = lambda r: sum(map(float, r['d_thruput_in'])),
+            thruput_recv      = lambda r: sum(map(float, r['d_thruput_out'])),
             rtt_min           = lambda r: min(map(float, r['s_rtt_min'])),
             rtt_max           = lambda r: max(map(float, r['s_rtt_max'])),
             rtt_avg           = lambda r: average(map(float, r['s_rtt_avg'])),
@@ -193,7 +200,7 @@ class FlowgrindRecordFactory():
             total_rto_retransmits  = lambda r: max(map(extInt, r['ctret'])),
             # list of summary lines
             thruput_list      = lambda r: map(float, r['s_thruput_out']),
-            thruput_recv_list = lambda r: map(float, r['d_thruput_in']),
+            thruput_recv_list = lambda r: map(float, r['d_thruput_out']),
             transac_list      = lambda r: map(float, r['s_transac']),
             rtt_min_list      = lambda r: map(float, r['s_rtt_min']),
             rtt_max_list      = lambda r: map(float, r['s_rtt_max']),
@@ -205,7 +212,7 @@ class FlowgrindRecordFactory():
             forward_tput_list = lambda r: map(float, r['forward_tput_list']),
             reverse_tput_list = lambda r: map(float, r['reverse_tput_list']),
             test_start_time   = lambda r: time.mktime(time.strptime(r['test_start_time'][0])),
-            revert_list       = lambda r: map(int, r['rver']),
+            revert_list       = lambda r: map(int, r['revr']),
             outages           = outages
         )
 
