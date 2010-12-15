@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 # vim:softtabstop=4:shiftwidth=4:expandtab
 
-# Script to plot flowgrind results with gnuplot.
+# Script to plot various flowgrind_lcd_evaluation.py results.
 #
 # Copyright (C) 2010 Christian Samsel <christian.samsel@rwth-aachen.de>
-# Copyright (C) 2008 - 2010 Lennart Schulte <lennart.schulte@rwth-aachen.de>
-#
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
@@ -308,7 +306,7 @@ class LCDAnalysis(Analysis):
 
         g = UmHistogram(plotname=plotname, outdir=outdir)
         g.setYLabel(r"Outages and Reverts")
-        g.setClusters(len(keys))
+        # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
 
         # bars
@@ -325,6 +323,110 @@ class LCDAnalysis(Analysis):
                     using="%u:xtic(1)" %((i*5)+5), linestyle=(i+1))
 
         # output plot
+        g.save()
+
+    def generateTransacsLCD(self):
+        """ Generate a network transactions histogram with scenario labels for
+        lcd """
+
+        dbcur = self.dbcon.cursor()
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests ORDER BY scenarioNo'''
+        )
+        scenarios = dict()
+        for row in dbcur:
+            (key,val) = row
+            scenarios[key] = val
+
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
+        AVG(transac_0) as transac_0,
+        AVG(transac_1) as transac_1,
+        SUM(1) as notests
+        FROM tests GROUP BY run_label, scenarioNo ORDER BY transac_0 DESC, scenarioNo ASC
+        ''')
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "lcd_analysis_transactions"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per runlabel
+        data = dict()
+
+        # columns
+        keys = scenarios.keys()
+        keys.sort()
+        for key in scenarios.keys():
+            val = scenarios[key]
+            fh.write("transac_0_%(v)s transac_1_%(v)s " %{ "v" : val })
+            fh.write("std_transac_0_%(v)s std_transac_1_%(v)s " %{ "v" : val })
+            fh.write("notests_%(v)s " %{ "v" : val })
+        fh.write("\n")
+
+        sorted_labels = list()
+        for row in dbcur:
+            (rlabel,slabel,sno,
+             transac_0, transac_1,
+             notests) = row
+
+            std_transac_0 = self.calculateStdDev(rlabel, slabel, "transac_0")
+            std_transac_1 = self.calculateStdDev(rlabel, slabel, "transac_1")
+
+            if not data.has_key(rlabel):
+                tmp = list()
+                for key in keys:
+                    tmp.append("0.0 0.0 0.0 0.0 0")
+                data[rlabel] = tmp
+                sorted_labels.append(rlabel)
+
+            data[rlabel][sno] = "%f %f %f %f %d" %(
+                                 transac_0, transac_1,
+                                 std_transac_0, std_transac_1,
+                                 notests)
+            debug(row)
+
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s" %key)
+            for val in value:
+                fh.write(" %s" %val)
+            fh.write("\n")
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir)
+        g.setYLabel(r"Network Transactions per Second")
+        # g.setClusters(len(sorted_labels))
+        g.setYRange("[ 0 : * ]")
+
+        # bars
+        for i in range(len(keys)):
+            key = keys[i]
+            # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
+            g.plotBar(valfilename, title=scenarios[key]+"  LCD",
+                    using="%u:xtic(1)" %((5*i)+2), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" native",
+                    using="%u:xtic(1)" %((5*i)+3), linestyle=(i+1))
+
+        # errobars
+        for i in range(len(keys)):
+            # TODO: calculate offset with scenarios and gap
+            if i == 0:
+                g.plotErrorbar(valfilename, 0, 2, 4, "Standard Deviation")
+                g.plotErrorbar(valfilename, 1, 3, 5)
+
+            else:
+                g.plotErrorbar(valfilename, i*2,   (i*5)+2, (i*5)+4)
+                g.plotErrorbar(valfilename, i*2+1, (i*5)+3, (i*5)+5)
+
         g.save()
 
     def generateTputHistogramLCD(self):
@@ -413,7 +515,7 @@ class LCDAnalysis(Analysis):
 
         g = UmHistogram(plotname=plotname, outdir=outdir)
         g.setYLabel(r"Throughput in $\\si{\Mbps}$")
-        g.setClusters(len(keys))
+        # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
 
         # bars
@@ -527,7 +629,7 @@ class LCDAnalysis(Analysis):
 
         g = UmHistogram(plotname=plotname, outdir=outdir)
         g.setYLabel(r"Throughput Improvement for TCP LCD in $\\si{\Mbps}$")
-        g.setClusters(len(keys))
+        # g.setClusters(len(keys))
         g.setYRange("[ * : * ]")
         # bars
         for i in range(len(keys)):
@@ -597,6 +699,7 @@ class LCDAnalysis(Analysis):
         self.dbcon.commit()
         self.generateTputOverTimePerRun()
         self.generateOutagesRevertsLCD()
+        self.generateTransacsLCD()
         self.generateTputHistogramLCD()
         self.generateTputDiffHistogramLCD()
     def main(self):
