@@ -14,13 +14,15 @@ SETUP
 
 MEASUREMENT
 -----------
-3. create measurement-scripts and place them in the config-folder
+3. to change the parameters use the script config/set_netem_only.py
+
+4. create measurement-scripts and place them in the config-folder
    make sure that these scripts know the parameters -o for offset and -L for the output folder
 
-4. run ./start.sh measure measurements $OFFSET (give an offset :P)
+5. run ./start.sh measure measurements $OFFSET (give an offset :P)
 
 ANALYZE
 -------
-5. edit the analyze section in start.sh
+6. edit the analyze section in start.sh
 
-6. run ./start.sh analyze measurements $OFFSET (give an offset :P)
+7. run ./start.sh analyze measurements $OFFSET (give an offset :P)
