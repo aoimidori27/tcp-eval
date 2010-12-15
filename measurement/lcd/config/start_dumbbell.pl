@@ -1,12 +1,15 @@
 #!/usr/bin/perl
 
+#    100M, 2ms                                                                            100M, 3ms
 # K1------------                                                                        ------------ K2
-#              |                                                                        |
-# K3------------                                                                        ------------ K4
-#              |- K9 ------ K10 ------ K11 ------ K12 ------ K13 ------ K14 ------ K15 -|
-# K5------------ delay      loss     reorder     limit     reorder     loss       delay ------------ K6
-#              |  -->       -->        -->                   <--        <--        <--  |
-# K7------------                                                                        ------------ K8
+#    100M, 5ms |                                                                        | 100M,10ms
+# K3------------      100M       100M       2M          2M        100M       100M       ------------ K4
+#    100M,20ms |- K9 ------ K10 ------ K11 ------ K12 ------ K13 ------ K14 ------ K15 -| 100M,20ms
+# K5------------ delay     loss      reorder     limit     reorder     loss       delay ------------ K6
+#    100M,20ms |  -->       -->        -->        <->        <--        <--        <--  | 100M,20ms
+# K7------------                                  7,7                                   ------------ K8
+#
+# (Delays are set not in this script, but in the delay-1.sh and delay-2.sh scripts in the config folder)
 #
 # kernel: K1 - K8                : -lcd
 #         K10, K14               : default < 2.6.29
@@ -14,7 +17,7 @@
 #         K9, K12, K15           : default
 
 # globals
-my $leaf_kernel       = "lcd-kernel";  # <--- change!
+my $leaf_kernel       = "lcd-kernel";  # <--- CHANGE!
 my $reorder_kernel    = "netem/vmeshnode-vmlinux-2.6.32.1-pae-um-enhanced-netem";
 my $delay_kernel      = "default/vmeshnode-vmlinux-2.6.27.54-pae-delay";
 my $default_kernel    = "default/vmeshnode-vmlinuz-2.6.32.12-pae-um";

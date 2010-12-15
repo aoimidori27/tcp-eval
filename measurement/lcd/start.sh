@@ -18,7 +18,7 @@ if [ "$1" = "init" ]; then
 	echo -e "starting vmrouter\n=========================" | tee $LOG
 	./config/start_dumbbell.pl restart $OFFSET | tee -a $LOG
 	echo -e "\nexecuting um_vmesh\n=========================" | tee -a $LOG
-	um_vmesh -u -s -q -o --userscripts-path=./config $OFFSET config/dumbbell.conf 2>&1 | tee -a $LOG
+	um_vmesh -u -s -q -o $OFFSET --userscripts-path=`pwd`/config config/dumbbell.conf 2>&1 | tee -a $LOG
 fi
 
 if [ "$1" = "measure" ]; then

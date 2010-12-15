@@ -1,12 +1,26 @@
 HOWTO
 ------------------
 
+SETUP
+-----
 1. in config/start_dumbbell.pl: insert the right kernel to boot for the leaf nodes
 
 2. rename config/delay-1.sh to your node K9 (e.g. delay-1.sh -> vmrouter209 for an offset of 200)
    rename config/delay-2.sh to your node K15
 
+   edit these two files and change the node names
+
+3. run ./start.sh init measurements $OFFSET (give an offset :P)
+
+MEASUREMENT
+-----------
 3. create measurement-scripts and place them in the config-folder
    make sure that these scripts know the parameters -o for offset and -L for the output folder
 
-4. edit the analyze section in start.sh
+4. run ./start.sh measure measurements $OFFSET (give an offset :P)
+
+ANALYZE
+-------
+5. edit the analyze section in start.sh
+
+6. run ./start.sh analyze measurements $OFFSET (give an offset :P)
