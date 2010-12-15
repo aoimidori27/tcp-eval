@@ -31,7 +31,7 @@ class TcpMeasurement(measurement.Measurement):
         opts = dict( flowgrind_cc = "reno",
                      flowgrind_bin = "flowgrind-lcd",
                      flowgrind_duration = 180,
-                     flowgrind_warmup = 2
+                     flowgrind_warmup = 5
                      )
 
         brokenhosts = ["mrouter12", "mrouter22", "mrouter23", "mrouter24", "mrouter28", "mrouter41", "mrouter43"]
@@ -54,9 +54,9 @@ class TcpMeasurement(measurement.Measurement):
         dict( scenario_label = "rr-http",
               flowgrind_opts="-r 123456 -M s -n 2 -G s=q,C,350 -G s=p,L,9055,115.17 -U 100000 -F0 -O b=TCP_LCD".split() ),
         dict( scenario_label = "rr-smtp",
-              flowgrind_opts="-r 654321 -M s -n 2 -G s=q,U,5000,40000 -G s=p,C,120 -F0 -O b=TCP_LCD".split() ),
+              flowgrind_opts="-r 654321 -M s -n 2 -G s=q,U,4000,40000 -G s=p,C,200 -F0 -O b=TCP_LCD".split() ),
         dict( scenario_label = "rr-telnet",
-              flowgrind_opts="-r 123654 -M s -n 2 -G s=q,U,40,10000 -G s=q,U,40,10000 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
+              flowgrind_opts="-r 123654 -M s -n 2 -G s=q,U,40,10000 -G s=p,U,40,10000 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
         dict( scenario_label = "streaming-media-limited-800kbs",
               flowgrind_opts="-r 987654 -M s -n 2 -G s=q,C,800 -G s=g,N,0.008,0.001 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
         ]
