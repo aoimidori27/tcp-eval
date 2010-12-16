@@ -204,7 +204,7 @@ class UmHistogram(UmGnuplot):
         self._gap = 1
 
         self.gplot('set style data histogram')
-        self.gplot('set style histogram clustered gap %u title offset character 0,0,0' %self._gap)
+        self.gplot('set style histogram rowstacked clustered gap %u title offset character 0,0,0' %self._gap)
 
         self._clusters = None
         self._barspercluster = 0
@@ -233,17 +233,23 @@ class UmHistogram(UmGnuplot):
     def setGap(self, gap):
         self._gap = gap
 
-    def plotBar(self, values, title, using=None, linestyle=3):
+    def plotBar(self, values, title, using=None, linestyle=3, fillstyle=None):
         # autoupdate barspercluster
         self._barspercluster += 1
 
         usingstr = ""
         if using:
             usingstr = "using %s" %using
-        cmd = '"%s" %s title "%s" ls %u' %(values, usingstr, title, linestyle)
+
+        fillstr = ""
+        if fillstyle:
+            fillstr = " fillstyle %s" %fillstyle
+
+        cmd = '"%s" %s title "%s" ls %s%s' %(values, usingstr, title, linestyle, fillstr)
         UmGnuplot.plot(self, cmd)
 
-    def plotErrorbar(self, values, barNo, valColumn, errColumn, title=None, linestyle=2):
+    def plotErrorbar(self, values, barNo, valColumn, yDelta, title=None,
+            linestyle=2, yHigh=None):
         """Plot errorbars, barNo identifies the bar the errobar should be plotted on
            counting starts with 0
         """
@@ -261,9 +267,10 @@ class UmHistogram(UmGnuplot):
 
         # calculate actual offset by moving to the middle of the bar
         off = left_edge+self.getBarWidth()/2
-
-        usingstr = "($0+%f):%s:%s" %(off, valColumn, errColumn)
-
+        if yHigh:
+            usingstr = "($0+%f):%s:%s:%s" %(off, valColumn, yDelta, yHigh)
+        else:
+            usingstr = "($0+%f):%s:%s" %(off, valColumn, yDelta)
         cmd = '"%s" using %s %s with errorbars ls %u' %(values,usingstr,titlestr,linestyle)
 
         UmGnuplot.plot(self, cmd)
