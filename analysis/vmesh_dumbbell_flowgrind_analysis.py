@@ -71,7 +71,7 @@ class ReorderingAnalysis(Analysis):
         self.plotlabels["frs"]     = r"Fast Retransmissions [$\\#$]";
         self.plotlabels["thruput"] = r"Throughput [$\\si{\\Mbps}$]";
         self.plotlabels["fairness"]= r"Fairness"
-        self.plotlabels["delay"]   = r"RTT [$\\si{\\milli\\second}$]"
+        self.plotlabels["delay"]   = r"Delay [$\\si{\\milli\\second}$]"
         self.plotlabels["ackreor"] = r"ACK Reordering Rate [$\\si{\\percent}$]"
         self.plotlabels["ackloss"] = r"ACK Loss Rate [$\\si{\\percent}$]"
 
@@ -192,7 +192,7 @@ class ReorderingAnalysis(Analysis):
             scenarios.append(scen)
 
         outdir = self.options.outdir
-        p = UmLinePointPlot("%s_%s_over_%s" % (rotype, y, x))
+        p = UmLinePointPlot("%s_%s_over_%s" % (rotype, y, x), outdir, debug = self.options.debug, force = True)
         p.setXLabel(self.plotlabels[x])
         p.setYLabel(self.plotlabels[y])
 
@@ -235,7 +235,7 @@ class ReorderingAnalysis(Analysis):
 
         # make room for the legend
         p.setYRange("[0.5:1.1]")
-        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        p.save()
 
     def generateYOverXLinePlot(self, y):
         """Generates a line plot of the DB column y over the DB column x
@@ -258,7 +258,7 @@ class ReorderingAnalysis(Analysis):
             scenarios[key] = val
 
         outdir = self.options.outdir
-        p = UmLinePointPlot("%s_%s_over_%s" % (rotype, y, x))
+        p = UmLinePointPlot("%s_%s_over_%s" % (rotype, y, x), outdir, debug = self.options.debug, force = True)
         p.setXLabel(self.plotlabels[x])
         p.setYLabel(self.plotlabels[y])
 
@@ -323,7 +323,7 @@ class ReorderingAnalysis(Analysis):
         if max_y_value:
             p.setYRange("[*:%u]" % int(max_y_value + ((25 * max_y_value) / 100 )))
 
-        p.save(self.options.outdir, self.options.debug, self.options.cfgfile)
+        p.save()
 
     def calculateStdDev(self, y, x_value, scenarioNo):
         """Calculates the standarddeviation for the values of the YoverXPlot
