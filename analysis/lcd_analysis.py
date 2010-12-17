@@ -250,12 +250,16 @@ class LCDAnalysis(Analysis):
         SELECT run_label, scenario_label, scenarioNo,
         outages_0, outages_1,
         reverts_0, reverts_1,
+        AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
-        FROM tests GROUP BY run_label, scenarioNo ORDER BY outages_0 DESC, scenarioNo ASC
+        FROM tests
+        GROUP BY run_label,
+        scenarioNo
+        ORDER BY thruput_overall DESC, scenarioNo ASC
         ''')
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd_analysis_reverts"
+        plotname      = "lcd-analysis-reverts"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
@@ -281,6 +285,7 @@ class LCDAnalysis(Analysis):
             (rlabel,slabel,sno,
              outages_0, outages_1,
              reverts_0, reverts_1,
+             thrput_overall,
              notests) = row
 
             if not data.has_key(rlabel):
@@ -294,7 +299,6 @@ class LCDAnalysis(Analysis):
                                  outages_0, outages_1,
                                  reverts_0, reverts_1,
                                  notests)
-            debug(row)
 
         for key in sorted_labels:
             value = data[key]
@@ -333,7 +337,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd_analysis_rtt"
+        plotname      = "lcd-analysis-rtt"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         # get all scenario labels
@@ -356,11 +360,12 @@ class LCDAnalysis(Analysis):
         AVG(rtt_min_1) as rtt_min_1,
         AVG(rtt_avg_1) as rtt_avg_1,
         AVG(rtt_max_1) as rtt_max_1,
+        AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
         FROM tests
         WHERE rtt_avg_0 > 0
         GROUP BY run_label, scenarioNo
-        ORDER BY rtt_avg_0 DESC, scenarioNo ASC
+        ORDER BY thruput_overall DESC, scenarioNo ASC
         ''')
 
         info("Generating %s..." % valfilename)
@@ -387,9 +392,8 @@ class LCDAnalysis(Analysis):
             (rlabel,slabel,sno,
              rtt_min_0, rtt_avg_0, rtt_max_0,
              rtt_min_1, rtt_avg_1, rtt_max_1,
+             thruput_overall,
              notests) = row
-
-            debug(row)
 
             if not data.has_key(rlabel):
                 tmp = list()
@@ -430,7 +434,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd_analysis_transactions"
+        plotname      = "lcd-analysis-transactions"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         dbcur = self.dbcon.cursor()
@@ -446,16 +450,17 @@ class LCDAnalysis(Analysis):
         for row in dbcur:
             (key,val) = row
             scenarios.append(val)
-        print scenarios
+
         dbcur.execute('''
         SELECT run_label, scenario_label, scenarioNo,
                AVG(transac_0) as transac_0,
                AVG(transac_1) as transac_1,
+               AVG(thruput_0+thruput_1) as thruput_overall,
                SUM(1) as notests
         FROM tests
         WHERE transac_0 > 0
         GROUP BY run_label, scenarioNo
-        ORDER BY transac_0 DESC, scenarioNo ASC
+        ORDER BY thruput_overall DESC, scenarioNo ASC
         ''')
 
         info("Generating %s..." % valfilename)
@@ -478,9 +483,8 @@ class LCDAnalysis(Analysis):
         for row in dbcur:
             (rlabel,slabel,sno,
              transac_0, transac_1,
+             thruput_overall,
              notests) = row
-
-            debug(row)
 
             std_transac_0 = self.calculateStdDev(rlabel, slabel, "transac_0")
             std_transac_1 = self.calculateStdDev(rlabel, slabel, "transac_1")
@@ -554,13 +558,16 @@ class LCDAnalysis(Analysis):
         AVG(thruput_1) as thruput_1,
         AVG(thruput_recv_0) as thruput_recv_0,
         AVG(thruput_recv_1) as thruput_recv_1,
+        AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
-        FROM tests GROUP BY run_label, scenarioNo ORDER BY thruput_0 DESC, scenarioNo ASC
+        FROM tests
+        GROUP BY run_label, scenarioNo
+        ORDER BY thruput_overall DESC, scenarioNo ASC
         ''')
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd_analysis_throughput"
+        plotname      = "lcd-analysis-throughput"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
@@ -587,7 +594,10 @@ class LCDAnalysis(Analysis):
             (rlabel,slabel,sno,
              thruput_0, thruput_1,
              thruput_recv_0, thruput_recv_1,
+             thruput_overall,
              notests) = row
+
+            debug(row)
 
             std_thruput_0 = self.calculateStdDev(rlabel, slabel, "thruput_0")
             std_thruput_1 = self.calculateStdDev(rlabel, slabel, "thruput_1")
@@ -606,7 +616,6 @@ class LCDAnalysis(Analysis):
                                  thruput_0,thruput_1,thruput_recv_0,thruput_recv_1,
                                  std_thruput_0,std_thruput_1,std_thruput_recv_0,std_thruput_recv_1,
                                  notests)
-            debug(row)
 
         for key in sorted_labels:
             value = data[key]
@@ -670,15 +679,18 @@ class LCDAnalysis(Analysis):
         # average thruput and sort by it and scenario_no
         dbcur.execute('''
         SELECT run_label, scenario_label, scenarioNo,
-        AVG(thruput_0/thruput_1-1)*100 as thruput_diff,
-        AVG(COALESCE(thruput_recv_0/thruput_recv_1,1)-1)*100 as thruput_diff_recv,
+        AVG((thruput_0/thruput_1)-1)*100 as thruput_diff,
+        AVG(COALESCE((thruput_recv_0/thruput_recv_1),1)-1)*100 as thruput_diff_recv,
+        AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
-        FROM tests GROUP BY run_label, scenarioNo ORDER BY thruput DESC, scenarioNo ASC
+        FROM tests
+        GROUP BY run_label, scenarioNo
+        ORDER BY thruput_overall DESC, scenarioNo ASC
         ''')
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd_analysis_throughput_improvement"
+        plotname      = "lcd-analysis-throughput-improvement"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
@@ -686,9 +698,6 @@ class LCDAnalysis(Analysis):
 
         # print header
         fh.write("# run_label ")
-
-        # one line per runlabel
-        data = dict()
 
         # columns
         keys = scenarios.keys()
@@ -700,14 +709,22 @@ class LCDAnalysis(Analysis):
             fh.write("notests_%(v)s " %{ "v" : val })
         fh.write("\n")
 
+        # one line per runlabel
+        data = dict()
         sorted_labels = list()
+
         for row in dbcur:
             (rlabel,slabel,sno,
              thruput_diff, thruput_diff_recv,
+             thruput_overall,
              notests) = row
 
-            std_thruput_diff = self.calculateStdDev(rlabel, slabel, "AVG(thruput_0/thruput_1-1)*100")
-            std_thruput_diff_recv = self.calculateStdDev(rlabel, slabel, "AVG(COALESCE(thruput_recv_0/thruput_recv_1,1)-1)*100")
+            debug(row)
+
+            std_thruput_diff = self.calculateStdDev(rlabel, slabel,
+                    "(COALESCE(thruput_0/thruput_1,1)-1)*100")
+            std_thruput_diff_recv = self.calculateStdDev(rlabel, slabel,
+                    "(COALESCE(thruput_recv_0/thruput_recv_1,1)-1)*100")
 
             if not data.has_key(rlabel):
                 tmp = list()
@@ -720,7 +737,6 @@ class LCDAnalysis(Analysis):
                                  thruput_diff,thruput_diff_recv,
                                  std_thruput_diff,std_thruput_diff_recv,
                                  notests)
-            debug(row)
 
         for key in sorted_labels:
             value = data[key]
@@ -801,11 +817,11 @@ class LCDAnalysis(Analysis):
         self.loadRecords(tests=["flowgrind"])
 
         self.dbcon.commit()
-        self.generateTputImprovementHistogramLCD()
-        self.generateRTTLCD()
-        self.generateTransacsLCD()
-        self.generateOutagesRevertsLCD()
         self.generateTputHistogramLCD()
+        self.generateTputImprovementHistogramLCD()
+        self.generateOutagesRevertsLCD()
+        self.generateTransacsLCD()
+        self.generateRTTLCD()
         self.generateTputOverTimePerRun()
         for key in self.failed:
             warn("%d failed tests for %s" %(self.failed[key],key))
