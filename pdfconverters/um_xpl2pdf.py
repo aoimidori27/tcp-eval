@@ -111,6 +111,9 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
         self.parser.add_option("--arrowsize", metavar = "size", type = "string",
                     action = "store", dest = "arrowsize",
                     help = "arrow size [default: 0.004]")
+        self.parser.add_option("--rexmitpos", metavar = "<left/right>", type = "string",
+                    action = "store", dest = "rexmitpos",
+                    help = "position of the red R [default: mid]")
         self.parser.add_option("--fontsize", metavar = "", type = "int",
                     action = "store", dest = "fontsize",
                     help = "target fontsize [default: 6]")
@@ -203,9 +206,13 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 # special cases
                 if label == "R":
                     localcolor = "red"
-                    #if self.options.microview:
-                    #    labelxoffset = -0.15
-                    #    labelyoffset = 0.7
+                    if self.options.microview:
+                        if self.options.rexmitpos == "right":
+                            labelxoffset = -0.15
+                            labelyoffset = 0.7
+                        if self.options.rexmitpos == "left":
+                            labelxoffset = -0.15
+                            labelyoffset = -0.7
                 elif label == "3" or label == "2" or label == "1":
                     printthis = False
                 elif label == "3DUP":
