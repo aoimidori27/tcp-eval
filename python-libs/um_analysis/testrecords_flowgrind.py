@@ -70,27 +70,30 @@ class FlowgrindRecordFactory():
                     flow_map[flow_id]['S'][key] = list()
                     flow_map[flow_id]['D'][key] = list()
 
-            # iterate over all entries, shuffle and convert
+            # iterate over all entries, rearrange and convert
             for i in range(len(r['flow_id'])):
                 if r['direction'][i] == 'S':
-                    dir = 'S'
-                else: # D,R
-                    dir = 'D'
+                    d = 'S'
+                else: # D,R (for compability)
+                    d = 'D'
 
-                flow = flow_map[int(r['flow_id'][i])][dir]
+                flow = flow_map[int(r['flow_id'][i])][d]
                 for (key, convert) in keys.iteritems():
                     try:
                         flow[key].append(convert(r[key][i]))
                     except KeyError, inst:
+                        # ignore optional dupthresh and rvr
+                        if key in ['dupthresh','revr']:
+                            continue
                         warn('Failed to get r["%s"][%u]' %(key,i))
                         raise inst
                     except TypeError, inst:
-                        # ignore optional dupthresh
-                        if not (key == 'dupthresh'):
-                            warn('Failed to get r["%s"][%u]' %(key,i))
-                            raise inst
-                flow['size'] += 1
-
+                        # ignore optional dupthresh and rvr
+                        if key in ['dupthresh','revr']:
+                            continue
+                        warn('Failed to get r["%s"][%u]' %(key,i))
+                        raise inst
+                flow.size += 1
             return flow_map.values()
 
         def outages(r, min_retr=0, min_time=0, time_abs=1):
@@ -100,28 +103,28 @@ class FlowgrindRecordFactory():
             for i in range(len(r['begin'])):
 
                 if r['direction'][i] == 'S':
-                    dir = 'S'
+                    d = 'S'
                 else: # D,R
-                    dir = 'D'
+                    d = 'D'
                 flow_id = int(r['flow_id'][i])
-                retr = int(r['retr'][i]),
+                tretr = int(r['tret'][i])
 
                 if flow_id not in flow_map: flow_map[flow_id] = dict()
-                if dir not in flow_map[flow_id]: flow_map[flow_id][dir] = None
+                if d not in flow_map[flow_id]: flow_map[flow_id][d] = None
 
-                if flow_map[flow_id][dir] is None and retr > 0:
-                    flow_map[flow_id][dir] = dict(begin=i, retr=retr)
-                if flow_map[flow_id][dir] is not None:
-                    tmp = flow_map[flow_id][dir]
-                    if retr > 0:
-                        tmp['retr'] = retr
+                if flow_map[flow_id][d] is None and retr > 0:
+                    flow_map[flow_id][d] = dict(begin=i, tretr=tretr)
+                if flow_map[flow_id][d] is not None:
+                    tmp = flow_map[flow_id][d]
+                    if tretr > 0:
+                        tmp['tretr'] = tretr
                     else:
-                        b, e, re = float(r['begin'][tmp['begin']]), float(r['begin'][i]), int(tmp['retr'])
+                        b, e, re = float(r['begin'][tmp['begin']]), float(r['begin'][i]), int(tmp['tretr'])
                         if re >= min_retr and e - b >= min_time:
                             if flow_id not in outages: outages[flow_id] = dict()
-                            if dir not in outages[flow_id]:outages[flow_id][dir] = 0
-                            outages[flow_id][dir] = outages[flow_id][dir] + 1
-                        flow_map[flow_id][dir] = None
+                            if d not in outages[flow_id]:outages[flow_id][d] = 0
+                            outages[flow_id][d] = outages[flow_id][d] + 1
+                        flow_map[flow_id][d] = None
             return outages
 
         # phase 1 data gathering

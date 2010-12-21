@@ -178,7 +178,7 @@ class FlowPlotter(Application):
 
         for file in infile.split(','):
             # create record from given file
-            flownumber = self.options.flownumber
+            flownumber = int(self.options.flownumber)
             record = self.factory.createRecord(file, "flowgrind")
             flows = record.calculate("flows")
 
@@ -186,13 +186,13 @@ class FlowPlotter(Application):
                 error("requested flow number %i greater then flows in file: %i"
                         %(flownumber,len(flows) ) )
                 sys.exit(1)
-            flow = flows[flownumber]
+            flow = flows[int(flownumber)]
 
             plotname = os.path.splitext(os.path.basename(file))[0]
 
             # to avoid code duplicates
-            directions = ['S', 'R']
-            nosamples = min(flow['S']['size'], flow['R']['size'])
+            directions = ['S', 'D']
+            nosamples = min(flow['S']['size'], flow['D']['size'])
             debug("nosamples: %i" %nosamples)
         if not flows:
             error("parse error")
@@ -207,12 +207,12 @@ class FlowPlotter(Application):
         if len(flow_array) > 1:
             for i in range(len(flow_array[0][1]['S']['tput'])):
                 avg_S = 0
-                avg_R = 0
+                avg_D = 0
                 for l in range(len(flow_array)):
                     avg_S += flow_array[l][1]['S']['tput'][i]
-                    avg_R += flow_array[l][1]['R']['tput'][i]
+                    avg_D += flow_array[l][1]['D']['tput'][i]
                 flow_array[0][1]['S']['tput'][i] = avg_S/len(flow_array)
-                flow_array[0][1]['R']['tput'][i] = avg_R/len(flow_array)
+                flow_array[0][1]['D']['tput'][i] = avg_D/len(flow_array)
 
         plotname = flow_array[0][0] #just take one
         flow = flow_array[0][1]        #average for all files
@@ -222,7 +222,7 @@ class FlowPlotter(Application):
         #delete all data BEFORE some given time
         if self.options.startat > 0:
             for i in range(nosamples):
-                if flow['S']['begin'][i] > self.options.startat: #get point where the time is over the threshold
+                if flow['D']['begin'][i] > self.options.startat: #get point where the time is over the threshold
                     for d in directions:    #delete all entries before this point
                         for key in flow[d].keys():
                             try:
@@ -235,7 +235,7 @@ class FlowPlotter(Application):
         #delete all data AFTER some given time
         if self.options.endat > 0:
             for i in range(nosamples):
-                if flow['S']['begin'][i] > self.options.endat: #get point where the time is over the threshold
+                if flow['D']['begin'][i] > self.options.endat: #get point where the time is over the threshold
                     for d in directions:    #delete all entries before this point
                         for key in flow[d].keys():
                             try:
@@ -280,20 +280,20 @@ class FlowPlotter(Application):
             label        = recordHeader["scenario_label"]
         except:
             label = ""
-        fh.write("# start_time end_time forward_tput reverse_tput forward_cwnd reverse_cwnd ssth krtt krto lost reor fret tret dupthresh\n")
+        fh.write("# start_time end_time forward_tput reverse_tput forward_cwnd reverse_cwnd ssth krtt krto lost reor retr tret dupthresh\n")
         for i in range(nosamples):
             formatfields = (flow['S']['begin'][i],
                             flow['S']['end'][i],
                             flow['S']['tput'][i],
-                            flow['R']['tput'][i],
-                            flow['S']['cwnd'][i],
-                            flow['R']['cwnd'][i],
+                            flow['D']['tput'][i],
+                            flow['D']['cwnd'][i],
+                            flow['D']['cwnd'][i],
                             ssth_max(flow['S']['ssth'][i]),
                             flow['S']['krtt'][i],
                             rto_max(flow['S']['krto'][i]),
                             flow['S']['lost'][i],
                             flow['S']['reor'][i],
-                            flow['S']['fret'][i],
+                            flow['S']['retr'][i],
                             flow['S']['tret'][i] )
             formatstring = "%f %f %f %f %f %f %f %f %f %f %f %f %f"
             if 'dupthresh' in self.graphics_array:
