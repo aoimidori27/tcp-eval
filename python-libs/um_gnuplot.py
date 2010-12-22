@@ -204,7 +204,7 @@ class UmHistogram(UmGnuplot):
         self._gap = 1
 
         self.gplot('set style data histogram')
-        self.gplot('set style histogram rowstacked clustered gap %u title offset character 0,0,0' %self._gap)
+        self.gplot('set style histogram clustered gap %u title offset character 0,0,0' %self._gap)
 
         self._clusters = None
         self._barspercluster = 0
@@ -233,9 +233,13 @@ class UmHistogram(UmGnuplot):
     def setGap(self, gap):
         self._gap = gap
 
-    def plotBar(self, values, title, using=None, linestyle=3, fillstyle=None):
+    def plotBar(self, values, title=None, using=None, linestyle=3, fillstyle=None):
         # autoupdate barspercluster
         self._barspercluster += 1
+
+        titlestr= "notitle"
+        if title:
+            titlestr = 'title "%s"' %title
 
         usingstr = ""
         if using:
@@ -245,7 +249,7 @@ class UmHistogram(UmGnuplot):
         if fillstyle:
             fillstr = " fillstyle %s" %fillstyle
 
-        cmd = '"%s" %s title "%s" ls %s%s' %(values, usingstr, title, linestyle, fillstr)
+        cmd = '"%s" %s %s ls %s%s' %(values, usingstr, titlestr, linestyle, fillstr)
         UmGnuplot.plot(self, cmd)
 
     def plotErrorbar(self, values, barNo, valColumn, yDelta, title=None,
