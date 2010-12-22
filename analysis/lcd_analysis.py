@@ -108,9 +108,16 @@ class LCDAnalysis(Analysis):
         outages_0 =  outages_1 = 0
         outages = record.calculate(what = "outages", optional = True)
         if outages.has_key(0):
-            outages_0 = outages[0]['S']+outages[0]['D']
+            if outages[0].has_key('S'):
+                outages_0 += outages[0]['S']
+            if outages[0].has_key('D'):
+                outages_1 += outages[0]['D']
         if outages.has_key(1):
-            outages_1 = outages[1]['S']+outages[1]['D']
+            if outages[1].has_key('S'):
+                outages_1 += outages[1]['S']
+            if outages[1].has_key('D'):
+                outages_1 += outages[1]['D']
+
 
         reverts_0 = reverts_1 = 0;
         reverts_list = record.calculate(what = "revert_list", optional = True)
@@ -277,6 +284,7 @@ class LCDAnalysis(Analysis):
         for key in scenarios.keys():
             val = scenarios[key]
             fh.write("outages_0_%(v)s outages_1_%(v)s reverts_0_%(v)s reverts_1_%(v)s " %{ "v" : val })
+            fh.write("std_outages_0_%(v)s std_outages_1_%(v)s std_reverts_0_%(v)s std_reverts_1_%(v)s " %{ "v" : val })
             fh.write("notests_%(v)s " %{ "v" : val })
         fh.write("\n")
 
@@ -288,16 +296,23 @@ class LCDAnalysis(Analysis):
              thrput_overall,
              notests) = row
 
+            std_outages_0 = self.calculateStdDev(rlabel, slabel, "outages_0")
+            std_outages_1 = self.calculateStdDev(rlabel, slabel, "outages_1")
+            std_reverts_0 = self.calculateStdDev(rlabel, slabel, "reverts_0")
+            std_reverts_1 = self.calculateStdDev(rlabel, slabel, "reverts_1")
+
             if not data.has_key(rlabel):
                 tmp = list()
                 for key in keys:
-                    tmp.append("0 0 0 0 0")
+                    tmp.append("0 0 0 0 0 0 0 0 0 0")
                 data[rlabel] = tmp
                 sorted_labels.append(rlabel)
 
-            data[rlabel][sno] = "%d %d %d %d %d" %(
+            data[rlabel][sno] = "%d %d %d %d %d %d %d %d %d" %(
                                  outages_0, outages_1,
                                  reverts_0, reverts_1,
+                                 std_outages_0, std_outages_1,
+                                 std_reverts_0, std_reverts_1,
                                  notests)
 
         for key in sorted_labels:
@@ -318,13 +333,28 @@ class LCDAnalysis(Analysis):
             key = keys[i]
             # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
             g.plotBar(valfilename, title=scenarios[key]+" Outages LCD",
-                    using="%u:xtic(1)" %((i*5)+2), linestyle=(i+1))
+                    using="%u:xtic(1)" %((i*9)+2), linestyle=(i+1),fillstyle="solid 0.7")
             g.plotBar(valfilename, title=scenarios[key]+" Outages native",
-                    using="%u:xtic(1)" %((i*5)+3), linestyle=(i+1))
+                    using="%u:xtic(1)" %((i*9)+3), linestyle=(i+1))
             g.plotBar(valfilename, title=scenarios[key]+" Reverts LCD",
-                    using="%u:xtic(1)" %((i*5)+4), linestyle=(i+1))
+                    using="%u:xtic(1)" %((i*9)+4), linestyle=(i+1),fillstyle="solid 0.7")
             g.plotBar(valfilename, title=scenarios[key]+" Reverts native",
-                    using="%u:xtic(1)" %((i*5)+5), linestyle=(i+1))
+                    using="%u:xtic(1)" %((i*9)+5), linestyle=(i+1))
+
+        # errobars
+        for i in range(len(keys)):
+            # TODO: calculate offset with scenarios and gap
+            if i == 0:
+                g.plotErrorbar(valfilename, 0, 2, 6, "Standard Deviation")
+                g.plotErrorbar(valfilename, 1, 3, 7)
+                g.plotErrorbar(valfilename, 2, 4, 8)
+                g.plotErrorbar(valfilename, 3, 5, 9)
+
+            else:
+                g.plotErrorbar(valfilename, i*4,   (i*9)+2, (i*9)+6)
+                g.plotErrorbar(valfilename, i*4+1, (i*9)+3, (i*9)+7)
+                g.plotErrorbar(valfilename, i*4+2, (i*9)+4, (i*9)+8)
+                g.plotErrorbar(valfilename, i*4+3, (i*9)+5, (i*9)+9)
 
         # output plot
         g.save()
@@ -540,6 +570,10 @@ class LCDAnalysis(Analysis):
         """ Generates a tput histogram with scenario labels for lcd """
 
         dbcur = self.dbcon.cursor()
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "lcd-analysis-throughput"
+        valfilename  = os.path.join(outdir, plotname+".values")
 
         # get all scenario labels
         dbcur.execute('''
@@ -554,21 +588,14 @@ class LCDAnalysis(Analysis):
         # average thruput and sort by it and scenario_no
         dbcur.execute('''
         SELECT run_label, scenario_label, scenarioNo,
-        AVG(thruput_0) as thruput_0,
-        AVG(thruput_1) as thruput_1,
-        AVG(thruput_recv_0) as thruput_recv_0,
-        AVG(thruput_recv_1) as thruput_recv_1,
+        AVG(thruput_0+thruput_recv_0) as thruput_0,
+        AVG(thruput_1+thruput_recv_1) as thruput_1,
         AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
         FROM tests
         GROUP BY run_label, scenarioNo
         ORDER BY thruput_overall DESC, scenarioNo ASC
         ''')
-
-        # outfile
-        outdir        = self.options.outdir
-        plotname      = "lcd-analysis-throughput"
-        valfilename  = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
@@ -584,8 +611,8 @@ class LCDAnalysis(Analysis):
         keys.sort()
         for key in scenarios.keys():
             val = scenarios[key]
-            fh.write("tput_0_%(v)s tput_1_%(v)s tput_recv_0_%(v)s tput_recv_1_%(v)s " %{ "v" : val })
-            fh.write("std_tput_0_%(v)s std_tput_1_%(v)s std_tput_recv_0_%(v)s std_tput_recv_1_%(v)s " %{ "v" : val })
+            fh.write("tput_0_%(v)s tput_1_%(v)s " %{ "v" : val })
+            fh.write("std_tput_0_%(v)s std_tput_1_%(v)s " %{ "v" : val })
             fh.write("notests_%(v)s " %{ "v" : val })
         fh.write("\n")
 
@@ -593,7 +620,6 @@ class LCDAnalysis(Analysis):
         for row in dbcur:
             (rlabel,slabel,sno,
              thruput_0, thruput_1,
-             thruput_recv_0, thruput_recv_1,
              thruput_overall,
              notests) = row
 
@@ -602,9 +628,6 @@ class LCDAnalysis(Analysis):
             std_thruput_0 = self.calculateStdDev(rlabel, slabel, "thruput_0")
             std_thruput_1 = self.calculateStdDev(rlabel, slabel, "thruput_1")
 
-            std_thruput_recv_0 = self.calculateStdDev(rlabel, slabel, "thruput_recv_0")
-            std_thruput_recv_1 = self.calculateStdDev(rlabel, slabel, "thruput_recv_1")
-
             if not data.has_key(rlabel):
                 tmp = list()
                 for key in keys:
@@ -612,9 +635,9 @@ class LCDAnalysis(Analysis):
                 data[rlabel] = tmp
                 sorted_labels.append(rlabel)
 
-            data[rlabel][sno] = "%f %f %f %f %f %f %f %f %d" %(
-                                 thruput_0,thruput_1,thruput_recv_0,thruput_recv_1,
-                                 std_thruput_0,std_thruput_1,std_thruput_recv_0,std_thruput_recv_1,
+            data[rlabel][sno] = "%f %f %f %f %d" %(
+                                 thruput_0,thruput_1,
+                                 std_thruput_0,std_thruput_1,
                                  notests)
 
         for key in sorted_labels:
@@ -626,6 +649,7 @@ class LCDAnalysis(Analysis):
         fh.close()
 
         g = UmHistogram(plotname=plotname, outdir=outdir)
+        #g.gplot('set xtics nomirror rotate by -45 scale 0')
         g.setYLabel(r"Throughput in $\\si{\Mbps}$")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
@@ -634,35 +658,32 @@ class LCDAnalysis(Analysis):
         for i in range(len(keys)):
             key = keys[i]
             # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
-            g.plotBar(valfilename, title=scenarios[key]+" out LCD",
-                    using="%u:xtic(1)" %( (i*9)+2 ), linestyle=(i+1), fillstyle="solid 0.7")
-            g.plotBar(valfilename, title=scenarios[key]+" out native",
-                    using="%u:xtic(1)" %( (i*9)+3 ), linestyle=(i+1))
-            g.plotBar(valfilename, title=scenarios[key]+" in LCD",
-                    using="%u:xtic(1)" %( (i*9)+4 ), linestyle=(i+1), fillstyle="solid 0.7")
-            g.plotBar(valfilename, title=scenarios[key]+" in native",
-                    using="%u:xtic(1)" %( (i*9)+5 ), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" LCD",
+                    using="%u:xtic(1)" %( (i*5)+2 ), linestyle=(i+1), fillstyle="solid 0.7")
+            g.plotBar(valfilename, title=scenarios[key]+" native",
+                    using="%u:xtic(1)" %( (i*5)+3 ), linestyle=(i+1))
 
+        g.plot("newhistogram ''")
         # errobars
         for i in range(len(keys)):
-            # TODO: calculate offset with scenarios and gap
+        # TODO: calculate offset with scenarios and gap
             if i == 0:
-                g.plotErrorbar(valfilename, 0, 2, 6, "Standard Deviation")
-                g.plotErrorbar(valfilename, 1, 3, 7)
-                g.plotErrorbar(valfilename, 2, 4, 8)
-                g.plotErrorbar(valfilename, 3, 5, 9)
-
+                g.plotErrorbar(valfilename, 0, 2, 4, "Standard Deviation")
+                g.plotErrorbar(valfilename, 1, 3, 5)
             else:
-                g.plotErrorbar(valfilename, i*4,   (i*9)+2, (i*9)+6)
-                g.plotErrorbar(valfilename, i*4+1, (i*9)+3, (i*9)+7)
-                g.plotErrorbar(valfilename, i*4+2, (i*9)+4, (i*9)+8)
-                g.plotErrorbar(valfilename, i*4+3, (i*9)+5, (i*9)+9)
+                g.plotErrorbar(valfilename, i*2,   (i*5)+2, (i*5)+4)
+                g.plotErrorbar(valfilename, i*2+1, (i*5)+3, (i*5)+5)
 
         # output plot
         g.save()
 
     def generateTputImprovementHistogramLCD(self):
         """ Generates a tput histogram with scenario labels for lcd """
+
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "lcd-analysis-throughput-improvement"
+        valfilename  = os.path.join(outdir, plotname+".values")
 
         dbcur = self.dbcon.cursor()
 
@@ -687,11 +708,6 @@ class LCDAnalysis(Analysis):
         GROUP BY run_label, scenarioNo
         ORDER BY thruput_overall DESC, scenarioNo ASC
         ''')
-
-        # outfile
-        outdir        = self.options.outdir
-        plotname      = "lcd-analysis-throughput-improvement"
-        valfilename  = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
