@@ -402,7 +402,8 @@ class FlowPlotter(Application):
                 for n in self.options.flownumber.split(","):
                     plotname = self.write_values(infile, int(n))
                     self.plot(plotname)
-                    os.remove(os.path.join(self.options.outdir, plotname[0]+".values"))
+                    if not self.options.save:
+                        os.remove(os.path.join(self.options.outdir, plotname[0]+".values"))
         else:
             for infile in self.args:
                 for n in self.options.flownumber.split(","):
