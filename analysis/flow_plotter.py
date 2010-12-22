@@ -42,7 +42,7 @@ class FlowPlotter(Application):
 
         self.parser.set_usage(usage)
         self.parser.set_defaults(outdir = "./", flownumber="0", resample='0', all = False, aname = "out",
-                                 plotsrc='True', plotdst='False', graphics='tput,cwnd,rtt,segments', startat=0, endat=0)
+                                 plotsrc=True, plotdst=False, graphics='tput,cwnd,rtt,segments', startat=0, endat=0)
 
         self.parser.add_option('-S', '--startat', metavar="time",
                         action = 'store', type = 'float', dest = 'startat',
@@ -63,21 +63,19 @@ class FlowPlotter(Application):
                         action = "store", dest = "cfgfile",
                         help = "use the file as config file for LaTeX. "\
                                "No default packages will be loaded.")
-        self.parser.add_option("-n", "--number", metavar = "Flownumber",
-                        action = 'store', type = 'int', dest = 'flownumber',
+        self.parser.add_option("-n", "--flow-numbers", metavar = "Flownumbers",
+                        action = 'store', type = 'string', dest = 'flownumber',
                         help = 'print flow number [default: %default]')
         self.parser.add_option("-r", "--resample", metavar = "Rate",
                         action = 'store', type = 'float', dest = 'resample',
                         help = 'resample to this sample rate [default:'\
                                ' dont resample]')
-        self.parser.add_option("-s", "--plot-source", metavar = "Bool",
-                        action = 'store', dest = 'plotsrc', choices = ['True','False'],
-                        help = 'plot source cwnd and throughput '\
-                               '[default: %default]')
-        self.parser.add_option("-d", "--plot-dest", metavar = "Bool",
-                        action = 'store', dest = 'plotdst', choices = ['True','False'],
-                        help = 'plot destination cwnd and throughput '\
-                               '[default: %default]')
+        self.parser.add_option("-s", "--dont-plot-source",
+                        action = 'store_false', dest = 'plotsrc',
+                        help = 'plot source cwnd and throughput')
+        self.parser.add_option("-d", "--plot-dest",
+                        action = 'store_true', dest = 'plotdst',
+                        help = 'plot destination cwnd and throughput')
         self.parser.add_option("-G", "--graphics", metavar = "list",
                         action = 'store', dest = 'graphics',
                         help = 'Graphics that will be plotted '\
@@ -172,31 +170,30 @@ class FlowPlotter(Application):
         else: return nosamples  # resample == 0
 
 
-    def load_values(self, infile):
+    def load_values(self, infile, flownumber):
 
         flow_array = []
 
         for file in infile.split(','):
             # create record from given file
-            flownumber = int(self.options.flownumber)
             record = self.factory.createRecord(file, "flowgrind")
             flows = record.calculate("flows")
+            if not flows:
+                error("parse error")
+                sys.exit(1)
 
             if flownumber > len(flows):
                 error("requested flow number %i greater then flows in file: %i"
                         %(flownumber,len(flows) ) )
-                sys.exit(1)
+                return
             flow = flows[int(flownumber)]
 
-            plotname = os.path.splitext(os.path.basename(file))[0]
+            plotname = "%s_%d"%(os.path.splitext(os.path.basename(file))[0],flownumber)
 
             # to avoid code duplicates
             directions = ['S', 'D']
             nosamples = min(flow['S']['size'], flow['D']['size'])
             debug("nosamples: %i" %nosamples)
-        if not flows:
-            error("parse error")
-            sys.exit(1)
 
         # resampling
         nosamples = self.resample(record, directions, nosamples, flow)  # returns the new value for nosamples if anything was changed
@@ -254,7 +251,7 @@ class FlowPlotter(Application):
 
         return plotname, flow, cwnd_max, record, nosamples
 
-    def write_values(self, infile):
+    def write_values(self, infile, flownumber):
         """Write values of one file"""
 
         def ssth_max(ssth):
@@ -268,7 +265,7 @@ class FlowPlotter(Application):
             if rto == 3000: return 0
             else:           return rto
 
-        plotname, flow, cwnd_max, record, nosamples = self.load_values(infile)
+        plotname, flow, cwnd_max, record, nosamples = self.load_values(infile, flownumber)
 
         outdir=self.options.outdir
         valfilename = os.path.join(outdir, plotname+".values")
@@ -277,7 +274,9 @@ class FlowPlotter(Application):
         # header
         recordHeader = record.getHeader()
         try:
-            label        = recordHeader["scenario_label"]
+            label = "%s %s Flow %d" %(recordHeader["scenario_label"],
+                                      recordHeader["run_label"],
+                                      flownumber)
         except:
             label = ""
         fh.write("# start_time end_time forward_tput reverse_tput forward_cwnd reverse_cwnd ssth krtt krto lost reor retr tret dupthresh\n")
@@ -323,9 +322,13 @@ class FlowPlotter(Application):
             for plotname, label in plotnameList:
                 count += 1
                 valfilename = os.path.join(outdir, plotname+".values")
-                if self.options.plotsrc == 'True': p.plot(valfilename, "forward path %s" %label, using="2:3", linestyle=2*count)
-                if self.options.plotdst == 'True': p.plot(valfilename, "reverse path %s" %label, using="2:4", linestyle=2*count+1)
-
+                if self.options.plotsrc and self.options.plotdst:
+                    p.plot(valfilename, "forward path %s" %label, using="2:3", linestyle=2*count)
+                    p.plot(valfilename, "reverse path %s" %label, using="2:4", linestyle=2*count+1)
+                elif self.options.plotsrc and not self.options.plotdst:
+                    p.plot(valfilename, "%s" %label, using="2:3", linestyle=count+1)
+                elif self.options.plotdst and not self.options.plotsrc:
+                    p.plot(valfilename, "%s" %label, using="2:4", linestyle=count+1)
             # output plot
             p.save()
 
@@ -337,8 +340,8 @@ class FlowPlotter(Application):
             count = 0
             for plotname, label in plotnameList:
                 valfilename = os.path.join(outdir, plotname+".values")
-                if self.options.plotsrc == 'True': p.plot(valfilename, "Sender CWND %s" %label, using="2:5", linestyle=3*count+1)
-                if self.options.plotdst == 'True': p.plot(valfilename, "Receiver CWND %s" %label, using="2:6", linestyle=3*count+2)
+                if self.options.plotsrc: p.plot(valfilename, "Sender CWND %s" %label, using="2:5", linestyle=3*count+1)
+                if self.options.plotdst: p.plot(valfilename, "Receiver CWND %s" %label, using="2:6", linestyle=3*count+2)
                 p.plot(valfilename, "SSTHRESH %s" %label, using="2:7", linestyle=3*count+3)
                 count += 1
             # output plot
@@ -396,12 +399,14 @@ class FlowPlotter(Application):
         plotnameList = []
         if not self.options.all:
             for infile in self.args:
-                plotname = self.write_values(infile)
-                self.plot(plotname)
-                os.remove(infile+".values")
+                for n in self.options.flownumber.split(","):
+                    plotname = self.write_values(infile, int(n))
+                    self.plot(plotname)
+                    os.remove(os.path.join(self.options.outdir, plotname[0]+".values"))
         else:
             for infile in self.args:
-                plotnameList.append(self.write_values(infile))
+                for n in self.options.flownumber.split(","):
+                    plotnameList.append(self.write_values(infile, int(n)))
 
             self.plot(*plotnameList)
 
