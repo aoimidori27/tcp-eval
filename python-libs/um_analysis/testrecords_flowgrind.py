@@ -85,13 +85,13 @@ class FlowgrindRecordFactory():
                         # ignore optional dupthresh and rvr
                         if key in ['dupthresh','revr']:
                             continue
-                        warn('Failed to get r["%s"][%u]' %(key,i))
+                        warn('KeyError: Failed to get r["%s"][%u]' %(key,i))
                         raise inst
                     except TypeError, inst:
                         # ignore optional dupthresh and rvr
                         if key in ['dupthresh','revr']:
                             continue
-                        warn('Failed to get r["%s"][%u]' %(key,i))
+                        warn('TypeError: Failed to get r["%s"][%u]' %(key,i))
                         raise inst
                 flow.size += 1
             return flow_map.values()
@@ -108,6 +108,7 @@ class FlowgrindRecordFactory():
                     d = 'D'
                 flow_id = int(r['flow_id'][i])
                 tretr = int(r['tret'][i])
+                retr = int(r['retr'][i])
 
                 if flow_id not in flow_map: flow_map[flow_id] = dict()
                 if d not in flow_map[flow_id]: flow_map[flow_id][d] = None

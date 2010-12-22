@@ -70,10 +70,10 @@ class TestRecord:
             return self.whats[what](self.results, **kwargs);
         except KeyError, inst:
             if not optional:
-                warn("Failed to get %s out of %s: KeyError:%s" %(what, self.filename, inst))
+                warn("Failed to get required value %s out of %s: KeyError:%s" %(what, self.filename, inst))
                 self.valid = False
             else:
-                debug("Failed to get optional %s out of %s: KeyError:%s" %(what,self.filename, inst))
+                info("Failed to get optional value %s out of %s: KeyError:%s" %(what, self.filename, inst))
             return None
 
     def isValid(self):
