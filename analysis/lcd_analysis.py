@@ -210,6 +210,7 @@ class LCDAnalysis(Analysis):
 
             fh.close()
 
+            using_str = ""
             if runNo == 0:
                 p.setXLabel("time")
                 p.setXDataTime()
@@ -221,17 +222,26 @@ class LCDAnalysis(Analysis):
 
         p.save()
 
-    def calculateStdDev(self, rlabel, slabel, key="thruput"):
+    def calculateStdDev(self, rlabel=None, slabel=None, key="thruput"):
         """Calculates the standarddeviation of all values of the same rlabel
            and scenarioNo
         """
 
         dbcur = self.dbcon.cursor()
 
+        where = ""
+        if rlabel or slabel:
+            where += 'WHERE '
+        if slabel:
+            where += ' scenario_label="%s" '
+        if slabel and rlabel:
+            where += ' AND '
+        if rlabel:
+            where += ' run_label="%s"'
+
         query = '''
-        SELECT %s FROM tests WHERE
-        scenario_label="%s" AND run_label="%s";
-        ''' %(key,slabel,rlabel)
+        SELECT %s FROM tests %s;
+        ''' %(key,where)
 
         dbcur.execute(query)
         ary = numpy.array(dbcur.fetchall())
@@ -243,25 +253,14 @@ class LCDAnalysis(Analysis):
 
         dbcur = self.dbcon.cursor()
 
-        # get all scenario labels
         dbcur.execute('''
-        SELECT DISTINCT scenarioNo, scenario_label
-        FROM tests ORDER BY scenarioNo'''
-        )
-        scenarios = dict()
-        for row in dbcur:
-            (key,val) = row
-            scenarios[key] = val
-
-        dbcur.execute('''
-        SELECT run_label, scenario_label, scenarioNo,
+        SELECT run_label,
         outages_0, outages_1,
         reverts_0, reverts_1,
         AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
         FROM tests
-        GROUP BY run_label,
-        scenarioNo
+        GROUP BY run_label
         ORDER BY thruput_overall DESC, scenarioNo ASC
         ''')
         # outfile
@@ -278,48 +277,41 @@ class LCDAnalysis(Analysis):
         # one line per runlabel
         data = dict()
 
-        # columns
-        keys = scenarios.keys()
-        keys.sort()
-        for key in scenarios.keys():
-            val = scenarios[key]
-            fh.write("outages_0_%(v)s outages_1_%(v)s reverts_0_%(v)s reverts_1_%(v)s " %{ "v" : val })
-            fh.write("std_outages_0_%(v)s std_outages_1_%(v)s std_reverts_0_%(v)s std_reverts_1_%(v)s " %{ "v" : val })
-            fh.write("notests_%(v)s " %{ "v" : val })
+        fh.write("outages_0 outages_1 reverts_0 reverts_1 ")
+        fh.write("std_outages_0 std_outages_1 std_reverts_0 std_reverts_1 ")
+        fh.write("notests")
         fh.write("\n")
 
         sorted_labels = list()
         for row in dbcur:
-            (rlabel,slabel,sno,
+            (rlabel,
              outages_0, outages_1,
              reverts_0, reverts_1,
              thrput_overall,
              notests) = row
 
-            std_outages_0 = self.calculateStdDev(rlabel, slabel, "outages_0")
-            std_outages_1 = self.calculateStdDev(rlabel, slabel, "outages_1")
-            std_reverts_0 = self.calculateStdDev(rlabel, slabel, "reverts_0")
-            std_reverts_1 = self.calculateStdDev(rlabel, slabel, "reverts_1")
+            debug(row)
+            std_outages_0 = self.calculateStdDev(key="outages_0")
+            std_outages_1 = self.calculateStdDev(key="outages_1")
+            std_reverts_0 = self.calculateStdDev(key="reverts_0")
+            std_reverts_1 = self.calculateStdDev(key="reverts_1")
 
             if not data.has_key(rlabel):
-                tmp = list()
-                for key in keys:
-                    tmp.append("0 0 0 0 0 0 0 0 0 0")
-                data[rlabel] = tmp
-                sorted_labels.append(rlabel)
+                data[rlabel] = "0 0 0 0 0 0 0 0 0"
 
-            data[rlabel][sno] = "%d %d %d %d %d %d %d %d %d" %(
+            data[rlabel] = "%d %d %d %d %d %d %d %d %d" %(
                                  outages_0, outages_1,
                                  reverts_0, reverts_1,
                                  std_outages_0, std_outages_1,
                                  std_reverts_0, std_reverts_1,
                                  notests)
 
+            sorted_labels.append(rlabel)
+
         for key in sorted_labels:
             value = data[key]
             fh.write("%s" %key)
-            for val in value:
-                fh.write(" %s" %val)
+            fh.write(" %s" %value)
             fh.write("\n")
         fh.close()
 
@@ -328,33 +320,16 @@ class LCDAnalysis(Analysis):
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
 
-        # bars
-        for i in range(len(keys)):
-            key = keys[i]
-            # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
-            g.plotBar(valfilename, title=scenarios[key]+" Outages LCD",
-                    using="%u:xtic(1)" %((i*9)+2), linestyle=(i+1),fillstyle="solid 0.7")
-            g.plotBar(valfilename, title=scenarios[key]+" Outages native",
-                    using="%u:xtic(1)" %((i*9)+3), linestyle=(i+1))
-            g.plotBar(valfilename, title=scenarios[key]+" Reverts LCD",
-                    using="%u:xtic(1)" %((i*9)+4), linestyle=(i+1),fillstyle="solid 0.7")
-            g.plotBar(valfilename, title=scenarios[key]+" Reverts native",
-                    using="%u:xtic(1)" %((i*9)+5), linestyle=(i+1))
+        g.plotBar(valfilename, title="Outages LCD", using="2:xtic(1)", linestyle=1,fillstyle="solid 0.7")
+        g.plotBar(valfilename, title="Outages native", using="3:xtic(1)", linestyle=1)
+        g.plotBar(valfilename, title="Reverts LCD", using="4:xtic(1)", linestyle=2,fillstyle="solid 0.7")
+        g.plotBar(valfilename, title="Reverts native", using="5:xtic(1)", linestyle=2)
 
         # errobars
-        for i in range(len(keys)):
-            # TODO: calculate offset with scenarios and gap
-            if i == 0:
-                g.plotErrorbar(valfilename, 0, 2, 6, "Standard Deviation")
-                g.plotErrorbar(valfilename, 1, 3, 7)
-                g.plotErrorbar(valfilename, 2, 4, 8)
-                g.plotErrorbar(valfilename, 3, 5, 9)
-
-            else:
-                g.plotErrorbar(valfilename, i*4,   (i*9)+2, (i*9)+6)
-                g.plotErrorbar(valfilename, i*4+1, (i*9)+3, (i*9)+7)
-                g.plotErrorbar(valfilename, i*4+2, (i*9)+4, (i*9)+8)
-                g.plotErrorbar(valfilename, i*4+3, (i*9)+5, (i*9)+9)
+        g.plotErrorbar(valfilename, 0, 2, 6, "Standard Deviation")
+        g.plotErrorbar(valfilename, 1, 3, 7)
+        g.plotErrorbar(valfilename, 2, 4, 8)
+        g.plotErrorbar(valfilename, 3, 5, 9)
 
         # output plot
         g.save()
@@ -838,7 +813,7 @@ class LCDAnalysis(Analysis):
         self.generateOutagesRevertsLCD()
         self.generateTransacsLCD()
         self.generateRTTLCD()
-        self.generateTputOverTimePerRun()
+        # self.generateTputOverTimePerRun()
         for key in self.failed:
             warn("%d failed tests for %s" %(self.failed[key],key))
 
