@@ -285,7 +285,7 @@ class FlowPlotter(Application):
                             flow['S']['end'][i],
                             flow['S']['tput'][i],
                             flow['D']['tput'][i],
-                            flow['D']['cwnd'][i],
+                            flow['S']['cwnd'][i],
                             flow['D']['cwnd'][i],
                             ssth_max(flow['S']['ssth'][i]),
                             flow['S']['krtt'][i],
