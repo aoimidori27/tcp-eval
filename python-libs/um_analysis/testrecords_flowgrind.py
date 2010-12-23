@@ -168,7 +168,7 @@ class FlowgrindRecordFactory():
             # optional lcd revert count
             "((?P<revr>\d+)\s+)?"\
             "(?P<krtt>\d+\.\d+)\s+(?P<krttvar>\d+\.\d+)\s+(?P<krto>\d+\.\d+)\s+"\
-            "(?P<castate>loss|open|disorder|recovery)\s+"\
+            "(?P<castate>loss|open|disorder|recover)\s+"\
             "(?P<mss>\d+)\s+(?P<mtu>\d+)\s+",
             # optional extension -wolff
             #"((?P<cret>\d+)\s+(?P<cfret>\d+)\s+(?P<ctret>\d+)\s+(?P<dupthresh>\d+)\s+)?"
