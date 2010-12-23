@@ -111,7 +111,7 @@ class LCDAnalysis(Analysis):
             if outages[0].has_key('S'):
                 outages_0 += outages[0]['S']
             if outages[0].has_key('D'):
-                outages_1 += outages[0]['D']
+                outages_0 += outages[0]['D']
         if outages.has_key(1):
             if outages[1].has_key('S'):
                 outages_1 += outages[1]['S']
@@ -255,8 +255,8 @@ class LCDAnalysis(Analysis):
 
         dbcur.execute('''
         SELECT run_label,
-        outages_0, outages_1,
-        reverts_0, reverts_1,
+        AVG(outages_0) as outages_0, AVG(outages_1) as outages_1,
+        AVG(reverts_0) as reverts_0, AVG(reverts_1) as reverts_1,
         AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
         FROM tests
