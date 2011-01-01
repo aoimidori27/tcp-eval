@@ -80,7 +80,6 @@ class LCDAnalysis(Analysis):
         else:
             thruput_recv_0 = thruput_recv_1 = 0.0
 
-
         transac_0 = transac_1 = 0
         transac_list = record.calculate(what = "transac_list", optional = True)
         if transac_list and len(transac_list) == 2:
@@ -106,7 +105,7 @@ class LCDAnalysis(Analysis):
             rtt_max_1 = rtt_max_list[1]
 
         outages_0 =  outages_1 = 0
-        outages = record.calculate(what = "outages", optional = True)
+        outages = record.calculate(what = "outagesNo", optional = True)
         if outages.has_key(0):
             if outages[0].has_key('S'):
                 outages_0 += outages[0]['S']
@@ -138,6 +137,13 @@ class LCDAnalysis(Analysis):
                              rtt_min_0, rtt_min_1, rtt_avg_0, rtt_avg_1, rtt_max_0, rtt_max_1,
                              outages_0, outages_1, reverts_0, reverts_1,
                              start_time, run_label, scenario_label, test))
+
+        #outages = record.calculate('outages', **cutOutageParams)
+        #for flow in outages:
+        # for flowNo in outages[flow]:
+        #  for outage in outages[flow][flowNo]:
+        #   b, e, r = outage['begin'], outage['end'], outage['retr']
+        #   dbcur.execute("INSERT INTO outages VALUES (%u, %u, %u, %d, %d, '%c', %f, %f, %d)" % (iterationNo, scenarioNo, runNo, flowNo, b, e, r))
 
     def generateTputOverTimePerRun(self):
         """Generates a line plot where every run number gets a
@@ -233,15 +239,17 @@ class LCDAnalysis(Analysis):
         if rlabel or slabel:
             where += 'WHERE '
         if slabel:
-            where += ' scenario_label="%s" '
+            where += 'scenario_label="%s"' %(slabel)
         if slabel and rlabel:
             where += ' AND '
         if rlabel:
-            where += ' run_label="%s"'
+            where += 'run_label="%s"' %(rlabel)
 
         query = '''
-        SELECT %s FROM tests %s;
+        SELECT COALESCE(%s,0) FROM tests %s;
         ''' %(key,where)
+
+        debug(query)
 
         dbcur.execute(query)
         ary = numpy.array(dbcur.fetchall())
@@ -675,8 +683,10 @@ class LCDAnalysis(Analysis):
         # average thruput and sort by it and scenario_no
         dbcur.execute('''
         SELECT run_label, scenario_label, scenarioNo,
-        AVG((thruput_0/thruput_1)-1)*100 as thruput_diff,
-        AVG(COALESCE((thruput_recv_0/thruput_recv_1),1)-1)*100 as thruput_diff_recv,
+        AVG(
+            (( thruput_0+thruput_recv_0) / (thruput_1+thruput_recv_1) )
+            -1
+        )*100 as thruput_diff,
         AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
         FROM tests
@@ -695,8 +705,8 @@ class LCDAnalysis(Analysis):
         keys.sort()
         for key in scenarios.keys():
             val = scenarios[key]
-            fh.write("tput_diff_%(v)s tput_diff_recv_%(v)s " %{ "v" : val })
-            fh.write("std_tput_diff_%(v)s std_tput_diff_recv_%(v)s " %{ "v" : val })
+            fh.write("tput_diff_%(v)s " %{ "v" : val })
+            fh.write("std_tput_diff_%(v)s " %{ "v" : val })
             fh.write("notests_%(v)s " %{ "v" : val })
         fh.write("\n")
 
@@ -706,27 +716,24 @@ class LCDAnalysis(Analysis):
 
         for row in dbcur:
             (rlabel,slabel,sno,
-             thruput_diff, thruput_diff_recv,
+             thruput_diff,
              thruput_overall,
              notests) = row
 
             debug(row)
 
             std_thruput_diff = self.calculateStdDev(rlabel, slabel,
-                    "(COALESCE(thruput_0/thruput_1,1)-1)*100")
-            std_thruput_diff_recv = self.calculateStdDev(rlabel, slabel,
-                    "(COALESCE(thruput_recv_0/thruput_recv_1,1)-1)*100")
+                    "( ((thruput_0+thruput_recv_0) / (thruput_1+thruput_recv_1)) - 1)*100")
 
             if not data.has_key(rlabel):
                 tmp = list()
                 for key in keys:
-                    tmp.append("0.0 0.0 0.0 0.0 0")
+                    tmp.append("0.0 0.0 0")
                 data[rlabel] = tmp
                 sorted_labels.append(rlabel)
 
-            data[rlabel][sno] = "%f %f %f %f %d" %(
-                                 thruput_diff,thruput_diff_recv,
-                                 std_thruput_diff,std_thruput_diff_recv,
+            data[rlabel][sno] = "%f %f %d" %(
+                                 thruput_diff,std_thruput_diff,
                                  notests)
 
         for key in sorted_labels:
@@ -745,22 +752,16 @@ class LCDAnalysis(Analysis):
         for i in range(len(keys)):
             key = keys[i]
             # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
-            g.plotBar(valfilename, title=scenarios[key]+" out",
-                    using="%u:xtic(1)" %( (i*5)+2 ), linestyle=(i+1))
-            g.plotBar(valfilename, title=scenarios[key]+" in",
-                    using="%u:xtic(1)" %( (i*5)+3 ), linestyle=(i+1),
-                    fillstyle="pattern 2")
+            g.plotBar(valfilename, title=scenarios[key],
+                    using="%u:xtic(1)" %( (i*3)+2 ), linestyle=(i+1))
 
         # errobars
         for i in range(len(keys)):
             # TODO: calculate offset with scenarios and gap
             if i == 0:
-                g.plotErrorbar(valfilename, 0, 2, 4, "Standard Deviation")
-                g.plotErrorbar(valfilename, 1, 3, 5)
-
+                g.plotErrorbar(valfilename, 0, 2, 3, "Standard Deviation")
             else:
-                g.plotErrorbar(valfilename, (i*2)+0, (i*5)+2, (i*5)+4)
-                g.plotErrorbar(valfilename, (i*2)+1, (i*5)+3, (i*5)+5)
+                g.plotErrorbar(valfilename, (i*1)+0, (i*3)+2, (i*3)+3)
 
         # output plot
         g.save()
@@ -799,6 +800,18 @@ class LCDAnalysis(Analysis):
                             run_label   VARCHAR(70),
                             scenario_label VARCHAR(70),
                             test        VARCHAR(50))
+        """)
+
+        dbcur.execute("""
+        CREATE TABLE outages (
+                    iterationNo INTEGER,
+                    scenarioNo  INTEGER,
+                    runNo       INTEGER,
+                    flowNo      INTEGER,
+                    begin       DOUBLE,
+                    end         DOUBLE,
+                    retr        INTEGER
+                    )
         """)
 
         # store failed test as a mapping from run_label to number
