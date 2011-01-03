@@ -229,6 +229,9 @@ class LCDAnalysis(Analysis):
 
         p.save()
 
+        if not self.options.save:
+            os.remove(valfilename)
+
     def calculateStdDev(self, rlabel=None, slabel=None, key="thruput"):
         """Calculates the standarddeviation of all values of the same rlabel
            and scenarioNo
@@ -322,7 +325,9 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir, saveit=self.options.save, debug=self.options.debug)
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
         g.setYLabel(r"Outages and Reverts [$\\#$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
@@ -340,6 +345,9 @@ class LCDAnalysis(Analysis):
 
         # output plot
         g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
 
     def generateRTTLCD(self):
         """ Generate a RTT histogram with scenario labels for
@@ -427,7 +435,9 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir, saveit=self.options.save, debug=self.options.debug)
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save,
+                debug=self.options.debug,force=self.options.force)
         g.setYLabel(r"RTT [$\\si{\\second}$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
@@ -449,6 +459,9 @@ class LCDAnalysis(Analysis):
                     using="%u:xtic(1)" %((7*i)+7), linestyle=(i+2))
 
         g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
 
     def generateTransacsLCD(self):
         """ Generate a network transactions histogram with scenario labels for
@@ -532,7 +545,9 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir, saveit=self.options.save,  debug=self.options.debug)
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save,  debug=self.options.debug,
+                force=self.options.force)
         g.setYLabel(r"Network Transactions [$\\si{\\nnumber\\per\\second}$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
@@ -557,6 +572,9 @@ class LCDAnalysis(Analysis):
                 g.plotErrorbar(valfilename, i*2+1, (i*5)+3, (i*5)+5)
 
         g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
 
     def generateTputHistogramLCD(self):
         """ Generates a tput histogram with scenario labels for lcd """
@@ -640,7 +658,8 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir, debug=self.options.debug)
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                debug=self.options.debug, force=self.options.force)
         g.setYLabel(r"Throughput [$\\si{\\Mbps}$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
@@ -667,6 +686,9 @@ class LCDAnalysis(Analysis):
 
         # output plot
         g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
 
     def generateTputImprovementHistogramLCD(self):
         """ Generates a tput histogram with scenario labels for lcd """
@@ -753,7 +775,9 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir, saveit=self.options.save, debug=self.options.debug)
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
         g.setYLabel(r"Throughput Improvement for TCP LCD [$\\si{\\percent}$]")
         # g.setClusters(len(keys))
         g.setYRange("[ * : * ]")
@@ -774,6 +798,9 @@ class LCDAnalysis(Analysis):
 
         # output plot
         g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
 
     def run(self):
         """Main Method"""
