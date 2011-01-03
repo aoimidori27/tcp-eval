@@ -52,6 +52,9 @@ class Analysis(Application):
                                "No default packages will be loaded.")
         self.parser.add_option("--save", action = "store_true", dest = "save",
                         help = "save gnuplot and tex files [default: clean up]")
+        self.parser.add_option("-f", "--force",
+                        action = "store_true", dest = "force",
+                        help = "overwrite existing output")
 
     def set_option(self):
         """Set options"""

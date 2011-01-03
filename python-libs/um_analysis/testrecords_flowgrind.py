@@ -96,7 +96,7 @@ class FlowgrindRecordFactory():
                 flow.size += 1
             return flow_map.values()
 
-        def outages(r, min_retr=0, min_time=0, time_abs=1):
+        def outagesNo(r, min_retr=0, min_time=0, time_abs=1):
             flow_map = dict()
             outages = dict()
             if time_abs: time_abs = time.mktime(time.strptime(r['test_start_time'][0]))
@@ -127,6 +127,40 @@ class FlowgrindRecordFactory():
                             outages[flow_id][d] = outages[flow_id][d] + 1
                         flow_map[flow_id][d] = None
             return outages
+
+        def outagesList(r, min_retr=0, min_time=0, time_abs=1):
+            flow_map = dict()
+            outages = dict()
+            if time_abs: time_abs = time.mktime(time.strptime(r['test_start_time'][0]))
+            if not 'begin' in r: return outages
+            for i in range(len(r['begin'])):
+
+                if r['direction'][i] == 'S':
+                    d = 'S'
+                else: # D,R
+                    d = 'D'
+                flow_id = int(r['flow_id'][i])
+                tretr = int(r['tret'][i])
+                retr = int(r['retr'][i])
+
+                if flow_id not in flow_map: flow_map[flow_id] = dict()
+                if dir not in flow_map[flow_id]: flow_map[flow_id][dir] = None
+
+                if flow_map[flow_id][dir] is None and retr > 0:
+                    flow_map[flow_id][dir] = dict(begin=i, tretr=tretr)
+                if flow_map[flow_id][dir] is not None:
+                    tmp = flow_map[flow_id][dir]
+                    if retr > 0:
+                        tmp['tretr'] = tretr
+                    else:
+                        b, e, re = float(r['begin'][tmp['begin']]), float(r['begin'][i]), int(tmp['tretr'])
+                        if re >= min_retr and e - b >= min_time:
+                            if flow_id not in outages: outages[flow_id] = dict()
+                            if dir not in outages[flow_id]: outages[flow_id][dir] = []
+                            outages[flow_id][dir].append(dict(begin=b+time_abs,end=e+time_abs,retr=re))
+                        flow_map[flow_id][dir] = None
+            return outages
+
 
         # phase 1 data gathering
         regexes = [
@@ -217,7 +251,8 @@ class FlowgrindRecordFactory():
             reverse_tput_list = lambda r: map(float, r['reverse_tput_list']),
             test_start_time   = lambda r: time.mktime(time.strptime(r['test_start_time'][0])),
             revert_list       = lambda r: map(int, r['revr']),
-            outages           = outages
+            outagesNo         = outagesNo,
+            outagesList       = outagesList
         )
 
     def createRecord(self, filename, test):
