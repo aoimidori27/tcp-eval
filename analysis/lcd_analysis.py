@@ -27,6 +27,7 @@ import scipy.stats
 from um_functions import call
 from um_analysis.analysis import Analysis
 from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot
+from um_application import Application
 
 class LCDAnalysis(Analysis):
     """Application for analysis of flowgrind results"""
@@ -177,7 +178,7 @@ class LCDAnalysis(Analysis):
 
         outdir = self.options.outdir
         p = UmLinePlot(plotname = plotname, outdir = outdir)
-        p.setYLabel(r"\\si{\Mbps}")
+        p.setYLabel(r"\\si{\\Mbps}")
 
         for runNo in runs.keys():
             thruputs = dict()
@@ -249,8 +250,6 @@ class LCDAnalysis(Analysis):
         SELECT COALESCE(%s,0) FROM tests %s;
         ''' %(key,where)
 
-        debug(query)
-
         dbcur.execute(query)
         ary = numpy.array(dbcur.fetchall())
         return ary.std()
@@ -287,7 +286,7 @@ class LCDAnalysis(Analysis):
 
         fh.write("outages_0 outages_1 reverts_0 reverts_1 ")
         fh.write("std_outages_0 std_outages_1 std_reverts_0 std_reverts_1 ")
-        fh.write("notests")
+        fh.write("notests ")
         fh.write("\n")
 
         sorted_labels = list()
@@ -323,8 +322,8 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir)
-        g.setYLabel(r"Outages and Reverts")
+        g = UmHistogram(plotname=plotname, outdir=outdir, saveit=self.options.save, debug=self.options.debug)
+        g.setYLabel(r"Outages and Reverts [$\\#$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
 
@@ -367,12 +366,12 @@ class LCDAnalysis(Analysis):
 
         dbcur.execute('''
         SELECT run_label, scenario_label, scenarioNo,
-        AVG(rtt_min_0) as rtt_min_0,
-        AVG(rtt_avg_0) as rtt_avg_0,
-        AVG(rtt_max_0) as rtt_max_0,
-        AVG(rtt_min_1) as rtt_min_1,
-        AVG(rtt_avg_1) as rtt_avg_1,
-        AVG(rtt_max_1) as rtt_max_1,
+        AVG(rtt_min_0)/1000 as rtt_min_0,
+        AVG(rtt_avg_0)/1000 as rtt_avg_0,
+        AVG(rtt_max_0)/1000 as rtt_max_0,
+        AVG(rtt_min_1)/1000 as rtt_min_1,
+        AVG(rtt_avg_1)/1000 as rtt_avg_1,
+        AVG(rtt_max_1)/1000 as rtt_max_1,
         AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
         FROM tests
@@ -392,8 +391,8 @@ class LCDAnalysis(Analysis):
 
         # columns
         for val in scenarios:
-            fh.write("rtt_min_0_%(v)s rtt_avg_0_%(v)s rtt_max_0_%(v)s" %{ "v" : val })
-            fh.write("rtt_min_1_%(v)s rtt_avg_1_%(v)s rtt_max_1_%(v)s" %{ "v" : val })
+            fh.write("rtt_min_0_%(v)s rtt_avg_0_%(v)s rtt_max_0_%(v)s " %{ "v" : val })
+            fh.write("rtt_min_1_%(v)s rtt_avg_1_%(v)s rtt_max_1_%(v)s " %{ "v" : val })
             fh.write("notests_%(v)s " %{ "v" : val })
         fh.write("\n")
 
@@ -428,17 +427,27 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir)
-        g.setYLabel(r"RTT")
+        g = UmHistogram(plotname=plotname, outdir=outdir, saveit=self.options.save, debug=self.options.debug)
+        g.setYLabel(r"RTT [$\\si{\\second}$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
 
+        # run_label rtt_min_0_rr-http rtt_avg_0_rr-http rtt_max_0_rr-http rtt_min_1_rr-http rtt_avg_1_rr-http rtt_max_1_rr-http notests_rr-http
         # plot min/avg/mag as errorbars
         for i in range(len(scenarios)):
-            g.plotErrorbar(valfilename, (i*2)+0, (i*7)+3, (i*7)+2,
-                    title=scenarios[i]+" LCD", linestyle=(i+1), yHigh=(i*7)+4)
-            g.plotErrorbar(valfilename, (i*2)+1, (i*7)+7, (i*7)+6,
-                    title=scenarios[i]+" native", linestyle=(i+1),  yHigh=(i*7)+8)
+            g.plotBar(valfilename, title=scenarios[i]+" LCD (min/avg/max)",
+                    using="%u:xtic(1)" %((7*i)+2), linestyle=(i+2), fillstyle="solid 0.7")
+            g.plotBar(valfilename, title=scenarios[i]+" native (min/avg/max)",
+                    using="%u:xtic(1)" %((7*i)+5), linestyle=(i+2))
+            g.plotBar(valfilename, title=None,
+                    using="%u:xtic(1)" %((7*i)+3), linestyle=(i+2), fillstyle="solid 0.7")
+            g.plotBar(valfilename, title=None,
+                    using="%u:xtic(1)" %((7*i)+6), linestyle=(i+2))
+            g.plotBar(valfilename, title=None,
+                    using="%u:xtic(1)" %((7*i)+4), linestyle=(i+2), fillstyle="solid 0.7")
+            g.plotBar(valfilename, title=None,
+                    using="%u:xtic(1)" %((7*i)+7), linestyle=(i+2))
+
         g.save()
 
     def generateTransacsLCD(self):
@@ -523,8 +532,8 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir)
-        g.setYLabel(r"Network Transactions per Second")
+        g = UmHistogram(plotname=plotname, outdir=outdir, saveit=self.options.save,  debug=self.options.debug)
+        g.setYLabel(r"Network Transactions [$\\si{\\nnumber\\per\\second}$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
 
@@ -532,9 +541,9 @@ class LCDAnalysis(Analysis):
         for i in range(len(scenarios)):
             # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
             g.plotBar(valfilename, title=scenarios[i]+" LCD",
-                    using="%u:xtic(1)" %((5*i)+2), linestyle=(i+1), fillstyle="solid 0.7")
+                    using="%u:xtic(1)" %((5*i)+2), linestyle=(i+2), fillstyle="solid 0.7")
             g.plotBar(valfilename, title=scenarios[i]+" native",
-                    using="%u:xtic(1)" %((5*i)+3), linestyle=(i+1))
+                    using="%u:xtic(1)" %((5*i)+3), linestyle=(i+2))
 
         # errobars
         for i in range(len(scenarios)):
@@ -631,9 +640,8 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir)
-        #g.gplot('set xtics nomirror rotate by -45 scale 0')
-        g.setYLabel(r"Throughput in $\\si{\Mbps}$")
+        g = UmHistogram(plotname=plotname, outdir=outdir, debug=self.options.debug)
+        g.setYLabel(r"Throughput [$\\si{\\Mbps}$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
 
@@ -683,8 +691,9 @@ class LCDAnalysis(Analysis):
         # average thruput and sort by it and scenario_no
         dbcur.execute('''
         SELECT run_label, scenario_label, scenarioNo,
-        AVG(
-            (( thruput_0+thruput_recv_0) / (thruput_1+thruput_recv_1) )
+        (
+            ( AVG(thruput_0)+AVG(thruput_recv_0) ) /
+            ( AVG(thruput_1)+AVG(thruput_recv_1) )
             -1
         )*100 as thruput_diff,
         AVG(thruput_0+thruput_1) as thruput_overall,
@@ -723,7 +732,7 @@ class LCDAnalysis(Analysis):
             debug(row)
 
             std_thruput_diff = self.calculateStdDev(rlabel, slabel,
-                    "( ((thruput_0+thruput_recv_0) / (thruput_1+thruput_recv_1)) - 1)*100")
+                    "( ((thruput_0+thruput_recv_0) / (thruput_1+thruput_recv_1)) - 1)*20")
 
             if not data.has_key(rlabel):
                 tmp = list()
@@ -744,8 +753,8 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir)
-        g.setYLabel(r"Throughput Improvement for TCP LCD in $\\si{\percent}$")
+        g = UmHistogram(plotname=plotname, outdir=outdir, saveit=self.options.save, debug=self.options.debug)
+        g.setYLabel(r"Throughput Improvement for TCP LCD [$\\si{\\percent}$]")
         # g.setClusters(len(keys))
         g.setYRange("[ * : * ]")
         # bars

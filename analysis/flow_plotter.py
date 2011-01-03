@@ -176,6 +176,7 @@ class FlowPlotter(Application):
 
         for file in infile.split(','):
             # create record from given file
+            debug("analyzing %s" %file)
             record = self.factory.createRecord(file, "flowgrind")
             flows = record.calculate("flows")
             if not flows:
@@ -195,10 +196,10 @@ class FlowPlotter(Application):
             nosamples = min(flow['S']['size'], flow['D']['size'])
             debug("nosamples: %i" %nosamples)
 
-        # resampling
-        nosamples = self.resample(record, directions, nosamples, flow)  # returns the new value for nosamples if anything was changed
+            # resampling
+            nosamples = self.resample(record, directions, nosamples, flow)  # returns the new value for nosamples if anything was changed
 
-        flow_array.append([plotname, flow, record, nosamples])
+            flow_array.append([plotname, flow, record, nosamples])
 
         #build average, save it to flow_array[0]
         if len(flow_array) > 1:
@@ -317,7 +318,9 @@ class FlowPlotter(Application):
             p = UmLinePlot(outname+'_tput', self.options.outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
             p.setYLabel(r"Throughput [$\\si{\\Mbps}$]")
             p.setXLabel(r"Time [$\\si{\\second}$]")
-
+            if self.options.endat and self.options.startat:
+                p.setXRange("[ %f : %f ]"
+                        %(self.options.startat,self.options.endat) )
             count = 0
             for plotname, label in plotnameList:
                 count += 1
@@ -337,6 +340,10 @@ class FlowPlotter(Application):
             p = UmLinePlot(outname+'_cwnd_ssth', self.options.outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
             p.setYLabel(r"$\\#$")
             p.setXLabel(r"Time [$\\si{\\second}$]")
+            if self.options.endat and self.options.startat:
+                p.setXRange("[ %f : %f ]"
+                        %(self.options.startat,self.options.endat) )
+
             count = 0
             for plotname, label in plotnameList:
                 valfilename = os.path.join(outdir, plotname+".values")
@@ -352,6 +359,10 @@ class FlowPlotter(Application):
             p = UmLinePlot(outname+'_rto_rtt', self.options.outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
             p.setYLabel(r"$\\si{\\milli\\second}$")
             p.setXLabel(r"Time [$\\si{\\second}$]")
+            if self.options.endat and self.options.startat:
+                p.setXRange("[ %f : %f ]"
+                        %(self.options.startat,self.options.endat) )
+
             count = 0
             for plotname, label in plotnameList:
                 count += 1
@@ -366,6 +377,10 @@ class FlowPlotter(Application):
             p = UmLinePlot(outname+'_lost_reor_retr', self.options.outdir, debug=self.options.debug, saveit=self.options.save, force=self.options.force)
             p.setYLabel(r"$\\#$")
             p.setXLabel(r"Time [$\\si{\\second$]")
+            if self.options.endat and self.options.startat:
+                p.setXRange("[ %f : %f ]"
+                        %(self.options.startat,self.options.endat) )
+
             count = 0
             for plotname, label in plotnameList:
                 valfilename = os.path.join(outdir, plotname+".values")
@@ -384,6 +399,10 @@ class FlowPlotter(Application):
             p.setXLabel(r"Time $[\\si{\\second}]$")
             #max_y_value = max(flow['S']['reor'] + flow['S']['dupthresh'])
             #p.setYRange("[*:%u]" % int(max_y_value + ((20 * max_y_value) / 100 )))
+            if self.options.endat and self.options.startat:
+                p.setXRange("[ %f : %f ]"
+                        %(self.options.startat,self.options.endat) )
+
             count = 0
             for plotname, label in plotnameList:
                 count += 1
