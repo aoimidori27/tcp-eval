@@ -46,11 +46,12 @@ class Analysis(Application):
         self.parser.add_option('-O', '--output', metavar="OutDir",
                         action = 'store', type = 'string', dest = 'outdir',
                         help = 'Set outputdirectory [default: %default]')
-
         self.parser.add_option("-c", "--cfg", metavar = "FILE",
                         action = "store", dest = "cfgfile",
                         help = "use the file as config file for LaTeX. "\
                                "No default packages will be loaded.")
+        self.parser.add_option("--save", action = "store_true", dest = "save",
+                        help = "save gnuplot and tex files [default: clean up]")
 
     def set_option(self):
         """Set options"""
