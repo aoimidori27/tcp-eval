@@ -92,12 +92,29 @@ class UmGnuplot():
             kwargs['offset'] = self.yaxislabeloffset
         self.gplot.set_label("ylabel", *args, **kwargs)
 
+    def setY2Label(self, *args, **kwargs):
+        try:
+            tmp = kwargs['offset']
+        except:
+            kwargs['offset'] = (-self.yaxislabeloffset[0],self.yaxislabeloffset[1])
+        self.gplot.set_label("y2label", *args, **kwargs)
+        self.gplot('set ytics nomirror')
+        self.gplot('set y2tics nomirror')
+        self.gplot('unset grid')
+
     def setXLabel(self, *args, **kwargs):
         try:
             tmp = kwargs['offset']
         except:
             kwargs['offset'] = self.xaxislabeloffset
         self.gplot.set_label("xlabel", *args, **kwargs)
+
+    def setX2Label(self, *args, **kwargs):
+        try:
+            tmp = kwargs['offset']
+        except:
+            kwargs['offset'] = (self.yaxislabeloffset[0],-self.yaxislabeloffset[1])
+        self.gplot.set_label("x2label", *args, **kwargs)
 
     def setOutput(self, output):
         self.gplot('set output "%s"' %output)
@@ -107,6 +124,12 @@ class UmGnuplot():
 
     def setXRange(self, *args):
         self.gplot.set_range("xrange",*args)
+
+    def setY2Range(self, *args):
+        self.gplot.set_range("y2range",*args)
+
+    def setX2Range(self, *args):
+        self.gplot.set_range("x2range",*args)
 
     def setPlotname(self, plotname):
         self._plotname = plotname
@@ -205,6 +228,10 @@ class UmHistogram(UmGnuplot):
 
         self.gplot('set style data histogram')
         self.gplot('set style histogram clustered gap %u title offset character 0,0,0' %self._gap)
+        self.gplot('set key under nobox')
+        self.gplot('set xtics scale 0')
+        self.gplot('set ytics')
+        self.gplot('set grid y')
 
         self._clusters = None
         self._barspercluster = 0
@@ -233,23 +260,29 @@ class UmHistogram(UmGnuplot):
     def setGap(self, gap):
         self._gap = gap
 
-    def plotBar(self, values, title=None, using=None, linestyle=3, fillstyle=None):
+    def plotBar(self, values, title=None, using=None, linestyle=3,
+            fillstyle=None, axes=None):
         # autoupdate barspercluster
         self._barspercluster += 1
 
         titlestr= "notitle"
         if title:
-            titlestr = 'title "%s"' %title
+            titlestr = 'title "%s" ' %title
 
         usingstr = ""
         if using:
-            usingstr = "using %s" %using
+            usingstr = "using %s " %using
 
         fillstr = ""
         if fillstyle:
-            fillstr = " fillstyle %s" %fillstyle
+            fillstr = "fillstyle %s " %fillstyle
 
-        cmd = '"%s" %s %s ls %s%s' %(values, usingstr, titlestr, linestyle, fillstr)
+        axesstr = ""
+        if  axes:
+            axesstr = "axes %s " %axes
+
+        cmd = '"%s" %s %s %s ls %s %s' %(values, usingstr, axesstr, titlestr, linestyle,
+                fillstr)
         UmGnuplot.plot(self, cmd)
 
     def plotErrorbar(self, values, barNo, valColumn, yDelta, title=None,
