@@ -86,7 +86,6 @@ class UmLatex():
         if siunitx:
             self.addPackage("siunitx", "alsoload=accepted", "alsoload=binary")
             self.addSetting(r"\sisetup{per=fraction,fraction=nice,seperr}")
-            self.addSetting(r"\sisetup{per=fraction,fraction=nice,seperr}")
             self.addSetting(r"\newunit{\mps}{\meter\per\second}")
             self.addSetting(r"\newunit{\kmps}{\km\per\second}")
             self.addSetting(r"\renewunit{\bit}{b}")
@@ -101,7 +100,9 @@ class UmLatex():
             self.addSetting(r"\newunit{\kbps}{\kb\per\second}")
             self.addSetting(r"\newunit{\Mbps}{\Mb\per\second}")
             self.addSetting(r"\newunit{\Gbps}{\Gb\per\second}")
-
+            self.addSetting(r"\newunit{\blocks}{blocks}")
+            self.addSetting(r"\newunit{\transactions}{transactions}")
+            self.addSetting(r"\newunit{\nnumber}{\#}")
             #self.addPackage("xfrac")
             #self.addPackage("siunitx")
             #self.addSetting(r"\sisetup{detect-weight,per-mode=fraction,fraction-function=\sfrac," \

@@ -73,7 +73,7 @@ class TestRecord:
                 warn("Failed to get required value %s out of %s: KeyError:%s" %(what, self.filename, inst))
                 self.valid = False
             else:
-                info("Failed to get optional value %s out of %s: KeyError:%s" %(what, self.filename, inst))
+                debug("Failed to get optional value %s out of %s: KeyError:%s" %(what, self.filename, inst))
             return None
 
     def isValid(self):
