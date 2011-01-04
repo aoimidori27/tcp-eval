@@ -57,22 +57,20 @@ class LCDAnalysis(Analysis):
 
         # check if run was completed
         thruput = record.calculate("thruput")
-        if not thruput:
+        thruput_recv = record.calculate("thruput_recv")
+
+        # hack to support two parallel flows
+        thruput_list = record.calculate("thruput_list")
+        if thruput_list and thruput_list[0] > 0 and thruput_list[1] > 0:
+            thruput_0 = thruput_list[0]
+            thruput_1 = thruput_list[1]
+        # mark test as failed if at least one thruput is zero
+        else:
             if not self.failed.has_key(run_label):
                 self.failed[run_label] = 1
             else:
                 self.failed[run_label] = self.failed[run_label]+1
             return
-
-        thruput_recv = record.calculate("thruput_recv")
-
-        # hack to support two parallel flows
-        thruput_list = record.calculate("thruput_list")
-        if thruput_list:
-            thruput_0 = thruput_list[0]
-            thruput_1 = thruput_list[1]
-        else:
-            thruput_0 = thruput_1 = 0.0
 
         thruput_recv_list = record.calculate("thruput_recv_list")
         if thruput_recv_list:
@@ -81,12 +79,14 @@ class LCDAnalysis(Analysis):
         else:
             thruput_recv_0 = thruput_recv_1 = 0.0
 
+        # network transactions
         transac_0 = transac_1 = 0
         transac_list = record.calculate(what = "transac_list", optional = True)
         if transac_list and len(transac_list) == 2:
             transac_0 = transac_list[0]
             transac_1 = transac_list[1]
 
+        # rtt
         rtt_min_0 = rtt_min_1 = 0.0
         rtt_min_list = record.calculate(what = "rtt_min_list", optional = True)
         if rtt_min_list and len(rtt_min_list) == 2:
@@ -105,132 +105,54 @@ class LCDAnalysis(Analysis):
             rtt_max_0 = rtt_max_list[0]
             rtt_max_1 = rtt_max_list[1]
 
-        outages_0 =  outages_1 = 0
-        outages = record.calculate(what = "outagesNo", optional = True)
-        if outages.has_key(0):
-            if outages[0].has_key('S'):
-                outages_0 += outages[0]['S']
-            if outages[0].has_key('D'):
-                outages_0 += outages[0]['D']
-        if outages.has_key(1):
-            if outages[1].has_key('S'):
-                outages_1 += outages[1]['S']
-            if outages[1].has_key('D'):
-                outages_1 += outages[1]['D']
+        # iat
+        iat_min_0 = iat_min_1 = 0.0
+        iat_min_list = record.calculate(what = "iat_min_list", optional = True)
+        if iat_min_list and len(iat_min_list) == 2:
+            iat_min_0 = iat_min_list[0]
+            iat_min_1 = iat_min_list[1]
 
+        iat_avg_0 = iat_avg_1 = 0.0;
+        iat_avg_list = record.calculate(what = "iat_avg_list", optional = True)
+        if iat_avg_list and len(iat_avg_list) == 2:
+            iat_avg_0 = iat_avg_list[0]
+            iat_avg_1 = iat_avg_list[1]
 
-        reverts_0 = reverts_1 = 0;
-        reverts_list = record.calculate(what = "revert_list", optional = True)
-        if reverts_list and len(reverts_list) == 2:
-            reverts_0 = reverts_list[0]
-            reverts_1 = reverts_list[1]
+        iat_max_0 = iat_max_1 = 0.0;
+        iat_max_list = record.calculate(what = "iat_max_list", optional = True)
+        if iat_max_list and len(iat_max_list) == 2:
+            iat_max_0 = iat_max_list[0]
+            iat_max_1 = iat_max_list[1]
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s,
+                      INSERT INTO tests VALUES
+                      (%u, %u, %u, %s, %s,
                       %f, %f, %f, %f, %f, %f,
                       %f, %f,
                       %f, %f, %f, %f, %f, %f,
-                      %u, %u, %u, %u,
+                      %f, %f, %f, %f, %f, %f,
                       %u, "$%s$", "%s", "%s")
                       """ % (iterationNo, scenarioNo, runNo, src, dst,
                              thruput, thruput_recv, thruput_0, thruput_1, thruput_recv_0, thruput_recv_1,
                              transac_0, transac_1,
                              rtt_min_0, rtt_min_1, rtt_avg_0, rtt_avg_1, rtt_max_0, rtt_max_1,
-                             outages_0, outages_1, reverts_0, reverts_1,
+                             iat_min_0, iat_min_1, iat_avg_0, iat_avg_1, iat_max_0, iat_max_1,
                              start_time, run_label, scenario_label, test))
 
-        #outages = record.calculate('outages', **cutOutageParams)
-        #for flow in outages:
-        # for flowNo in outages[flow]:
-        #  for outage in outages[flow][flowNo]:
-        #   b, e, r = outage['begin'], outage['end'], outage['retr']
-        #   dbcur.execute("INSERT INTO outages VALUES (%u, %u, %u, %d, %d, '%c', %f, %f, %d)" % (iterationNo, scenarioNo, runNo, flowNo, b, e, r))
-
-    def generateTputOverTimePerRun(self):
-        """Generates a line plot where every run number gets a
-           dedicated line ignoring scenario.
-        """ 
-        dbcur = self.dbcon.cursor()
-
-        # get runs
-        dbcur.execute('''
-        SELECT DISTINCT runNo, run_label
-        FROM tests ORDER BY runNo'''
-        )
-        runs = dict()
-        for row in dbcur:
-            (key,val) = row
-            runs[key] = val
-
-        # get all scenario labels
-        dbcur.execute('''
-        SELECT DISTINCT scenarioNo, scenario_label
-        FROM tests ORDER BY scenarioNo'''
-        )
-        scenarios = dict()
-        for row in dbcur:
-            (key,val) = row
-            scenarios[key] = val
-
-        plotname = "tput_over_time_per_run"
-        outdir = self.options.outdir
-        valfilename = os.path.join(outdir, plotname+".values")
-
-        outdir = self.options.outdir
-        p = UmLinePlot(plotname = plotname, outdir = outdir)
-        p.setYLabel(r"\\si{\\Mbps}")
-
-        for runNo in runs.keys():
-            thruputs = dict()
-            times    = dict()
-
-            dbcur.execute('''
-            SELECT iterationNo, scenarioNo, thruput, start_time
-            FROM tests
-            WHERE runNo=%u
-            ORDER by iterationNo, scenarioNo ASC
-            ''' %(runNo))
-
-            sorted_keys = list()
-
-            for row in dbcur:
-                (iterationNo, scenarioNo, thruput, time) = row
-                key = (iterationNo,runNo,scenarioNo)
-                thruputs[key] = thruput
-                if time != 0:
-                    times[key] = time
-                sorted_keys.append(key)
-
-            plotname = "tput_over_time_per_run_r%u" %(runNo)
-            valfilename = os.path.join(outdir, plotname+".values")
-
-            info("Generating %s..." % valfilename)
-            fh = file(valfilename, "w")
-
-            # header
-            fh.write("# thruput start_time\n")
-
-            # generate values file
-            for key in sorted_keys:
-                thruput = thruputs[key]
-                fh.write("%f %u\n" %(thruput,times[key]))
-
-            fh.close()
-
-            using_str = ""
-            if runNo == 0:
-                p.setXLabel("time")
-                p.setXDataTime()
-                # +1 hour offset to GMT
-                time_offset = "+3600"
-                using_str = "($2%s):" %time_offset
-
-            p.plot(valfilename, "Throughput "+runs[runNo], linestyle=runNo+1, using=using_str+"1")
-
-        p.save()
-
-        if not self.options.save:
-            os.remove(valfilename)
+        outagesList = record.calculate('outages', optional = True)
+        for flowNo in outagesList:
+            for DIR in outagesList[flowNo]:
+                for outage in outagesList[flowNo][DIR]:
+                    b, e, tretr, revr = outage['begin'], outage['end'], outage['tretr'], outage['revr']
+                    dbcur.execute("""INSERT INTO outages VALUES
+                                (%u, %u, %u, %u, %f, %f,
+                                 %f, %f, %d, %d,
+                                 %u, "$%s$", "%s", "%s"
+                                 )"""
+                                 % (iterationNo, scenarioNo, runNo, flowNo, thruput_0, thruput_1,
+                                    b, e, tretr, revr,
+                                    start_time, run_label, scenario_label, test)
+                                 )
 
     def calculateStdDev(self, rlabel=None, slabel=None, key="thruput"):
         """Calculates the standarddeviation of all values of the same rlabel
@@ -257,25 +179,25 @@ class LCDAnalysis(Analysis):
         ary = numpy.array(dbcur.fetchall())
         return ary.std()
 
-    def generateOutagesRevertsLCD(self):
-        """ Generate a outages and reverts histogram with scenario labels for
+    def generateRTOsRevertsLCD(self):
+        """ Generate a rtos and reverts histogram with scenario labels for
         lcd """
 
         dbcur = self.dbcon.cursor()
 
         dbcur.execute('''
         SELECT run_label,
-        AVG(outages_0) as outages_0, AVG(outages_1) as outages_1,
-        AVG(reverts_0) as reverts_0, AVG(reverts_1) as reverts_1,
-        AVG(thruput_0+thruput_1) as thruput_overall,
-        SUM(1) as notests
-        FROM tests
-        GROUP BY run_label
-        ORDER BY thruput_overall DESC, scenarioNo ASC
+        flowNo,
+        sum(retr)/(SELECT count(*) FROM tests WHERE run_label = tests.run_label) as rtos,
+        sum(revr)/(SELECT count(*) FROM tests WHERE run_label = tests.run_label) as reverts,
+        AVG(thruput_0+thruput_1) as thruput_overall
+        FROM outages
+        GROUP BY flowNo, run_label
+        ORDER BY flowNo ASC, thruput_overall DESC
         ''')
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-reverts"
+        plotname      = "lcd-analysis-reverts-rtos"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
@@ -287,36 +209,24 @@ class LCDAnalysis(Analysis):
         # one line per runlabel
         data = dict()
 
-        fh.write("outages_0 outages_1 reverts_0 reverts_1 ")
-        fh.write("std_outages_0 std_outages_1 std_reverts_0 std_reverts_1 ")
-        fh.write("notests ")
+        fh.write("rtos_0 reverts_0 rtos_1 reverts_1")
         fh.write("\n")
 
         sorted_labels = list()
         for row in dbcur:
-            (rlabel,
-             outages_0, outages_1,
-             reverts_0, reverts_1,
-             thrput_overall,
-             notests) = row
+            (rlabel, flowNo,
+             rtos, reverts,
+             thruput_overall
+             ) = row
 
             debug(row)
-            std_outages_0 = self.calculateStdDev(key="outages_0")
-            std_outages_1 = self.calculateStdDev(key="outages_1")
-            std_reverts_0 = self.calculateStdDev(key="reverts_0")
-            std_reverts_1 = self.calculateStdDev(key="reverts_1")
-
+            #std_outages_0 = self.calculateStdDev(key="outages_0")
             if not data.has_key(rlabel):
-                data[rlabel] = "0 0 0 0 0 0 0 0 0"
+                data[rlabel] = ""
+            data[rlabel] += "%f %f " %(rtos, reverts)
 
-            data[rlabel] = "%d %d %d %d %d %d %d %d %d" %(
-                                 outages_0, outages_1,
-                                 reverts_0, reverts_1,
-                                 std_outages_0, std_outages_1,
-                                 std_reverts_0, std_reverts_1,
-                                 notests)
-
-            sorted_labels.append(rlabel)
+            if not sorted_labels.count(rlabel):
+                sorted_labels.append(rlabel)
 
         for key in sorted_labels:
             value = data[key]
@@ -328,20 +238,93 @@ class LCDAnalysis(Analysis):
         g = UmHistogram(plotname=plotname, outdir=outdir,
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
-        g.setYLabel(r"Outages and Reverts [$\\#$]")
+        g.setYLabel(r"RTOs and Reverts [$\\#$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
 
-        g.plotBar(valfilename, title="Outages LCD", using="2:xtic(1)", linestyle=1,fillstyle="solid 0.7")
-        g.plotBar(valfilename, title="Outages native", using="3:xtic(1)", linestyle=1)
-        g.plotBar(valfilename, title="Reverts LCD", using="4:xtic(1)", linestyle=2,fillstyle="solid 0.7")
-        g.plotBar(valfilename, title="Reverts native", using="5:xtic(1)", linestyle=2)
+        g.plotBar(valfilename, title="  RTOs LCD", using="2:xtic(1)", linestyle=2,fillstyle="solid 0.7")
+        g.plotBar(valfilename, title="  RTOs native", using="4:xtic(1)", linestyle=2)
+        g.plotBar(valfilename, title="  Reverts LCD", using="3:xtic(1)", linestyle=3,fillstyle="solid 0.7")
+        # g.plotBar(valfilename, title="Reverts native", using="5:xtic(1)", linestyle=3)
 
-        # errobars
-        g.plotErrorbar(valfilename, 0, 2, 6, "Standard Deviation")
-        g.plotErrorbar(valfilename, 1, 3, 7)
-        g.plotErrorbar(valfilename, 2, 4, 8)
-        g.plotErrorbar(valfilename, 3, 5, 9)
+        # output plot
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
+    def generateOutagesLCD(self):
+        """ Generate a outage histogram with scenario labels for
+        lcd """
+
+        dbcur = self.dbcon.cursor()
+
+        dbcur.execute('''
+        SELECT run_label,
+        flowNo,
+        sum(1.0)/(SELECT sum(1.0) FROM tests WHERE run_label = tests.run_label) as outages,
+        sum(end-begin)/(SELECT sum(1.0) FROM tests WHERE run_label = tests.run_label) as time,
+        AVG(thruput_0+thruput_1) as thruput_overall
+        FROM outages
+        GROUP BY flowNo, run_label
+        ORDER BY flowNo ASC, thruput_overall DESC
+        ''')
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "lcd-analysis-outages"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per runlabel
+        data = dict()
+
+        fh.write("outages_0 time_0 outages_1 time_1")
+        fh.write("\n")
+
+        sorted_labels = list()
+        for row in dbcur:
+            (rlabel, flowNo,
+             outages, time,
+             thruput_overall
+             ) = row
+
+            debug(row)
+            #std_outages_0 = self.calculateStdDev(key="outages_0")
+            if not data.has_key(rlabel):
+                data[rlabel] = ""
+            data[rlabel] += "%f %f " %(
+                            outages, time)
+
+            if not sorted_labels.count(rlabel):
+                sorted_labels.append(rlabel)
+
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s" %key)
+            fh.write(" %s" %value)
+            fh.write("\n")
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+        g.setYLabel(r"Outages [$\\#$]")
+        g.setY2Label(r"Duration [$\\si{\\second}$]")
+        # g.setClusters(len(sorted_labels))
+        g.setYRange("[ 0 : * ]")
+        g.setY2Range("[ 0 : * ]")
+
+        g.plotBar(valfilename, title="Outages LCD", using="2:xtic(1)", linestyle=1,fillstyle="solid 0.7")
+        g.plotBar(valfilename, title="Outages native", using="4:xtic(1)", linestyle=1)
+        g.plotBar(valfilename, title="Outage duration LCD", using="3:xtic(1)",
+                linestyle=2,fillstyle="solid 0.7", axes="x1y2")
+        g.plotBar(valfilename, title="Outage duration native", using="5:xtic(1)",
+                linestyle=2, axes="x1y2")
 
         # output plot
         g.save()
@@ -393,9 +376,6 @@ class LCDAnalysis(Analysis):
 
         # print header
         fh.write("# run_label ")
-
-        # one line per runlabel
-        data = dict()
 
         # columns
         for val in scenarios:
@@ -462,6 +442,116 @@ class LCDAnalysis(Analysis):
 
         if not self.options.save:
             os.remove(valfilename)
+
+    def generateIATLCD(self):
+        """ Generate a IAT histogram with for scenario stream """
+
+        dbcur = self.dbcon.cursor()
+
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "lcd-analysis-avg-iat"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests
+        WHERE iat_avg_0 > 0
+        ORDER BY scenarioNo'''
+        )
+        scenarios = list()
+        for row in dbcur:
+            (key,val) = row
+            scenarios.append(val)
+
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
+        AVG(iat_min_0)/1000 as iat_min_0,
+        AVG(iat_avg_0)/1000 as iat_avg_0,
+        AVG(iat_max_0)/1000 as iat_max_0,
+        AVG(iat_min_1)/1000 as iat_min_1,
+        AVG(iat_avg_1)/1000 as iat_avg_1,
+        AVG(iat_max_1)/1000 as iat_max_1,
+        AVG(thruput_0+thruput_1) as thruput_overall,
+        SUM(1) as notests
+        FROM tests
+        WHERE iat_avg_0 >  0
+        GROUP BY run_label, scenarioNo
+        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per runlabel
+        data = dict()
+        sorted_labels = list()
+
+        # columns
+        for val in scenarios:
+            fh.write("iat_min_0_%(v)s iat_avg_0_%(v)s iat_max_0_%(v)s " %{ "v" : val })
+            fh.write("iat_min_1_%(v)s iat_avg_1_%(v)s iat_max_1_%(v)s " %{ "v" : val })
+            fh.write("notests_%(v)s " %{ "v" : val })
+        fh.write("\n")
+
+        for row in dbcur:
+            (rlabel,slabel,sno,
+             iat_min_0, iat_avg_0, iat_max_0,
+             iat_min_1, iat_avg_1, iat_max_1,
+             thruput_overall,
+             notests) = row
+
+            if not data.has_key(rlabel):
+                tmp = list()
+                for i in scenarios:
+                    tmp.append("0.0 0.0 0.0 0.0 0.0 0.0 0")
+                data[rlabel] = tmp
+                sorted_labels.append(rlabel)
+
+            data[rlabel][scenarios.index(slabel)] = "%f %f %f %f %f %f %d" %(
+                 iat_min_0, iat_avg_0, iat_max_0,
+                 iat_min_1, iat_avg_1, iat_max_1,
+                 notests)
+
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s" %key)
+            for val in value:
+                fh.write(" %s" %val)
+            fh.write("\n")
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save,
+                debug=self.options.debug,force=self.options.force)
+        g.setYLabel(r"Average IAT [$\\si{\\second}$]")
+        # g.setClusters(len(sorted_labels))
+        g.setYRange("[ 0 : * ]")
+
+        # plot min/avg/mag as errorbars
+        for i in range(len(scenarios)):
+            #g.plotBar(valfilename, title=scenarios[i]+" LCD (min/avg/max)",
+            #        using="%u:xtic(1)" %((7*i)+2), linestyle=(i+1), fillstyle="solid 0.7")
+            #g.plotBar(valfilename, title=scenarios[i]+" native (min/avg/max)",
+            #        using="%u:xtic(1)" %((7*i)+5), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[i]+" LCD",
+                    using="%u:xtic(1)" %((7*i)+3), linestyle=(i+1), fillstyle="solid 0.7")
+            g.plotBar(valfilename, title=scenarios[i]+" native",
+                    using="%u:xtic(1)" %((7*i)+6), linestyle=(i+1))
+            #g.plotBar(valfilename, title=None,
+            #        using="%u:xtic(1)" %((7*i)+4), linestyle=(i+1), fillstyle="solid 0.7")
+            #g.plotBar(valfilename, title=None,
+            #        using="%u:xtic(1)" %((7*i)+7), linestyle=(i+1))
+
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
 
     def generateTransacsLCD(self):
         """ Generate a network transactions histogram with scenario labels for
@@ -805,9 +895,14 @@ class LCDAnalysis(Analysis):
     def run(self):
         """Main Method"""
 
-        # database in memory to access data efficiently
-        self.dbcon = sqlite.connect(':memory:')
+        # by default database in memory to access data efficiently
+        if not self.options.save:
+            self.dbcon = sqlite.connect(':memory:')
+        else:
+            self.dbcon = sqlite.connect('/tmp/lcd-analysis.sqlite')
+
         dbcur = self.dbcon.cursor()
+        dbcur.execute("""DROP TABLE IF EXISTS tests;""")
         dbcur.execute("""
         CREATE TABLE tests (iterationNo     INTEGER,
                             scenarioNo      INTEGER,
@@ -828,25 +923,35 @@ class LCDAnalysis(Analysis):
                             rtt_avg_1       DOUBLE,
                             rtt_max_0       DOUBLE,
                             rtt_max_1       DOUBLE,
-                            outages_0       INTEGER,
-                            outages_1       INTEGER,
-                            reverts_0       INTEGER,
-                            reverts_1       INTEGER,
+                            iat_min_0       DOUBLE,
+                            iat_min_1       DOUBLE,
+                            iat_avg_0       DOUBLE,
+                            iat_avg_1       DOUBLE,
+                            iat_max_0       DOUBLE,
+                            iat_max_1       DOUBLE,
                             start_time      INTEGER,
-                            run_label   VARCHAR(70),
-                            scenario_label VARCHAR(70),
-                            test        VARCHAR(50))
+                            run_label       VARCHAR(70),
+                            scenario_label  VARCHAR(70),
+                            test            VARCHAR(50))
         """)
 
+        dbcur.execute("""DROP TABLE IF EXISTS outages;""")
         dbcur.execute("""
         CREATE TABLE outages (
                     iterationNo INTEGER,
                     scenarioNo  INTEGER,
                     runNo       INTEGER,
                     flowNo      INTEGER,
+                    thruput_0   DOUBLE,
+                    thruput_1   DOUBLE,
                     begin       DOUBLE,
                     end         DOUBLE,
-                    retr        INTEGER
+                    retr        DOUBLE,
+                    revr        DOUBLE,
+                    start_time  INTEGER,
+                    run_label   VARCHAR(70),
+                    scenario_label VARCHAR(70),
+                    test        VARCHAR(50)
                     )
         """)
 
@@ -857,12 +962,13 @@ class LCDAnalysis(Analysis):
         self.loadRecords(tests=["flowgrind"])
 
         self.dbcon.commit()
+        self.generateRTOsRevertsLCD()
+        self.generateOutagesLCD()
         self.generateTputHistogramLCD()
         self.generateTputImprovementHistogramLCD()
-        self.generateOutagesRevertsLCD()
         self.generateTransacsLCD()
         self.generateRTTLCD()
-        # self.generateTputOverTimePerRun()
+        self.generateIATLCD()
         for key in self.failed:
             warn("%d failed tests for %s" %(self.failed[key],key))
 
