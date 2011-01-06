@@ -34,7 +34,7 @@ class TcpMeasurement(measurement.Measurement):
                      flowgrind_warmup = 5
                      )
 
-        brokenhosts = ["mrouter12", "mrouter22", "mrouter23", "mrouter24", "mrouter28", "mrouter41", "mrouter43"]
+        brokenhosts = ["mrouter22", "mrouter23", "mrouter24", "mrouter44"]
         srchosts = [ "mrouter14" ]
         middlehosts = [ "mrouter15" ]
         # inner loop configurations
@@ -45,20 +45,20 @@ class TcpMeasurement(measurement.Measurement):
                ]
 
         # repeat loop
-        iterations  = range(1,20)
+        iterations  = range(1,10) # 1 iteration ~ 45 min (default 60)
 
         # outer loop with different scenario settings
         scenarios   = [
         dict( scenario_label = "bulk",
-              flowgrind_opts ="-n 2 -M s -F0 -O b=TCP_LCD".split()),
+              flowgrind_opts ="-n 2 -W b=32000 -F0 -O b=TCP_LCD".split()),
         dict( scenario_label = "rr-http",
-              flowgrind_opts="-r 123456 -M s -n 2 -G s=q,C,350 -G s=p,L,9055,115.17 -U 100000 -F0 -O b=TCP_LCD".split() ),
+              flowgrind_opts="-r 123456 -n 2 -W b=32000 -G s=q,C,350 -G s=p,L,9055,115.17 -U 100000 -F0 -O b=TCP_LCD".split() ),
         dict( scenario_label = "rr-smtp",
-              flowgrind_opts="-r 654321 -M s -n 2 -G s=q,U,4000,40000 -G s=p,C,200 -F0 -O b=TCP_LCD".split() ),
+              flowgrind_opts="-r 654321 -n 2 -W b=32000 -G s=q,N,8000,1000 -U 60000 -G s=p,C,200 -F0 -O b=TCP_LCD".split() ),
         dict( scenario_label = "rr-telnet",
-              flowgrind_opts="-r 123654 -M s -n 2 -G s=q,U,40,10000 -G s=p,U,40,10000 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
-        dict( scenario_label = "streaming-media-limited-800kbs",
-              flowgrind_opts="-r 987654 -M s -n 2 -G s=q,C,800 -G s=g,N,0.008,0.001 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
+              flowgrind_opts="-r 123654 -n 2 -W b=32000 -G s=q,N,2000,500 -G s=p,N,3000,750 -U 20000 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
+        dict( scenario_label = "streaming-media-800kbs",
+              flowgrind_opts="-r 987654 -n 2 -W b=32000 -G s=q,C,800 -G s=g,N,0.008,0.001 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
         ]
         # configure testbed
 
@@ -86,27 +86,33 @@ class TcpMeasurement(measurement.Measurement):
         yield self.remote_execute_many(allhosts, "sudo iptables -I OUTPUT -i ath0 -p icmp --icmp-type 3/1 -j LOG")
 
         # wait a few minutes to let olsr converge
-        yield twisted_sleep(2)
+        yield twisted_sleep(5)
 
-        for scenario_no, scenario in enumerate(scenarios):
+        for it in iterations:
+
+            for scenario_no, scenario in enumerate(scenarios):
+            # merge scenario parameters
             kwargs = dict()
             kwargs.update(scenario)
-            for it in iterations:
-                for run_no, run in enumerate(runs):
-                    # merge parameter configuration for the tests
-                    kwargs.update(runs[run_no])
-                    kwargs.update(opts)
-                    target_dir = "%s/%s/%s" %(self.options.log_dir,scenario['scenario_label'],run['run_label'])
-                    if not os.path.exists(target_dir):
-                            os.makedirs(target_dir)
-                    self.logprefix="%s/%s/i%03u_s%u_r%u" %(scenario['scenario_label'],run['run_label'], it, scenario_no, run_no)
 
-                    # set source and dest for tests
-                    kwargs['flowgrind_src'] = kwargs['src']
-                    kwargs['flowgrind_dst'] = kwargs['dst']
+            for run_no, run in enumerate(runs):
+                # merge run parameters
+                kwargs.update(runs[run_no])
+                kwargs.update(opts)
 
-                    # actually run tests
-                    yield self.run_test(tests.test_flowgrind, **kwargs)
+                # set useful target directory and make it
+                target_dir = "%s/%s/%s" %(self.options.log_dir,scenario['scenario_label'],run['run_label'])
+                if not os.path.exists(target_dir): os.makedirs(target_dir)
+
+                # set log prefix to match flowgrind parser
+                self.logprefix="%s/%s/i%03u_s%u_r%u" %(scenario['scenario_label'],run['run_label'], it, scenario_no, run_no)
+
+                # set source and dest for tests
+                kwargs['flowgrind_src'] = kwargs['src']
+                kwargs['flowgrind_dst'] = kwargs['dst']
+
+                # actually run tests
+                yield self.run_test(tests.test_flowgrind, **kwargs)
 
         # return to status quo
         yield self.switchTestbedProfile("minimum2010")
