@@ -40,7 +40,7 @@ class xpl2gpl(Application):
         Application.__init__(self)
 
         self.declaration = r'''
-root        :=    timeval,title,xlabel,ylabel,(diamond / text / varrow / harrow /
+root        :=    timeval,title,xlabel,ylabel,(diamond / text / darrow / uarrow / harrow /
                   line / dot / box / tick / color / linebreak)*,end*
 alphanum    :=    [a-zA-Z0-9]
 punct       :=    [!@#$%^&()+=|\{}:;<>,.?/"_-]
@@ -70,7 +70,9 @@ localcolor  :=    ( 'green' / 'yellow' / 'white' / 'orange' / 'blue' / 'magenta'
                     /'b2aseg'/ 'nosampleack' /'ambigousack' / 'icmp' )
 harrow      :=    ( 'larrow' / 'rarrow'),whitespace,float1,whitespace,int1,
                     linebreak
-varrow      :=    ( 'darrow' / 'uarrow'),whitespace,float1,whitespace,int1,
+darrow      :=    ('darrow'),whitespace,float1,whitespace,int1,
+                    linebreak
+uarrow      :=    ('uarrow'),whitespace,float1,whitespace,int1,
                     linebreak
 line        :=    ( 'line' / 'dline' ),whitespace,float1,whitespace,int1,whitespace,
                     float2,whitespace,int2,linebreak
@@ -206,6 +208,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 # special cases
                 if label == "R":
                     localcolor = "red"
+                    #labelsize = 3 # smaller R for macroview
                     if self.options.microview:
                         if self.options.rexmitpos == "right":
                             labelxoffset = -0.15
@@ -241,7 +244,7 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                 currentcolor = xplfile[beg:end]
 
             # read l/r arrow
-            elif tag == 'varrow':
+            elif tag == 'darrow':
                 for subtag, subbeg, subend, subparts in subtags:
                     if subtag == 'float1':
                         xpoint = xplfile[subbeg:subend]
@@ -251,9 +254,9 @@ text        :=    ('atext' / 'btext' / 'ltext' / 'rtext'),whitespace,float1,
                         localcolor = xplfile[subbeg:subend]
                 if not localcolor:
                     localcolor = currentcolor
-                if ('varrow',localcolor) not in datasources:
-                    datasources.append( ('varrow',localcolor) )
-                data.append( ( ('varrow', localcolor), "%s %s\n" %(xpoint, ypoint) ) )
+                if ('darrow',localcolor) not in datasources:
+                    datasources.append( ('darrow',localcolor) )
+                data.append( ( ('darrow', localcolor), "%s %s\n" %(xpoint, ypoint) ) )
 
             elif tag == 'harrow':
                 for subtag, subbeg, subend, subparts in subtags:
