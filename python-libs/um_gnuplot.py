@@ -504,7 +504,7 @@ class UmXPlot(UmGnuplot):
                 UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "black" title "Sent Segments"')
 
         # data point use in macroview
-        elif (color == 'data' and datatype == 'varrow'):
+        elif (color == 'data' and datatype == 'darrow'):
             style = 'points pointtype 2 pointsize STANDARDPS linewidth LW linecolor rgb "black"'
             title = ""
             if not microview:
@@ -524,7 +524,7 @@ class UmXPlot(UmGnuplot):
                 UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "red" '\
                         'title "Retransmitted Segment"')
 
-        elif (color == 'retransmit' and datatype == 'varrow'):
+        elif (color == 'retransmit' and datatype == 'darrow'):
             style = 'points pointtype 1 pointsize OTHERPS linewidth LW linecolor rgb "red"'
             title = "Retransmitted Segment"
             if not microview:
@@ -538,7 +538,7 @@ class UmXPlot(UmGnuplot):
                 UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "cyan" '\
                         'title "Reordered Segment"')
 
-        elif (color == 'reorder' and datatype == 'varrow'):
+        elif (color == 'reorder' and datatype == 'darrow'):
             style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "cyan"'
             title = "Reordered Segment"
             if not microview:
@@ -552,7 +552,7 @@ class UmXPlot(UmGnuplot):
                 UmGnuplot.plot(self, '1/0 lw LW lc rgbcolor "magenta" '\
                         'title "Duplicate Segment"')
 
-        elif (color == 'duplicate' and datatype == 'varrow'):
+        elif (color == 'duplicate' and datatype == 'darrow'):
             style = 'points pointtype 2 pointsize OTHERPS linewidth LW linecolor rgb "magenta"'
             title = "Reordered Segment"
             if not microview:
