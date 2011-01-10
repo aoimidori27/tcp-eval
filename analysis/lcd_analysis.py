@@ -379,6 +379,9 @@ class LCDAnalysis(Analysis):
         for val in scenarios:
             fh.write("rtt_min_0_%(v)s rtt_avg_0_%(v)s rtt_max_0_%(v)s " %{ "v" : val })
             fh.write("rtt_min_1_%(v)s rtt_avg_1_%(v)s rtt_max_1_%(v)s " %{ "v" : val })
+            fh.write("std_rtt_min_0_%(v)s std_rtt_avg_0_%(v)s std_rtt_max_0_%(v)s " %{ "v" : val })
+            fh.write("std_rtt_min_1_%(v)s std_rtt_avg_1_%(v)s std_rtt_max_1_%(v)s " %{ "v" : val })
+
             fh.write("notests_%(v)s " %{ "v" : val })
         fh.write("\n")
 
@@ -393,16 +396,28 @@ class LCDAnalysis(Analysis):
              thruput_overall,
              notests) = row
 
+            std_rtt_min_0 = self.calculateStdDev(rlabel, slabel, "(rtt_min_0/1000)")
+            std_rtt_avg_0 = self.calculateStdDev(rlabel, slabel, "(rtt_avg_0/1000)")
+            std_rtt_max_0 = self.calculateStdDev(rlabel, slabel, "(rtt_max_0/1000)")
+
+            std_rtt_min_1 = self.calculateStdDev(rlabel, slabel, "(rtt_min_1/1000)")
+            std_rtt_avg_1 = self.calculateStdDev(rlabel, slabel, "(rtt_avg_1/1000)")
+            std_rtt_max_1 = self.calculateStdDev(rlabel, slabel, "(rtt_max_1/1000)")
+
+
             if not data.has_key(rlabel):
                 tmp = list()
                 for i in scenarios:
-                    tmp.append("0.0 0.0 0.0 0.0 0.0 0.0 0")
+                    tmp.append("0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0")
                 data[rlabel] = tmp
                 sorted_labels.append(rlabel)
 
-            data[rlabel][scenarios.index(slabel)] = "%f %f %f %f %f %f %d" %(
+            data[rlabel][scenarios.index(slabel)] = "%f %f %f %f %f %f %f %f %f %f %f %f %d" %(
                  rtt_min_0, rtt_avg_0, rtt_max_0,
                  rtt_min_1, rtt_avg_1, rtt_max_1,
+                 std_rtt_min_0, std_rtt_avg_0, std_rtt_max_0,
+                 std_rtt_min_1, std_rtt_avg_1, std_rtt_max_1,
+
                  notests)
 
         for key in sorted_labels:
@@ -413,30 +428,55 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir,
+        gavg = UmHistogram(plotname=plotname+"-avg", outdir=outdir,
                 saveit=self.options.save,
                 debug=self.options.debug,force=self.options.force)
-        g.setYLabel(r"RTT [$\\si{\\second}$]")
-        # g.setClusters(len(sorted_labels))
-        g.setYRange("[ 0 : * ]")
+        gavg.setYLabel(r"Average RTT [$\\si{\\second}$]")
+        gavg.setYRange("[ 0 : * ]")
 
-        # run_label rtt_min_0_rr-http rtt_avg_0_rr-http rtt_max_0_rr-http rtt_min_1_rr-http rtt_avg_1_rr-http rtt_max_1_rr-http notests_rr-http
-        # plot min/avg/max RTT
+        # plot avg RTT
         for i in range(len(scenarios)):
-            g.plotBar(valfilename, title=scenarios[i]+" LCD (min/avg/max)",
-                    using="%u:xtic(1)" %((7*i)+2), linestyle=(i+2), fillstyle="solid 0.7")
-            g.plotBar(valfilename, title=scenarios[i]+" Standard (min/avg/max)",
-                    using="%u:xtic(1)" %((7*i)+5), linestyle=(i+2))
-            g.plotBar(valfilename, title=None,
-                    using="%u:xtic(1)" %((7*i)+3), linestyle=(i+2), fillstyle="solid 0.7")
-            g.plotBar(valfilename, title=None,
-                    using="%u:xtic(1)" %((7*i)+6), linestyle=(i+2))
-            g.plotBar(valfilename, title=None,
-                    using="%u:xtic(1)" %((7*i)+4), linestyle=(i+2), fillstyle="solid 0.7")
-            g.plotBar(valfilename, title=None,
-                    using="%u:xtic(1)" %((7*i)+7), linestyle=(i+2))
+            gavg.plotBar(valfilename, title=scenarios[i]+" LCD",
+                    using="%u:xtic(1)" %((13*i)+3), linestyle=(i+2), fillstyle="solid 0.7")
+            gavg.plotBar(valfilename, title=scenarios[i]+" Standard",
+                    using="%u:xtic(1)" %((13*i)+6), linestyle=(i+2))
 
-        g.save()
+        # plot errorbars
+        for i in range(len(scenarios)):
+            if i == 0:
+                gavg.plotErrorbar(valfilename, 0, 3, 9, "Standard Deviation")
+                gavg.plotErrorbar(valfilename, 1, 6, 12)
+
+            else:
+                gavg.plotErrorbar(valfilename, i*2,   (i*13)+3, (i*13)+9)
+                gavg.plotErrorbar(valfilename, i*2+1, (i*13)+6, (i*13)+12)
+
+        gavg.save()
+
+        gmax = UmHistogram(plotname=plotname+"-max", outdir=outdir,
+                saveit=self.options.save,
+                debug=self.options.debug,force=self.options.force)
+        gmax.setYLabel(r"Maximum RTT [$\\si{\\second}$]")
+        gmax.setYRange("[ 0 : * ]")
+
+        # plot max RTT
+        for i in range(len(scenarios)):
+            gmax.plotBar(valfilename, title=scenarios[i]+" LCD",
+                    using="%u:xtic(1)" %((13*i)+4), linestyle=(i+2), fillstyle="solid 0.7")
+            gmax.plotBar(valfilename, title=scenarios[i]+" Standard",
+                    using="%u:xtic(1)" %((13*i)+7), linestyle=(i+2))
+
+        # plot error bars
+        for i in range(len(scenarios)):
+            if i == 0:
+                gmax.plotErrorbar(valfilename, 0, 4, 10, "Standard Deviation")
+                gmax.plotErrorbar(valfilename, 1, 7, 13)
+
+            else:
+                gmax.plotErrorbar(valfilename, i*2,   (i*13)+4, (i*13)+10)
+                gmax.plotErrorbar(valfilename, i*2+1, (i*13)+7, (i*13)+13)
+
+        gmax.save()
 
         if not self.options.save:
             os.remove(valfilename)
@@ -448,7 +488,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-avg-iat"
+        plotname      = "lcd-analysis-iat"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         # get all scenario labels
@@ -493,6 +533,9 @@ class LCDAnalysis(Analysis):
         for val in scenarios:
             fh.write("iat_min_0_%(v)s iat_avg_0_%(v)s iat_max_0_%(v)s " %{ "v" : val })
             fh.write("iat_min_1_%(v)s iat_avg_1_%(v)s iat_max_1_%(v)s " %{ "v" : val })
+            fh.write("std_iat_min_0_%(v)s std_iat_avg_0_%(v)s std_iat_max_0_%(v)s " %{ "v" : val })
+            fh.write("std_iat_min_1_%(v)s std_iat_avg_1_%(v)s std_iat_max_1_%(v)s " %{ "v" : val })
+
             fh.write("notests_%(v)s " %{ "v" : val })
         fh.write("\n")
 
@@ -503,16 +546,26 @@ class LCDAnalysis(Analysis):
              thruput_overall,
              notests) = row
 
+            std_iat_min_0 = self.calculateStdDev(rlabel, slabel, "(iat_min_0/1000)")
+            std_iat_avg_0 = self.calculateStdDev(rlabel, slabel, "(iat_avg_0/1000)")
+            std_iat_max_0 = self.calculateStdDev(rlabel, slabel, "(iat_max_0/1000)")
+
+            std_iat_min_1 = self.calculateStdDev(rlabel, slabel, "(iat_min_1/1000)")
+            std_iat_avg_1 = self.calculateStdDev(rlabel, slabel, "(iat_avg_1/1000)")
+            std_iat_max_1 = self.calculateStdDev(rlabel, slabel, "(iat_max_1/1000)")
+
             if not data.has_key(rlabel):
                 tmp = list()
                 for i in scenarios:
-                    tmp.append("0.0 0.0 0.0 0.0 0.0 0.0 0")
+                    tmp.append("0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0")
                 data[rlabel] = tmp
                 sorted_labels.append(rlabel)
 
-            data[rlabel][scenarios.index(slabel)] = "%f %f %f %f %f %f %d" %(
+            data[rlabel][scenarios.index(slabel)] = "%f %f %f %f %f %f %f %f %f %f %f %f %d" %(
                  iat_min_0, iat_avg_0, iat_max_0,
                  iat_min_1, iat_avg_1, iat_max_1,
+                 std_iat_min_0, std_iat_avg_0, std_iat_max_0,
+                 std_iat_min_1, std_iat_avg_1, std_iat_max_1,
                  notests)
 
         for key in sorted_labels:
@@ -523,25 +576,58 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-        g = UmHistogram(plotname=plotname, outdir=outdir,
+        gavg = UmHistogram(plotname=plotname+"-avg", outdir=outdir,
                 saveit=self.options.save,
                 debug=self.options.debug,force=self.options.force)
-        g.setYLabel(r"Average IAT [$\\si{\\second}$]")
-        # g.setClusters(len(sorted_labels))
-        g.setYRange("[ 0 : * ]")
+        gavg.setYLabel(r"Average IAT [$\\si{\\second}$]")
+        gavg.setYRange("[ 0 : * ]")
 
         # plot avg iat
         for i in range(len(scenarios)):
-            g.plotBar(valfilename, title=scenarios[i]+" LCD",
-                    using="%u:xtic(1)" %((7*i)+3), linestyle=(i+1), fillstyle="solid 0.7")
-            g.plotBar(valfilename, title=scenarios[i]+" Standard",
-                    using="%u:xtic(1)" %((7*i)+6), linestyle=(i+1))
+            gavg.plotBar(valfilename, title=scenarios[i]+" LCD",
+                    using="%u:xtic(1)" %((13*i)+3), linestyle=(i+1), fillstyle="solid 0.7")
+            gavg.plotBar(valfilename, title=scenarios[i]+" Standard",
+                    using="%u:xtic(1)" %((13*i)+6), linestyle=(i+1))
 
-        g.save()
+        # plot errorbars
+        for i in range(len(scenarios)):
+            if i == 0:
+                gavg.plotErrorbar(valfilename, 0, 3, 9, "Standard Deviation")
+                gavg.plotErrorbar(valfilename, 1, 6, 12)
+
+            else:
+                gavg.plotErrorbar(valfilename, i*2,   (i*13)+3, (i*13)+9)
+                gavg.plotErrorbar(valfilename, i*2+1, (i*13)+6, (i*13)+12)
+
+        gavg.save()
+
+        gmax = UmHistogram(plotname=plotname+"-max", outdir=outdir,
+                saveit=self.options.save,
+                debug=self.options.debug,force=self.options.force)
+        gmax.setYLabel(r"Maximum IAT [$\\si{\\second}$]")
+        gmax.setYRange("[ 0 : * ]")
+
+        # plot max iat
+        for i in range(len(scenarios)):
+            gmax.plotBar(valfilename, title=scenarios[i]+" LCD",
+                    using="%u:xtic(1)" %((13*i)+4), linestyle=(i+1), fillstyle="solid 0.7")
+            gmax.plotBar(valfilename, title=scenarios[i]+" Standard",
+                    using="%u:xtic(1)" %((13*i)+7), linestyle=(i+1))
+
+        # plot error bars
+        for i in range(len(scenarios)):
+            if i == 0:
+                gmax.plotErrorbar(valfilename, 0, 4, 10, "Standard Deviation")
+                gmax.plotErrorbar(valfilename, 1, 7, 13)
+
+            else:
+                gmax.plotErrorbar(valfilename, i*2,   (i*13)+4, (i*13)+10)
+                gmax.plotErrorbar(valfilename, i*2+1, (i*13)+7, (i*13)+13)
+
+        gmax.save()
 
         if not self.options.save:
             os.remove(valfilename)
-
 
     def generateTransacsLCD(self):
         """ Generate a network transactions histogram with scenario labels for
