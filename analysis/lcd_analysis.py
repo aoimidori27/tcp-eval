@@ -49,13 +49,11 @@ class LCDAnalysis(Analysis):
         run_label = recordHeader["run_label"]
         scenario_label = recordHeader["scenario_label"]
 
-        # test_start_time was introduced later in the header, so its not in old test logs
         try:
             start_time = int(float(recordHeader["test_start_time"]))
         except KeyError:
             start_time = 0
 
-        # check if run was completed
         thruput = record.calculate("thruput")
         thruput_recv = record.calculate("thruput_recv")
 
@@ -64,6 +62,7 @@ class LCDAnalysis(Analysis):
         if thruput_list and thruput_list[0] > 0 and thruput_list[1] > 0:
             thruput_0 = thruput_list[0]
             thruput_1 = thruput_list[1]
+
         # mark test as failed if at least one thruput is zero
         else:
             if not self.failed.has_key(run_label):
@@ -143,14 +142,14 @@ class LCDAnalysis(Analysis):
         for flowNo in outagesList:
             for DIR in outagesList[flowNo]:
                 for outage in outagesList[flowNo][DIR]:
-                    b, e, tretr, revr = outage['begin'], outage['end'], outage['tretr'], outage['revr']
+                    b, e, tretr, revr, bkof = outage['begin'], outage['end'], outage['tretr'], outage['revr'], outage['bkof']
                     dbcur.execute("""INSERT INTO outages VALUES
                                 (%u, %u, %u, %u, %f, %f,
-                                 %f, %f, %d, %d,
+                                 %f, %f, %d, %d, %d,
                                  %u, "%s", "%s", "%s"
                                  )"""
                                  % (iterationNo, scenarioNo, runNo, flowNo, thruput_0, thruput_1,
-                                    b, e, tretr, revr,
+                                    b, e, tretr, revr, bkof,
                                     start_time, run_label, scenario_label, test)
                                  )
 
@@ -1023,6 +1022,7 @@ class LCDAnalysis(Analysis):
                     end         DOUBLE,
                     retr        DOUBLE,
                     revr        DOUBLE,
+                    bkof        DOUBLE,
                     start_time  INTEGER,
                     run_label   VARCHAR(70),
                     scenario_label VARCHAR(70),
