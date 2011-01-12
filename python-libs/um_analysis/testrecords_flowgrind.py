@@ -96,7 +96,7 @@ class FlowgrindRecordFactory():
                 flow.size += 1
             return flow_map.values()
 
-        def outages(r, min_retr=1, min_time=0, time_abs=1):
+        def outages(r, min_retr=1, min_time=0, time_abs=0):
             flow_map = dict()
             outages = dict()
             if time_abs: time_abs = time.mktime(time.strptime(r['test_start_time'][0]))
@@ -104,32 +104,35 @@ class FlowgrindRecordFactory():
             for i in range(len(r['begin'])):
 
                 if r['direction'][i] == 'S':
-                    d = 'S'
+                    dir = 'S'
                 else: # D,R
-                    d = 'D'
+                    dir = 'D'
                 flow_id = int(r['flow_id'][i])
                 tretr = int(r['tret'][i])
-                revr = int(r['revr'][i])
+                bkof = int(r['bkof'][i])
+                revr = tretr-bkof #int(r['revr'][i])
 
                 if flow_id not in flow_map: flow_map[flow_id] = dict()
                 if dir not in flow_map[flow_id]: flow_map[flow_id][dir] = None
 
                 if flow_map[flow_id][dir] is None and tretr > 0:
-                    flow_map[flow_id][dir] = dict(begin=i, tretr=tretr)
+                    flow_map[flow_id][dir] = dict(begin=i, tretr=tretr, revr=revr, bkof=bkof)
                 if flow_map[flow_id][dir] is not None:
                     tmp = flow_map[flow_id][dir]
                     if tretr > 0:
                         tmp['tretr'] = tretr
                         tmp['revr'] = revr
+                        tmp['bkof'] = bkof
                     else:
                         b = float(r['begin'][tmp['begin']])
                         e = float(r['begin'][i])
-                        tre = int(tmp['tretr'])
-                        rev = int(tmp['revr'])
+                        tre = float(tmp['tretr'])
+                        rev = float(tmp['revr'])
+                        bk = float(tmp['bkof'])
                         if tre >= min_retr and e - b >= min_time:
                             if flow_id not in outages: outages[flow_id] = dict()
                             if dir not in outages[flow_id]: outages[flow_id][dir] = []
-                            outages[flow_id][dir].append(dict(begin=b+time_abs,end=e+time_abs,tretr=tre,revr=rev))
+                            outages[flow_id][dir].append(dict(begin=b+time_abs,end=e+time_abs,tretr=tre,revr=rev,bkof=bk))
                         flow_map[flow_id][dir] = None
             return outages
 
@@ -172,7 +175,7 @@ class FlowgrindRecordFactory():
             "(?P<cwnd>\d+)\s+(?P<ssth>\d+|INT_MAX|SHRT_MAX)\s+(?P<uack>\d+)\s+(?P<sack>\d+)\s+"\
             "(?P<lost>\d+)\s+(?P<retr>\d+)\s+(?P<tret>\d+)\s+(?P<fack>\d+)\s+(?P<reor>\d+)\s+(?P<bkof>\d+)\s+"\
             # optional lcd revert count
-            "(?P<revr>\d+)\s+"\
+            #"(?P<revr>\d+)\s+"\
             "(?P<krtt>\d+\.\d+)\s+(?P<krttvar>\d+\.\d+)\s+(?P<krto>\d+\.\d+)\s+"\
             "(?P<castate>loss|open|disorder|recover)\s+"\
             "(?P<mss>\d+)\s+(?P<mtu>\d+)\s+",
