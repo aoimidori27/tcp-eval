@@ -313,8 +313,8 @@ class LCDAnalysis(Analysis):
                 force=self.options.force)
         g.setYLabel(r"Outages [$\\#$]")
         g.setY2Label(r"Duration [$\\si{\\second}$]")
-        g.setYRange("[ 0 : * ]")
-        g.setY2Range("[ 0 : * ]")
+        g.setYRange("[ 0 : 8 ]")
+        g.setY2Range("[ 0 : 20 ]")
 
         g.plotBar(valfilename, title="Outages LCD", using="2:xtic(1)", linestyle=1,fillstyle="solid 0.7")
         g.plotBar(valfilename, title="Outages Standard", using="4:xtic(1)", linestyle=1)
@@ -328,6 +328,49 @@ class LCDAnalysis(Analysis):
 
         if not self.options.save:
             os.remove(valfilename)
+
+    def generateICMPsLCD(self):
+        """ Generate a icmp and reverts histogram with scenario labels for lcd """
+
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "lcd-analysis-icmps"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        if not os.path.exists(valfilename):
+            warn("ICMP value file %s does not exists, create it manually",
+                    valfilename)
+            return
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+        g.setYLabel(r"Total ICMPs and Reverts [$\\#$]")
+        g.setYRange("[ 0 : 1600 ]")
+        g.gplot("set style histogram rowstacked")
+        g.gplot("set xtics offset 0,0.3")
+        g.gplot("set boxwidth 0.8")
+        g.plot("newhistogram 'src14-dst6',\
+            'lcd-analysis-icmps.values' using 2:xtic(1) title 'ICMPs Code 0 (Network Unreachable)' ls 8,\
+            '' using 3:xtic(1) title 'ICMPs Code 1 (Host Unreachable)'  ls 8 fillstyle solid 0.7,\
+            '' using 4:xtic(1) title 'Backoff reverts'  ls 3 fillstyle solid 0.7\
+            ")
+
+        g.plot("newhistogram 'src14-dst17',\
+            '' using 5:xtic(1) notitle ls 8,\
+            '' using 6:xtic(1) notitle ls 8 fillstyle solid 0.7,\
+            '' using 7:xtic(1) notitle ls 3 fillstyle solid 0.7\
+            ")
+
+        g.plot("newhistogram 'src14-dst8',\
+            '' using 8:xtic(1) notitle ls 8,\
+            '' using 9:xtic(1) notitle  ls 8 fillstyle solid 0.7,\
+            '' using 10:xtic(1) notitle  ls 3 fillstyle solid 0.7\
+            ")
+
+
+        # output plot
+        g.save()
 
     def generateRTTLCD(self):
         """ Generate a RTT histogram with scenario labels for
@@ -1044,7 +1087,7 @@ class LCDAnalysis(Analysis):
         self.generateRTTLCD()
         self.generateRTOsRevertsLCD()
         self.generateOutagesLCD()
-
+        self.generateICMPsLCD() # create value file manually!
         for key in self.failed:
             warn("%d failed tests for %s" %(self.failed[key],key))
 
