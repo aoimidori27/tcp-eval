@@ -39,13 +39,13 @@ class TcpMeasurement(measurement.Measurement):
         middlehosts = [ "mrouter15" ]
         # inner loop configurations
         runs = [
-                 dict( run_label = r"src14-dst8", src=14, dst=8 ),
-                 dict( run_label = r"src14-dst17", src=14, dst=17 ),
-                 dict( run_label = r"src14-dst6", src=14, dst=6 ),
+                 dict( run_label = r"src14--dst8", src=14, dst=8 ),
+                 dict( run_label = r"src14--dst17", src=14, dst=17 ),
+                 dict( run_label = r"src14--dst6", src=14, dst=6 ),
                ]
 
         # repeat loop
-        iterations  = range(1,10) # 1 iteration ~ 45 min (default 60)
+        iterations  = range(1,60) # 1 iteration ~ 45 min (default 60 = 48h)
 
         # outer loop with different scenario settings
         scenarios   = [
@@ -57,7 +57,7 @@ class TcpMeasurement(measurement.Measurement):
               flowgrind_opts="-r 654321 -n 2 -W b=32000 -G s=q,N,8000,1000 -U 60000 -G s=p,C,200 -F0 -O b=TCP_LCD".split() ),
         dict( scenario_label = "rr-telnet",
               flowgrind_opts="-r 123654 -n 2 -W b=32000 -G s=q,N,2000,500 -G s=p,N,3000,750 -U 20000 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
-        dict( scenario_label = "streaming-media-800kbs",
+        dict( scenario_label = "streaming-media-800kb",
               flowgrind_opts="-r 987654 -n 2 -W b=32000 -G s=q,C,800 -G s=g,N,0.008,0.001 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
         ]
         # configure testbed
@@ -80,40 +80,42 @@ class TcpMeasurement(measurement.Measurement):
         yield self.remote_execute_many(middlehosts, "sudo ip route add 169.254.9.14 dev ath0")
 
         # activate icmp logging
-        yield self.remote_execute_many(srchosts, "sudo iptables -I INPUT -i ath0 -p icmp --icmp-type 3/0 -j LOG")
-        yield self.remote_execute_many(srchosts, "sudo iptables -I INPUT -i ath0 -p icmp --icmp-type 3/1 -j LOG")
+        yield self.remote_execute_many(allhosts, "sudo iptables -F INPUT")
+        yield self.remote_execute_many(allhosts, "sudo iptables -F OUTPUT")
+        yield self.remote_execute_many(allhosts, "sudo iptables -I INPUT -i ath0 -p icmp --icmp-type 3/0 -j LOG")
+        yield self.remote_execute_many(allhosts, "sudo iptables -I INPUT -i ath0 -p icmp --icmp-type 3/1 -j LOG")
         yield self.remote_execute_many(allhosts, "sudo iptables -I OUTPUT -i ath0 -p icmp --icmp-type 3/0 -j LOG")
         yield self.remote_execute_many(allhosts, "sudo iptables -I OUTPUT -i ath0 -p icmp --icmp-type 3/1 -j LOG")
-
         # wait a few minutes to let olsr converge
         yield twisted_sleep(5)
 
         for it in iterations:
 
             for scenario_no, scenario in enumerate(scenarios):
-            # merge scenario parameters
-            kwargs = dict()
-            kwargs.update(scenario)
+                # merge scenario parameters
+                kwargs = dict()
+                kwargs.update(scenario)
 
-            for run_no, run in enumerate(runs):
-                # merge run parameters
-                kwargs.update(runs[run_no])
-                kwargs.update(opts)
+                for run_no, run in enumerate(runs):
+                    # merge run parameters
+                    kwargs.update(runs[run_no])
+                    kwargs.update(opts)
 
-                # set useful target directory and make it
-                target_dir = "%s/%s/%s" %(self.options.log_dir,scenario['scenario_label'],run['run_label'])
-                if not os.path.exists(target_dir): os.makedirs(target_dir)
+                    # set useful target directory and make it
+                    target_dir = "%s/%s/%s" %(self.options.log_dir,scenario['scenario_label'],run['run_label'])
+                    if not os.path.exists(target_dir): os.makedirs(target_dir)
 
-                # set log prefix to match flowgrind parser
-                self.logprefix="%s/%s/i%03u_s%u_r%u" %(scenario['scenario_label'],run['run_label'], it, scenario_no, run_no)
+                    # set log prefix to match flowgrind parser
+                    self.logprefix="%s/%s/i%03u_s%u_r%u" %(scenario['scenario_label'],run['run_label'], it, scenario_no, run_no)
 
-                # set source and dest for tests
-                kwargs['flowgrind_src'] = kwargs['src']
-                kwargs['flowgrind_dst'] = kwargs['dst']
+                    # set source and dest for tests
+                    kwargs['flowgrind_src'] = kwargs['src']
+                    kwargs['flowgrind_dst'] = kwargs['dst']
 
-                # actually run tests
-                yield self.run_test(tests.test_flowgrind, **kwargs)
+                    # actually run the test
+                    yield self.run_test(tests.test_flowgrind, **kwargs)
 
+        yield self.remote_execute_many(allhosts, "sudo iptables -L -n -v > %s/icmp_stats_$HOSTNAME" %self.options.log_dir)
         # return to status quo
         yield self.switchTestbedProfile("minimum2010")
 
