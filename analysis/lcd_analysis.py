@@ -240,9 +240,11 @@ class LCDAnalysis(Analysis):
         g.setYLabel(r"RTOs and Reverts [$\\#$]")
         g.setYRange("[ 0 : * ]")
 
-        g.plotBar(valfilename, title="Timeout retransmissions LCD", using="2:xtic(1)", linestyle=2, fillstyle="solid 0.7")
+        g.plotBar(valfilename, title="Timeout retransmissions LCD",
+                using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
         g.plotBar(valfilename, title="Timeout retransmissions Standard", using="4:xtic(1)", linestyle=2)
-        g.plotBar(valfilename, title="Backoff reverts LCD", using="3:xtic(1)", linestyle=3, fillstyle="solid 0.7")
+        g.plotBar(valfilename, title="Backoff reverts LCD", using="3:xtic(1)",
+                linestyle=3, fillstyle="solid 0.5")
         # g.plotBar(valfilename, title="Reverts Standard", using="5:xtic(1)", linestyle=3)
 
         # output plot
@@ -316,10 +318,11 @@ class LCDAnalysis(Analysis):
         g.setYRange("[ 0 : 8 ]")
         g.setY2Range("[ 0 : 20 ]")
 
-        g.plotBar(valfilename, title="Outages LCD", using="2:xtic(1)", linestyle=1,fillstyle="solid 0.7")
+        g.plotBar(valfilename, title="Outages LCD", using="2:xtic(1)",
+                linestyle=1,fillstyle="solid 0.5")
         g.plotBar(valfilename, title="Outages Standard", using="4:xtic(1)", linestyle=1)
         g.plotBar(valfilename, title="Outage duration LCD", using="3:xtic(1)",
-                linestyle=2,fillstyle="solid 0.7", axes="x1y2")
+                linestyle=2,fillstyle="solid 0.5", axes="x1y2")
         g.plotBar(valfilename, title="Outage duration Standard", using="5:xtic(1)",
                 linestyle=2, axes="x1y2")
 
@@ -350,22 +353,22 @@ class LCDAnalysis(Analysis):
         g.gplot("set style histogram rowstacked")
         g.gplot("set xtics offset 0,0.3")
         g.gplot("set boxwidth 0.8")
-        g.plot("newhistogram 'src14-dst6',\
+        g.plot("newhistogram 'src14-dst8',\
             'lcd-analysis-icmps.values' using 2:xtic(1) title 'ICMPs Code 0 (Network Unreachable)' ls 8,\
-            '' using 3:xtic(1) title 'ICMPs Code 1 (Host Unreachable)'  ls 8 fillstyle solid 0.7,\
-            '' using 4:xtic(1) title 'Backoff reverts'  ls 3 fillstyle solid 0.7\
+            '' using 3:xtic(1) title 'ICMPs Code 1 (Host Unreachable)'  ls 8 fillstyle solid 0.5,\
+            '' using 4:xtic(1) title 'Backoff reverts'  ls 3 fillstyle solid 0.5\
             ")
 
         g.plot("newhistogram 'src14-dst17',\
             '' using 5:xtic(1) notitle ls 8,\
-            '' using 6:xtic(1) notitle ls 8 fillstyle solid 0.7,\
-            '' using 7:xtic(1) notitle ls 3 fillstyle solid 0.7\
+            '' using 6:xtic(1) notitle ls 8 fillstyle solid 0.5,\
+            '' using 7:xtic(1) notitle ls 3 fillstyle solid 0.5\
             ")
 
-        g.plot("newhistogram 'src14-dst8',\
+        g.plot("newhistogram 'src14-dst6',\
             '' using 8:xtic(1) notitle ls 8,\
-            '' using 9:xtic(1) notitle  ls 8 fillstyle solid 0.7,\
-            '' using 10:xtic(1) notitle  ls 3 fillstyle solid 0.7\
+            '' using 9:xtic(1) notitle  ls 8 fillstyle solid 0.5,\
+            '' using 10:xtic(1) notitle  ls 3 fillstyle solid 0.5\
             ")
 
 
@@ -479,7 +482,8 @@ class LCDAnalysis(Analysis):
         # plot avg RTT
         for i in range(len(scenarios)):
             gavg.plotBar(valfilename, title=scenarios[i]+" LCD",
-                    using="%u:xtic(1)" %((13*i)+3), linestyle=(i+2), fillstyle="solid 0.7")
+                    using="%u:xtic(1)" %((13*i)+3), linestyle=(i+2),
+                    fillstyle="solid 0.5")
             gavg.plotBar(valfilename, title=scenarios[i]+" Standard",
                     using="%u:xtic(1)" %((13*i)+6), linestyle=(i+2))
 
@@ -504,7 +508,8 @@ class LCDAnalysis(Analysis):
         # plot max RTT
         for i in range(len(scenarios)):
             gmax.plotBar(valfilename, title=scenarios[i]+" LCD",
-                    using="%u:xtic(1)" %((13*i)+4), linestyle=(i+2), fillstyle="solid 0.7")
+                    using="%u:xtic(1)" %((13*i)+4), linestyle=(i+2),
+                    fillstyle="solid 0.5")
             gmax.plotBar(valfilename, title=scenarios[i]+" Standard",
                     using="%u:xtic(1)" %((13*i)+7), linestyle=(i+2))
 
@@ -627,7 +632,8 @@ class LCDAnalysis(Analysis):
         # plot avg iat
         for i in range(len(scenarios)):
             gavg.plotBar(valfilename, title=scenarios[i]+" LCD",
-                    using="%u:xtic(1)" %((13*i)+3), linestyle=(i+1), fillstyle="solid 0.7")
+                    using="%u:xtic(1)" %((13*i)+3), linestyle=(i+1),
+                    fillstyle="solid 0.5")
             gavg.plotBar(valfilename, title=scenarios[i]+" Standard",
                     using="%u:xtic(1)" %((13*i)+6), linestyle=(i+1))
 
@@ -652,7 +658,8 @@ class LCDAnalysis(Analysis):
         # plot max iat
         for i in range(len(scenarios)):
             gmax.plotBar(valfilename, title=scenarios[i]+" LCD",
-                    using="%u:xtic(1)" %((13*i)+4), linestyle=(i+1), fillstyle="solid 0.7")
+                    using="%u:xtic(1)" %((13*i)+4), linestyle=(i+1),
+                    fillstyle="solid 0.5")
             gmax.plotBar(valfilename, title=scenarios[i]+" Standard",
                     using="%u:xtic(1)" %((13*i)+7), linestyle=(i+1))
 
@@ -764,7 +771,8 @@ class LCDAnalysis(Analysis):
         for i in range(len(scenarios)):
             # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
             g.plotBar(valfilename, title=scenarios[i]+" LCD",
-                    using="%u:xtic(1)" %((5*i)+2), linestyle=(i+2), fillstyle="solid 0.7")
+                    using="%u:xtic(1)" %((5*i)+2), linestyle=(i+2),
+                    fillstyle="solid 0.5")
             g.plotBar(valfilename, title=scenarios[i]+" Standard",
                     using="%u:xtic(1)" %((5*i)+3), linestyle=(i+2))
 
@@ -778,6 +786,108 @@ class LCDAnalysis(Analysis):
             else:
                 g.plotErrorbar(valfilename, i*2,   (i*5)+2, (i*5)+4)
                 g.plotErrorbar(valfilename, i*2+1, (i*5)+3, (i*5)+5)
+
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
+    def generateTransacsImprovementLCD(self):
+        """ Generate a network transactions histogram with scenario labels for
+        lcd """
+
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "lcd-analysis-transactions-improvement"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        dbcur = self.dbcon.cursor()
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests
+        WHERE transac_0 > 0
+        ORDER BY scenarioNo'''
+        )
+        scenarios = list()
+        for row in dbcur:
+            (key,val) = row
+            scenarios.append(val)
+
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
+               AVG((transac_0/transac_1-1)*100) as transac_diff,
+               AVG(thruput_0+thruput_1) as thruput_overall,
+               SUM(1) as notests
+        FROM tests
+        WHERE transac_0 > 0 and transac_1 > 1
+        GROUP BY run_label, scenarioNo
+        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # columns
+        for val in scenarios:
+            fh.write("transac_diff_%(v)s std_transac_%(v)s " %{ "v" : val })
+            fh.write("notests_%(v)s " %{ "v" : val })
+        fh.write("\n")
+
+        # one line per runlabel
+        data = dict()
+        sorted_labels = list()
+
+        for row in dbcur:
+            (rlabel,slabel,sno,
+             transac_diff,
+             thruput_overall,
+             notests) = row
+
+            std_transac_diff = self.calculateStdDev(rlabel, slabel, "(transac_0/transac_1-1)*100")
+
+            if not data.has_key(rlabel):
+                tmp = list()
+                for i in scenarios:
+                    tmp.append("0.0 0.0 0")
+                data[rlabel] = tmp
+                sorted_labels.append(rlabel)
+
+            data[rlabel][scenarios.index(slabel)] = "%f %f %d" %(
+                                 transac_diff,
+                                 std_transac_diff,
+                                 notests
+                                 )
+
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s" %key)
+            for val in value:
+                fh.write(" %s" %val)
+            fh.write("\n")
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save,  debug=self.options.debug,
+                force=self.options.force)
+        g.setYLabel(r"Network Transactions improvement for TCP-LCD [$\\si{\\percent}$]")
+        g.setYRange("[ * : * ]")
+
+        # bars
+        for i in range(len(scenarios)):
+            # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
+            g.plotBar(valfilename, title=scenarios[i], using="%u:xtic(1)" %((3*i)+2), linestyle=(i+2))
+
+        # errobars
+        #for i in range(len(scenarios)):
+        #    if i == 0:
+        #        g.plotErrorbar(valfilename, 0, 2, 3, "Standard Deviation")
+        #    else:
+        #        g.plotErrorbar(valfilename, i*2, (i*3)+2, (i*3)+3)
 
         g.save()
 
@@ -877,7 +987,8 @@ class LCDAnalysis(Analysis):
             key = keys[i]
             # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
             g.plotBar(valfilename, title=scenarios[key]+" LCD",
-                    using="%u:xtic(1)" %( (i*5)+2 ), linestyle=(i+1), fillstyle="solid 0.7")
+                    using="%u:xtic(1)" %( (i*5)+2 ), linestyle=(i+1),
+                    fillstyle="solid 0.5")
             g.plotBar(valfilename, title=scenarios[key]+" Standard",
                     using="%u:xtic(1)" %( (i*5)+3 ), linestyle=(i+1))
 
@@ -1084,6 +1195,7 @@ class LCDAnalysis(Analysis):
         self.generateTputImprovementHistogramLCD()
         self.generateIATLCD()
         self.generateTransacsLCD()
+        self.generateTransacsImprovementLCD()
         self.generateRTTLCD()
         self.generateRTOsRevertsLCD()
         self.generateOutagesLCD()
