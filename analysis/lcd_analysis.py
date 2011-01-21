@@ -187,8 +187,8 @@ class LCDAnalysis(Analysis):
         dbcur.execute('''
         SELECT run_label,
         flowNo,
-        sum(retr)/(SELECT count(*) FROM tests WHERE run_label = tests.run_label) as rtos,
-        sum(revr)/(SELECT count(*) FROM tests WHERE run_label = tests.run_label) as reverts,
+        sum(retr)/(SELECT sum(1.0) FROM tests WHERE run_label = tests.run_label) as rtos,
+        sum(revr)/(SELECT sum(1.0) FROM tests WHERE run_label = tests.run_label) as reverts,
         AVG(thruput_0+thruput_1) as thruput_overall
         FROM outages
         GROUP BY flowNo, run_label
@@ -354,8 +354,8 @@ class LCDAnalysis(Analysis):
         g.gplot("set xtics offset 0,0.3")
         g.gplot("set boxwidth 0.8")
         g.plot("newhistogram 'src14-dst8',\
-            'lcd-analysis-icmps.values' using 2:xtic(1) title 'ICMPs Code 0 (Network Unreachable)' ls 8,\
-            '' using 3:xtic(1) title 'ICMPs Code 1 (Host Unreachable)'  ls 8 fillstyle solid 0.5,\
+            'lcd-analysis-icmps.values' using 2:xtic(1) title 'ICMPs Code 0' ls 8,\
+            '' using 3:xtic(1) title 'ICMPs Code 1'  ls 8 fillstyle solid 0.5,\
             '' using 4:xtic(1) title 'Backoff reverts'  ls 3 fillstyle solid 0.5\
             ")
 
@@ -876,6 +876,7 @@ class LCDAnalysis(Analysis):
                 force=self.options.force)
         g.setYLabel(r"Network Transactions improvement for TCP-LCD [$\\si{\\percent}$]")
         g.setYRange("[ * : * ]")
+        g.gplot("set key vertical")
 
         # bars
         for i in range(len(scenarios)):
@@ -894,7 +895,7 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
-    def generateTputHistogramLCD(self):
+    def generateTputLCD(self):
         """ Generates a tput histogram with scenario labels for lcd """
 
         dbcur = self.dbcon.cursor()
@@ -1009,7 +1010,7 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
-    def generateTputImprovementHistogramLCD(self):
+    def generateTputImprovementLCD(self):
         """ Generates a tput histogram with scenario labels for lcd """
 
         # outfile
@@ -1120,6 +1121,159 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
+    def generateHistogramRTOsLCD(self):
+        """ Generate a RTO histogram with scenario labels for
+        lcd """
+
+        # outfile
+        outdir      = self.options.outdir
+        plotname    = "lcd-analysis-histogram-rto"
+        valfilename = os.path.join(outdir, plotname+".values")
+        min         = 1
+        max         = 15
+        dbcur = self.dbcon.cursor()
+
+        dbcur.execute('''
+        SELECT retr as bin, flowNo as flowNo, count(1) as count
+        FROM outages
+        WHERE run_label = 'src14-dst6'
+        GROUP by bin, flowNo
+        ORDER by bin ASC;
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per bin
+        data = [[0 for i in range(2)] for j in range(min,max*2)]
+
+        fh.write("# bin count_0 count_1")
+        fh.write("\n")
+
+        sorted_labels = list()
+
+        for row in dbcur:
+            (bin, flowNo, count) = row
+
+            debug(row)
+
+            data[int(bin)][int(flowNo)] = count
+
+        for i in range(len(data)):
+            fh.write("%d %d %d" %(i,data[i][0],data[i][1]) )
+            fh.write("\n")
+
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+
+        g.setYLabel(r"Total Outages [$\\#$]")
+        g.setXLabel(r"RTOs per Outage [$\\#$]")
+        g.setYRange("[ 1 : * ]")
+        g.setXRange("[ %d : %d ]" %(min-1,max) )
+        g.gplot("set xtics 5 scale 0.5")
+        g.gplot("set key inside vertical top right nobox")
+        g.setLogScale()
+        g.plotBar(valfilename, title="LCD",
+                using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
+        g.plotBar(valfilename, title="Standard",
+                using="3:xtic(1)", linestyle=2)
+
+
+        # output plot
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
+    def generateHistogramRevertsPerRTOsLCD(self):
+        """ Generate a Reverts per RTO histogram for lcd """
+
+        # outfile
+        outdir      = self.options.outdir
+        plotname    = "lcd-analysis-histogram-reverts"
+        valfilename = os.path.join(outdir, plotname+".values")
+        max         = 16
+        dbcur = self.dbcon.cursor()
+
+        # get single values
+        dbcur.execute('''
+        SELECT
+        retr as bin_0,
+        revr as bin_1,
+        count(1) as count
+        FROM outages
+        WHERE run_label = 'src14-dst6' and flowNo = '0'
+        GROUP by bin_1, bin_0
+        ORDER by bin_0 ASC, bin_1 ASC;
+        ''' )
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        data = [[0 for i in range(max)] for j in range(max)]
+        sums = [0 for i in range(max)]
+
+        fh.write("# bin_0 / values 1...max / sum ")
+        fh.write("\n")
+
+        sorted_labels = list()
+
+        for row in dbcur:
+            (bin_0, bin_1, count) = row
+            debug(row)
+            data[int(bin_0)][int(bin_1)] = count
+
+        # get sum
+        dbcur.execute('''
+        SELECT
+        retr as bin_0,
+        count(1) as sum
+        FROM outages
+        WHERE run_label = 'src14-dst6' and flowNo = '0'
+        GROUP by bin_0
+        ORDER by bin_0 ASC;
+        ''' )
+
+        for row in dbcur:
+            (bin_0, sum) = row
+            debug(row)
+            sums[int(bin_0)] = sum
+
+        for i in range(max):
+            fh.write("%d " %i)
+            for j in range(max):
+                fh.write("%d " %(data[i][j]))
+            fh.write("%d \n" %(sums[i]))
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+
+        g.setYLabel(r"Reverts [$\\si{\\percent}$]")
+        g.setXLabel(r"RTOs per Outage [$\\#$]")
+        g.setYRange("[ 0 : 100 ]")
+        g.setXRange("[ %d : %d ]" %(0.5,max) )
+        g.gplot("set xtics 5 scale 0.5")
+        g.gplot("set key inside vertical right nobox")
+        g.gplot("set style histogram rowstacked")
+        g.gplot("set boxwidth 0.6")
+        for i in range(max):
+            g.plotBar(valfilename, title="%d" %(i), using="(100.*$%d/$%d):xtic(1)" %(i+2,max+2), linestyle=(i+1) )
+
+
+        # output plot
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
     def run(self):
         """Main Method"""
 
@@ -1191,14 +1345,16 @@ class LCDAnalysis(Analysis):
         self.loadRecords(tests=["flowgrind"])
 
         self.dbcon.commit()
-        self.generateTputHistogramLCD()
-        self.generateTputImprovementHistogramLCD()
+        self.generateTputLCD()
+        self.generateTputImprovementLCD()
         self.generateIATLCD()
         self.generateTransacsLCD()
         self.generateTransacsImprovementLCD()
         self.generateRTTLCD()
         self.generateRTOsRevertsLCD()
         self.generateOutagesLCD()
+        self.generateHistogramRTOsLCD()
+        self.generateHistogramRevertsPerRTOsLCD()
         self.generateICMPsLCD() # create value file manually!
         for key in self.failed:
             warn("%d failed tests for %s" %(self.failed[key],key))
