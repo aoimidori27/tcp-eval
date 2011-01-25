@@ -1127,7 +1127,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir      = self.options.outdir
-        plotname    = "lcd-analysis-histogram-rto"
+        plotname    = "lcd-analysis-histogram-src14-dst6-rto"
         valfilename = os.path.join(outdir, plotname+".values")
         min         = 1
         max         = 15
@@ -1191,12 +1191,219 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
+
+    def generateHistogramDurartionPerRTOsLCD(self):
+        """ Generate a duration per RTO histogram """
+
+        # outfile
+        outdir      = self.options.outdir
+        plotname    = "lcd-analysis-histogram-src14-dst6-duration-per-rto"
+        valfilename = os.path.join(outdir, plotname+".values")
+        min         = 1
+        max         = 15
+        dbcur = self.dbcon.cursor()
+
+        dbcur.execute('''
+        SELECT retr as bin, flowNo as flowNo, avg(end-begin) as duration
+        FROM outages
+        WHERE run_label = 'src14-dst6'
+        GROUP by bin, flowNo
+        ORDER by bin ASC;
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per bin
+        data = [[0 for i in range(2)] for j in range(min,max*2)]
+
+        fh.write("# bin duration_0 duration_1")
+        fh.write("\n")
+
+        sorted_labels = list()
+
+        for row in dbcur:
+            (bin, flowNo, duration) = row
+
+            debug(row)
+
+            data[int(bin)][int(flowNo)] = duration
+
+        for i in range(len(data)):
+            fh.write("%d %f %f" %(i,data[i][0],data[i][1]) )
+            fh.write("\n")
+
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+
+        g.setYLabel(r"Average Outage Duration [$\\si{\\second}$]")
+        g.setXLabel(r"RTOs per Outage [$\\#$]")
+        g.setYRange("[ 0 : * ]")
+        g.setXRange("[ %d : %d ]" %(min-1,max) )
+        g.gplot("set xtics 5 scale 0.5")
+        g.gplot("set key inside vertical top right nobox")
+        g.plotBar(valfilename, title="LCD",
+                using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
+        g.plotBar(valfilename, title="Standard",
+                using="3:xtic(1)", linestyle=2)
+
+
+        # output plot
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
+    def generateHistogramBackoffsPerRTOsLCD(self):
+        """ Generate a backoff RTO histogram """
+
+        # outfile
+        outdir      = self.options.outdir
+        plotname    = "lcd-analysis-histogram-src14-dst6-backoffs-per-rto"
+        valfilename = os.path.join(outdir, plotname+".values")
+        min         = 1
+        max         = 15
+        dbcur = self.dbcon.cursor()
+
+        dbcur.execute('''
+        SELECT retr as bin, flowNo as flowNo, avg(bkof) as duration
+        FROM outages
+        WHERE run_label = 'src14-dst6'
+        GROUP by bin, flowNo
+        ORDER by bin ASC;
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per bin
+        data = [[0 for i in range(2)] for j in range(min,max*2)]
+
+        fh.write("# bin backoffs_0 backoffs_1")
+        fh.write("\n")
+
+        sorted_labels = list()
+
+        for row in dbcur:
+            (bin, flowNo, duration) = row
+
+            debug(row)
+
+            data[int(bin)][int(flowNo)] = duration
+
+        for i in range(len(data)):
+            fh.write("%d %f %f" %(i,data[i][0],data[i][1]) )
+            fh.write("\n")
+
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+
+        g.setYLabel(r"Average Backoffs [$\\#$]")
+        g.setXLabel(r"RTOs per Outage [$\\#$]")
+        g.setYRange("[ 0 : * ]")
+        g.setXRange("[ %d : %d ]" %(min-1,max) )
+        g.gplot("set xtics 5 scale 0.5")
+        g.gplot("set key inside vertical top right nobox")
+        g.plotBar(valfilename, title="LCD",
+                using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
+        g.plotBar(valfilename, title="Standard",
+                using="3:xtic(1)", linestyle=2)
+
+
+        # output plot
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
+
+    def generateHistogramtTputPerRevertsLCD(self):
+        """ Generate a RTO histogram with scenario labels for
+        lcd """
+
+        # outfile
+        outdir      = self.options.outdir
+        plotname    = "lcd-analysis-histogram-goodput-per-rto"
+        valfilename = os.path.join(outdir, plotname+".values")
+        min         = 1
+        max         = 15
+        dbcur = self.dbcon.cursor()
+
+        dbcur.execute('''
+        SELECT retr as bin, flowNo as flowNo, avg(thruput_0+thruput_1) as tput
+        FROM outages
+        WHERE run_label = 'src14-dst6'
+        GROUP by bin, flowNo
+        ORDER by bin ASC;
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per bin
+        data = [[0 for i in range(2)] for j in range(min,max*2)]
+
+        fh.write("# bin tput_0 tput_1")
+        fh.write("\n")
+
+        sorted_labels = list()
+
+        for row in dbcur:
+            (bin, flowNo, tput) = row
+
+            debug(row)
+
+            data[int(bin)][int(flowNo)] = tput
+
+        for i in range(len(data)):
+            fh.write("%d %f %f" %(i,data[i][0],data[i][1]) )
+            fh.write("\n")
+
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+
+        g.setYLabel(r"Average Goodput per Flow [$\\si{\\Mbps}$]")
+        g.setXLabel(r"RTOs per Outage [$\\#$]")
+        g.setYRange("[ 0 : * ]")
+        g.setXRange("[ %d : %d ]" %(min-1,max) )
+        g.gplot("set xtics 5 scale 0.5")
+        g.gplot("set key inside vertical top right nobox")
+        g.plotBar(valfilename, title="LCD",
+                using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
+        g.plotBar(valfilename, title="Standard",
+                using="3:xtic(1)", linestyle=2)
+
+
+        # output plot
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
     def generateHistogramRevertsPerRTOsLCD(self):
         """ Generate a Reverts per RTO histogram for lcd """
 
         # outfile
         outdir      = self.options.outdir
-        plotname    = "lcd-analysis-histogram-reverts"
+        plotname    = "lcd-analysis-histogram-src14-dst6-reverts"
         valfilename = os.path.join(outdir, plotname+".values")
         max         = 16
         dbcur = self.dbcon.cursor()
@@ -1273,6 +1480,7 @@ class LCDAnalysis(Analysis):
 
         if not self.options.save:
             os.remove(valfilename)
+
 
     def run(self):
         """Main Method"""
@@ -1354,6 +1562,9 @@ class LCDAnalysis(Analysis):
         self.generateRTOsRevertsLCD()
         self.generateOutagesLCD()
         self.generateHistogramRTOsLCD()
+        self.generateHistogramDurartionPerRTOsLCD()
+        self.generateHistogramBackoffsPerRTOsLCD()
+        self.generateHistogramtTputPerRevertsLCD()
         self.generateHistogramRevertsPerRTOsLCD()
         self.generateICMPsLCD() # create value file manually!
         for key in self.failed:
