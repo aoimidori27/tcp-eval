@@ -45,7 +45,7 @@ class TcpMeasurement(measurement.Measurement):
                ]
 
         # repeat loop
-        iterations  = range(1,60) # 1 iteration ~ 45 min (default 60 = 48h)
+        iterations  = range(1,20) # 1 iteration ~ 45 min (default 60 = 48h)
 
         # outer loop with different scenario settings
         scenarios   = [
@@ -102,7 +102,7 @@ class TcpMeasurement(measurement.Measurement):
                     kwargs.update(opts)
 
                     # set useful target directory and make it
-                    target_dir = "%s/%s/%s" %(self.options.log_dir,scenario['scenario_label'],run['run_label'])
+                    target_dir = "%s/%s/%s/icmp_stats" %(self.options.log_dir,scenario['scenario_label'],run['run_label'])
                     if not os.path.exists(target_dir): os.makedirs(target_dir)
 
                     # set log prefix to match flowgrind parser
@@ -114,6 +114,11 @@ class TcpMeasurement(measurement.Measurement):
 
                     # actually run the test
                     yield self.run_test(tests.test_flowgrind, **kwargs)
+                    # save icmp stats
+                    yield self.remote_execute_many(allhosts,
+                        "sudo iptables -L -n -v -x > %s/icmp_i%03u_s%u_r%u_$HOSTNAME"
+                        %(target_dir, it, scenario_no, run_no)
+                    )
 
         yield self.remote_execute_many(allhosts, "sudo iptables -L -n -v > %s/icmp_stats_$HOSTNAME" %self.options.log_dir)
         # return to status quo
