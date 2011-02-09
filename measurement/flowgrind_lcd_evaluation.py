@@ -39,9 +39,9 @@ class TcpMeasurement(measurement.Measurement):
         middlehosts = [ "mrouter15" ]
         # inner loop configurations
         runs = [
-                 dict( run_label = r"src14--dst8", src=14, dst=8 ),
-                 dict( run_label = r"src14--dst17", src=14, dst=17 ),
-                 dict( run_label = r"src14--dst6", src=14, dst=6 ),
+                 dict( run_label = r"Src14--Dst8", src=14, dst=8 ),
+                 dict( run_label = r"Src14--Dst17", src=14, dst=17 ),
+                 dict( run_label = r"Src14--Dst6", src=14, dst=6 ),
                ]
 
         # repeat loop
@@ -49,15 +49,15 @@ class TcpMeasurement(measurement.Measurement):
 
         # outer loop with different scenario settings
         scenarios   = [
-        dict( scenario_label = "bulk",
+        dict( scenario_label = "Bulk",
               flowgrind_opts ="-n 2 -W b=32000 -F0 -O b=TCP_LCD".split()),
-        dict( scenario_label = "rr-http",
+        dict( scenario_label = "HTTP",
               flowgrind_opts="-r 123456 -n 2 -W b=32000 -G s=q,C,350 -G s=p,L,9055,115.17 -U 100000 -F0 -O b=TCP_LCD".split() ),
-        dict( scenario_label = "rr-smtp",
+        dict( scenario_label = "SMTP",
               flowgrind_opts="-r 654321 -n 2 -W b=32000 -G s=q,N,8000,1000 -U 60000 -G s=p,C,200 -F0 -O b=TCP_LCD".split() ),
-        dict( scenario_label = "rr-telnet",
+        dict( scenario_label = "Telnet",
               flowgrind_opts="-r 123654 -n 2 -W b=32000 -G s=q,N,2000,500 -G s=p,N,3000,750 -U 20000 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
-        dict( scenario_label = "streaming-media-800kb",
+        dict( scenario_label = "Streaming-800kb",
               flowgrind_opts="-r 987654 -n 2 -W b=32000 -G s=q,C,800 -G s=g,N,0.008,0.001 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
         ]
         # configure testbed
@@ -102,7 +102,7 @@ class TcpMeasurement(measurement.Measurement):
                     kwargs.update(opts)
 
                     # set useful target directory and make it
-                    target_dir = "%s/%s/%s/icmp_stats" %(self.options.log_dir,scenario['scenario_label'],run['run_label'])
+                    target_dir = "%s/%s/%s" %(self.options.log_dir,scenario['scenario_label'],run['run_label'])
                     if not os.path.exists(target_dir): os.makedirs(target_dir)
 
                     # set log prefix to match flowgrind parser
@@ -114,13 +114,27 @@ class TcpMeasurement(measurement.Measurement):
 
                     # actually run the test
                     yield self.run_test(tests.test_flowgrind, **kwargs)
+
                     # save icmp stats
-                    yield self.remote_execute_many(allhosts,
-                        "sudo iptables -L -n -v -x > %s/icmp_i%03u_s%u_r%u_$HOSTNAME"
+                    yield self.remote_execute("mrouter%d" %kwargs['src'],
+                            "sudo echo -n '# S ICMP: ' >>%s/i%03u_s%u_r%u_test_flowgrind"
+                        %(target_dir, it, scenario_no, run_no)
+                    )
+                    yield self.remote_execute("mrouter%d" %kwargs['src'],
+                            "sudo iptables -L INPUT -n -v -Z -x | grep LOG | awk '{print $1}' | xargs echo >>%s/i%03u_s%u_r%u_test_flowgrind"
                         %(target_dir, it, scenario_no, run_no)
                     )
 
-        yield self.remote_execute_many(allhosts, "sudo iptables -L -n -v > %s/icmp_stats_$HOSTNAME" %self.options.log_dir)
+                    # save icmp stats
+                    yield self.remote_execute("mrouter%d" %kwargs['dst'],
+                            "sudo echo -n '# D ICMP: ' >>%s/i%03u_s%u_r%u_test_flowgrind"
+                        %(target_dir, it, scenario_no, run_no)
+                    )
+                    yield self.remote_execute("mrouter%d" %kwargs['dst'],
+                            "sudo iptables -L INPUT -n -v -Z -x | grep LOG | awk '{print $1}'| xargs echo >>%s/i%03u_s%u_r%u_test_flowgrind"
+                        %(target_dir, it, scenario_no, run_no)
+                    )
+
         # return to status quo
         yield self.switchTestbedProfile("minimum2010")
 
