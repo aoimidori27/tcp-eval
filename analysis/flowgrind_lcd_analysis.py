@@ -111,17 +111,31 @@ class LCDAnalysis(Analysis):
             iat_min_0 = iat_min_list[0]
             iat_min_1 = iat_min_list[1]
 
-        iat_avg_0 = iat_avg_1 = 0.0;
+        iat_avg_0 = iat_avg_1 = 0.0
         iat_avg_list = record.calculate(what = "iat_avg_list", optional = True)
         if iat_avg_list and len(iat_avg_list) == 2:
             iat_avg_0 = iat_avg_list[0]
             iat_avg_1 = iat_avg_list[1]
 
-        iat_max_0 = iat_max_1 = 0.0;
+        iat_max_0 = iat_max_1 = 0.0
         iat_max_list = record.calculate(what = "iat_max_list", optional = True)
         if iat_max_list and len(iat_max_list) == 2:
             iat_max_0 = iat_max_list[0]
             iat_max_1 = iat_max_list[1]
+
+        # icmp
+        s_icmp_code_0 = s_icmp_code_1 = d_icmp_code_0 = d_icmp_code_1 = 0.0
+        tmp = record.calculate(what = "s_icmp_code_0", optional = True)
+        if tmp: s_icmp_code_0 = tmp
+
+        tmp = record.calculate(what = "s_icmp_code_1", optional = True)
+        if tmp: s_icmp_code_1 = tmp
+
+        tmp = record.calculate(what = "d_icmp_code_0", optional = True)
+        if tmp: d_icmp_code_0 = tmp
+
+        tmp = record.calculate(what = "d_icmp_code_1", optional = True)
+        if tmp: d_icmp_code_1 = tmp
 
         dbcur.execute("""
                       INSERT INTO tests VALUES
@@ -130,12 +144,14 @@ class LCDAnalysis(Analysis):
                       %f, %f,
                       %f, %f, %f, %f, %f, %f,
                       %f, %f, %f, %f, %f, %f,
+                      %f, %f, %f, %f,
                       %u, "%s", "%s", "%s")
                       """ % (iterationNo, scenarioNo, runNo, src, dst,
                              thruput, thruput_recv, thruput_0, thruput_1, thruput_recv_0, thruput_recv_1,
                              transac_0, transac_1,
                              rtt_min_0, rtt_min_1, rtt_avg_0, rtt_avg_1, rtt_max_0, rtt_max_1,
                              iat_min_0, iat_min_1, iat_avg_0, iat_avg_1, iat_max_0, iat_max_1,
+                             s_icmp_code_0, s_icmp_code_1, d_icmp_code_0, d_icmp_code_1,
                              start_time, run_label, scenario_label, test))
 
         outagesList = record.calculate('outages', optional = True)
@@ -237,13 +253,13 @@ class LCDAnalysis(Analysis):
         g = UmHistogram(plotname=plotname, outdir=outdir,
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
-        g.setYLabel(r"RTOs and Reverts [$\\#$]")
+        g.setYLabel(r"Average Retransmissions and Reverts [$\\#$]")
         g.setYRange("[ 0 : * ]")
 
-        g.plotBar(valfilename, title="Timeout retransmissions LCD",
+        g.plotBar(valfilename, title="Timeout retransmissions TCP-LCD",
                 using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
-        g.plotBar(valfilename, title="Timeout retransmissions Standard", using="4:xtic(1)", linestyle=2)
-        g.plotBar(valfilename, title="Backoff reverts LCD", using="3:xtic(1)",
+        g.plotBar(valfilename, title="Timeout retransmissions Standard TCP", using="4:xtic(1)", linestyle=2)
+        g.plotBar(valfilename, title="Backoff reverts TCP-LCD", using="3:xtic(1)",
                 linestyle=3, fillstyle="solid 0.5")
         # g.plotBar(valfilename, title="Reverts Standard", using="5:xtic(1)", linestyle=3)
 
@@ -313,17 +329,17 @@ class LCDAnalysis(Analysis):
         g = UmHistogram(plotname=plotname, outdir=outdir,
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
-        g.setYLabel(r"Outages [$\\#$]")
-        g.setY2Label(r"Duration [$\\si{\\second}$]")
+        g.setYLabel(r"Average Outages [$\\#$]")
+        g.setY2Label(r"Average Duration [$\\si{\\second}$]")
         g.setYRange("[ 0 : 8 ]")
         g.setY2Range("[ 0 : 20 ]")
 
-        g.plotBar(valfilename, title="Outages LCD", using="2:xtic(1)",
+        g.plotBar(valfilename, title="Outages TCP-LCD", using="2:xtic(1)",
                 linestyle=1,fillstyle="solid 0.5")
-        g.plotBar(valfilename, title="Outages Standard", using="4:xtic(1)", linestyle=1)
-        g.plotBar(valfilename, title="Outage duration LCD", using="3:xtic(1)",
+        g.plotBar(valfilename, title="Outages Standard TCP", using="4:xtic(1)", linestyle=1)
+        g.plotBar(valfilename, title="Outage duration TCP-LCD", using="3:xtic(1)",
                 linestyle=2,fillstyle="solid 0.5", axes="x1y2")
-        g.plotBar(valfilename, title="Outage duration Standard", using="5:xtic(1)",
+        g.plotBar(valfilename, title="Outage duration Standard TCP", using="5:xtic(1)",
                 linestyle=2, axes="x1y2")
 
         # output plot
@@ -332,7 +348,7 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
-    def generateICMPsLCD(self):
+    def generateICMPsLCDold(self):
         """ Generate a icmp and reverts histogram with scenario labels for lcd """
 
         # outfile
@@ -353,19 +369,19 @@ class LCDAnalysis(Analysis):
         g.gplot("set style histogram rowstacked")
         g.gplot("set xtics offset 0,0.3")
         g.gplot("set boxwidth 0.8")
-        g.plot("newhistogram 'src14-dst8',\
+        g.plot("newhistogram 'Src14--Dst8',\
             'lcd-analysis-icmps.values' using 2:xtic(1) title 'ICMPs Code 0' ls 8,\
             '' using 3:xtic(1) title 'ICMPs Code 1'  ls 8 fillstyle solid 0.5,\
             '' using 4:xtic(1) title 'Backoff reverts'  ls 3 fillstyle solid 0.5\
             ")
 
-        g.plot("newhistogram 'src14-dst17',\
+        g.plot("newhistogram 'Src14--Dst17',\
             '' using 5:xtic(1) notitle ls 8,\
             '' using 6:xtic(1) notitle ls 8 fillstyle solid 0.5,\
             '' using 7:xtic(1) notitle ls 3 fillstyle solid 0.5\
             ")
 
-        g.plot("newhistogram 'src14-dst6',\
+        g.plot("newhistogram 'Src14--Dst6',\
             '' using 8:xtic(1) notitle ls 8,\
             '' using 9:xtic(1) notitle  ls 8 fillstyle solid 0.5,\
             '' using 10:xtic(1) notitle  ls 3 fillstyle solid 0.5\
@@ -374,6 +390,99 @@ class LCDAnalysis(Analysis):
 
         # output plot
         g.save()
+
+    def generateICMPsLCD(self):
+        """ Generate a icmp and reverts histogram with scenario labels for lcd """
+
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "lcd-analysis-icmps"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        dbcur = self.dbcon.cursor()
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests
+        ORDER BY scenarioNo'''
+        )
+        scenarios = list()
+        for row in dbcur:
+            (key,val) = row
+            scenarios.append(val)
+
+        # get single values
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
+        avg(s_icmp_code_0+d_icmp_code_0) as icmp_code_0,
+        avg(s_icmp_code_1+d_icmp_code_1) as icmp_code_1,
+        AVG(thruput_0+thruput_1) as thruput_overall
+        FROM tests
+        GROUP BY run_label, scenarioNo
+        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ''' )
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+        # columns
+        for val in scenarios:
+            fh.write("code_0_%(v)s code_1_%(v)s" %{ "v" : val })
+        fh.write("\n")
+
+        # one line per runlabel
+        data = dict()
+        sorted_labels = list()
+
+
+        for row in dbcur:
+            (rlabel,slabel,sno,
+             icmp_code_0, icmp_code_1,
+             thruput_overall) = row
+
+            debug(row)
+
+            if not data.has_key(rlabel):
+                tmp = list()
+                for i in scenarios:
+                    tmp.append("0.0 0.0")
+                data[rlabel] = tmp
+                sorted_labels.append(rlabel)
+
+            data[rlabel][scenarios.index(slabel)] = "%f %f" %(
+                                 icmp_code_0,
+                                 icmp_code_1,
+                                 )
+
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s" %key)
+            for val in value:
+                fh.write(" %s" %val)
+            fh.write("\n")
+        fh.close()
+
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+        g.setYLabel(r"Average ICMPs $\\#$]")
+
+        g.setYRange("[ 0 : * ]")
+
+        # bars
+        for i in range(len(scenarios)):
+            g.plotBar(valfilename, title=scenarios[i]+" ICMPs Code 0",
+                    using="%u:xtic(1)" %((2*i)+2), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[i]+" ICMPs Code 1",
+                    using="%u:xtic(1)" %((2*i)+3), linestyle=(i+1))
+
+        # output plot
+        g.save()
+
 
     def generateRTTLCD(self):
         """ Generate a RTT histogram with scenario labels for
@@ -481,10 +590,10 @@ class LCDAnalysis(Analysis):
 
         # plot avg RTT
         for i in range(len(scenarios)):
-            gavg.plotBar(valfilename, title=scenarios[i]+" LCD",
+            gavg.plotBar(valfilename, title=scenarios[i]+" TCP-LCD",
                     using="%u:xtic(1)" %((13*i)+3), linestyle=(i+2),
                     fillstyle="solid 0.5")
-            gavg.plotBar(valfilename, title=scenarios[i]+" Standard",
+            gavg.plotBar(valfilename, title=scenarios[i]+" Standard TCP",
                     using="%u:xtic(1)" %((13*i)+6), linestyle=(i+2))
 
         # plot errorbars
@@ -507,10 +616,10 @@ class LCDAnalysis(Analysis):
 
         # plot max RTT
         for i in range(len(scenarios)):
-            gmax.plotBar(valfilename, title=scenarios[i]+" LCD",
+            gmax.plotBar(valfilename, title=scenarios[i]+" TCP-LCD",
                     using="%u:xtic(1)" %((13*i)+4), linestyle=(i+2),
                     fillstyle="solid 0.5")
-            gmax.plotBar(valfilename, title=scenarios[i]+" Standard",
+            gmax.plotBar(valfilename, title=scenarios[i]+" Standard TCP",
                     using="%u:xtic(1)" %((13*i)+7), linestyle=(i+2))
 
         # plot error bars
@@ -631,10 +740,10 @@ class LCDAnalysis(Analysis):
 
         # plot avg iat
         for i in range(len(scenarios)):
-            gavg.plotBar(valfilename, title=scenarios[i]+" LCD",
+            gavg.plotBar(valfilename, title=scenarios[i]+" TCP-LCD",
                     using="%u:xtic(1)" %((13*i)+3), linestyle=(i+1),
                     fillstyle="solid 0.5")
-            gavg.plotBar(valfilename, title=scenarios[i]+" Standard",
+            gavg.plotBar(valfilename, title=scenarios[i]+" Standard TCP",
                     using="%u:xtic(1)" %((13*i)+6), linestyle=(i+1))
 
         # plot errorbars
@@ -657,10 +766,10 @@ class LCDAnalysis(Analysis):
 
         # plot max iat
         for i in range(len(scenarios)):
-            gmax.plotBar(valfilename, title=scenarios[i]+" LCD",
+            gmax.plotBar(valfilename, title=scenarios[i]+" TCP-LCD",
                     using="%u:xtic(1)" %((13*i)+4), linestyle=(i+1),
                     fillstyle="solid 0.5")
-            gmax.plotBar(valfilename, title=scenarios[i]+" Standard",
+            gmax.plotBar(valfilename, title=scenarios[i]+" Standard TCP",
                     using="%u:xtic(1)" %((13*i)+7), linestyle=(i+1))
 
         # plot error bars
@@ -763,17 +872,17 @@ class LCDAnalysis(Analysis):
         g = UmHistogram(plotname=plotname, outdir=outdir,
                 saveit=self.options.save,  debug=self.options.debug,
                 force=self.options.force)
-        g.setYLabel(r"Network Transactions [$\\si{\\nnumber\\per\\second}$]")
+        g.setYLabel(r"Average Network Transactions [$\\si{\\nnumber\\per\\second}$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
 
         # bars
         for i in range(len(scenarios)):
             # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
-            g.plotBar(valfilename, title=scenarios[i]+" LCD",
+            g.plotBar(valfilename, title=scenarios[i]+" TCP LCD",
                     using="%u:xtic(1)" %((5*i)+2), linestyle=(i+2),
                     fillstyle="solid 0.5")
-            g.plotBar(valfilename, title=scenarios[i]+" Standard",
+            g.plotBar(valfilename, title=scenarios[i]+" Standard TCP",
                     using="%u:xtic(1)" %((5*i)+3), linestyle=(i+2))
 
         # errobars
@@ -874,14 +983,15 @@ class LCDAnalysis(Analysis):
         g = UmHistogram(plotname=plotname, outdir=outdir,
                 saveit=self.options.save,  debug=self.options.debug,
                 force=self.options.force)
-        g.setYLabel(r"Network Transactions improvement for TCP-LCD [$\\si{\\percent}$]")
+        g.setYLabel(r"Average Network Transactions Improvement for TCP-LCD [$\\si{\\percent}$]")
         g.setYRange("[ * : * ]")
-        g.gplot("set key vertical")
+        g.gplot("set key horizontal")
 
         # bars
         for i in range(len(scenarios)):
             # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
-            g.plotBar(valfilename, title=scenarios[i], using="%u:xtic(1)" %((3*i)+2), linestyle=(i+2))
+            g.plotBar(valfilename, title=scenarios[i], using="%u:xtic(1)"
+                    %((3*i)+2), linestyle=(i+2))
 
         # errobars
         #for i in range(len(scenarios)):
@@ -954,8 +1064,8 @@ class LCDAnalysis(Analysis):
 
             debug(row)
 
-            std_thruput_0 = self.calculateStdDev(rlabel, slabel, "thruput_0")
-            std_thruput_1 = self.calculateStdDev(rlabel, slabel, "thruput_1")
+            std_thruput_0 = self.calculateStdDev(rlabel, slabel, "thruput_0+thruput_recv_0")
+            std_thruput_1 = self.calculateStdDev(rlabel, slabel, "thruput_1+thruput_recv_1")
 
             if not data.has_key(rlabel):
                 tmp = list()
@@ -979,7 +1089,7 @@ class LCDAnalysis(Analysis):
 
         g = UmHistogram(plotname=plotname, outdir=outdir,
                 debug=self.options.debug, force=self.options.force)
-        g.setYLabel(r"Goodput [$\\si{\\Mbps}$]")
+        g.setYLabel(r"Average Goodput [$\\si{\\Mbps}$]")
         # g.setClusters(len(sorted_labels))
         g.setYRange("[ 0 : * ]")
 
@@ -987,10 +1097,10 @@ class LCDAnalysis(Analysis):
         for i in range(len(keys)):
             key = keys[i]
             # buf = '"%s" using %u:xtic(1) title "%s" ls %u' %(valfilename, 4+(i*5), scenarios[key], i+1)
-            g.plotBar(valfilename, title=scenarios[key]+" LCD",
+            g.plotBar(valfilename, title=scenarios[key]+" TCP-LCD",
                     using="%u:xtic(1)" %( (i*5)+2 ), linestyle=(i+1),
                     fillstyle="solid 0.5")
-            g.plotBar(valfilename, title=scenarios[key]+" Standard",
+            g.plotBar(valfilename, title=scenarios[key]+" Standard TCP",
                     using="%u:xtic(1)" %( (i*5)+3 ), linestyle=(i+1))
 
         g.plot("newhistogram ''")
@@ -1098,7 +1208,7 @@ class LCDAnalysis(Analysis):
         g = UmHistogram(plotname=plotname, outdir=outdir,
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
-        g.setYLabel(r"Goodput improvement for TCP LCD [$\\si{\\percent}$]")
+        g.setYLabel(r"Average Goodput improvement for TCP-LCD [$\\si{\\percent}$]")
         # g.setLogScale()
         g.setYRange("[ * : * ]")
         # bars
@@ -1129,14 +1239,12 @@ class LCDAnalysis(Analysis):
         outdir      = self.options.outdir
         plotname    = "lcd-analysis-histogram-src14-dst6-rto"
         valfilename = os.path.join(outdir, plotname+".values")
-        min         = 1
-        max         = 15
         dbcur = self.dbcon.cursor()
 
         dbcur.execute('''
-        SELECT retr as bin, flowNo as flowNo, count(1) as count
+        SELECT (revr+bkof) as bin, flowNo as flowNo, count(1) as count
         FROM outages
-        WHERE run_label = 'src14-dst6'
+        WHERE run_label = 'Src14--Dst6'
         GROUP by bin, flowNo
         ORDER by bin ASC;
         ''')
@@ -1148,7 +1256,7 @@ class LCDAnalysis(Analysis):
         fh.write("# run_label ")
 
         # one line per bin
-        data = [[0 for i in range(2)] for j in range(min,max*2)]
+        data = [[0 for i in range(2)] for j in range(1,self.histogrambins*10)]
 
         fh.write("# bin count_0 count_1")
         fh.write("\n")
@@ -1175,15 +1283,33 @@ class LCDAnalysis(Analysis):
         g.setYLabel(r"Total Outages [$\\#$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
         g.setYRange("[ 1 : * ]")
-        g.setXRange("[ %d : %d ]" %(min-1,max) )
+        g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
+        g.gplot("set xtics 5 scale 0.5")
+        g.gplot("set key inside vertical top right nobox")
+        g.plotBar(valfilename, title="TCP-LCD",
+                using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
+        g.plotBar(valfilename, title="Standard TCP",
+                using="3:xtic(1)", linestyle=2)
+
+        # output plot
+        g.save()
+
+	plotname += "-logscale"
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+
+        g.setYLabel(r"Total Outages [$\\#$]")
+        g.setXLabel(r"RTOs per Outage [$\\#$]")
+        g.setYRange("[ 1 : * ]")
+        g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
         g.gplot("set xtics 5 scale 0.5")
         g.gplot("set key inside vertical top right nobox")
         g.setLogScale()
-        g.plotBar(valfilename, title="LCD",
+        g.plotBar(valfilename, title="TCP-LCD",
                 using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
-        g.plotBar(valfilename, title="Standard",
+        g.plotBar(valfilename, title="Standard TCP",
                 using="3:xtic(1)", linestyle=2)
-
 
         # output plot
         g.save()
@@ -1199,14 +1325,12 @@ class LCDAnalysis(Analysis):
         outdir      = self.options.outdir
         plotname    = "lcd-analysis-histogram-src14-dst6-duration-per-rto"
         valfilename = os.path.join(outdir, plotname+".values")
-        min         = 1
-        max         = 15
         dbcur = self.dbcon.cursor()
 
         dbcur.execute('''
-        SELECT retr as bin, flowNo as flowNo, avg(end-begin) as duration
+        SELECT (revr+bkof) as bin, flowNo as flowNo, avg(end-begin) as duration
         FROM outages
-        WHERE run_label = 'src14-dst6'
+        WHERE run_label = 'Src14--Dst6'
         GROUP by bin, flowNo
         ORDER by bin ASC;
         ''')
@@ -1218,7 +1342,7 @@ class LCDAnalysis(Analysis):
         fh.write("# run_label ")
 
         # one line per bin
-        data = [[0 for i in range(2)] for j in range(min,max*2)]
+        data = [[0 for i in range(2)] for j in range(self.histogrambins*100)]
 
         fh.write("# bin duration_0 duration_1")
         fh.write("\n")
@@ -1245,12 +1369,12 @@ class LCDAnalysis(Analysis):
         g.setYLabel(r"Average Outage Duration [$\\si{\\second}$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
         g.setYRange("[ 0 : * ]")
-        g.setXRange("[ %d : %d ]" %(min-1,max) )
+        g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
         g.gplot("set xtics 5 scale 0.5")
         g.gplot("set key inside vertical top right nobox")
-        g.plotBar(valfilename, title="LCD",
+        g.plotBar(valfilename, title="TCP-LCD",
                 using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
-        g.plotBar(valfilename, title="Standard",
+        g.plotBar(valfilename, title="Standard TCP",
                 using="3:xtic(1)", linestyle=2)
 
 
@@ -1267,14 +1391,12 @@ class LCDAnalysis(Analysis):
         outdir      = self.options.outdir
         plotname    = "lcd-analysis-histogram-src14-dst6-backoffs-per-rto"
         valfilename = os.path.join(outdir, plotname+".values")
-        min         = 1
-        max         = 15
         dbcur = self.dbcon.cursor()
 
         dbcur.execute('''
-        SELECT retr as bin, flowNo as flowNo, avg(bkof) as duration
+        SELECT (revr+bkof) as bin, flowNo as flowNo, avg(bkof) as duration
         FROM outages
-        WHERE run_label = 'src14-dst6'
+        WHERE run_label = 'Src14--Dst6'
         GROUP by bin, flowNo
         ORDER by bin ASC;
         ''')
@@ -1286,7 +1408,7 @@ class LCDAnalysis(Analysis):
         fh.write("# run_label ")
 
         # one line per bin
-        data = [[0 for i in range(2)] for j in range(min,max*2)]
+        data = [[0 for i in range(2)] for j in range(0,self.histogrambins*10)]
 
         fh.write("# bin backoffs_0 backoffs_1")
         fh.write("\n")
@@ -1313,12 +1435,12 @@ class LCDAnalysis(Analysis):
         g.setYLabel(r"Average Backoffs [$\\#$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
         g.setYRange("[ 0 : * ]")
-        g.setXRange("[ %d : %d ]" %(min-1,max) )
+        g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
         g.gplot("set xtics 5 scale 0.5")
         g.gplot("set key inside vertical top right nobox")
-        g.plotBar(valfilename, title="LCD",
+        g.plotBar(valfilename, title="TCP-LCD",
                 using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
-        g.plotBar(valfilename, title="Standard",
+        g.plotBar(valfilename, title="Standard LCD",
                 using="3:xtic(1)", linestyle=2)
 
 
@@ -1337,14 +1459,12 @@ class LCDAnalysis(Analysis):
         outdir      = self.options.outdir
         plotname    = "lcd-analysis-histogram-goodput-per-rto"
         valfilename = os.path.join(outdir, plotname+".values")
-        min         = 1
-        max         = 15
         dbcur = self.dbcon.cursor()
 
         dbcur.execute('''
-        SELECT retr as bin, flowNo as flowNo, avg(thruput_0+thruput_1) as tput
+        SELECT (revr+bkof) as bin, flowNo as flowNo, avg(thruput_0+thruput_1) as tput
         FROM outages
-        WHERE run_label = 'src14-dst6'
+        WHERE run_label = 'Src14--Dst6'
         GROUP by bin, flowNo
         ORDER by bin ASC;
         ''')
@@ -1356,7 +1476,7 @@ class LCDAnalysis(Analysis):
         fh.write("# run_label ")
 
         # one line per bin
-        data = [[0 for i in range(2)] for j in range(min,max*2)]
+        data = [[0 for i in range(2)] for j in range(1,self.histogrambins*10)]
 
         fh.write("# bin tput_0 tput_1")
         fh.write("\n")
@@ -1383,12 +1503,12 @@ class LCDAnalysis(Analysis):
         g.setYLabel(r"Average Goodput per Flow [$\\si{\\Mbps}$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
         g.setYRange("[ 0 : * ]")
-        g.setXRange("[ %d : %d ]" %(min-1,max) )
+        g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
         g.gplot("set xtics 5 scale 0.5")
         g.gplot("set key inside vertical top right nobox")
-        g.plotBar(valfilename, title="LCD",
+        g.plotBar(valfilename, title="TCP-LCD",
                 using="2:xtic(1)", linestyle=2, fillstyle="solid 0.5")
-        g.plotBar(valfilename, title="Standard",
+        g.plotBar(valfilename, title="Standard TCP",
                 using="3:xtic(1)", linestyle=2)
 
 
@@ -1405,17 +1525,16 @@ class LCDAnalysis(Analysis):
         outdir      = self.options.outdir
         plotname    = "lcd-analysis-histogram-src14-dst6-reverts"
         valfilename = os.path.join(outdir, plotname+".values")
-        max         = 16
         dbcur = self.dbcon.cursor()
 
         # get single values
         dbcur.execute('''
         SELECT
-        retr as bin_0,
+        (revr+bkof) as bin_0,
         revr as bin_1,
         count(1) as count
         FROM outages
-        WHERE run_label = 'src14-dst6' and flowNo = '0'
+        WHERE run_label = 'Src14--Dst6' and flowNo = '0'
         GROUP by bin_1, bin_0
         ORDER by bin_0 ASC, bin_1 ASC;
         ''' )
@@ -1423,8 +1542,8 @@ class LCDAnalysis(Analysis):
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
 
-        data = [[0 for i in range(max)] for j in range(max)]
-        sums = [0 for i in range(max)]
+        data = [[0 for i in range(self.histogrambins*10)] for j in range(self.histogrambins*10)]
+        sums = [0 for i in range(self.histogrambins*10)]
 
         fh.write("# bin_0 / values 1...max / sum ")
         fh.write("\n")
@@ -1439,10 +1558,10 @@ class LCDAnalysis(Analysis):
         # get sum
         dbcur.execute('''
         SELECT
-        retr as bin_0,
+        (revr+bkof) as bin_0,
         count(1) as sum
         FROM outages
-        WHERE run_label = 'src14-dst6' and flowNo = '0'
+        WHERE run_label = 'Src14--Dst6' and flowNo = '0'
         GROUP by bin_0
         ORDER by bin_0 ASC;
         ''' )
@@ -1452,9 +1571,9 @@ class LCDAnalysis(Analysis):
             debug(row)
             sums[int(bin_0)] = sum
 
-        for i in range(max):
+        for i in range(self.histogrambins):
             fh.write("%d " %i)
-            for j in range(max):
+            for j in range(self.histogrambins):
                 fh.write("%d " %(data[i][j]))
             fh.write("%d \n" %(sums[i]))
         fh.close()
@@ -1466,13 +1585,19 @@ class LCDAnalysis(Analysis):
         g.setYLabel(r"Reverts [$\\si{\\percent}$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
         g.setYRange("[ 0 : 100 ]")
-        g.setXRange("[ %d : %d ]" %(0.5,max) )
+        g.setXRange("[ %d : %d ]" %(0.5,self.histogrambins) )
         g.gplot("set xtics 5 scale 0.5")
         g.gplot("set key inside vertical right nobox")
         g.gplot("set style histogram rowstacked")
         g.gplot("set boxwidth 0.6")
-        for i in range(max):
-            g.plotBar(valfilename, title="%d" %(i), using="(100.*$%d/$%d):xtic(1)" %(i+2,max+2), linestyle=(i+1) )
+        for i in range(self.histogrambins):
+            # gradient
+            g.plotBar(valfilename, title="%d" %(i),
+                      using="(100.*$%d/$%d):xtic(1)" %(i+2,self.histogrambins+2),
+                      gradientCurrent=i, gradientMax=self.histogrambins)
+            # colors
+            #g.plotBar(valfilename, title="%d" %(i),
+            #        using="(100.*$%d/$%d):xtic(1)" %(i+2,self.histogrambins+2), linestyle=(i+1) )
 
 
         # output plot
@@ -1484,6 +1609,8 @@ class LCDAnalysis(Analysis):
 
     def run(self):
         """Main Method"""
+
+        self.histogrambins = 30 
 
         # by default database in memory to access data efficiently
         if not self.options.save:
@@ -1519,6 +1646,10 @@ class LCDAnalysis(Analysis):
                             iat_avg_1       DOUBLE,
                             iat_max_0       DOUBLE,
                             iat_max_1       DOUBLE,
+                            s_icmp_code_0   DOUBLE,
+                            s_icmp_code_1   DOUBLE,
+                            d_icmp_code_0   DOUBLE,
+                            d_icmp_code_1   DOUBLE,
                             start_time      INTEGER,
                             run_label       VARCHAR(70),
                             scenario_label  VARCHAR(70),
@@ -1561,11 +1692,11 @@ class LCDAnalysis(Analysis):
         self.generateRTTLCD()
         self.generateRTOsRevertsLCD()
         self.generateOutagesLCD()
-        self.generateHistogramRTOsLCD()
         self.generateHistogramDurartionPerRTOsLCD()
         self.generateHistogramBackoffsPerRTOsLCD()
         self.generateHistogramtTputPerRevertsLCD()
         self.generateHistogramRevertsPerRTOsLCD()
+        self.generateHistogramRTOsLCD()
         self.generateICMPsLCD() # create value file manually!
         for key in self.failed:
             warn("%d failed tests for %s" %(self.failed[key],key))
