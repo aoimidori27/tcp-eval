@@ -1,10 +1,10 @@
-#!/usr/bin/env /usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # Generates pdfs from gnuplot epslatex files.
 #
 # Copyright (C) 2009 - 2010 Alexander Zimmermann <zimmermann@nets.rwth-aachen.de>
-# 
+#
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
@@ -79,7 +79,7 @@ class Gnuplot2PDF(Application):
         # latex object
         self._latex = UmLatex(self.options.texfile, self.options.outdir,
                               self.options.force, self.options.debug, tikz = False)
-        
+
         # use sans serif font and set the correct font size
         self._latex.setDocumentclass("scrartcl", "fontsize=%spt" %self.options.fontsize)
         self._latex.addSetting(r"\renewcommand{\familydefault}{\sfdefault}")
@@ -91,7 +91,7 @@ class Gnuplot2PDF(Application):
         # get all necessary directories
         srcdir = os.getcwd()
         destdir = self.options.outdir
-        tempdir = tempfile.mkdtemp()   
+        tempdir = tempfile.mkdtemp()
         target = ""
         # work in tempdir
         if self.options.debug:
