@@ -33,11 +33,11 @@ class UmGnuplot():
         self.gplot('set title ""')
 
         # default size
-        self.plotsize = "14.4cm,9.7cm"
+        #self.plotsize = "14.4cm,9.7cm"
         # for 2 pictures with subcaption, one line caption
         #self.plotsize = "14.4cm,9.3cm"
         # for 2 pictures with subcaption, two line caption
-        #self.plotsize = "14.4cm,8.7cm"
+        self.plotsize = "14.4cm,8.7cm"
 
         # font size
         self.fontsize = 6
@@ -51,13 +51,27 @@ class UmGnuplot():
         # colors and line styles
         self.gplot(
         """
-        set style line 1 lt rgb "#F593A1" lw 1 pt 6
-        set style line 2 lt rgb "dark-green" lw 1 pt 1
-        set style line 3 lt rgb "navy" lw 1 pt 7 ps 1
-        set style line 4 lt rgb "grey" lw 1
-        set style line 5 lt rgb "#98E2E7" lw 1 pt 7 ps 1
-        set style line 6 lt rgb "#B83749" lw 1 pt 7 ps 1
-        set style line 7 lt rgb "#2BB1BA" lw 1 pt 7 ps 1
+        set style line  1 lt rgb "#FF8C00" lw 1 pt 7 ps 1 #darkorange
+        set style line  2 lt rgb "#006400" lw 1 pt 7 ps 1 #darkgreen
+        set style line  3 lt rgb "#000080" lw 1 pt 7 ps 1 #navy
+        set style line  4 lt rgb "#808080  lw 1 pt 7 ps 1 #grey
+        set style line  5 lt rgb "#DC143C" lw 1 pt 7 ps 1 #crimson
+        set style line  6 lt rgb "#87CEEB" lw 1 pt 7 ps 1 #skyblue
+        set style line  7 lt rgb "#F08080" lw 1 pt 7 ps 1 #lightcoral
+        set style line  8 lt rgb "#228B22" lw 1 pt 7 ps 1 #forrestgreen
+        set style line  9 lt rgb "#A0522D" lw 1 pt 7 ps 1 #sienna
+        set style line 10 lt rgb "#8B008B" lw 1 pt 7 ps 1 #darkmagenta
+        set style line 11 lt rgb "#FFD700" lw 1 pt 7 ps 1 #gold
+        set style line 12 lt rgb "#D8BFD8" lw 1 pt 7 ps 1 #thistle
+        set style line 13 lt rgb "#7FFF00" lw 1 pt 7 ps 1 #chartreuse
+        set style line 14 lt rgb "#7B68EE" lw 1 pt 7 ps 1 #mediumslateblue
+        set style line 15 lt rgb "#FF0000" lw 1 pt 7 ps 1 #red
+        set style line 16 lt rgb "#ADFF2F" lw 1 pt 7 ps 1 #greeenyellow
+        set style line 17 lt rgb "#A52A2A" lw 1 pt 7 ps 1 #brown
+        set style line 18 lt rgb "#B0C4DE" lw 1 pt 7 ps 1 #lightsteelblue
+        set style line 19 lt rgb "#556B2F" lw 1 pt 7 ps 1 #darkolivegreen
+        set style line 20 lt rgb "#FFE4C4" lw 1 pt 7 ps 1 #bisque
+
         """)
 
         # grid and other styles
@@ -73,7 +87,7 @@ class UmGnuplot():
 
         # offset may be changed
         self.xaxislabeloffset = 0,0.3
-        self.yaxislabeloffset = 3.5,0
+        self.yaxislabeloffset = 2.0,0
 
         # latex object
         save_name = "main.tex"
@@ -100,7 +114,7 @@ class UmGnuplot():
         self.gplot.set_label("y2label", *args, **kwargs)
         self.gplot('set ytics nomirror')
         self.gplot('set y2tics nomirror')
-        self.gplot('unset grid')
+        # self.gplot('unset grid')
 
     def setXLabel(self, *args, **kwargs):
         try:
@@ -147,6 +161,9 @@ class UmGnuplot():
 
     def setFontSize(self, fontsize):
         self.fontsize = fontsize
+
+    def setLogScale(self, axes="y"):
+        self.gplot('set log %s' %axes)
 
     def plot(self, cmd):
         """Extends plotcmd with cmd"""
@@ -228,7 +245,7 @@ class UmHistogram(UmGnuplot):
 
         self.gplot('set style data histogram')
         self.gplot('set style histogram clustered gap %u title offset character 0,0,0' %self._gap)
-        self.gplot('set key under nobox')
+        self.gplot('set key under horizontal right nobox')
         self.gplot('set xtics scale 0')
         self.gplot('set ytics')
         self.gplot('set grid y')
@@ -260,10 +277,11 @@ class UmHistogram(UmGnuplot):
     def setGap(self, gap):
         self._gap = gap
 
-    def plotBar(self, values, title=None, using=None, linestyle=3,
-            fillstyle=None, axes=None):
+    def plotBar(self, values, title=None, using=None, linestyle=None,
+            fillstyle=None, axes=None, gradientCurrent=None, gradientMax=None):
         # autoupdate barspercluster
         self._barspercluster += 1
+
 
         titlestr= "notitle"
         if title:
@@ -273,20 +291,39 @@ class UmHistogram(UmGnuplot):
         if using:
             usingstr = "using %s " %using
 
+        linestr = ""
+        if linestyle:
+            linestr = "linestyle %s " %linestyle
+
         fillstr = ""
         if fillstyle:
             fillstr = "fillstyle %s " %fillstyle
+
+        gradientstr = ""
+        if gradientMax:
+            a_r = 255
+            a_g = 0
+            a_b = 0
+            b_r = 0
+            b_g = 255
+            b_b = 0
+            i = float(gradientCurrent)
+            h = float(gradientMax)
+            gradientstr = 'lt rgb "#%02X%02X%02X" lw 1' %(
+                    max(0,a_r-(((b_r-a_r)/-h)*i)),
+                    max(0,a_g-(((b_g-a_g)/-h)*i)),
+                    max(0,a_b-(((b_b-a_b)/-h)*i)))
 
         axesstr = ""
         if  axes:
             axesstr = "axes %s " %axes
 
-        cmd = '"%s" %s %s %s ls %s %s' %(values, usingstr, axesstr, titlestr, linestyle,
-                fillstr)
+        cmd = '"%s" %s %s %s %s %s %s' %(values, usingstr, axesstr, titlestr, linestr,
+                fillstr, gradientstr)
         UmGnuplot.plot(self, cmd)
 
     def plotErrorbar(self, values, barNo, valColumn, yDelta, title=None,
-            linestyle=2, yHigh=None):
+            linestyle=None, yHigh=None):
         """Plot errorbars, barNo identifies the bar the errobar should be plotted on
            counting starts with 0
         """
@@ -295,6 +332,11 @@ class UmHistogram(UmGnuplot):
             titlestr='notitle'
         else:
             titlestr='title "%s"' %title
+
+	if linestyle is None:
+	    linestr='lt rgb "black" lw 1 pt 1'
+	else:
+	    linestr="linestyle %u" %linestyle
 
         # calculate middle of cluster
         middle = self._barspercluster*self.getBarWidth()/2
@@ -308,7 +350,7 @@ class UmHistogram(UmGnuplot):
             usingstr = "($0+%f):%s:%s:%s" %(off, valColumn, yDelta, yHigh)
         else:
             usingstr = "($0+%f):%s:%s" %(off, valColumn, yDelta)
-        cmd = '"%s" using %s %s with errorbars ls %u' %(values,usingstr,titlestr,linestyle)
+        cmd = '"%s" using %s %s with errorbars %s' %(values,usingstr,titlestr,linestr)
 
         UmGnuplot.plot(self, cmd)
 

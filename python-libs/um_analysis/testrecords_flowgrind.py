@@ -110,8 +110,8 @@ class FlowgrindRecordFactory():
                 flow_id = int(r['flow_id'][i])
                 tretr = int(r['tret'][i])
                 bkof = int(r['bkof'][i])
-                revr = tretr-bkof #int(r['revr'][i])
-
+                #revr = abs(tretr-bkof) #int(r['revr'][i])
+                revr = int(r['revr'][i])
                 if flow_id not in flow_map: flow_map[flow_id] = dict()
                 if dir not in flow_map[flow_id]: flow_map[flow_id][dir] = None
 
@@ -157,7 +157,9 @@ class FlowgrindRecordFactory():
             # reciever blocks
             "[R,D]: .* request blocks = (?P<d_requ_out_sum>\d+)\/(?P<s_requ_in_sum>\d+)",
             "[R,D]: .* response blocks = (?P<d_resp_out_sum>\d+)/(?P<s_resp_in_sum>\d+)",
-
+            # optional icmp stats
+            "# S ICMP: (?P<s_icmp_code_0>\d+) (?P<s_icmp_code_1>\d+)",
+            "# D ICMP: (?P<d_icmp_code_0>\d+) (?P<d_icmp_code_1>\d+)",
             # flow duration
             # optional calculated source rtt
             "S: .* RTT = (?P<s_rtt_min>\d+\.\d+)\/(?P<s_rtt_avg>\d+\.\d+)\/(?P<s_rtt_max>\d+\.\d+)",
@@ -175,7 +177,7 @@ class FlowgrindRecordFactory():
             "(?P<cwnd>\d+)\s+(?P<ssth>\d+|INT_MAX|SHRT_MAX)\s+(?P<uack>\d+)\s+(?P<sack>\d+)\s+"\
             "(?P<lost>\d+)\s+(?P<retr>\d+)\s+(?P<tret>\d+)\s+(?P<fack>\d+)\s+(?P<reor>\d+)\s+(?P<bkof>\d+)\s+"\
             # optional lcd revert count
-            #"(?P<revr>\d+)\s+"\
+            "(?P<revr>\d+)\s+"\
             "(?P<krtt>\d+\.\d+)\s+(?P<krttvar>\d+\.\d+)\s+(?P<krto>\d+\.\d+)\s+"\
             "(?P<castate>loss|open|disorder|recover)\s+"\
             "(?P<mss>\d+)\s+(?P<mtu>\d+)\s+",
@@ -229,6 +231,11 @@ class FlowgrindRecordFactory():
             reverse_tput_list = lambda r: map(float, r['reverse_tput_list']),
             test_start_time   = lambda r: time.mktime(time.strptime(r['test_start_time'][0])),
             outages           = outages,
+            # icmp stats
+            s_icmp_code_0 = lambda r: sum(map(int, r['s_icmp_code_0'])),
+            s_icmp_code_1 = lambda r: sum(map(int, r['s_icmp_code_1'])),
+            d_icmp_code_0 = lambda r: sum(map(int, r['d_icmp_code_0'])),
+            d_icmp_code_1 = lambda r: sum(map(int, r['d_icmp_code_1'])),
         )
 
     def createRecord(self, filename, test):
