@@ -54,20 +54,20 @@ class UmGnuplot():
         set style line  1 lt rgb "#006400" lw 1 pt 7 ps 1 #DarkGreen
         set style line  2 lt rgb "#00008B" lw 1 pt 7 ps 1 #DarkBlue
         set style line  3 lt rgb "#8B0000" lw 1 pt 7 ps 1 #DarkRed
-        set style line  4 lt rgb "#E9967A" lw 1 pt 7 ps 1 #DarkSalmon
-        set style line  5 lt rgb "#9932CC" lw 1 pt 7 ps 1 #DarkOrchid
+        set style line  4 lt rgb "#9932CC" lw 1 pt 7 ps 1 #DarkOrchid      
+        set style line  5 lt rgb "#E9967A" lw 1 pt 7 ps 1 #DarkSalmon
         set style line  6 lt rgb "#BDB76B" lw 1 pt 7 ps 1 #DarkKhaki
         set style line  7 lt rgb "#FF8C00" lw 1 pt 7 ps 1 #DarkOrange
         set style line  8 lt rgb "#696969" lw 1 pt 7 ps 1 #DimGrey
         set style line  9 lt rgb "#556B2F" lw 1 pt 7 ps 1 #DarkOliveGreen
         set style line 10 lt rgb "#B8860B" lw 1 pt 7 ps 1 #DarkGoldenrod
-        set style line 11 lt rgb "#32CD32" lw 1 pt 7 ps 1 #LimeGreen
-        set style line 12 lt rgb "#7B68EE" lw 1 pt 7 ps 1 #LightSlateBlue
+        set style line 11 lt rgb "#90EE90" lw 1 pt 7 ps 1 #LightGreen
+        set style line 12 lt rgb "#87CEFA" lw 1 pt 7 ps 1 #LightSkyBlue
         set style line 13 lt rgb "#CD5C5C" lw 1 pt 7 ps 1 #IndianRed
         set style line 14 lt rgb "#F0E68C" lw 1 pt 7 ps 1 #Khaki
         set style line 15 lt rgb "#FFA07A" lw 1 pt 7 ps 1 #LightSalmon
         set style line 16 lt rgb "#BA55D3" lw 1 pt 7 ps 1 #MediumOrchid
-        set style line 17 lt rgb "#DAA520" lw 1 pt 7 ps 1 #Goldenrod
+        set style line 17 lt rgb "#EEE8AA" lw 1 pt 7 ps 1 #LightGoldenrod
         set style line 18 lt rgb "#D3D3D3" lw 1 pt 7 ps 1 #LightGray
         set style line 19 lt rgb "#FFA500" lw 1 pt 7 ps 1 #Orange
         set style line 20 lt rgb "#808000" lw 1 pt 7 ps 1 #Olive
