@@ -54,11 +54,11 @@ class UmGnuplot():
         set style line  1 lt rgb "#006400" lw 1 pt 7 ps 1 #DarkGreen
         set style line  2 lt rgb "#00008B" lw 1 pt 7 ps 1 #DarkBlue
         set style line  3 lt rgb "#8B0000" lw 1 pt 7 ps 1 #DarkRed
-        set style line  4 lt rgb "#9932CC" lw 1 pt 7 ps 1 #DarkOrchid      
-        set style line  5 lt rgb "#E9967A" lw 1 pt 7 ps 1 #DarkSalmon
+        set style line  4 lt rgb "#9932CC" lw 1 pt 7 ps 1 #DarkOrchid
+        set style line  5 lt rgb "#696969" lw 1 pt 7 ps 1 #DimGrey
         set style line  6 lt rgb "#BDB76B" lw 1 pt 7 ps 1 #DarkKhaki
         set style line  7 lt rgb "#FF8C00" lw 1 pt 7 ps 1 #DarkOrange
-        set style line  8 lt rgb "#696969" lw 1 pt 7 ps 1 #DimGrey
+        set style line  8 lt rgb "#E9967A" lw 1 pt 7 ps 1 #DarkSalmon
         set style line  9 lt rgb "#556B2F" lw 1 pt 7 ps 1 #DarkOliveGreen
         set style line 10 lt rgb "#B8860B" lw 1 pt 7 ps 1 #DarkGoldenrod
         set style line 11 lt rgb "#90EE90" lw 1 pt 7 ps 1 #LightGreen
@@ -78,7 +78,7 @@ class UmGnuplot():
         """
         set border 31 front linetype -1 linewidth 1.000
         set grid noxtics ytics nopolar back
-        set boxwidth 0.9 relative
+        set boxwidth 0.8 relative
         set clip points
         set style fill solid 1.00 border -1
         set key on right top box lt rgb "gray50" samplen 3 width -6 spacing 1.05
@@ -244,7 +244,7 @@ class UmHistogram(UmGnuplot):
 
         self.gplot('set style data histogram')
         self.gplot('set style histogram clustered gap %u title offset character 0,0,0' %self._gap)
-        self.gplot('set key under horizontal right nobox')
+        self.gplot('set key under horizontal right nobox spacing 1.05 height 0.2 width 0')
         self.gplot('set xtics scale 0')
         self.gplot('set ytics')
         self.gplot('set grid y')
@@ -447,8 +447,6 @@ class UmXPlot(UmGnuplot):
         set tics border in mirror;
         unset x2tics;
         unset y2tics;
-        #set mxtics;
-        #set mytics;
         set format x "$%.2f$";
         set format y "$%.0f$";
         # set key to the left side
