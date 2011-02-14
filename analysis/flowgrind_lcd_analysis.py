@@ -212,7 +212,7 @@ class LCDAnalysis(Analysis):
         ''')
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-reverts-rtos"
+        plotname      = "reverts-rtos"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
@@ -253,14 +253,17 @@ class LCDAnalysis(Analysis):
         g = UmHistogram(plotname=plotname, outdir=outdir,
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
-        g.setYLabel(r"Average Retransmissions and Reverts [$\\#$]")
+        g.setYLabel(r"Average Retransmissions and Backoff Reverts [$\\#$]")
         g.setYRange("[ 0 : * ]")
 
         g.plotBar(valfilename, title="Backoff Reverts TCP-LCD", using="3:xtic(1)",
                 linestyle=2)
-        g.plotBar(valfilename, title="Timeout Retransmissions TCP-LCD",
+        # gap
+        g.plot("'empty.values' using 2:xtic(1) notitle")
+
+        g.plotBar(valfilename, title="RTO Retransmissions TCP-LCD",
                 using="2:xtic(1)", linestyle=3)
-        g.plotBar(valfilename, title="Timeout Retransmissions Standard",
+        g.plotBar(valfilename, title="RTO Retransmissions Standard",
                 using="4:xtic(1)", linestyle=3, fillstyle="solid 0.5")
         # g.plotBar(valfilename, title="Reverts Standard", using="5:xtic(1)", linestyle=3)
 
@@ -288,7 +291,7 @@ class LCDAnalysis(Analysis):
         ''')
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-outages"
+        plotname      = "outages"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
@@ -331,7 +334,7 @@ class LCDAnalysis(Analysis):
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
         g.setYLabel(r"Average Outages [$\\#$]")
-        g.setY2Label(r"Average Duration [$\\si{\\second}$]")
+        g.setY2Label(r"Average Outage Duration [$\\si{\\second}$]")
         g.setYRange("[ 0 : 8 ]")
         g.setY2Range("[ 0 : 20 ]")
 
@@ -339,6 +342,8 @@ class LCDAnalysis(Analysis):
                 linestyle=4)
         g.plotBar(valfilename, title="Outages Standard", using="4:xtic(1)",
                 linestyle=4, fillstyle="solid 0.5")
+        # gap
+        g.plot("'empty.values' using 2:xtic(1) notitle")
         g.plotBar(valfilename, title="Outage Duration TCP-LCD", using="3:xtic(1)",
                 linestyle=5,  axes="x1y2")
         g.plotBar(valfilename, title="Outage Duration Standard", using="5:xtic(1)",
@@ -355,7 +360,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-icmps-reverts"
+        plotname      = "icmps-reverts"
         valfilename   = os.path.join(outdir, plotname+".values")
 
         dbcur = self.dbcon.cursor()
@@ -432,7 +437,7 @@ class LCDAnalysis(Analysis):
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
 
-        g.setYLabel(r"Average ICMPs and Reverts [$\\#$]")
+        g.setYLabel(r"Average ICMPs and Backoff Reverts [$\\#$]")
         g.setYRange("[ 0 : * ]")
         g.gplot("set style histogram rowstacked")
         g.gplot("set xtics offset 0,0.3")
@@ -463,7 +468,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-icmps-by-scenario"
+        plotname      = "icmps-by-scenario"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         dbcur = self.dbcon.cursor()
@@ -561,7 +566,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-rtt"
+        plotname      = "rtt"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         # get all scenario labels
@@ -662,7 +667,7 @@ class LCDAnalysis(Analysis):
             gavg.plotBar(valfilename, title=scenarios[i]+" TCP-LCD",
                     using="%u:xtic(1)" %((13*i)+3), linestyle=(i+2))
             gavg.plotBar(valfilename, title=scenarios[i]+" Standard",
-                    using="%u:xtic(1)" %((13*i)+6), linestyle=(i+2)
+                    using="%u:xtic(1)" %((13*i)+6), linestyle=(i+2),
                     fillstyle="solid 0.5")
 
         # plot errorbars
@@ -688,7 +693,7 @@ class LCDAnalysis(Analysis):
             gmax.plotBar(valfilename, title=scenarios[i]+" TCP-LCD",
                     using="%u:xtic(1)" %((13*i)+4), linestyle=(i+2))
             gmax.plotBar(valfilename, title=scenarios[i]+" Standard",
-                    using="%u:xtic(1)" %((13*i)+7), linestyle=(i+2)
+                    using="%u:xtic(1)" %((13*i)+7), linestyle=(i+2),
                     fillstyle="solid 0.5")
 
         # plot error bars
@@ -714,7 +719,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-rtt-improvement"
+        plotname      = "rtt-improvement"
         valfilename   = os.path.join(outdir, plotname+".values")
 
         # get all scenario labels
@@ -842,7 +847,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-iat"
+        plotname      = "iat"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         # get all scenario labels
@@ -994,7 +999,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-iat-improvement"
+        plotname      = "iat-improvement"
         valfilename   = os.path.join(outdir, plotname+".values")
 
         # get all scenario labels
@@ -1123,7 +1128,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-transactions"
+        plotname      = "transactions"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         dbcur = self.dbcon.cursor()
@@ -1237,7 +1242,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-transactions-improvement"
+        plotname      = "transactions-improvement"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         dbcur = self.dbcon.cursor()
@@ -1341,7 +1346,7 @@ class LCDAnalysis(Analysis):
         dbcur = self.dbcon.cursor()
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-goodput"
+        plotname      = "goodput"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         # get all scenario labels
@@ -1433,7 +1438,6 @@ class LCDAnalysis(Analysis):
                     using="%u:xtic(1)" %( (i*5)+3 ), linestyle=(i+1),
                     fillstyle="solid 0.5")
 
-        g.plot("newhistogram ''")
         # errobars
         for i in range(len(keys)):
         # TODO: calculate offset with scenarios and gap
@@ -1455,7 +1459,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir        = self.options.outdir
-        plotname      = "lcd-analysis-goodput-improvement"
+        plotname      = "goodput-improvement"
         valfilename  = os.path.join(outdir, plotname+".values")
 
         dbcur = self.dbcon.cursor()
@@ -1561,13 +1565,13 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
-    def generateHistogramRTOsLCD(self):
+    def generateHistogramOutagesPerRTOsLCD(self):
         """ Generate a RTO histogram with scenario labels for
         lcd """
 
         # outfile
         outdir      = self.options.outdir
-        plotname    = "lcd-analysis-histogram-src14-dst6-rto"
+        plotname    = "histogram-src14-dst6-rto"
         valfilename = os.path.join(outdir, plotname+".values")
         dbcur = self.dbcon.cursor()
 
@@ -1647,13 +1651,95 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
+    def generateHistogramRetransmissionsPerRTOsLCD(self):
+        """ Generate a RTO histogram with scenario labels for
+        lcd """
+
+        # outfile
+        outdir      = self.options.outdir
+        plotname    = "histogram-src14-dst6-retransmissions-per-rto"
+        valfilename = os.path.join(outdir, plotname+".values")
+        dbcur = self.dbcon.cursor()
+
+        dbcur.execute('''
+        SELECT (revr+bkof) as bin, flowNo as flowNo, count(1)*(revr+bkof) as count
+        FROM outages
+        WHERE run_label = 'Src14--Dst6'
+        GROUP by bin, flowNo
+        ORDER by bin ASC;
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per bin
+        data = [[0 for i in range(2)] for j in range(1,self.histogrambins*10)]
+
+        fh.write("# bin count_0 count_1")
+        fh.write("\n")
+
+        sorted_labels = list()
+
+        for row in dbcur:
+            (bin, flowNo, count) = row
+
+            debug(row)
+
+            data[int(bin)][int(flowNo)] = count
+
+        for i in range(len(data)):
+            fh.write("%d %d %d" %(i,data[i][0],data[i][1]) )
+            fh.write("\n")
+
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+
+        g.setYLabel(r"Total Retransmissions [$\\#$]")
+        g.setXLabel(r"RTOs per Outage [$\\#$]")
+        g.setYRange("[ 1 : * ]")
+        g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
+        g.gplot("set xtics 5 scale 0.5")
+        g.gplot("set key inside vertical top right box")
+        g.plotBar(valfilename, title="TCP-LCD",
+                using="2:xtic(1)", linestyle=2)
+        g.plotBar(valfilename, title="Standard",
+                using="3:xtic(1)", linestyle=2, fillstyle="solid 0.5")
+
+        # output plot
+        g.save()
+
+        plotname += "-logscale"
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+
+        g.setYLabel(r"Total Retransmissions [$\\#$]")
+        g.setXLabel(r"RTOs per Outage [$\\#$]")
+        g.setYRange("[ 1 : * ]")
+        g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
+        g.gplot("set xtics 5 scale 0.5")
+        g.gplot("set key inside vertical top right box")
+        g.setLogScale()
+        g.plotBar(valfilename, title="TCP-LCD",
+                using="2:xtic(1)", linestyle=2)
+        g.plotBar(valfilename, title="Standard",
+                using="3:xtic(1)", linestyle=2, fillstyle="solid 0.5")
+
+        # output plot
+        g.save()
 
     def generateHistogramDurartionPerRTOsLCD(self):
         """ Generate a duration per RTO histogram """
 
         # outfile
         outdir      = self.options.outdir
-        plotname    = "lcd-analysis-histogram-src14-dst6-duration-per-rto"
+        plotname    = "histogram-src14-dst6-duration-per-rto"
         valfilename = os.path.join(outdir, plotname+".values")
         dbcur = self.dbcon.cursor()
 
@@ -1719,7 +1805,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir      = self.options.outdir
-        plotname    = "lcd-analysis-histogram-src14-dst6-backoffs-per-rto"
+        plotname    = "histogram-src14-dst6-backoffs-per-rto"
         valfilename = os.path.join(outdir, plotname+".values")
         dbcur = self.dbcon.cursor()
 
@@ -1787,7 +1873,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir      = self.options.outdir
-        plotname    = "lcd-analysis-histogram-goodput-per-rto"
+        plotname    = "histogram-goodput-per-rto"
         valfilename = os.path.join(outdir, plotname+".values")
         dbcur = self.dbcon.cursor()
 
@@ -1853,7 +1939,7 @@ class LCDAnalysis(Analysis):
 
         # outfile
         outdir      = self.options.outdir
-        plotname    = "lcd-analysis-histogram-src14-dst6-reverts"
+        plotname    = "histogram-src14-dst6-reverts"
         valfilename = os.path.join(outdir, plotname+".values")
         dbcur = self.dbcon.cursor()
 
@@ -2030,7 +2116,8 @@ class LCDAnalysis(Analysis):
         self.generateHistogramDurartionPerRTOsLCD()
         self.generateHistogramBackoffsPerRTOsLCD()
         self.generateHistogramtTputPerRevertsLCD()
-        self.generateHistogramRTOsLCD()
+        self.generateHistogramOutagesPerRTOsLCD()
+        self.generateHistogramRetransmissionsPerRTOsLCD()
         for key in self.failed:
             warn("%d failed tests for %s" %(self.failed[key],key))
 
