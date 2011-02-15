@@ -33,11 +33,11 @@ class UmGnuplot():
         self.gplot('set title ""')
 
         # default size
-        self.plotsize = "14.4cm,9.7cm"
+        #self.plotsize = "14.4cm,9.7cm"
         # for 2 pictures with subcaption, one line caption
         #self.plotsize = "14.4cm,9.3cm"
         # for 2 pictures with subcaption, two line caption
-        #self.plotsize = "14.4cm,8.7cm"
+        self.plotsize = "14.4cm,8.7cm"
 
         # font size
         self.fontsize = 6
@@ -340,7 +340,7 @@ class UmHistogram(UmGnuplot):
             a_r = 255
             a_g = 0
             a_b = 0
-            b_r = 0
+            b_r = 255
             b_g = 255
             b_b = 0
             i = float(gradientCurrent)
