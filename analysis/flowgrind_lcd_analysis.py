@@ -253,18 +253,18 @@ class LCDAnalysis(Analysis):
         g = UmHistogram(plotname=plotname, outdir=outdir,
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
-        g.setYLabel(r"Average Retransmissions and Backoff Reverts [$\\#$]")
+        g.setYLabel(r"Average RTO Retransmissions and Backoff Reverts [$\\#$]")
         g.setYRange("[ 0 : * ]")
 
-        g.plotBar(valfilename, title="Backoff Reverts TCP-LCD", using="3:xtic(1)",
-                linestyle=2)
-        # gap
-        g.plot("'empty.values' using 2:xtic(1) notitle")
 
         g.plotBar(valfilename, title="RTO Retransmissions TCP-LCD",
-                using="2:xtic(1)", linestyle=3)
+                using="2:xtic(1)", linestyle=2)
         g.plotBar(valfilename, title="RTO Retransmissions Standard",
-                using="4:xtic(1)", linestyle=3, fillstyle="solid 0.5")
+                using="4:xtic(1)", linestyle=2, fillstyle="solid 0.5")
+        # gap
+        #g.plot("'empty.values' using 2:xtic(1) notitle")
+        g.plotBar(valfilename, title="Backoff Reverts TCP-LCD",
+                using="3:xtic(1)", linestyle=3)
         # g.plotBar(valfilename, title="Reverts Standard", using="5:xtic(1)", linestyle=3)
 
         # output plot
@@ -443,19 +443,24 @@ class LCDAnalysis(Analysis):
         g.gplot("set xtics offset 0,0.3")
         g.gplot("set boxwidth 0.8")
         g.plot("newhistogram 'Src14--Dst8',\
-            '%s' using 2:xtic(1) title 'ICMPs Code 0' ls 8,\
-            '' using 3:xtic(1) title 'ICMPs Code 1'  ls 8 fillstyle solid 0.5,\
-            '' using 4:xtic(1) title 'Backoff Reverts'  ls 3" %valfilename)
+            '%s' using 2:xtic(1) title 'ICMPs Code 0' ls 1,\
+            '' using 3:xtic(1) title 'ICMPs Code 1' ls 1 fillstyle solid 0.5,\
+            '' using 4:xtic(1) title 'Backoff Reverts' ls 3" %valfilename
+            )
 
         g.plot("newhistogram 'Src14--Dst17',\
-            '' using 5:xtic(1) notitle ls 8,\
-            '' using 6:xtic(1) notitle ls 8 fillstyle solid 0.5,\
-            '' using 7:xtic(1) notitle ls 3")
+            '' using 5:xtic(1) notitle ls 1,\
+            '' using 6:xtic(1) notitle ls 1 fillstyle solid 0.5,\
+            '' using 7:xtic(1) notitle ls 3"
+
+            )
 
         g.plot("newhistogram 'Src14--Dst6',\
-            '' using 8:xtic(1) notitle ls 8,\
-            '' using 9:xtic(1) notitle ls 8 fillstyle solid 0.5,\
-            '' using 10:xtic(1) notitle ls 3")
+            '' using 8:xtic(1) notitle ls 1,\
+            '' using 9:xtic(1) notitle ls 1 fillstyle solid 0.5,\
+            '' using 10:xtic(1) notitle ls 3"
+
+            )
 
         # output plot
         g.save()
@@ -1700,7 +1705,7 @@ class LCDAnalysis(Analysis):
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
 
-        g.setYLabel(r"Total Retransmissions [$\\#$]")
+        g.setYLabel(r"Total RTO Retransmissions [$\\#$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
         g.setYRange("[ 1 : * ]")
         g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
@@ -1719,7 +1724,7 @@ class LCDAnalysis(Analysis):
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
 
-        g.setYLabel(r"Total Retransmissions [$\\#$]")
+        g.setYLabel(r"Total RTO Retransmissions [$\\#$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
         g.setYRange("[ 1 : * ]")
         g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
@@ -1733,6 +1738,9 @@ class LCDAnalysis(Analysis):
 
         # output plot
         g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
 
     def generateHistogramDurartionPerRTOsLCD(self):
         """ Generate a duration per RTO histogram """
@@ -1916,7 +1924,7 @@ class LCDAnalysis(Analysis):
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
 
-        g.setYLabel(r"Average Goodput per Flow [$\\si{\\Mbps}$]")
+        g.setYLabel(r"Average Goodput [$\\si{\\Mbps}$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
         g.setYRange("[ 0 : * ]")
         g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
@@ -2026,7 +2034,7 @@ class LCDAnalysis(Analysis):
     def run(self):
         """Main Method"""
 
-        self.histogrambins = 20 
+        self.histogrambins = 15 
 
         # by default database in memory to access data efficiently
         if not self.options.save:
