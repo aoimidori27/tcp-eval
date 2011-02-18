@@ -51,64 +51,27 @@ class UmGnuplot():
         # colors and line styles
         self.gplot(
         """
-        set style line  1 lt rgb "#FF8C00" lw 1 pt 7 ps 1 #darkorange
-        set style line  2 lt rgb "#008000" lw 1 pt 7 ps 1 #green
-        set style line  3 lt rgb "#4682B4" lw 1 pt 7 ps 1 #steelblue
-        set style line  4 lt rgb "#808080  lw 1 pt 7 ps 1 #grey
-        set style line  5 lt rgb "#DC143C" lw 1 pt 7 ps 1 #crimson
-        set style line  6 lt rgb "#000080" lw 1 pt 7 ps 1 #navy
-        set style line  7 lt rgb "#F08080" lw 1 pt 7 ps 1 #lightcoral
-        set style line  8 lt rgb "#228B22" lw 1 pt 7 ps 1 #forrestgreen
-        set style line  9 lt rgb "#A0522D" lw 1 pt 7 ps 1 #sienna
-        set style line 10 lt rgb "#006400" lw 1 pt 7 ps 1 #DarkGreen
-        set style line 11 lt rgb "#00008B" lw 1 pt 7 ps 1 #DarkBlue
-        set style line 12 lt rgb "#8B0000" lw 1 pt 7 ps 1 #DarkRed
-        set style line 13 lt rgb "#9932CC" lw 1 pt 7 ps 1 #DarkOrchid
-        set style line 14 lt rgb "#696969" lw 1 pt 7 ps 1 #DimGrey
-        set style line 15 lt rgb "#BDB76B" lw 1 pt 7 ps 1 #DarkKhaki
-        set style line 16 lt rgb "#FF8C00" lw 1 pt 7 ps 1 #DarkOrange
-        set style line 17 lt rgb "#E9967A" lw 1 pt 7 ps 1 #DarkSalmon
-        set style line 18 lt rgb "#556B2F" lw 1 pt 7 ps 1 #DarkOliveGreen
-        set style line 19 lt rgb "#B8860B" lw 1 pt 7 ps 1 #DarkGoldenrod
-        set style line 20 lt rgb "#BA55D3" lw 1 pt 7 ps 1 #MediumOrchid
+        set style line  1 lt rgb "#DC143C" lw 1 pt 7 ps 1 #Crimson
+        set style line  2 lt rgb "#008000" lw 1 pt 7 ps 1 #Green
+        set style line  3 lt rgb "#1E90FF" lw 1 pt 7 ps 1 #DodgerBlue
+        set style line  4 lt rgb "#FF8C00" lw 1 pt 7 ps 1 #DarkOrange       
+        set style line  5 lt rgb "#DA70D6" lw 1 pt 7 ps 1 #Orchid     
+        set style line  6 lt rgb "#B22222" lw 1 pt 7 ps 1 #FireBrick
+        set style line  7 lt rgb "#9ACD32" lw 1 pt 7 ps 1 #YellowGreen
+        set style line  8 lt rgb "#6495ED" lw 1 pt 7 ps 1 #CornflowerBlue
+        set style line  9 lt rgb "#808000" lw 1 pt 7 ps 1 #Olive
+        set style line 10 lt rgb "#C71585" lw 1 pt 7 ps 1 #MediumVioletRed
+        set style line 11 lt rgb "#8B0000" lw 1 pt 7 ps 1 #DarkRed      
+        set style line 12 lt rgb "#006400" lw 1 pt 7 ps 1 #DarkGreen
+        set style line 13 lt rgb "#00008B" lw 1 pt 7 ps 1 #DarkBlue        
+        set style line 14 lt rgb "#B8860B" lw 1 pt 7 ps 1 #DarkGoldenrod
+        set style line 15 lt rgb "#9932CC" lw 1 pt 7 ps 1 #DarkOrchid
+        set style line 16 lt rgb "#6B8E23" lw 1 pt 7 ps 1 #OliveDrab
+        set style line 17 lt rgb "#8B008B" lw 1 pt 7 ps 1 #DarkMagenta
+        set style line 18 lt rgb "#E9967A" lw 1 pt 7 ps 1 #DarkSalmon
+        set style line 19 lt rgb "#4169E1" lw 1 pt 7 ps 1 #RoyalBlue
+        set style line 20 lt rgb "#228B22" lw 1 pt 7 ps 1 #ForestGreen
         """)
-
-        # dark colors for reference
-        #self.gplot(
-        #"""
-        #set style line  1 lt rgb "#006400" lw 1 pt 7 ps 1 #DarkGreen
-        #set style line  2 lt rgb "#00008B" lw 1 pt 7 ps 1 #DarkBlue
-        #set style line  3 lt rgb "#8B0000" lw 1 pt 7 ps 1 #DarkRed
-        #set style line  4 lt rgb "#9932CC" lw 1 pt 7 ps 1 #DarkOrchid
-        #set style line  5 lt rgb "#696969" lw 1 pt 7 ps 1 #DimGrey
-        #set style line  6 lt rgb "#BDB76B" lw 1 pt 7 ps 1 #DarkKhaki
-        #set style line  7 lt rgb "#FF8C00" lw 1 pt 7 ps 1 #DarkOrange
-        #set style line  8 lt rgb "#E9967A" lw 1 pt 7 ps 1 #DarkSalmon
-        #set style line  9 lt rgb "#556B2F" lw 1 pt 7 ps 1 #DarkOliveGreen
-        #set style line 10 lt rgb "#B8860B" lw 1 pt 7 ps 1 #DarkGoldenrod
-        #set style line 11 lt rgb "#90EE90" lw 1 pt 7 ps 1 #LightGreen
-        #set style line 12 lt rgb "#87CEFA" lw 1 pt 7 ps 1 #LightSkyBlue
-        #set style line 13 lt rgb "#CD5C5C" lw 1 pt 7 ps 1 #IndianRed
-        #set style line 14 lt rgb "#F0E68C" lw 1 pt 7 ps 1 #Khaki
-        #set style line 15 lt rgb "#FFA07A" lw 1 pt 7 ps 1 #LightSalmon
-        #set style line 16 lt rgb "#BA55D3" lw 1 pt 7 ps 1 #MediumOrchid
-        #set style line 17 lt rgb "#EEE8AA" lw 1 pt 7 ps 1 #LightGoldenrod
-        #set style line 18 lt rgb "#D3D3D3" lw 1 pt 7 ps 1 #LightGray
-        #set style line 19 lt rgb "#FFA500" lw 1 pt 7 ps 1 #Orange
-        #set style line 20 lt rgb "#808000" lw 1 pt 7 ps 1 #Olive
-        #""")
-
-        # old colors for reference
-        #self.gplot(
-        #"""
-        #set style line 1 lt rgb "#F593A1" lw 1 pt 7 ps 1
-        #set style line 2 lt rgb "dark-green" lw 1 pt 1
-        #set style line 3 lt rgb "navy" lw 1 pt 7 ps 1
-        #set style line 4 lt rgb "grey" lw 1 pt 7 ps 1
-        #set style line 5 lt rgb "#98E2E7" lw 1 pt 7 ps 1
-        #set style line 6 lt rgb "#B83749" lw 1 pt 7 ps 1
-        #set style line 7 lt rgb "#2BB1BA" lw 1 pt 7 ps 1
-        #""")
 
         # grid and other styles
         self.gplot(
