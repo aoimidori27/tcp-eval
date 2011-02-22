@@ -35,17 +35,15 @@ class TcpMeasurement(measurement.Measurement):
                      )
 
         brokenhosts = ["mrouter22", "mrouter23", "mrouter24", "mrouter44"]
-        srchosts = [ "mrouter14" ]
-        middlehosts = [ "mrouter15" ]
         # inner loop configurations
         runs = [
-                 dict( run_label = r"Src14--Dst8", src=14, dst=8 ),
-                 dict( run_label = r"Src14--Dst17", src=14, dst=17 ),
-                 dict( run_label = r"Src14--Dst6", src=14, dst=6 ),
+                 dict( run_label = r"Src14--Dst8", src=14, dst=38 ),
+                 dict( run_label = r"Src14--Dst17", src=14, dst=37 ),
+                 dict( run_label = r"Src14--Dst6", src=14, dst=36 ),
                ]
 
         # repeat loop
-        iterations  = range(1,20) # 1 iteration ~ 45 min (default 60 = 48h)
+        iterations  = range(1,60) # 1 iteration ~ 45 min (default 60 = 48h)
 
         # outer loop with different scenario settings
         scenarios   = [
@@ -57,7 +55,7 @@ class TcpMeasurement(measurement.Measurement):
               flowgrind_opts="-r 654321 -n 2 -W b=32000 -G s=q,N,8000,1000 -U 60000 -G s=p,C,200 -F0 -O b=TCP_LCD".split() ),
         dict( scenario_label = "Telnet",
               flowgrind_opts="-r 123654 -n 2 -W b=32000 -G s=q,N,2000,500 -G s=p,N,3000,750 -U 20000 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
-        dict( scenario_label = "Streaming-800kb",
+        dict( scenario_label = "Streaming",
               flowgrind_opts="-r 987654 -n 2 -W b=32000 -G s=q,C,800 -G s=g,N,0.008,0.001 -F0 -O b=TCP_LCD,b=TCP_NODELAY -F1 -O b=TCP_NODELAY".split() ),
         ]
         # configure testbed
@@ -74,20 +72,47 @@ class TcpMeasurement(measurement.Measurement):
         yield self.remote_execute_many(allhosts, "sudo ip route del default via 137.226.54.1 dev eth0")
         yield self.remote_execute_many(allhosts, "sudo ip route del default via 137.226.54.1 dev eth0")
 
-        yield self.remote_execute_many(srchosts, "sudo ip route add 169.254.9.15 dev ath0")
-        yield self.remote_execute_many(srchosts, "sudo ip route add 169.254.9.0/24 via 169.254.9.15")
+        yield self.remote_execute("mrouter14", "sudo ip route add 169.254.9.15 dev ath0")
+        yield self.remote_execute("mrouter14", "sudo ip route add 169.254.9.0/24 via 169.254.9.15")
 
-        yield self.remote_execute_many(middlehosts, "sudo ip route add 169.254.9.14 dev ath0")
+        yield self.remote_execute("mrouter15", "sudo ip route add 169.254.9.14 dev ath0")
+
+        yield self.remote_execute("mrouter17", "sudo ip route add 169.254.9.37 dev eth0")
+
+        yield self.remote_execute("mrouter37", "sudo ifconfig ath0 down")
+        yield self.remote_execute("mrouter37", "sudo ifconfig eth0:0 169.254.9.37 up")
+        yield self.remote_execute("mrouter37", "sudo ip route del 169.254.9.0/24 dev eth0")
+        yield self.remote_execute("mrouter37", "sudo ip route add 169.254.9.17 dev eth0")
+        yield self.remote_execute("mrouter37", "sudo ip route add 169.254.9.0/24 via 169.254.9.17")
+        yield self.remote_execute("mrouter37", "sudo /etc/init.d/snmpd restart")
+
+        yield self.remote_execute("mrouter6", "sudo ip route add 169.254.9.36 dev eth0")
+
+        yield self.remote_execute("mrouter36", "sudo ifconfig ath0 down")
+        yield self.remote_execute("mrouter36", "sudo ifconfig eth0:0 169.254.9.36 up")
+        yield self.remote_execute("mrouter36", "sudo ip route del 169.254.9.0/24 dev eth0")
+        yield self.remote_execute("mrouter36", "sudo ip route add 169.254.9.6 dev eth0")
+        yield self.remote_execute("mrouter36", "sudo ip route add 169.254.9.0/24 via 169.254.9.6")
+        yield self.remote_execute("mrouter36", "sudo /etc/init.d/snmpd restart")
+
+        yield self.remote_execute("mrouter8", "sudo ip route add 169.254.9.38 dev eth0")
+
+        yield self.remote_execute("mrouter38", "sudo ifconfig ath0 down")
+        yield self.remote_execute("mrouter38", "sudo ifconfig eth0:0 169.254.9.38 up")
+        yield self.remote_execute("mrouter38", "sudo ip route del 169.254.9.0/24 dev eth0")
+        yield self.remote_execute("mrouter38", "sudo ip route add 169.254.9.8 dev eth0")
+        yield self.remote_execute("mrouter38", "sudo ip route add 169.254.9.0/24 via 169.254.9.8")
+        yield self.remote_execute("mrouter38", "sudo /etc/init.d/snmpd restart")
 
         # activate icmp logging
         yield self.remote_execute_many(allhosts, "sudo iptables -F INPUT")
         yield self.remote_execute_many(allhosts, "sudo iptables -F OUTPUT")
-        yield self.remote_execute_many(allhosts, "sudo iptables -I INPUT -i ath0 -p icmp --icmp-type 3/0 -j LOG")
-        yield self.remote_execute_many(allhosts, "sudo iptables -I INPUT -i ath0 -p icmp --icmp-type 3/1 -j LOG")
-        yield self.remote_execute_many(allhosts, "sudo iptables -I OUTPUT -i ath0 -p icmp --icmp-type 3/0 -j LOG")
-        yield self.remote_execute_many(allhosts, "sudo iptables -I OUTPUT -i ath0 -p icmp --icmp-type 3/1 -j LOG")
+        yield self.remote_execute_many(allhosts, "sudo iptables -I INPUT -p icmp --icmp-type 3/0 -j LOG")
+        yield self.remote_execute_many(allhosts, "sudo iptables -I INPUT -p icmp --icmp-type 3/1 -j LOG")
+        yield self.remote_execute_many(allhosts, "sudo iptables -I OUTPUT -p icmp --icmp-type 3/0 -j LOG")
+        yield self.remote_execute_many(allhosts, "sudo iptables -I OUTPUT -p icmp --icmp-type 3/1 -j LOG")
         # wait a few minutes to let olsr converge
-        yield twisted_sleep(5)
+        yield twisted_sleep(10)
 
         for it in iterations:
 
