@@ -376,8 +376,8 @@ class LCDAnalysis(Analysis):
         # get single values
         dbcur.execute('''
         SELECT run_label,
-        avg(s_icmp_code_0+d_icmp_code_0)/2 as icmp_code_0,
-        avg(s_icmp_code_1+d_icmp_code_1)/2 as icmp_code_1,
+        avg(s_icmp_code_0+d_icmp_code_0) as icmp_code_0,
+        avg(s_icmp_code_1+d_icmp_code_1) as icmp_code_1,
         AVG(thruput_0+thruput_1) as thruput_overall
         FROM tests
         GROUP BY run_label
@@ -494,6 +494,8 @@ class LCDAnalysis(Analysis):
         SELECT run_label, scenario_label, scenarioNo,
         avg(s_icmp_code_0+d_icmp_code_0) as icmp_code_0,
         avg(s_icmp_code_1+d_icmp_code_1) as icmp_code_1,
+        avg(s_icmp_code_0+s_icmp_code_1) as icmp_s,
+        avg(d_icmp_code_0+d_icmp_code_1) as icmp_d,
         AVG(thruput_0+thruput_1) as thruput_overall
         FROM tests
         GROUP BY run_label, scenarioNo
@@ -518,6 +520,7 @@ class LCDAnalysis(Analysis):
         for row in dbcur:
             (rlabel,slabel,sno,
              icmp_code_0, icmp_code_1,
+             icmp_s, icmp_d,
              thruput_overall) = row
 
             debug(row)
@@ -525,14 +528,14 @@ class LCDAnalysis(Analysis):
             if not data.has_key(rlabel):
                 tmp = list()
                 for i in scenarios:
-                    tmp.append("0.0 0.0")
+                    tmp.append("0.0 0.0 0.0 0.0")
                 data[rlabel] = tmp
                 sorted_labels.append(rlabel)
 
-            data[rlabel][scenarios.index(slabel)] = "%f %f" %(
-                                 icmp_code_0,
-                                 icmp_code_1,
-                                 )
+            data[rlabel][scenarios.index(slabel)] = "%f %f %f %f" %(
+                                icmp_code_0, icmp_code_1,
+                                icmp_s, icmp_d,
+                                )
 
         for key in sorted_labels:
             value = data[key]
@@ -542,23 +545,41 @@ class LCDAnalysis(Analysis):
             fh.write("\n")
         fh.close()
 
-
-        g = UmHistogram(plotname=plotname, outdir=outdir,
+        plotname      = "icmps-by-scenario-by-code"
+        gcode = UmHistogram(plotname=plotname, outdir=outdir,
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
-        g.setYLabel(r"Average ICMPs [$\\#$]")
+        gcode.setYLabel(r"Average ICMPs [$\\#$]")
 
-        g.setYRange("[ 0 : * ]")
+        gcode.setYRange("[ 0 : * ]")
 
         # bars
         for i in range(len(scenarios)):
-            g.plotBar(valfilename, title=scenarios[i]+" ICMPs Code 0",
-                    using="%u:xtic(1)" %((2*i)+2), linestyle=(i+1))
-            g.plotBar(valfilename, title=scenarios[i]+" ICMPs Code 1",
-                    using="%u:xtic(1)" %((2*i)+3), linestyle=(i+1))
+            gcode.plotBar(valfilename, title=scenarios[i]+" ICMPs Code 0",
+                    using="%u:xtic(1)" %((4*i)+2), linestyle=(i+1))
+            gcode.plotBar(valfilename, title=scenarios[i]+" ICMPs Code 1",
+                    using="%u:xtic(1)" %((4*i)+3), linestyle=(i+1), fillstyle="solid 0.5")
+        # output plot
+        gcode.save()
+
+
+        plotname      = "icmps-by-scenario-by-direction"
+        gdir = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+        gdir.setYLabel(r"Average ICMPs [$\\#$]")
+
+        gdir.setYRange("[ 0 : * ]")
+
+        # bars
+        for i in range(len(scenarios)):
+            gdir.plotBar(valfilename, title=scenarios[i]+" ICMPs Source",
+                    using="%u:xtic(1)" %((4*i)+4), linestyle=(i+1))
+            gdir.plotBar(valfilename, title=scenarios[i]+" ICMPs Destination",
+                    using="%u:xtic(1)" %((4*i)+5), linestyle=(i+1), fillstyle="solid 0.5")
 
         # output plot
-        g.save()
+        gdir.save()
 
         if not self.options.save:
             os.remove(valfilename)
@@ -1886,7 +1907,8 @@ class LCDAnalysis(Analysis):
         dbcur = self.dbcon.cursor()
 
         dbcur.execute('''
-        SELECT (revr+bkof) as bin, flowNo as flowNo, avg(thruput_0+thruput_1) as tput
+        SELECT iterationNo, scenarioNo, runNo,
+        (revr+bkof) as bin, flowNo as flowNo, avg(thruput_0+thruput_1) as tput
         FROM outages
         WHERE run_label = 'Src14--Dst6'
         GROUP by bin, flowNo
@@ -1908,7 +1930,8 @@ class LCDAnalysis(Analysis):
         sorted_labels = list()
 
         for row in dbcur:
-            (bin, flowNo, tput) = row
+            (i,s,r,
+             bin, flowNo, tput) = row
 
             debug(row)
 
