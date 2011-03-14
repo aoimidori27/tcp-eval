@@ -203,8 +203,8 @@ class LCDAnalysis(Analysis):
         dbcur.execute('''
         SELECT run_label,
         flowNo,
-        sum(retr)/(SELECT sum(1.0) FROM tests WHERE run_label = tests.run_label) as rtos,
-        sum(revr)/(SELECT sum(1.0) FROM tests WHERE run_label = tests.run_label) as reverts,
+        sum(retr)/(SELECT sum(1.0) FROM tests WHERE outages.run_label = tests.run_label) as rtos,
+        sum(revr)/(SELECT sum(1.0) FROM tests WHERE outages.run_label = tests.run_label) as reverts,
         AVG(thruput_0+thruput_1) as thruput_overall
         FROM outages
         GROUP BY flowNo, run_label
@@ -273,6 +273,214 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
+    def generateRTOsbyScenarioLCD(self):
+        """ Generate a rto histogram with scenario labels for
+        lcd """
+
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "rtos-by-scenario"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        dbcur = self.dbcon.cursor()
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests ORDER BY scenarioNo'''
+        )
+        scenarios = dict()
+        for row in dbcur:
+            (key,val) = row
+            scenarios[key] = val
+
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
+        flowNo,
+        sum(retr)/(SELECT sum(1.0)
+                   FROM tests
+                   WHERE outages.run_label = tests.run_label
+                   AND outages.scenarioNo = tests.scenarioNo)
+        as rtos,
+        AVG(thruput_0+thruput_1) as thruput_overall
+        FROM outages
+        GROUP BY flowNo, run_label, scenarioNo
+        ORDER BY scenarioNo ASC, flowNo ASC, thruput_overall DESC
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per runlabel
+        data = dict()
+        sorted_labels = list()
+
+        keys = scenarios.keys()
+        keys.sort()
+        for key in scenarios.keys():
+            val = scenarios[key]
+            fh.write("rtos_lcd_%(v)s " %{ "v" : val })
+            fh.write("rtos_standard_%(v)s " %{ "v" : val })
+        fh.write("\n")
+
+        for row in dbcur:
+            (rlabel, slabel, sno, flowNo,
+             rtos,
+             thruput_overall
+             ) = row
+
+            debug(row)
+
+            if not data.has_key(rlabel):
+                data[rlabel] = "0"
+                tmp = list()
+                for key in keys:
+                    tmp.append("")
+                data[rlabel] = tmp
+
+                if not sorted_labels.count(rlabel):
+                    sorted_labels.append(rlabel)
+
+            if not data[rlabel][sno]:
+                data[rlabel][sno] = ""
+            data[rlabel][sno] += "%f " %(rtos)
+
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s " %key)
+            for val in value:
+                fh.write("%s" %val)
+            fh.write("\n")
+
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+        g.setYLabel(r"Average RTO Retransmissions [$\\#$]")
+        g.setYRange("[ 0 : * ]")
+
+        for i in range(len(keys)):
+            key = keys[i]
+            g.plotBar(valfilename, title=scenarios[key]+" TCP-LCD",
+                    using="%u:xtic(1)" %( (i*2)+2 ), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" Standard",
+                    using="%u:xtic(1)" %( (i*2)+3 ), linestyle=(i+1),
+                    fillstyle="solid 0.5")
+
+        # output plot
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
+    def generateRevertsbyScenarioLCD(self):
+        """ Generate a reverts histogram with scenario labels for
+        lcd """
+
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "reverts-by-scenario"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        dbcur = self.dbcon.cursor()
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests ORDER BY scenarioNo'''
+        )
+        scenarios = dict()
+        for row in dbcur:
+            (key,val) = row
+            scenarios[key] = val
+
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
+        flowNo,
+        sum(revr)/(SELECT sum(1.0)
+                   FROM tests
+                   WHERE outages.run_label = tests.run_label
+                   AND outages.scenarioNo = tests.scenarioNo)
+        as reverts,
+        AVG(thruput_0+thruput_1) as thruput_overall
+        FROM outages
+        GROUP BY flowNo, run_label, scenarioNo
+        ORDER BY scenarioNo ASC, flowNo ASC, thruput_overall DESC
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per runlabel
+        data = dict()
+        sorted_labels = list()
+
+        keys = scenarios.keys()
+        keys.sort()
+        for key in scenarios.keys():
+            val = scenarios[key]
+            fh.write("rtos_lcd_%(v)s " %{ "v" : val })
+            fh.write("rtos_standard_%(v)s " %{ "v" : val })
+        fh.write("\n")
+
+        for row in dbcur:
+            (rlabel, slabel, sno, flowNo,
+             reverts,
+             thruput_overall
+             ) = row
+
+            debug(row)
+
+            if not data.has_key(rlabel):
+                data[rlabel] = "0"
+                tmp = list()
+                for key in keys:
+                    tmp.append("")
+                data[rlabel] = tmp
+
+                if not sorted_labels.count(rlabel):
+                    sorted_labels.append(rlabel)
+
+            if not data[rlabel][sno]:
+                data[rlabel][sno] = ""
+            data[rlabel][sno] += "%f " %(reverts)
+
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s " %key)
+            for val in value:
+                fh.write("%s" %val)
+            fh.write("\n")
+
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+        g.setYLabel(r"Average Backoff Reverts [$\\#$]")
+        g.setYRange("[ 0 : * ]")
+
+        for i in range(len(keys)):
+            key = keys[i]
+            g.plotBar(valfilename, title=scenarios[key]+" TCP-LCD",
+                    using="%u:xtic(1)" %( (i*2)+2 ), linestyle=(i+1))
+            # g.plotBar(valfilename, title=scenarios[key]+" Standard",
+            #       using="%u:xtic(1)" %( (i*2)+3 ), linestyle=(i+1),
+            #       fillstyle="solid 0.5")
+
+        # output plot
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
     def generateOutagesLCD(self):
         """ Generate a outage histogram with scenario labels for
         lcd """
@@ -282,8 +490,8 @@ class LCDAnalysis(Analysis):
         dbcur.execute('''
         SELECT run_label,
         flowNo,
-        sum(1.0)/(SELECT sum(1.0) FROM tests WHERE run_label = tests.run_label) as outages,
-        sum(end-begin)/(SELECT sum(1.0) FROM tests WHERE run_label = tests.run_label) as time,
+        sum(1.0)/(SELECT sum(1.0) FROM tests WHERE outages.run_label = tests.run_label) as outages,
+        sum(end-begin)/(SELECT sum(1.0) FROM tests WHERE outages.run_label = tests.run_label) as time,
         AVG(thruput_0+thruput_1) as thruput_overall
         FROM outages
         GROUP BY flowNo, run_label
@@ -335,8 +543,8 @@ class LCDAnalysis(Analysis):
                 force=self.options.force)
         g.setYLabel(r"Average Outages [$\\#$]")
         g.setY2Label(r"Average Outage Duration [$\\si{\\second}$]")
-        g.setYRange("[ 0 : 8 ]")
-        g.setY2Range("[ 0 : 20 ]")
+        g.setYRange("[ 0 : * ]")
+        g.setY2Range("[ 0 : * ]")
 
         g.plotBar(valfilename, title="Outages TCP-LCD", using="2:xtic(1)",
                 linestyle=4)
@@ -355,7 +563,214 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
-    def generateICMPsLCD(self):
+    def generateOutagecountbyScenarioLCD(self):
+        """ Generate a outage count histogram with scenario labels for
+        lcd """
+
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "outagecount-by-scenario"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        dbcur = self.dbcon.cursor()
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests ORDER BY scenarioNo'''
+        )
+        scenarios = dict()
+        for row in dbcur:
+            (key,val) = row
+            scenarios[key] = val
+
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
+        flowNo,
+        sum(1.0)/(SELECT sum(1.0)
+                   FROM tests
+                   WHERE outages.run_label = tests.run_label
+                   AND outages.scenarioNo = tests.scenarioNo)
+        as count,
+        AVG(thruput_0+thruput_1) as thruput_overall
+        FROM outages
+        GROUP BY flowNo, run_label, scenarioNo
+        ORDER BY scenarioNo ASC, flowNo ASC, thruput_overall DESC
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per runlabel
+        data = dict()
+        sorted_labels = list()
+
+        keys = scenarios.keys()
+        keys.sort()
+        for key in scenarios.keys():
+            val = scenarios[key]
+            fh.write("rtos_lcd_%(v)s " %{ "v" : val })
+            fh.write("rtos_standard_%(v)s " %{ "v" : val })
+        fh.write("\n")
+
+        for row in dbcur:
+            (rlabel, slabel, sno, flowNo,
+             count,
+             thruput_overall
+             ) = row
+
+            debug(row)
+
+            if not data.has_key(rlabel):
+                data[rlabel] = "0"
+                tmp = list()
+                for key in keys:
+                    tmp.append("")
+                data[rlabel] = tmp
+
+                if not sorted_labels.count(rlabel):
+                    sorted_labels.append(rlabel)
+
+            if not data[rlabel][sno]:
+                data[rlabel][sno] = ""
+            data[rlabel][sno] += "%f " %(count)
+
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s " %key)
+            for val in value:
+                fh.write("%s" %val)
+            fh.write("\n")
+
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+        g.setYLabel(r"Average Outages [$\\#$]")
+        g.setYRange("[ 0 : * ]")
+
+        for i in range(len(keys)):
+            key = keys[i]
+            g.plotBar(valfilename, title=scenarios[key]+" TCP-LCD",
+                    using="%u:xtic(1)" %( (i*2)+2 ), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" Standard",
+                    using="%u:xtic(1)" %( (i*2)+3 ), linestyle=(i+1),
+                    fillstyle="solid 0.5")
+
+        # output plot
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+    def generateOutagedurationbyScenarioLCD(self):
+        """ Generate a outageduration histogram with scenario labels for
+        lcd """
+
+        # outfile
+        outdir        = self.options.outdir
+        plotname      = "outageduration-by-scenario"
+        valfilename  = os.path.join(outdir, plotname+".values")
+
+        dbcur = self.dbcon.cursor()
+
+        # get all scenario labels
+        dbcur.execute('''
+        SELECT DISTINCT scenarioNo, scenario_label
+        FROM tests ORDER BY scenarioNo'''
+        )
+        scenarios = dict()
+        for row in dbcur:
+            (key,val) = row
+            scenarios[key] = val
+
+        dbcur.execute('''
+        SELECT run_label, scenario_label, scenarioNo,
+        flowNo,
+        sum(end-begin)/(SELECT sum(1.0)
+                   FROM tests
+                   WHERE outages.run_label = tests.run_label
+                   AND outages.scenarioNo = tests.scenarioNo)
+        as time,
+        AVG(thruput_0+thruput_1) as thruput_overall
+        FROM outages
+        GROUP BY flowNo, run_label, scenarioNo
+        ORDER BY scenarioNo ASC, flowNo ASC, thruput_overall DESC
+        ''')
+
+        info("Generating %s..." % valfilename)
+        fh = file(valfilename, "w")
+
+        # print header
+        fh.write("# run_label ")
+
+        # one line per runlabel
+        data = dict()
+        sorted_labels = list()
+
+        keys = scenarios.keys()
+        keys.sort()
+        for key in scenarios.keys():
+            val = scenarios[key]
+            fh.write("rtos_lcd_%(v)s " %{ "v" : val })
+            fh.write("rtos_standard_%(v)s " %{ "v" : val })
+        fh.write("\n")
+
+        for row in dbcur:
+            (rlabel, slabel, sno, flowNo,
+             time,
+             thruput_overall
+             ) = row
+
+            debug(row)
+
+            if not data.has_key(rlabel):
+                data[rlabel] = "0"
+                tmp = list()
+                for key in keys:
+                    tmp.append("")
+                data[rlabel] = tmp
+
+                if not sorted_labels.count(rlabel):
+                    sorted_labels.append(rlabel)
+
+            if not data[rlabel][sno]:
+                data[rlabel][sno] = ""
+            data[rlabel][sno] += "%f " %(time)
+
+        for key in sorted_labels:
+            value = data[key]
+            fh.write("%s " %key)
+            for val in value:
+                fh.write("%s" %val)
+            fh.write("\n")
+
+        fh.close()
+
+        g = UmHistogram(plotname=plotname, outdir=outdir,
+                saveit=self.options.save, debug=self.options.debug,
+                force=self.options.force)
+        g.setYLabel(r"Average Outage Duration [$\\si{\\second}$]")
+        g.setYRange("[ 0 : * ]")
+
+        for i in range(len(keys)):
+            key = keys[i]
+            g.plotBar(valfilename, title=scenarios[key]+" TCP-LCD",
+                    using="%u:xtic(1)" %( (i*2)+2 ), linestyle=(i+1))
+            g.plotBar(valfilename, title=scenarios[key]+" Standard",
+                    using="%u:xtic(1)" %( (i*2)+3 ), linestyle=(i+1),
+                    fillstyle="solid 0.5")
+
+        # output plot
+        g.save()
+
+        if not self.options.save:
+            os.remove(valfilename)
+
+    def generateICMPsRevertsLCD(self):
         """ Generate a icmp and reverts histogram with scenario labels for lcd """
 
         # outfile
@@ -404,7 +819,7 @@ class LCDAnalysis(Analysis):
 
         dbcur.execute('''
         SELECT run_label,
-        sum(revr)/(SELECT sum(1.0) FROM tests WHERE run_label = tests.run_label) as reverts,
+        sum(revr)/(SELECT sum(1.0) FROM tests WHERE outages.run_label = tests.run_label) as reverts,
         AVG(thruput_0+thruput_1) as thruput_overall
         FROM outages
         WHERE flowNo = '0'
@@ -440,24 +855,24 @@ class LCDAnalysis(Analysis):
         g.setYLabel(r"Average ICMPs and Backoff Reverts [$\\#$]")
         g.setYRange("[ 0 : * ]")
         g.gplot("set style histogram rowstacked")
-        g.gplot("set xtics offset 0,0.3")
+        g.gplot("set xtics offset 0,0.5")
         g.gplot("set boxwidth 0.8")
         g.plot("newhistogram 'Src14--Dst8',\
-            '%s' using 2:xtic(1) title 'ICMPs Code 0' ls 1,\
-            '' using 3:xtic(1) title 'ICMPs Code 1' ls 1 fillstyle solid 0.5,\
-            '' using 4:xtic(1) title 'Backoff Reverts' ls 3" %valfilename
+            '%s' using 2:xtic(1) title 'ICMPs Code 0' ls 1 fillstyle solid 0.5,\
+            '' using 3:xtic(1) title 'ICMPs Code 1' ls 1,\
+            '' using 4:xtic(1) title 'Backoff Reverts TCP-LCD' ls 3" %valfilename
             )
 
         g.plot("newhistogram 'Src14--Dst17',\
-            '' using 5:xtic(1) notitle ls 1,\
-            '' using 6:xtic(1) notitle ls 1 fillstyle solid 0.5,\
+            '' using 5:xtic(1) notitle ls 1 fillstyle solid 0.5,\
+            '' using 6:xtic(1) notitle ls 1,\
             '' using 7:xtic(1) notitle ls 3"
 
             )
 
         g.plot("newhistogram 'Src14--Dst6',\
-            '' using 8:xtic(1) notitle ls 1,\
-            '' using 9:xtic(1) notitle ls 1 fillstyle solid 0.5,\
+            '' using 8:xtic(1) notitle ls 1 fillstyle solid 0.5,\
+            '' using 9:xtic(1) notitle ls 1,\
             '' using 10:xtic(1) notitle ls 3"
 
             )
@@ -468,7 +883,7 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
-    def generateICMPsLCDbyScenario(self):
+    def generateICMPsbyScenarioLCD(self):
         """ Generate a icmp and reverts histogram with scenario labels for lcd """
 
         # outfile
@@ -482,12 +897,22 @@ class LCDAnalysis(Analysis):
         dbcur.execute('''
         SELECT DISTINCT scenarioNo, scenario_label
         FROM tests
-        ORDER BY scenarioNo'''
+        ORDER BY scenarioNo ASC'''
         )
         scenarios = list()
         for row in dbcur:
             (key,val) = row
             scenarios.append(val)
+
+        dbcur.execute('''
+        SELECT DISTINCT runNo, run_label
+        FROM tests
+        ORDER BY runNo ASC'''
+        )
+        runs = list()
+        for row in dbcur:
+            (key,val) = row
+            runs.append(val)
 
         # get single values
         dbcur.execute('''
@@ -496,20 +921,20 @@ class LCDAnalysis(Analysis):
         avg(s_icmp_code_1+d_icmp_code_1) as icmp_code_1,
         avg(s_icmp_code_0+s_icmp_code_1) as icmp_s,
         avg(d_icmp_code_0+d_icmp_code_1) as icmp_d,
-        AVG(thruput_0+thruput_1) as thruput_overall
+        avg(thruput_0+thruput_1) as thruput_overall
         FROM tests
         GROUP BY run_label, scenarioNo
-        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ORDER BY scenarioNo ASC, thruput_overall DESC
         ''' )
 
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
 
         # print header
-        fh.write("# run_label ")
+        fh.write("# scenario_label ")
         # columns
-        for val in scenarios:
-            fh.write("code_0_%(v)s code_1_%(v)s" %{ "v" : val })
+        for val in runs:
+            fh.write("code_0_%(v)s code_1_%(v)s source_%(v)s destination_%(v)s " %{ "v" : val })
         fh.write("\n")
 
         # one line per runlabel
@@ -525,14 +950,14 @@ class LCDAnalysis(Analysis):
 
             debug(row)
 
-            if not data.has_key(rlabel):
+            if not data.has_key(slabel):
                 tmp = list()
-                for i in scenarios:
+                for i in range(len(runs)):
                     tmp.append("0.0 0.0 0.0 0.0")
-                data[rlabel] = tmp
-                sorted_labels.append(rlabel)
+                data[slabel] = tmp
+                sorted_labels.append(slabel)
 
-            data[rlabel][scenarios.index(slabel)] = "%f %f %f %f" %(
+            data[slabel][runs.index(rlabel)] = "%f %f %f %f" %(
                                 icmp_code_0, icmp_code_1,
                                 icmp_s, icmp_d,
                                 )
@@ -550,15 +975,23 @@ class LCDAnalysis(Analysis):
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
         gcode.setYLabel(r"Average ICMPs [$\\#$]")
-
+        gcode.gplot("set xtics offset 0,0.3")
         gcode.setYRange("[ 0 : * ]")
-
+        gcode.gplot("set style histogram rowstacked")
+        gcode.gplot("set boxwidth 0.8")
         # bars
-        for i in range(len(scenarios)):
-            gcode.plotBar(valfilename, title=scenarios[i]+" ICMPs Code 0",
-                    using="%u:xtic(1)" %((4*i)+2), linestyle=(i+1))
-            gcode.plotBar(valfilename, title=scenarios[i]+" ICMPs Code 1",
-                    using="%u:xtic(1)" %((4*i)+3), linestyle=(i+1), fillstyle="solid 0.5")
+        for i in range(len(runs)):
+            gcode.plot("newhistogram '%s'" %runs[i])
+            if i == 0:
+                gcode.plotBar(valfilename, title="ICMPs Type 3 Code 1",
+                    using="%u:xtic(1)" %((4*i)+3), linestyle=2)
+                gcode.plotBar(valfilename, title="ICMPs Type 3 Code 0",
+                    using="%u:xtic(1)" %((4*i)+2), linestyle=2, fillstyle="solid 0.5")
+            else:
+                gcode.plotBar(valfilename,
+                    using="%u:xtic(1)" %((4*i)+3), linestyle=2)
+                gcode.plotBar(valfilename,
+                    using="%u:xtic(1)" %((4*i)+2), linestyle=2, fillstyle="solid 0.5")
         # output plot
         gcode.save()
 
@@ -568,16 +1001,23 @@ class LCDAnalysis(Analysis):
                 saveit=self.options.save, debug=self.options.debug,
                 force=self.options.force)
         gdir.setYLabel(r"Average ICMPs [$\\#$]")
-
         gdir.setYRange("[ 0 : * ]")
+        gdir.gplot("set xtics offset 0,0.3")
+        gdir.gplot("set boxwidth 0.8")
+        gdir.gplot("set style histogram rowstacked")
 
-        # bars
-        for i in range(len(scenarios)):
-            gdir.plotBar(valfilename, title=scenarios[i]+" ICMPs Source",
-                    using="%u:xtic(1)" %((4*i)+4), linestyle=(i+1))
-            gdir.plotBar(valfilename, title=scenarios[i]+" ICMPs Destination",
-                    using="%u:xtic(1)" %((4*i)+5), linestyle=(i+1), fillstyle="solid 0.5")
-
+        for i in range(len(runs)):
+            gdir.plot("newhistogram '%s'" %runs[i])
+            if i == 0:
+                gdir.plotBar(valfilename, title="ICMPs Code Destination",
+                    using="%u:xtic(1)" %((4*i)+5), linestyle=2)
+                gdir.plotBar(valfilename, title="ICMPs Code Source",
+                    using="%u:xtic(1)" %((4*i)+4), linestyle=2, fillstyle="solid 0.5")
+            else:
+                gdir.plotBar(valfilename,
+                    using="%u:xtic(1)" %((4*i)+5), linestyle=2)
+                gdir.plotBar(valfilename,
+                    using="%u:xtic(1)" %((4*i)+4), linestyle=2, fillstyle="solid 0.5")
         # output plot
         gdir.save()
 
@@ -620,7 +1060,7 @@ class LCDAnalysis(Analysis):
         FROM tests
         WHERE rtt_avg_0 > 0
         GROUP BY run_label, scenarioNo
-        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ORDER BY scenarioNo ASC, thruput_overall DESC
         ''')
 
         info("Generating %s..." % valfilename)
@@ -737,7 +1177,7 @@ class LCDAnalysis(Analysis):
         if not self.options.save:
             os.remove(valfilename)
 
-    def generateRTTLCDImprovement(self):
+    def generateRTTImprovementLCD(self):
         """ Generate a RTT improvement bar chart with scenario labels for
         lcd """
 
@@ -762,15 +1202,15 @@ class LCDAnalysis(Analysis):
 
         dbcur.execute('''
         SELECT run_label, scenario_label, scenarioNo,
-        AVG(rtt_min_1/rtt_min_0-1)*100 as rtt_min_improvement,
-        AVG(rtt_avg_1/rtt_avg_0-1)*100 as rtt_avg_improvement,
-        AVG(rtt_max_1/rtt_max_0-1)*100 as rtt_max_improvement,
+        (AVG(rtt_min_1)/AVG(rtt_min_0)-1)*100 as rtt_min_improvement,
+        (AVG(rtt_avg_1)/AVG(rtt_avg_0)-1)*100 as rtt_avg_improvement,
+        (AVG(rtt_max_1)/AVG(rtt_max_0)-1)*100 as rtt_max_improvement,
         AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
         FROM tests
         WHERE rtt_min_0 > 0 AND rtt_avg_0 > 0 AND rtt_max_0 > 0
         GROUP BY run_label, scenarioNo
-        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ORDER BY scenarioNo ASC, thruput_overall DESC
         ''')
 
         info("Generating %s..." % valfilename)
@@ -901,7 +1341,7 @@ class LCDAnalysis(Analysis):
         FROM tests
         WHERE iat_avg_0 >  0
         GROUP BY run_label, scenarioNo
-        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ORDER BY scenarioNo ASC, thruput_overall DESC
         ''')
 
         info("Generating %s..." % valfilename)
@@ -1017,7 +1457,7 @@ class LCDAnalysis(Analysis):
             os.remove(valfilename)
 
 
-    def generateIATLCDImprovement(self):
+    def generateIATImprovementLCD(self):
         """ Generate a IAT improvement bar chart with scenario labels for
         lcd """
 
@@ -1042,15 +1482,15 @@ class LCDAnalysis(Analysis):
 
         dbcur.execute('''
         SELECT run_label, scenario_label, scenarioNo,
-        AVG(iat_min_1/iat_min_0-1)*100 as iat_min_improvement,
-        AVG(iat_avg_1/iat_avg_0-1)*100 as iat_avg_improvement,
-        AVG(iat_max_1/iat_max_0-1)*100 as iat_max_improvement,
+        (AVG(iat_min_1)/AVG(iat_min_0)-1)*100 as iat_min_improvement,
+        (AVG(iat_avg_1)/AVG(iat_avg_0)-1)*100 as iat_avg_improvement,
+        (AVG(iat_max_1)/AVG(iat_max_0)-1)*100 as iat_max_improvement,
         AVG(thruput_0+thruput_1) as thruput_overall,
         SUM(1) as notests
         FROM tests
         WHERE iat_avg_0 > 0
         GROUP BY run_label, scenarioNo
-        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ORDER BY scenarioNo ASC, thruput_overall DESC
         ''')
 
         info("Generating %s..." % valfilename)
@@ -1180,7 +1620,7 @@ class LCDAnalysis(Analysis):
         FROM tests
         WHERE transac_0 > 0
         GROUP BY run_label, scenarioNo
-        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ORDER BY scenarioNo ASC, thruput_overall DESC
         ''')
 
         info("Generating %s..." % valfilename)
@@ -1293,7 +1733,7 @@ class LCDAnalysis(Analysis):
         FROM tests
         WHERE transac_0 > 0 and transac_1 > 1
         GROUP BY run_label, scenarioNo
-        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ORDER BY scenarioNo ASC, thruput_overall DESC
         ''')
 
         info("Generating %s..." % valfilename)
@@ -1394,7 +1834,7 @@ class LCDAnalysis(Analysis):
         SUM(1) as notests
         FROM tests
         GROUP BY run_label, scenarioNo
-        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ORDER BY scenarioNo ASC, thruput_overall DESC
         ''')
 
         info("Generating %s..." % valfilename)
@@ -1512,7 +1952,7 @@ class LCDAnalysis(Analysis):
         SUM(1) as notests
         FROM tests
         GROUP BY run_label, scenarioNo
-        ORDER BY thruput_overall DESC, scenarioNo ASC
+        ORDER BY scenarioNo ASC, thruput_overall DESC
         ''')
 
         info("Generating %s..." % valfilename)
@@ -1604,7 +2044,8 @@ class LCDAnalysis(Analysis):
         dbcur.execute('''
         SELECT (revr+bkof) as bin, flowNo as flowNo, count(1) as count
         FROM outages
-        WHERE run_label = 'Src14--Dst6'
+        WHERE run_label = 'Src14--Dst6' AND
+        (revr+bkof) > 0
         GROUP by bin, flowNo
         ORDER by bin ASC;
         ''')
@@ -1616,7 +2057,7 @@ class LCDAnalysis(Analysis):
         fh.write("# run_label ")
 
         # one line per bin
-        data = [[0 for i in range(2)] for j in range(1,self.histogrambins*10)]
+        data = [[0 for i in range(2)] for j in range(0,500)]
 
         fh.write("# bin count_0 count_1")
         fh.write("\n")
@@ -1642,7 +2083,7 @@ class LCDAnalysis(Analysis):
 
         g.setYLabel(r"Total Outages [$\\#$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
-        g.setYRange("[ 1 : * ]")
+        g.setYRange("[ 0 : * ]")
         g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
         g.gplot("set xtics 5 scale 0.5")
         g.gplot("set key inside vertical top right box")
@@ -1690,7 +2131,8 @@ class LCDAnalysis(Analysis):
         dbcur.execute('''
         SELECT (revr+bkof) as bin, flowNo as flowNo, count(1)*(revr+bkof) as count
         FROM outages
-        WHERE run_label = 'Src14--Dst6'
+        WHERE run_label = 'Src14--Dst6' AND
+        (revr+bkof) > 0
         GROUP by bin, flowNo
         ORDER by bin ASC;
         ''')
@@ -1702,7 +2144,7 @@ class LCDAnalysis(Analysis):
         fh.write("# run_label ")
 
         # one line per bin
-        data = [[0 for i in range(2)] for j in range(1,self.histogrambins*10)]
+        data = [[0 for i in range(2)] for j in range(500)]
 
         fh.write("# bin count_0 count_1")
         fh.write("\n")
@@ -1728,7 +2170,7 @@ class LCDAnalysis(Analysis):
 
         g.setYLabel(r"Total RTO Retransmissions [$\\#$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
-        g.setYRange("[ 1 : * ]")
+        g.setYRange("[ 0 : * ]")
         g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
         g.gplot("set xtics 5 scale 0.5")
         g.gplot("set key inside vertical top right box")
@@ -1775,7 +2217,8 @@ class LCDAnalysis(Analysis):
         dbcur.execute('''
         SELECT (revr+bkof) as bin, flowNo as flowNo, avg(end-begin) as duration
         FROM outages
-        WHERE run_label = 'Src14--Dst6'
+        WHERE run_label = 'Src14--Dst6' AND
+        (revr+bkof) > 0
         GROUP by bin, flowNo
         ORDER by bin ASC;
         ''')
@@ -1787,7 +2230,7 @@ class LCDAnalysis(Analysis):
         fh.write("# run_label ")
 
         # one line per bin
-        data = [[0 for i in range(2)] for j in range(self.histogrambins*100)]
+        data = [[0 for i in range(2)] for j in range(500)]
 
         fh.write("# bin duration_0 duration_1")
         fh.write("\n")
@@ -1841,7 +2284,8 @@ class LCDAnalysis(Analysis):
         dbcur.execute('''
         SELECT (revr+bkof) as bin, flowNo as flowNo, avg(bkof) as duration
         FROM outages
-        WHERE run_label = 'Src14--Dst6'
+        WHERE run_label = 'Src14--Dst6' AND
+        (revr+bkof) > 0
         GROUP by bin, flowNo
         ORDER by bin ASC;
         ''')
@@ -1853,7 +2297,7 @@ class LCDAnalysis(Analysis):
         fh.write("# run_label ")
 
         # one line per bin
-        data = [[0 for i in range(2)] for j in range(0,self.histogrambins*10)]
+        data = [[0 for i in range(2)] for j in range(500)]
 
         fh.write("# bin backoffs_0 backoffs_1")
         fh.write("\n")
@@ -1910,7 +2354,8 @@ class LCDAnalysis(Analysis):
         SELECT iterationNo, scenarioNo, runNo,
         (revr+bkof) as bin, flowNo as flowNo, avg(thruput_0+thruput_1) as tput
         FROM outages
-        WHERE run_label = 'Src14--Dst6'
+        WHERE run_label = 'Src14--Dst6' AND
+        (revr+bkof) > 0
         GROUP by bin, flowNo
         ORDER by bin ASC;
         ''')
@@ -1922,7 +2367,7 @@ class LCDAnalysis(Analysis):
         fh.write("# run_label ")
 
         # one line per bin
-        data = [[0 for i in range(2)] for j in range(1,self.histogrambins*10)]
+        data = [[0 for i in range(2)] for j in range(500)]
 
         fh.write("# bin tput_0 tput_1")
         fh.write("\n")
@@ -1950,7 +2395,7 @@ class LCDAnalysis(Analysis):
         g.setYLabel(r"Average Goodput [$\\si{\\Mbps}$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
         g.setYRange("[ 0 : * ]")
-        g.setXRange("[ %d : %d ]" %(0,self.histogrambins) )
+        g.setXRange("[ %d : %d ]" %(1,self.histogrambins) )
         g.gplot("set xtics 5 scale 0.5")
         g.gplot("set key inside vertical top right box")
         g.plotBar(valfilename, title="TCP-LCD",
@@ -1981,7 +2426,9 @@ class LCDAnalysis(Analysis):
         revr as bin_1,
         count(1) as count
         FROM outages
-        WHERE run_label = 'Src14--Dst6' and flowNo = '0'
+        WHERE run_label = 'Src14--Dst6' AND
+            flowNo = '0' AND
+            (revr+bkof) > 0
         GROUP by bin_1, bin_0
         ORDER by bin_0 ASC, bin_1 ASC;
         ''' )
@@ -1989,8 +2436,8 @@ class LCDAnalysis(Analysis):
         info("Generating %s..." % valfilename)
         fh = file(valfilename, "w")
 
-        data = [[0 for i in range(self.histogrambins*10)] for j in range(self.histogrambins*10)]
-        sums = [0 for i in range(self.histogrambins*10)]
+        data = [[0 for i in range(500)] for j in range(500)]
+        sums = [0 for i in range(500)]
 
         fh.write("# bin_0 / values 1...max / sum ")
         fh.write("\n")
@@ -2008,7 +2455,10 @@ class LCDAnalysis(Analysis):
         (revr+bkof) as bin_0,
         count(1) as sum
         FROM outages
-        WHERE run_label = 'Src14--Dst6' and flowNo = '0'
+        WHERE run_label = 'Src14--Dst6' AND
+             flowNo = '0' AND
+            (revr+bkof) > 0
+
         GROUP by bin_0
         ORDER by bin_0 ASC;
         ''' )
@@ -2032,7 +2482,7 @@ class LCDAnalysis(Analysis):
         g.setYLabel(r"Backoff Reverts [$\\si{\\percent}$]")
         g.setXLabel(r"RTOs per Outage [$\\#$]")
         g.setYRange("[ 0 : 100 ]")
-        g.setXRange("[ %d : %d ]" %(0.5,self.histogrambins) )
+        g.setXRange("[ %d : %d ]" %(1,self.histogrambins+2) )
         g.gplot("set xtics 5 scale 0.5")
         g.gplot("set key inside vertical right box")
         g.gplot("set style histogram rowstacked")
@@ -2057,7 +2507,7 @@ class LCDAnalysis(Analysis):
     def run(self):
         """Main Method"""
 
-        self.histogrambins = 15 
+        self.histogrambins = 20 
 
         # by default database in memory to access data efficiently
         if not self.options.save:
@@ -2136,13 +2586,17 @@ class LCDAnalysis(Analysis):
         self.generateTransacsLCD()
         self.generateTransacsImprovementLCD()
         self.generateIATLCD()
-        self.generateIATLCDImprovement()
+        self.generateIATImprovementLCD()
         self.generateRTTLCD()
-        self.generateRTTLCDImprovement()
+        self.generateRTTImprovementLCD()
         self.generateRTOsRevertsLCD()
+        self.generateRTOsbyScenarioLCD()
+        self.generateRevertsbyScenarioLCD()
         self.generateOutagesLCD()
-        self.generateICMPsLCD()
-        self.generateICMPsLCDbyScenario()
+        self.generateOutagedurationbyScenarioLCD()
+        self.generateOutagecountbyScenarioLCD()
+        self.generateICMPsRevertsLCD()
+        self.generateICMPsbyScenarioLCD()
         self.generateHistogramRevertsPerRTOsLCD()
         self.generateHistogramDurartionPerRTOsLCD()
         self.generateHistogramBackoffsPerRTOsLCD()
