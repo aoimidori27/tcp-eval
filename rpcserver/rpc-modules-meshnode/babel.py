@@ -65,7 +65,7 @@ class Babel(RPCService):
 
         self._configfile = None
 
-        self._daemon = "/usr/local/bin/babel"
+        self._daemon = "/usr/local/bin/babeld"
 
     @defer.inlineCallbacks
     def reread_config(self):
