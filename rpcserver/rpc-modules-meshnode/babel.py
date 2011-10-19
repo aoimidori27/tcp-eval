@@ -44,7 +44,7 @@ class Babel(RPCService):
     def xmlrpc_isAlive(self):
         """Check if babel is alive by looking in the process table."""
 
-        cmd = ["/bin/ps", "-C", "babel" ]
+        cmd = ["/bin/ps", "-C", "babeld" ]
         rc = yield twisted_call(cmd, shell=False)
 
         if (rc==0):
