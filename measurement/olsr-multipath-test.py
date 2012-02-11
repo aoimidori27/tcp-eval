@@ -38,7 +38,7 @@ class TcpMeasurement(measurement.Measurement):
         runs = [ dict( run_label = r"601\\sra608", src=601, dst=608 )]
 
         # repeat loop
-        iterations  = range(1,1)
+        iterations  = range(1,2)
 
         # outer loop with different scenario settings
         scenarios   = [ dict( scenario_label = "Flowgrind Example Measurement") ]
