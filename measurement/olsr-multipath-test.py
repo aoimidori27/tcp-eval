@@ -29,7 +29,7 @@ class TcpMeasurement(measurement.Measurement):
         # common options used for all tests
         opts = dict( flowgrind_cc = "reno",
                      flowgrind_duration = 900,
-                     flowgrind_opts = "-n 2 -H s=ath0.vmrouter601/vmrouter601,d=ath0.vmrouter608/vmrouter608 -T b=200 -Y b=300 -F 0 -D b=0x06 -F 1 -D b=0x08".split() )
+                     flowgrind_opts = "-n 2 -T b=200 -Y b=300 -F 0 -D b=0x06 -F 1 -D b=0x08".split() )
 
         # vmeshrouters to test (601-608)
         all = map(lambda x: "vmrouter%s" %x, [601,602,603,604,605,606,607,608])
