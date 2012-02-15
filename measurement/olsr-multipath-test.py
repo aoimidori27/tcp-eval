@@ -29,7 +29,7 @@ class TcpMeasurement(measurement.Measurement):
         # common options used for all tests
         opts = dict( flowgrind_cc = "reno",
                      flowgrind_duration = 900,
-                     flowgrind_opts = "-n 2 -T b=200 -Y b=300 -F 0 -D b=0x06 -F 1 -D b=0x08".split(),
+                     # flowgrind_opts = "-n 2 -T b=200 -Y b=300 -F 1 -D b=0x04".split(), moved to scenarios
                      nodetype = "vmeshrouter" )
 
         # vmeshrouters to test (601-608)
@@ -39,10 +39,18 @@ class TcpMeasurement(measurement.Measurement):
         runs = [ dict( run_label = r"601\\sra608", src=601, dst=608 )]
 
         # repeat loop
-        iterations  = range(1,2)
+        iterations  = range(1,10)
 
         # outer loop with different scenario settings
-        scenarios   = [ dict( scenario_label = "Flowgrind Example Measurement") ]
+        scenarios   = [ dict(   scenario_label = "Single Flow", 
+                                flowgrind_opts = "-n 1 -T b=200 -Y b=300".split()) ,
+                        dict(   scenario_label = "Two flows, default and secondary",
+                                flowgrind_opts = "-n 2 -T b=200 -Y b=300 -F 1 -D b=0x04".split()),
+                        dict(   scenario_label = "Two flows, default and tertiary",
+                                flowgrind_opts = "-n 2 -T b=200 -Y b=300 -F 1 -D b=0x08".split()),
+                        dict(   scenario_label = "Three flows",
+                                flowgrind_opts = "-n 3 -T b=200 -Y b=300 -F 1 -D b=0x04 -F 2 -D b=0x08".split())
+                      ]
 
         # configure testbed
 #        yield self.switchTestbedProfile("flowgrind_test_globecom")
