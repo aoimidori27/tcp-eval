@@ -4,6 +4,7 @@
 # Script to start virtual nodes with XEN.
 #
 # Copyright (C) 2007 Lars Noschinski <lars.noschinski@rwth-aachen.de>
+# Copyright (C) 2009 - 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
 # 
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
@@ -25,11 +26,11 @@ import MySQLdb
 from logging import info, debug, warn, error
 from optparse import OptionValueError
 
-# umic-mesh imports
-from um_application import Application
+# muc-lab imports
+from ml_application import Application
 from um_image import Image, ImageValidityException
 from um_node import Node, NodeValidityException
-from um_functions import requireroot, call, execute, CommandFailed
+from ml_functions import requireroot, call, execute, CommandFailed
 
 class Xen(Application):
     """Class to start virtual nodes on the basis of Xen"""
