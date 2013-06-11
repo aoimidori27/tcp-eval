@@ -19,8 +19,8 @@ import os.path
 from logging import info, debug, warn, error
 
 # muc-lab imports
-from ml_application import Application
-from ml_functions import call, execute
+from application import Application
+from functions import call, execute
 
 
 class Draft2Pdf(Application):

@@ -27,10 +27,10 @@ from logging import info, debug, warn, error
 from optparse import OptionValueError
 
 # muc-lab imports
-from ml_application import Application
+from application import Application
 from um_image import Image, ImageValidityException
 from um_node import Node, NodeValidityException
-from ml_functions import requireroot, call, execute, CommandFailed
+from functions import requireroot, call, execute, CommandFailed
 
 class Xen(Application):
     """Class to start virtual nodes on the basis of Xen"""
