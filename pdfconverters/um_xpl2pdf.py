@@ -29,7 +29,7 @@ from mx.TextTools import TextTools
 
 # umic-mesh imports
 from um_gnuplot import UmHistogram, UmGnuplot, UmXPlot
-from um_application import Application
+from application import Application
 
 """xpl2gpl.py -- tcptrace / xplot 2 gnuplot converter"""
 

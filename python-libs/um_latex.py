@@ -9,7 +9,7 @@ from pyPdf import PdfFileWriter, PdfFileReader
 from logging import info, debug, warn, error
 
 # umic-mesh imports
-from um_functions import call
+from functions import call
 
 
 class UmLatex():

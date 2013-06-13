@@ -9,7 +9,7 @@ import Gnuplot
 from logging import info, debug, warn, error
 
 # umic-mesh imports
-from um_functions import call
+from functions import call
 from um_latex import UmLatex
 
 """Module for gnuplot scripting."""
