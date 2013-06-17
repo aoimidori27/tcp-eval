@@ -27,8 +27,8 @@ from simpleparse import generator
 from simpleparse.parser import Parser
 from mx.TextTools import TextTools
 
-# umic-mesh imports
-from um_gnuplot import UmHistogram, UmGnuplot, UmXPlot
+# muc-lab imports
+from gnuplot import UmHistogram, UmGnuplot, UmXPlot
 from application import Application
 
 """xpl2gpl.py -- tcptrace / xplot 2 gnuplot converter"""

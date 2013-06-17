@@ -8,9 +8,9 @@ import os.path
 import Gnuplot
 from logging import info, debug, warn, error
 
-# umic-mesh imports
+# muc-lab imports
 from functions import call
-from um_latex import UmLatex
+from latex import UmLatex
 
 """Module for gnuplot scripting."""
 

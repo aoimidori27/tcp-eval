@@ -8,7 +8,7 @@ import shutil
 from pyPdf import PdfFileWriter, PdfFileReader
 from logging import info, debug, warn, error
 
-# umic-mesh imports
+# muc-lab imports
 from functions import call
 
 
@@ -18,50 +18,50 @@ class UmLatex():
     def __init__(self, texfile = "main.tex", outdir = os.getcwd(), force = False,
                  debug = False, defaultPackages = True, defaultSettings = True,
                  siunitx = True, tikz = True):
-        """Constructor of the object"""                 
-                 
+        """Constructor of the object"""
+
         # tex filename and figures names (for building output files)
         self._figures = list()
         self._texfile = "main.tex"
         self._outdir = os.getcwd()
         self._tempdir = tempfile.mkdtemp()
-        
-        # set members only if arguments are not None 
+
+        # set members only if arguments are not None
         self._texfile = self.__getValidTexfile(texfile)
         self._outdir = self.__getValidOutdir(outdir)
-        
+
         # force/debug mode
         self._force = force
         self._debug = debug
-        
-        # latex content     
+
+        # latex content
         self._documentclass = ''
         self._packages = list()
         self._settings = list()
         self._content = list()
-        
+
         # load default values for the latex document (class/packages/settings)
         self.loadDefaults(defaultPackages, defaultSettings, siunitx, tikz)
-        
-        
+
+
     def __del__(self):
         """Constructor of the object"""
-        
+
         shutil.rmtree(self._tempdir)
 
     def loadDefaults(self, defaultPackages = True, defaultSettings = True,
                        siunitx = True, tikz = True):
         """Load default settings for the generated latex file. Currently,
            we default values for the following packages
-        
+
            1. defaultPackages: includes etex, babel, inputenc, fontenc, lmodern,
               textcomp, graphicx, xcolor
            2. defaultSettings: pagestyle empty
            3. default values for siunitx, tikz
         """
-        
+
         self.setDocumentclass("scrartcl")
-              
+
         if defaultPackages:
             self.addPackage("etex")
             self.addPackage("babel", "english")
@@ -71,8 +71,8 @@ class UmLatex():
             self.addPackage("textcomp")
             self.addPackage("graphicx")
             self.addPackage("xcolor")
-             
-        if defaultSettings:     
+
+        if defaultSettings:
             self.addSetting(r"\pagestyle{empty}")
 
             # some arrows
@@ -149,12 +149,12 @@ class UmLatex():
         """If the parameter "texfile" is "None" return the privat member variable
            "self._texfile" otherwise return the parameter itself
         """
-        
+
         if texfile:
             return texfile
         else:
             return self._texfile
-            
+
     def __getValidOutdir(self, outdir):
         """If the parameter "outdir" is "None" return the privat member variable
            "self._outdir" otherwise return the parameter itself
@@ -174,10 +174,10 @@ class UmLatex():
             return tempdir
         else:
             return self._tempdir
-                                
+
     def setDocumentclass(self, documentclass, *options):
         """Set the latex documentclass for the document"""
-    
+
         if options:
             options = ", ".join(options)
             self._documentclass = "\\documentclass[%s]{%s}" %(options, documentclass)
@@ -187,36 +187,36 @@ class UmLatex():
     def addPackage(self, package, *options):
         """Add the given package with its options to the document. Only the
            name of the package is needed. The "\usepackage{}" latex command will
-           be automatically added       
+           be automatically added
         """
-    
+
         if options:
             options = ", ".join(options)
-            command = "\\usepackage[%s]{%s}" %(options, package) 
+            command = "\\usepackage[%s]{%s}" %(options, package)
         else:
             command = "\\usepackage{%s}" %package
 
         self._packages.append(command)
-            
+
     def addSetting(self, command):
         """Add an arbitrary latex command/setting to the document. The given
-           command the will be added before the latex "\begin{document}" 
+           command the will be added before the latex "\begin{document}"
         """
-    
+
         self._settings.append(command)
-        
+
     def addContent(self, content):
         """Add arbitrary latex content to the document. The content will be added
-           after the latex "\begin{document}" 
-        """    
-    
+           after the latex "\begin{document}"
+        """
+
         self._content.append(content)
-    
+
     def addLatexFigure(self, latexfig, figname, command = None):
         """Add a latex figure to the document. The figure given by the
            parameter "latexfig" is included by the latex command "\input{}". All
            necessary commands like "\begin{figure}" or "\end{figure}" are
-           automatically added. The last added command is "\clearpage", so that 
+           automatically added. The last added command is "\clearpage", so that
            all figures are on a new page. If the optional parameter "command"
            is given, it will be added before the figure is included
         """
@@ -232,19 +232,19 @@ class UmLatex():
 
     def save(self, texfile = None, outdir = None):
         """Save the generated latex file to "outdir/texfile"""
-    
+
         # build document
         document = self.__buildDocument()
-    
+
         # build output path
         texfile = self.__getValidTexfile(texfile)
         destdir = self.__getValidOutdir(outdir)
         texDst = os.path.join(destdir, texfile)
-       
+
         if not self._force and os.path.exists(texDst):
             error("%s already exists. Skipped." %texDst)
             return
-            
+
         # write content
         info("Write LaTeX document to %s..." %texDst)
         latex = open(texDst, "w")
@@ -257,13 +257,13 @@ class UmLatex():
            pdf will be splitted into single pages, each graphic on a new page.
            Finally, each page will be cropped by pdfcrop
         """
-    
+
         # building document and output path
         document = self.__buildDocument()
         texfile = self.__getValidTexfile(texfile)
         destdir = self.__getValidOutdir(outdir)
         tempdir = self.__getValidTempdir(tempdir)
-              
+
         # run pdflatex
         info("Run pdflatex on %s..." %texfile)
         cmd = "pdflatex -jobname %s -output-directory %s" %(texfile, tempdir)
@@ -275,34 +275,34 @@ class UmLatex():
         # open new generated pdf file
         combinedPDF = os.path.join(tempdir, "%s.pdf" %texfile)
         pdfIn = PdfFileReader(open(combinedPDF, "r"))
- 
+
         # iterate over the number of figures to spit and crop the pdf
         for page, figure in enumerate(self._figures):
             # output path
             splitPDF = os.path.join(tempdir, "%s.a4.pdf" %figure)
             cropPDF = os.path.join(tempdir, "%s.crop.pdf" %figure)
-        
+
             # spit pdf into multiple pdf files
-            info("Write PDF file %s..." %figure) 
+            info("Write PDF file %s..." %figure)
             pdfOut = PdfFileWriter()
             pdfOut.addPage(pdfIn.getPage(page))
-                       
+
             filestream = open(splitPDF, "w")
             pdfOut.write(filestream)
             filestream.close()
-  
-            # crop pdf  
+
+            # crop pdf
             info("Run pdfcrop on %s..." %figure)
-            cmd = "pdfcrop %s %s" %(splitPDF, cropPDF)                        
+            cmd = "pdfcrop %s %s" %(splitPDF, cropPDF)
             if self._debug:
                 call(cmd)
             else:
                 call(cmd, noOutput = True)
-            
+
             # copy cropped pdfs to final destination
             pdfDst = os.path.join(destdir, "%s.pdf" %figure)
             if not self._force and os.path.exists(pdfDst):
                 error("%s already exists. Skipped." %pdfDst)
             else:
                 shutil.copy(cropPDF, pdfDst)
-        
+
