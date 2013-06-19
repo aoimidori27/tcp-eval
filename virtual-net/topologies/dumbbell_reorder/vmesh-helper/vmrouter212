@@ -1,6 +1,0 @@
-#!/bin/bash
-
-# queue limit to both directions
-LIMIT=25
-/home/schulte/tc qdisc add dev eth0 parent 1:1 handle 10: netem limit $LIMIT
-/home/schulte/tc qdisc add dev eth0 parent 1:2 handle 20: netem limit $LIMIT
