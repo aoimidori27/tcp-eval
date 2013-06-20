@@ -21,8 +21,8 @@ import re
 from subprocess import Popen, PIPE
 from logging import info, debug, warn, error
 
-# umic-mesh imports
-from um_application import Application
+# muclab imports
+from application import Application
 
 class XplotCut(Application):
     def __init__(self):
@@ -83,7 +83,7 @@ class XplotCut(Application):
                 elif begin <= d and d <= end:
                     ofh.write(buf)
                     buf = ''
-                    state = state + 1
+                    state += 1
                     continue
             if state == 2:
                 buf += line + "\n"
@@ -115,7 +115,8 @@ class XplotCut(Application):
             line = xplot.readline()
             if not line:
                 break
-            begin, end = re.match("<time_begin:time_end> = <([\d.]+):([\d.]+)>", line).group(1, 2)
+            print line
+            begin, end = re.match("<time_begin:time_end> = <(-?[\d.]+):(-?[\d.]+)>", line).group(1, 2)
             begin = float(begin)
             end   = float(end)
             self.cut(begin, end, self.infile, "%s_%s_%s.xpl" % (self.infile, begin, end))
