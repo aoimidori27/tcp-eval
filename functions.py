@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
+# vi:et:sw=4 ts=4
 
 # Copyright (C) 2009 - 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
-# 
+#
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
