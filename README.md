@@ -1,6 +1,11 @@
 # tcp-eval
 
-Framework to evaluate TCP flows.
+tcp-eval is Python-based framework to evaluate TCP flows. The framework consists of 3 parts
+
+* **virtual-net** to create an arbitrary virtual network topology. The virtual network is based on XEN.
+* **measurement** TBD
+* **analysis** TBD
+
 
 * **Prerequisite** Debian 7.0 (Wheezy) or Ubuntu 13.04 
 
