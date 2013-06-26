@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vi:et:sw=4 ts=4
 
-# Script to start virtual nodes with XEN.
-#
 # Copyright (C) 2007 Lars Noschinski <lars.noschinski@rwth-aachen.de>
 # Copyright (C) 2009 - 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
-# 
+#
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
@@ -26,10 +25,9 @@ import MySQLdb
 from logging import info, debug, warn, error
 from optparse import OptionValueError
 
-# muc-lab imports
+# tcp-eval imports
 from application import Application
-from um_image import Image, ImageValidityException
-from um_node import Node, NodeValidityException
+from node import Node, NodeException, NodeValidityException
 from functions import requireroot, call, execute, CommandFailed
 
 class Xen(Application):
@@ -50,7 +48,7 @@ class Xen(Application):
 
         # object variables
         self._range = []
-        self.serverlist = ['vmhost1', 'vmhost2']
+        self.serverlist = ['localhost']
 
         # initialization of the option parser
         usage = "usage: \t%prog [options] list \n" \
@@ -59,9 +57,8 @@ class Xen(Application):
                 "\t\twhere ID, FROM, TO are node IDs (integers) greater than zero"
         self.parser.set_usage(usage)
         self.parser.set_defaults(console = False, dry_run = False,
-                image_type = "vmeshnode", kernel = "default/vmeshnode-vmlinuz",
-                memory = 128, node_type = "vmeshrouter", hostinfo = False,
-                ramdisk = "vmeshnode-initrd", image_version = "default", force = False)
+                force = False, hostinfo = False, image = "~/image",
+                kernel = "~/kernel/vmlinuz", memory = 128,  ramdisk = "~/initrd/initrd.img")
 
         self.parser.add_option("-c", "--console",
                 action = "store_true", dest = "console",
@@ -70,9 +67,9 @@ class Xen(Application):
                 action = "store_true", dest = "dry_run",
                 help = "do not start the domain automatically; create only the "\
                        "start file (XEN config file) for domain")
-        self.parser.add_option("-I", "--image_type", metavar = "TYPE",
-                action = "store", dest = "image_type", choices = Image.types(),
-                help = "the image type for the domain [default: %default]")
+        self.parser.add_option("-I", "--image", metavar = "PATH",
+                action = "store", dest = "image",
+                help = "the image for the domain [default: %default]")
         self.parser.add_option("-k", "--kernel", metavar = "FILE",
                 action = "store", dest = "kernel", type="string",
                 help = "kernel image for the domain [default: %default]")
@@ -80,15 +77,9 @@ class Xen(Application):
                 action = "store", dest = "memory", type = "int",
                 help = "amount of RAM in MB to allocate to the "\
                        "domain when it starts [default: %default]")
-        self.parser.add_option("-N", "--node_type", metavar = "TYPE",
-                action = "store", dest = "node_type", choices = Node.vtypes(),
-                help = "the node type for the domain [default: %default]")
-        self.parser.add_option("-r", "--ramdisk", metavar = "DISK",
+        self.parser.add_option("-r", "--ramdisk", metavar = "FILE",
                 action = "store", dest = "ramdisk", type="string",
                 help = "initial ramdisk for the domain [default: %default]")
-        self.parser.add_option("-V", "--image_version", metavar = "VERSION",
-                action = "store", dest = "image_version", type="string",
-                help = 'the image version for the domain [default: %default]')
         self.parser.add_option("-H", "--host-info", metavar = "HOSTINFO",
                 action = "store_true", dest = "hostinfo",
                 help = "show information about Domain-0 of each host (needs the command 'list')")
@@ -141,9 +132,6 @@ class Xen(Application):
 
     def set_options_create(self):
         try:
-            # check if imagetype fit to nodetype
-            Node.isValidImage(self.options.image_type, self.options.node_type)
-
             # correct numbers of arguments?
             begin = int(self.args[1])
 
@@ -183,7 +171,7 @@ class Xen(Application):
     def set_options_list(self):
         # get group ids
         group_ids = []
-        for gr_name in ['root', 'um-admin', 'vmeshhost-admin', 'vmeshhost-user']:
+        for gr_name in ['root', 'sudo']:
             group_ids.append(grp.getgrnam(gr_name)[2])  # append group id
 
         # check if user is in one of these groups
@@ -226,18 +214,6 @@ class Xen(Application):
         # must be root
         requireroot()
 
-        # create an Image object
-        try:
-            image = Image(self.options.image_type, self.options.image_version)
-
-        except ImageValidityException, exception:
-            error(exception)
-            sys.exit(1)
-
-        # some temp variables
-        ramdisk = os.path.join(Image.initrdPrefix(), self.options.ramdisk)
-        kernel = os.path.join(Image.kernelPrefix(), self.options.kernel)
-
         if self.options.console and len(self._range) > 1:
             warn("starting more than one node with attached console is almost"\
             " certainly not what you want, so i deactivated console for you")
@@ -246,12 +222,7 @@ class Xen(Application):
         # create the desired number of vmeshnodes
         for number in self._range:
             # create a vmeshnode object
-            try:
-                vmeshnode = Node(number, self.options.node_type)
-
-            except ImageValidityException, exception:
-                error(exception)
-                sys.exit(1)
+            vmeshnode = Node(number, node_type='vmeshrouter')
 
             # test if vmeshnode is already running
             try:
@@ -279,12 +250,12 @@ class Xen(Application):
                     "cpus = '2-15' \n"\
                     "root = '/dev/ram0 console=hvc0' \n"\
                     "vif = ['mac=00:16:3E:00:%02x:%02x', 'bridge=br0'] \n"\
-                    "extra = 'id=default image=%s nodetype=%s hostname=%s "\
+                    "extra = 'id=default image=%s hostname=%s "\
                              "init=/linuxrc'\n"
-                    %(vmeshnode.getHostname(), ramdisk, kernel,
-                      self.options.memory, first_byte, rest_2bytes,
-                      image.getImagePath(canonical_path = False),
-                      vmeshnode.getType(), vmeshnode.getHostname()))
+                    %(vmeshnode.getHostname(), self.options.ramdisk,
+                        self.options.kernel, self.options.memory, first_byte,
+                        rest_2bytes, self.options.image,
+                        vmeshnode.getHostname()))
             f.flush()
 
             # if this is only a dry run, we do not have to start the XENs
