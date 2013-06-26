@@ -6,8 +6,7 @@ tcp-eval is Python-based framework to evaluate TCP flows. The framework consists
 * **measurement** TBD
 * **analysis** TBD
 
-
-* **Prerequisite** Debian 7.0 (Wheezy) or Ubuntu 13.04 
+The scripts are tested on Debian 7.0 (Wheezy) and Ubuntu 13.04.
 
 ## Install
 
