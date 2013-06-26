@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 # vi:et:sw=4 ts=4
 
-# Script to setup virtual mesh with GRE and iptables.
-#
+# Copyright (C) 2009 - 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
 # Copyright (C) 2007 Arnd Hannemann <arnd@arndnet.de>
 # Copyright (C) 2007 Lars Noschinski <lars.noschinski@rwth-aachen.de>
 #
@@ -25,10 +24,10 @@ import os
 import string
 from logging import info, debug, warn, error, critical
 
-# umic-mesh imports
-from um_application import Application
-from um_functions import *
-from um_node import Node, NodeException
+# tcp-eval imports
+from application import Application
+from functions import *
+from node import Node, NodeException
 
 class BuildVmesh(Application):
     """Setup GRE tunnels and iptables rules to simulate a mesh network with
