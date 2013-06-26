@@ -1,12 +1,10 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# vim:softtabstop=4:shiftwidth=4:expandtab
+# vi:et:sw=4 ts=4
 
-# Converts xplot plots to gnuplot and plots them as pdf.
-#
 # Copyright (C) 2009 - 2010 Christian Samsel <christian.samsel@rwth-aachen.de>
-# 
-#+ This program is free software; you can redistribute it and/or modify it
+#
+# This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
 #

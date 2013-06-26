@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vi:et:sw=4 ts=4
 
-# Converts Internet Drafts to PDFs.
-#
 # Copyright (C) 2009 - 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
-# 
+#
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
@@ -18,10 +17,9 @@
 import os.path
 from logging import info, debug, warn, error
 
-# muc-lab imports
+# tcp-eval imports
 from application import Application
 from functions import call, execute
-
 
 class Draft2Pdf(Application):
     """Class to convert internet draft text files to pdfs"""
