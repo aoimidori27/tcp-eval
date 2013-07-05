@@ -7,7 +7,6 @@ from twisted.internet import defer, reactor
 
 # umic-mesh imports
 from um_measurement import measurement, tests
-from um_node import Node
 
 class TcpEvaluationMeasurement(measurement.Measurement):
     """This Measurement has serveral scenarios to test:

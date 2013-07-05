@@ -10,7 +10,6 @@ import sys
 
 # umic-mesh imports
 from um_measurement import measurement, tests
-from um_node import Node
 from um_functions import call
 
 class DumbbellEvaluationMeasurement(measurement.Measurement):

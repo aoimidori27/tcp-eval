@@ -6,7 +6,6 @@ from twisted.internet import defer, reactor
 
 # umic-mesh imports
 from um_measurement import measurement, tests
-from um_node import Node
 
 class NeighborsEvaluationMeasurement(measurement.Measurement):
     """This Measurement tests connectivity via ping."""

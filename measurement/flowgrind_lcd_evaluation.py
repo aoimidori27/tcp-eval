@@ -9,7 +9,6 @@ import os
 #umic-mesh imports
 from um_twisted_functions import twisted_sleep
 from um_measurement import measurement, tests
-from um_node import Node
 
 class TcpMeasurement(measurement.Measurement):
     """This Measurement script resembles measurement for flowgrind-next + lcd evaluation"""
