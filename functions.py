@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*
 # vi:et:sw=4 ts=4
 
-# Copyright (C) 2009 - 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+# Copyright (C) 2007 - 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+# Copyright (C) 2007 - 2010 Arnd Hannemann <arnd.hannemanni@rwth-aachen.de>
+# Copyright (C) 2007 Lars Noschinski <lars.noschinski@rwth-aachen.de>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
@@ -21,9 +23,9 @@ from logging import info, debug, warn, error
 
 def requireroot():
     """Check whether the current user is root or not. If the user is not root
-       sys.exit() will be called. The sys.exit() function will raise the build-in
-       exception "SystemExit". When it is not handled, the Python interpreter will
-       exit
+    sys.exit() will be called. The sys.exit() function will raise the build-in
+    exception "SystemExit". When it is not handled, the Python interpreter will
+    exit
     """
 
     if not os.getuid() == 0:
@@ -32,19 +34,18 @@ def requireroot():
 
 def requireNOroot():
     """Check whether the current user is root or not. If the user is root
-       sys.exit() will be called. The sys.exit() function will raise the build-in
-       exception "SystemExit". When it is not handled, the Python interpreter will
-       exit
+    sys.exit() will be called. The sys.exit() function will raise the build-in
+    exception "SystemExit". When it is not handled, the Python interpreter will
+    exit
     """
 
     if os.getuid() == 0:
         error("You can not be root. Command failed.")
         sys.exit(1)
 
-def execute(cmd, shell = True, raiseError = True, input = None):
-    """Execute a shell command, wait for command to complete and return 
-       stdout/stderr. If the parameter input is given, it will be use as
-       stdin
+def execute(cmd, shell=True, raiseError=True, input=None):
+    """Execute a shell command, wait for command to complete and return
+    stdout/stderr. If the parameter input is given, it will be use as stdin
     """
 
     std_in = None
@@ -52,30 +53,31 @@ def execute(cmd, shell = True, raiseError = True, input = None):
     debug("Executing: %s" % cmd.__str__())
     if input:
         std_in = subprocess.PIPE
-        
-    prog = subprocess.Popen(cmd, shell = shell, stdin = std_in,
-                            stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+
+    prog = subprocess.Popen(cmd, shell=shell, stdin=std_in,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, stderr) = prog.communicate(input)
-                
+
     rc = prog.returncode
     if raiseError and rc != 0:
         raise CommandFailed(cmd, rc, stderr)
 
     return (stdout, stderr)
 
-def call(cmd, shell = True, raiseError = True, noOutput = False, input = None):
-    """Call a shell command, wait for command to complete and return exit code"""
+def call(cmd, shell=True, raiseError=True, noOutput=False, input=None):
+    """Call a shell command, wait for command to complete and return exit
+    code"""
 
     std_in = None
     std_out = None
-    
-    debug("Executing: %s" % cmd.__str__())    
+
+    debug("Executing: %s" % cmd.__str__())
     if input:
         std_in = subprocess.PIPE
     if noOutput:
-        std_out = open(os.path.devnull, "w")           
-        
-    prog = subprocess.Popen(cmd, shell = shell, stdin = std_in, stdout = std_out)
+        std_out = open(os.path.devnull, "w")
+
+    prog = subprocess.Popen(cmd, shell=shell, stdin=std_in, stdout=std_out)
     prog.communicate(input)
 
     rc = prog.returncode
@@ -106,19 +108,15 @@ def execpy(arguments = []):
 
     # save argument list
     save_argv = sys.argv
-
     # save function pointer for sys.exit()
     save_exit = sys.exit
-
     # save __name__
     save_name = __name__;
 
     # override argument list
     sys.argv = arguments
-
     # override sys.exit()
     sys.exit = raiseException
-
     # override __name__
     __name__ = "__main__"
 
@@ -126,8 +124,7 @@ def execpy(arguments = []):
         info ("Now running %s " % script)
         execfile(script, globals())
     except SystemExitException, inst:
-        info ("Script %s exited with sys.exit(%d)"
-              % (script, inst.status))
+        info ("Script %s exited with sys.exit(%d)" % (script, inst.status))
         rc = inst.status
 
     if rc != 0:
@@ -140,11 +137,10 @@ def execpy(arguments = []):
 
     return rc
 
-
 class CommandFailed(Exception):
     """Convenience function to handle return/exit codes"""
 
-    def __init__(self, cmd, rc, stderr = None):
+    def __init__(self, cmd, rc, stderr=None):
         Exception.__init__(self)
         self.cmd = cmd
         self.rc  = rc
@@ -160,16 +156,16 @@ class StrictStruct:
     def __init__(self, list = None, **kwargs):
         """The StrictStruct constructor takes two parameters:
 
-           If "list" is not None, it gives the allowed entries in the struct.
-           Otherwise, the list of allowed entries will be extracted from the **kwargs argument.
+        If "list" is not None, it gives the allowed entries in the struct.
+        Otherwise, the list of allowed entries will be extracted from the
+        **kwargs argument.
 
-           Examples:
-             StrictStruct(['foo', 'bar'])
-             StrictStruct(['foo', 'bar'], foo = 1, bar = 3)
-             StrictStruct(foo = 1, bar = 3)
+        Examples: StrictStruct(['foo', 'bar']) StrictStruct(['foo', 'bar'],
+        foo=1, bar=3) StrictStruct(foo=1, bar=3)
         """
 
         self.__dict__["_items"] = {}
+
         if list is None:
             for (k, v) in kwargs.iteritems():
                 if k not in self.__dict__:
@@ -184,20 +180,20 @@ class StrictStruct:
                     self._items[k] = v
                 else:
                     raise AttributeError("'%s' instance has no attribute '%s'"
-                            % (self.__class__, k))
+                            %(self.__class__, k))
 
     def __getattr__(self, name):
-       return self.__getitem__(name) 
- 
+       return self.__getitem__(name)
+
     def __setattr__(self, name, value):
-       return self.__setitem__(name, value) 
+       return self.__setitem__(name, value)
 
     def __getitem__(self, name):
         try:
             return self._items[name]
         except KeyError:
             raise AttributeError("'%s' instance has no attribute '%s'"
-                    % (self.__class__, name))
+                    %(self.__class__, name))
 
     def __setitem__(self, name, value):
         if name in self.__dict__:
@@ -206,10 +202,11 @@ class StrictStruct:
             self._items[name] = value
         else:
             raise AttributeError("'%s' instance has no attribute '%s'"
-                    % (self.__class__, name))
+                    %(self.__class__, name))
 
     def keys(self):
         return self.__dict__["_items"].keys()
 
     def __str__(self):
         return "<%s: %r>" % (self.__class__, self._items)
+
