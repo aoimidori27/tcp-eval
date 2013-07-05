@@ -3,7 +3,7 @@
 # vi:et:sw=4 ts=4
 
 # Copyright (C) 2007 - 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
-# Copyright (C) 2007 - 2010 Arnd Hannemann <arnd.hannemanni@rwth-aachen.de>
+# Copyright (C) 2007 - 2010 Arnd Hannemann <arnd@arndnet.de>
 # Copyright (C) 2007 Lars Noschinski <lars.noschinski@rwth-aachen.de>
 #
 # This program is free software; you can redistribute it and/or modify it
