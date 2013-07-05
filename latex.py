@@ -27,9 +27,9 @@ from functions import call
 class UmLatex():
     """Class to convert latex figures (e.g. tikz) to pdf graphics"""
 
-    def __init__(self, texfile = "main.tex", outdir = os.getcwd(), force = False,
-                 debug = False, defaultPackages = True, defaultSettings = True,
-                 siunitx = True, tikz = True):
+    def __init__(self, texfile="main.tex", outdir=os.getcwd(), force=False,
+            debug=False, defaultPackages=True, defaultSettings=True,
+            siunitx=True, tikz=True):
         """Constructor of the object"""
 
         # tex filename and figures names (for building output files)
@@ -55,21 +55,20 @@ class UmLatex():
         # load default values for the latex document (class/packages/settings)
         self.loadDefaults(defaultPackages, defaultSettings, siunitx, tikz)
 
-
     def __del__(self):
-        """Constructor of the object"""
+        """Destructor of the object"""
 
         shutil.rmtree(self._tempdir)
 
-    def loadDefaults(self, defaultPackages = True, defaultSettings = True,
-                       siunitx = True, tikz = True):
-        """Load default settings for the generated latex file. Currently,
-           we default values for the following packages
+    def loadDefaults(self, defaultPackages=True, defaultSettings=True,
+                       siunitx=True, tikz=True):
+        """Load default settings for the generated latex file. Currently, we
+        default values for the following packages
 
-           1. defaultPackages: includes etex, babel, inputenc, fontenc, lmodern,
-              textcomp, graphicx, xcolor
-           2. defaultSettings: pagestyle empty
-           3. default values for siunitx, tikz
+        1. defaultPackages: includes etex, babel, inputenc, fontenc, lmodern,
+        textcomp, graphicx, xcolor
+        2. defaultSettings: pagestyle empty
+        3. default values for siunitx, tikz
         """
 
         self.setDocumentclass("scrartcl")
@@ -88,38 +87,25 @@ class UmLatex():
             self.addSetting(r"\pagestyle{empty}")
 
             # some arrows
-            self.addSetting(r"\newcommand*{\Implies}{\ensuremath{\rightarrow}\xspace}")
-            self.addSetting(r"\newcommand*{\IFF}{\ensuremath{\leftrightarrow}\xspace}")
-            self.addSetting(r"\newcommand*{\IF}{\ensuremath{\Rightarrow}\xspace}")
-            self.addSetting(r"\newcommand*{\SRA}{\ensuremath{\shortrightarrow}\xspace}")
-            self.addSetting(r"\newcommand*{\SLA}{\ensuremath{\shortleftarrow}\xspace}")
+            self.addSetting(r"\newcommand*{\Implies}"\
+                    "{\ensuremath{\rightarrow}\xspace}")
+            self.addSetting(r"\newcommand*{\IFF}"\
+                    "{\ensuremath{\leftrightarrow}\xspace}")
+            self.addSetting(r"\newcommand*{\IF}"\
+                    "{\ensuremath{\Rightarrow}\xspace}")
+            self.addSetting(r"\newcommand*{\SRA}"\
+                    "{\ensuremath{\shortrightarrow}\xspace}")
+            self.addSetting(r"\newcommand*{\SLA}"\
+                    "{\ensuremath{\shortleftarrow}\xspace}")
 
         # load siunitx
         if siunitx:
-            #self.addPackage("siunitx", "alsoload=accepted", "alsoload=binary")
-            #self.addSetting(r"\sisetup{per=fraction,fraction=nice,seperr}")
-            #self.addSetting(r"\newunit{\mps}{\meter\per\second}")
-            #self.addSetting(r"\newunit{\kmps}{\km\per\second}")
-            #self.addSetting(r"\renewunit{\bit}{b}")
-            #self.addSetting(r"\newunit{\Bit}{bit}")
-            #self.addSetting(r"\newunit{\kb}{\kilo\bit}")
-            #self.addSetting(r"\newunit{\Mb}{\mega\bit}")
-            #self.addSetting(r"\newunit{\Gb}{\giga\bit}")
-            #self.addSetting(r"\newunit{\Byte}{byte}")
-            #self.addSetting(r"\newunit{\kB}{\kilo\byte}")
-            #self.addSetting(r"\newunit{\MB}{\mega\byte}")
-            #self.addSetting(r"\newunit{\GB}{\giga\byte}")
-            #self.addSetting(r"\newunit{\kbps}{\kb\per\second}")
-            #self.addSetting(r"\newunit{\Mbps}{\Mb\per\second}")
-            #self.addSetting(r"\newunit{\Gbps}{\Gb\per\second}")
-            #self.addSetting(r"\newunit{\blocks}{blocks}")
-            #self.addSetting(r"\newunit{\transactions}{transactions}")
-            #self.addSetting(r"\newunit{\nnumber}{\#}")
             self.addPackage("xfrac")
             self.addPackage("siunitx")
-            self.addSetting(r"\sisetup{detect-weight,per-mode=fraction,fraction-function=\sfrac," \
-                            "separate-uncertainty,load-configurations=binary,load-configurations=abbreviations}")
-
+            self.addSetting(r"\sisetup{detect-weight,per-mode=fraction,"\
+                    "fraction-function=\sfrac,separate-uncertainty,"\
+                    "load-configurations=binary,"\
+                    "load-configurations=abbreviations}")
             self.addSetting(r"\DeclareSIUnit{\Second}{Sekunden}")
             self.addSetting(r"\DeclareSIUnit{\mps}{\meter\per\second}")
             self.addSetting(r"\DeclareSIUnit{\kmps}{\km\per\second}")
@@ -146,7 +132,8 @@ class UmLatex():
         # load tikz
         if tikz:
             self.addPackage("tikz")
-            self.addSetting(r"\usetikzlibrary{backgrounds,arrows,calc,positioning,fit}")
+            self.addSetting(r"\usetikzlibrary{backgrounds,arrows,calc,"\
+                    "positioning,fit}")
 
     def __buildDocument(self):
         packages = "\n".join(self._packages)
@@ -158,9 +145,8 @@ class UmLatex():
         return document
 
     def __getValidTexfile(self, texfile):
-        """If the parameter "texfile" is "None" return the privat member variable
-           "self._texfile" otherwise return the parameter itself
-        """
+        """If the parameter "texfile" is "None" return the privat member
+        variable "self._texfile" otherwise return the parameter itself """
 
         if texfile:
             return texfile
@@ -168,9 +154,8 @@ class UmLatex():
             return self._texfile
 
     def __getValidOutdir(self, outdir):
-        """If the parameter "outdir" is "None" return the privat member variable
-           "self._outdir" otherwise return the parameter itself
-        """
+        """If the parameter "outdir" is "None" return the privat member
+        variable "self._outdir" otherwise return the parameter itself """
 
         if outdir:
             return outdir
@@ -178,9 +163,8 @@ class UmLatex():
             return self._outdir
 
     def __getValidTempdir(self, tempdir):
-        """If the parameter "tempdir" is "None" return the privat member variable
-           "self._tempdir" otherwise return the parameter itself
-        """
+        """If the parameter "tempdir" is "None" return the privat member
+        variable "self._tempdir" otherwise return the parameter itself """
 
         if tempdir:
             return tempdir
@@ -192,46 +176,43 @@ class UmLatex():
 
         if options:
             options = ", ".join(options)
-            self._documentclass = "\\documentclass[%s]{%s}" %(options, documentclass)
+            self._documentclass = "\\documentclass[%s]{%s}"
+                    %(options, documentclass)
         else:
-            self._documentclass = "\\documentclass{%s}" %documentclass
+            self._documentclass = "\\documentclass{%s}" %(documentclass)
 
     def addPackage(self, package, *options):
         """Add the given package with its options to the document. Only the
-           name of the package is needed. The "\usepackage{}" latex command will
-           be automatically added
-        """
+        name of the package is needed. The "\usepackage{}" latex command will
+        be automatically added """
 
         if options:
             options = ", ".join(options)
             command = "\\usepackage[%s]{%s}" %(options, package)
         else:
-            command = "\\usepackage{%s}" %package
+            command = "\\usepackage{%s}" %(package)
 
         self._packages.append(command)
 
     def addSetting(self, command):
         """Add an arbitrary latex command/setting to the document. The given
-           command the will be added before the latex "\begin{document}"
-        """
+        command the will be added before the latex "\begin{document}" """
 
         self._settings.append(command)
 
     def addContent(self, content):
-        """Add arbitrary latex content to the document. The content will be added
-           after the latex "\begin{document}"
-        """
+        """Add arbitrary latex content to the document. The content will be
+        added after the latex "\begin{document}" """
 
         self._content.append(content)
 
-    def addLatexFigure(self, latexfig, figname, command = None):
+    def addLatexFigure(self, latexfig, figname, command=None):
         """Add a latex figure to the document. The figure given by the
-           parameter "latexfig" is included by the latex command "\input{}". All
-           necessary commands like "\begin{figure}" or "\end{figure}" are
-           automatically added. The last added command is "\clearpage", so that
-           all figures are on a new page. If the optional parameter "command"
-           is given, it will be added before the figure is included
-        """
+        parameter "latexfig" is included by the latex command "\input{}". All
+        necessary commands like "\begin{figure}" or "\end{figure}" are
+        automatically added. The last added command is "\clearpage", so that
+        all figures are on a new page. If the optional parameter "command" is
+        given, it will be added before the figure is included """
 
         # save the name of the figure for further uses
         self._figures.append(figname)
@@ -240,9 +221,9 @@ class UmLatex():
         # if an additional command is given, we added it
         if command:
             self.addContent(command)
-        self.addContent("\\input{%s}\n\\end{figure}\n\\clearpage" %latexfig)
+        self.addContent("\\input{%s}\n\\end{figure}\n\\clearpage" %(latexfig))
 
-    def save(self, texfile = None, outdir = None):
+    def save(self, texfile=None, outdir=None):
         """Save the generated latex file to "outdir/texfile"""
 
         # build document
@@ -263,12 +244,11 @@ class UmLatex():
         latex.write(document)
         latex.close()
 
-    def toPdf(self, texfile = None, outdir = None, tempdir = None):
+    def toPdf(self, texfile=None, outdir=None, tempdir=None):
         """Generate the actual pdf figures. First, the document is build. Then
-           pdflatex will run on the document. Afterwards, the new generated
-           pdf will be splitted into single pages, each graphic on a new page.
-           Finally, each page will be cropped by pdfcrop
-        """
+        pdflatex will run on the document. Afterwards, the new generated pdf
+        will be splitted into single pages, each graphic on a new page.
+        Finally, each page will be cropped by pdfcrop """
 
         # building document and output path
         document = self.__buildDocument()
@@ -280,9 +260,9 @@ class UmLatex():
         info("Run pdflatex on %s..." %texfile)
         cmd = "pdflatex -jobname %s -output-directory %s" %(texfile, tempdir)
         if self._debug:
-            call(cmd, input = document)
+            call(cmd, input=document)
         else:
-            call(cmd, input = document, noOutput = True)
+            call(cmd, input=document, noOutput=True)
 
         # open new generated pdf file
         combinedPDF = os.path.join(tempdir, "%s.pdf" %texfile)
