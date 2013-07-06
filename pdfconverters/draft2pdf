@@ -15,6 +15,7 @@
 
 # python imports
 import os.path
+import textwrap
 from logging import info, debug, warn, error
 
 # tcp-eval imports
@@ -27,68 +28,60 @@ class Draft2Pdf(Application):
     def __init__(self):
         """Constructor of the object"""
 
-        Application.__init__(self)
-
         # initialization of the option parser
-        usage = "usage: %prog [options] <file1> <file2> ..."
-        self.parser.set_usage(usage)
-        self.parser.set_defaults(force = False, outdir = os.getcwd())
-
-        self.parser.add_option("-f", "--force",
-                               action = "store_true", dest = "force",
-                               help = "overwrite existing output pdf file")
-        self.parser.add_option("-n", "--name", metavar = "NAME",
-                               action = "store", dest = "basename",
-                               help = "basename for all generated pdf files")
-        self.parser.add_option("-d", "--directory", metavar = "DIR",
-                               action = "store", dest = "outdir",
-                               help = "output directory [default: %default]")
+        description = textwrap.dedent("""\
+                Convert Internet Draft text files to PDFs""")
+        Application.__init__(self, description=description)
+        self.parser.add_argument("-f", "--force", action="store_true",
+                help="overwrite existing output pdf file")
+        self.parser.add_argument("-d", "--directory", metavar="DIR",
+                action="store", dest="outdir", default=os.getcwd(),
+                help="output directory (default: current directory)")
+        self.parser.add_argument("files", nargs="+", help="Internet Draft "\
+                "text files")
 
     def set_option(self):
-        """Set options"""
+        """Configure Draft2pdf object based on the options form the
+        argparser"""
 
-        Application.set_option(self)
+        Application.apply_options(self)
 
-        # correct numbers of arguments?
-        if len(self.args) == 0:
-            self.parser.error("incorrect number of arguments")
 
     def run(self):
-        """Main method of the DraftToPdf object"""
-        
+        """Main method of the Draft2Pdf object"""
+
         # get all necessary directories
         srcdir = os.getcwd()
-        destdir = self.options.outdir
-                       
+        destdir = self.args.outdir
+
 	    # for all ID given on command line
-        for index, draft in enumerate(self.args):
+        for index, draft in enumerate(self.args.files):
 
             # get the full path of the figure
             draftSrc = os.path.join(srcdir, draft)
-            
+
             if not os.path.isfile(draftSrc):
                 warn("%s is not a regular file. Skipped." %draft)
                 continue
 
             # get the basename (without extension)
-            if self.options.basename:
-                basename = "%s_%s" %(self.options.basename, index)
-            else:
-                basename = os.path.basename(draft)
-                basename = os.path.splitext(basename)[0]
-           
+            basename = os.path.basename(draft)
+            basename = os.path.splitext(basename)[0]
+
             # build name for output file
             draftDst = os.path.join(destdir, "%s.pdf" %basename)
 
-            if not self.options.force and os.path.exists(draftDst):
+            if not self.args.force and os.path.exists(draftDst):
                 warn("%s already exists. Skipped." %draftDst)
                 continue
 
             # convert the draft to a PS file
-            if self.options.debug:
-                cmd = ("enscript -v -B -f Courier10 --margins=70::50 %s -p -" %draftSrc)
+            if self.args.debug:
+                cmd = ("enscript -v -B -f Courier10 --margins=70::50 %s -p -"\
+                        %(draftSrc))
             else:
-                cmd = ("enscript -B -f Courier10 --margins=70::50 %s -p -" %draftSrc)
+                cmd = ("enscript -B -f Courier10 --margins=70::50 %s -p -"\
+                        %(draftSrc))
 
             # we want only stdout
             info("Run enscript on %s..." %draft)
@@ -97,16 +90,17 @@ class Draft2Pdf(Application):
             # convert the PS file to a PDF file
             info("Run ps2pdf on %s..." %draft)
             cmd = ("ps2pdf - %s" %draftDst)
-            if self.options.debug:
-                call(cmd, input = enscript)
+            if self.args.debug:
+                call(cmd, input=enscript)
             else:
-                call(cmd, input = enscript, noOutput = True)
+                call(cmd, input=enscript, noOutput=True)
 
     def main(self):
-        self.parse_option()
-        self.set_option()
+        self.parse_options()
+        self.apply_options()
         self.run()
 
 
 if __name__ == "__main__":
     Draft2Pdf().main()
+
