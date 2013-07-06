@@ -35,8 +35,8 @@ class Draft2Pdf(Application):
         self.parser.add_argument("-f", "--force", action="store_true",
                 help="overwrite existing output pdf file")
         self.parser.add_argument("-d", "--directory", metavar="DIR",
-                action="store", dest="outdir", default=os.getcwd(),
-                help="output directory (default: current directory)")
+                action="store", dest="outdir", default="./",
+                help="output directory (default: %(default)s)")
         self.parser.add_argument("files", nargs="+", help="Internet Draft "\
                 "text files")
 
