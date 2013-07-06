@@ -51,7 +51,7 @@ class XplotCut(Application):
         """Write the current view to a new file"""
 
         infile = self.args.xpl_file
-        outfile = "%s-cut.xpl" %(self.infile)
+        outfile = "%s-%s-%s.xpl" %(self.infile, begin, end)
 
         ifh = open(infile,  'r')
         ofh = open(outfile, 'w')
