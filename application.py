@@ -38,7 +38,7 @@ class Application(object):
                 default=False, help="being even more verbose")
         self.parser.add_argument("--syslog", metavar="HOST", action="store",
                 nargs="?", const="localhost", help="log to syslog server "\
-                        "%(metavar)s. (default: %(const)s)")
+                        "'%(metavar)s' (default: %(const)s)")
 
     def parse_options(self, args = None):
         """Parse options for generic Application object"""
