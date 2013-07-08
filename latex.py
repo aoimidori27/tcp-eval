@@ -88,24 +88,24 @@ class UmLatex():
 
             # some arrows
             self.addSetting(r"\newcommand*{\Implies}"\
-                    "{\ensuremath{\rightarrow}\xspace}")
+                    r"{\ensuremath{\rightarrow}\xspace}")
             self.addSetting(r"\newcommand*{\IFF}"\
-                    "{\ensuremath{\leftrightarrow}\xspace}")
+                    r"{\ensuremath{\leftrightarrow}\xspace}")
             self.addSetting(r"\newcommand*{\IF}"\
-                    "{\ensuremath{\Rightarrow}\xspace}")
+                    r"{\ensuremath{\Rightarrow}\xspace}")
             self.addSetting(r"\newcommand*{\SRA}"\
-                    "{\ensuremath{\shortrightarrow}\xspace}")
+                    r"{\ensuremath{\shortrightarrow}\xspace}")
             self.addSetting(r"\newcommand*{\SLA}"\
-                    "{\ensuremath{\shortleftarrow}\xspace}")
+                    r"{\ensuremath{\shortleftarrow}\xspace}")
 
         # load siunitx
         if siunitx:
             self.addPackage("xfrac")
             self.addPackage("siunitx")
             self.addSetting(r"\sisetup{detect-weight,per-mode=fraction,"\
-                    "fraction-function=\sfrac,separate-uncertainty,"\
-                    "load-configurations=binary,"\
-                    "load-configurations=abbreviations}")
+                    r"fraction-function=\sfrac,separate-uncertainty,"\
+                    r"load-configurations=binary,"\
+                    r"load-configurations=abbreviations}")
             self.addSetting(r"\DeclareSIUnit{\Second}{Sekunden}")
             self.addSetting(r"\DeclareSIUnit{\mps}{\meter\per\second}")
             self.addSetting(r"\DeclareSIUnit{\kmps}{\km\per\second}")
@@ -176,7 +176,7 @@ class UmLatex():
 
         if options:
             options = ", ".join(options)
-            self._documentclass = "\\documentclass[%s]{%s}"
+            self._documentclass = "\\documentclass[%s]{%s}"\
                     %(options, documentclass)
         else:
             self._documentclass = "\\documentclass{%s}" %(documentclass)
