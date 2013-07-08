@@ -17,411 +17,453 @@
 # python imports
 import os
 import sys
-import grp
+import argparse
+import textwrap
 import tempfile
 import xmlrpclib
 import socket
 import MySQLdb
 from logging import info, debug, warn, error
-from optparse import OptionValueError
 
 # tcp-eval imports
 from application import Application
-from node import Node, NodeException, NodeValidityException
 from functions import requireroot, call, execute, CommandFailed
 
-class Xen(Application):
+class VMNode(Application):
     """Class to start virtual nodes on the basis of Xen"""
 
     def __init__(self):
-        """Creates a new Xen object"""
+        """Creates a new VMNode object"""
 
-        Application.__init__(self)
-
-        self.action = ''
-        self.commands = ('list', 'create', 'shutdown')
-
-        self.dbhost = 'webserver'
-        self.db = 'umic-mesh'
-        self.dbuser = 'um_xm'
-        self.dbpass = 'eSWEuB7LeEss6sjF'
-
-        # object variables
-        self._range = []
-        self.serverlist = ['localhost']
-
-        # initialization of the option parser
-        usage = "usage: \t%prog [options] list \n" \
-                "\t%prog [options] create ID | FROM TO \n" \
-                "\t%prog [options] shutdown ID | FROM TO \n" \
-                "\t\twhere ID, FROM, TO are node IDs (integers) greater than zero"
-        self.parser.set_usage(usage)
-        self.parser.set_defaults(console = False, dry_run = False,
-                force = False, hostinfo = False, image = "~/image",
-                kernel = "~/kernel/vmlinuz", memory = 128,  ramdisk = "~/initrd/initrd.img")
-
-        self.parser.add_option("-c", "--console",
-                action = "store_true", dest = "console",
-                help = "attaches to domU console (xm -c)")
-        self.parser.add_option("-d", "--dry-run",
-                action = "store_true", dest = "dry_run",
-                help = "do not start the domain automatically; create only the "\
-                       "start file (XEN config file) for domain")
-        self.parser.add_option("-I", "--image", metavar = "PATH",
-                action = "store", dest = "image",
-                help = "the image for the domain [default: %default]")
-        self.parser.add_option("-k", "--kernel", metavar = "FILE",
-                action = "store", dest = "kernel", type="string",
-                help = "kernel image for the domain [default: %default]")
-        self.parser.add_option("-m", "--memory", metavar = "MEMORY",
-                action = "store", dest = "memory", type = "int",
-                help = "amount of RAM in MB to allocate to the "\
-                       "domain when it starts [default: %default]")
-        self.parser.add_option("-r", "--ramdisk", metavar = "FILE",
-                action = "store", dest = "ramdisk", type="string",
-                help = "initial ramdisk for the domain [default: %default]")
-        self.parser.add_option("-H", "--host-info", metavar = "HOSTINFO",
-                action = "store_true", dest = "hostinfo",
-                help = "show information about Domain-0 of each host (needs the command 'list')")
-        self.parser.add_option("-f", "--force",
-                action = "store_true", dest = "force",
-                help = "do action, even if the database can't be reached")
-
-
-    def db_connect(self):
+        # database and xend connection
         self.dbconn = None
+        self.xenconn = None
+
+        # other object variables
+        self.__vm_ids = None
+
+        # create top-level parser and subparser
+        description = textwrap.dedent("""\
+                This program can create/shutdown/destroy an arbitrary number of
+                XEN VMs (domUs) either locally or on a remote XEN host (dom0).
+                Further, it can list all current running VMs in a network
+                together with their respected owner (requires a MySQL
+                database connection).""")
+        Application.__init__(self, description=description)
+        database_group = self.parser.add_mutually_exclusive_group()
+        database_group.add_argument("-d", "--database", action="store",
+                metavar=("HOST", "DB", "USER", "PASSWD"), nargs=4,
+                help="establish database connection to store domU ownerships")
+        database_group.add_argument("-n", "--no-database", action="store_true",
+                default=True, help="do action without database connection "\
+                        "(default: %(default)s)")
+        subparsers = self.parser.add_subparsers(title="subcommands",
+                dest="action", help="additional help")
+
+        # shared parser for "create/shutdown/destroy" command
+        shared_parser = argparse.ArgumentParser(add_help=False)
+        shared_parser.add_argument("vm_ids", metavar="id", type=int, nargs="+",
+                help="execute command for domU with ID '%(metavar)s'. The ID "\
+                        "will be used as a network-wide unique domU identifier")
+        shared_parser.add_argument("-s", "--host", metavar="HOST", nargs=1,
+                action="store", default="localhost", help="execute command "\
+                        "on dom0 '%(metavar)s' (default: %(default)s)")
+        shared_parser.add_argument("-p", "--prefix", metavar="PRE", nargs=1,
+                action="store", default="vmnode", help="use '%(metavar)s' as "\
+                        "prefix for domU's hostname (default: %(default)s). "\
+                        "As suffix the domU ID will be used")
+        shared_parser.add_argument("-r", "--range", action="store_true",
+                default=False, help="interprete the given domU IDs as an 'ID "\
+                        "range' from 'id1' to 'id2' (default: %(default)s)")
+
+        # create parser for "create" command
+        parser_create = subparsers.add_parser("create",
+                parents=[shared_parser], help="create multiple XEN domUs "\
+                        "simultaneously")
+        parser_create.add_argument("-o", "--root", metavar="PATH", nargs=1,
+                action="store", default="~/root", help = "root file system "\
+                        "for domU (default: %(default)s)")
+        parser_create.add_argument("-k", "--kernel", metavar="FILE", nargs=1,
+                action="store",  default = "~/vmlinuz", help = "kernel for "\
+                        "domU (default: %(default)s)")
+        parser_create.add_argument("-i", "--initrd", metavar="FILE", nargs=1,
+                action="store", default="~/initrd.img", help="initial "\
+                        "ramdisk for domU (default: %(default)s)")
+        parser_create.add_argument("-m", "--memory", metavar="#", nargs=1,
+                action="store", type=int, default=128, help="amount of RAM "\
+                        "in MB to allocate to domU (default: %(default)s)")
+        create_group = parser_create.add_mutually_exclusive_group()
+        create_group.add_argument("-c", "--console", action="store_true",
+                default=False, help="attaches to domU console (xm -c)")
+        create_group.add_argument("-y","--dry-run", action="store_true",
+                default=False, help="do not start domUs automatically; "\
+                        "create start file (XEN config file) only")
+
+        # create parser for "shutdown" command
+        parser_shutdown = subparsers.add_parser("shutdown",
+                parents=[shared_parser], help="shutdown multiple XEN domUs "\
+                        "simultaneously")
+
+        # create parser for "destroy" command
+        parser_destroy = subparsers.add_parser("destroy",
+                parents=[shared_parser], help="destroy multiple XEN domUs "\
+                        "simultaneously")
+
+        # create parser for "list" command
+        parser_list = subparsers.add_parser("list", help="list XEN domOs/domUs")
+        parser_list.add_argument("-s", "--host", metavar="HOST", nargs="+",
+                action="store", default="localhost", help="dom0s on which "\
+                        "command will be executed (default: %(default)s)")
+        parser_list.add_argument("--domUs", action="store_true",
+                dest="show_domUs", default=True, help="show information "\
+                        "about domUs (default: %(default)s)")
+        parser_list.add_argument("--dom0s", action="store_false",
+                dest="show_dom0s", default=False, help="show information "\
+                        "about domOs")
+
+    def apply_options(self):
+        """Configure XEN object based on the options form the argparser.
+        On the given options perform some sanity checks"""
+
+        # for all commands
+        Application.apply_options(self)
+
+        # for all commands except "list"
+        if not self.args.action == "list":
+            # VM IDs are never negative
+            for vm_id in self.args.vm_ids:
+                if vm_id < 0:
+                    error("A domU ID must be greater than zero")
+                    sys.exit(1)
+
+            # if desired build a range of domU IDs
+            if self.args.range:
+                # can only generate a range if exact two IDs are given
+                if not len(self.args.vm_ids) == 2:
+                    error("Can only generate an 'ID range' if exact two domU "\
+                            "IDs are given")
+                    sys.exit(1)
+                else:
+                    self.__vm_ids = range(self.args.vm_ids[0],
+                            self.args.vm_ids[1] + 1)
+            # for convinced copy domU IDs
+            else:
+                self.__vm_ids = self.args.vm_ids
+
+        # for command "create" only
+        if self.args.action == "create":
+            # cannot attach console if we start multiple VMs
+            if self.args.console and self.args.do_create > 1:
+                warn("Starting more than VMs with attached console is almost "\
+                        "certainly not what you want. Console option is "\
+                        "deactivated")
+                self.args.console = False
+
+    def db_connect(self, host, db, user, passwd, abort_on_failure=True):
+        """Establish MySQL database connection to store domU ownerships"""
+
         try:
-            self.dbconn = MySQLdb.connect(host = self.dbhost,
-                                          db = self.db,
-                                          user = self.dbuser,
-                                          passwd = self.dbpass)
+            self.dbconn = MySQLdb.connect(host=host, db=db, user=user,
+                    passwd=passwd)
             self.dbconn.autocommit(True)
-        except Exception, e:
-            error("Could not connect to database: %s" %e)
-            if not self.options.force:
-                error("Use -f if you want to continue anyways")
+        except Exception, exception:
+            error_msg = "Could not connect to database"
+            if abort_on_failure:
+                error("%s: %s. Exit" %(error_msg, exception))
                 sys.exit(1)
-
-    def set_options_shutdown(self):
-        try:
-            # correct numbers of arguments?
-            begin = int(self.args[1])
-
-            if len(self.args) == 2:
-                end = begin + 1
-            elif len(self.args) == 3:
-                end = int(self.args[2]) + 1
             else:
-                raise IndexError
+                warn("%s: %s. Continue" %(error_msg, exception))
 
-            # Integers greater than zero?
-            if begin > 0 and end > 0:
-                self._range = range(begin, end)
-            else:
-                raise ValueError
-        except IndexError:
-            error("Incorrect number of arguments")
-        except ValueError:
-            error("Arguments are not integers greater than zero")
+    def db_insert(self, vm_hostname):
+        """Insert domU with their respected owner into the database"""
+
+        if os.environ.has_key("SUDO_USER"):
+            user = os.environ["SUDO_USER"]
         else:
-            return
+            user = os.environ["USER"]
 
-        # if we get to this point we got an exception and we want to terminate
-        # the program
-        sys.exit(1)
+        cursor = self.dbconn.cursor()
+        query = "INSERT INTO nodes_vmesh (nodeID,created_by) "\
+                "SELECT nodeID,'%s' FROM nodes WHERE nodes.name='%s' "\
+                "ON DUPLICATE KEY UPDATE created_by='%s';"\
+                        %(user, vm_hostname, user)
+        cursor.execute(query)
 
-    def set_options_create(self):
+    def db_delete(self, vm_hostname):
+        """Delete domU from the database"""
+
+        cursor = self.dbconn.cursor()
+        query = "DELETE FROM nodes WHERE name='%s';" %(vm_hostname)
+        cursor.execute(query)
+
+    def xen_connect(self, host, abort_on_failure=True):
+        """Establish connection to xen daemon"""
+
         try:
-            # correct numbers of arguments?
-            begin = int(self.args[1])
-
-            if len(self.args) == 2:
-                end = begin + 1
-            elif len(self.args) == 3:
-                end = int(self.args[2]) + 1
+            self.xenconn = xmlrpclib.Server('http://%s:8006/' %(host))
+        except socket.error, exception:
+            error_msg = "Could not connect to XEN daemon"
+            if abort_on_failure:
+                error("%s: %s. Exit" %(error_msg, exception))
+                sys.exit(1)
             else:
-                raise IndexError
+                warn("%s: %s. Continue..." %(error_msg, exception))
 
-            # no vmnode-numbers greater than 4000
-            if end > 4001:
-                error("No numbers greater than 4000")
-                sys.exit()
+    def xen_getDomains(self, a, b, abort_on_failure=True):
+        """Return all hostet domains"""
 
-            # Integers greater than zero?
-            if begin > 0 and end > 0:
-                self._range = range(begin, end)
+        try:
+            return self.xenconn.domains(a, b)
+        except socket.error, exception:
+            error_msg = "Could not retrieve XEN domains from the XEN daemon"
+            if abort_on_failure:
+                error("%s: %s. Exit" %(error_msg, exception))
+                sys.exit(1)
             else:
-                raise ValueError
+                warn("%s: %s. Continue..." %(error_msg, exception))
 
-            # everthing is OK, we can leave the method
-            return
+    def create(self):
+        """Start the desired number of domUs"""
 
-        except NodeValidityException, exception:
-            error("Invalid combination of node type and image type")
-            error(exception)
-        except IndexError:
-            error("Incorrect number of arguments")
-        except ValueError:
-            error("Arguments are not integers greater than zero")
+        #FIXME
+        if not self.args.host == "localhost":
+            raise NotImplementedError
 
-        # if we come to this point we got an exception and we want to terminate
-        # the program
-        sys.exit(1)
+        # only a dry run require no root privileges
+        if not self.args.dry_run:
+            requireroot()
 
-    def set_options_list(self):
-        # get group ids
-        group_ids = []
-        for gr_name in ['root', 'sudo']:
-            group_ids.append(grp.getgrnam(gr_name)[2])  # append group id
+        # create desired domUs
+        for index, vm_id in enumerate(self.__vm_ids):
+            # build hostname
+            vm_hostname = "%s%i" %(self.args.prefix, vm_id)
 
-        # check if user is in one of these groups
-        groups = os.getgroups()
-        for i in group_ids:
-            if i in groups:
-                return
-        error("You are not in the right group")
-        sys.exit(1)
-
-    def set_option(self):
-        """Set the options for the Xen object"""
-
-        Application.set_option(self)
-
-        # correct numbers of arguments?
-        if (len(self.args) == 0) or (len(self.args) > 3):
-            self.parser.error("Incorrect number of arguments")
-
-        # set arguments
-        self.action = self.args[0]
-
-        # does the command exists?
-        if not self.action in self.commands:
-            self.parser.error('Unkown COMMAND %s' %(self.action))
-
-        # additional option checking for create
-        if self.action == 'create':
-            self.set_options_create()
-        # additional option checking for shutdown
-        if self.action == 'shutdown':
-            self.set_options_shutdown()
-        # additional option checking for list
-        if self.action == 'list':
-            self.set_options_list()
-
-    def run_create(self):
-        """Start the desired number of vmeshnodes"""
-
-        # must be root
-        requireroot()
-
-        if self.options.console and len(self._range) > 1:
-            warn("starting more than one node with attached console is almost"\
-            " certainly not what you want, so i deactivated console for you")
-            self.options.console = False
-
-        # create the desired number of vmeshnodes
-        for number in self._range:
-            # create a vmeshnode object
-            vmeshnode = Node(number, node_type='vmeshrouter')
-
-            # test if vmeshnode is already running
+            # test if domU is already running
             try:
-                cmd = ["ping", "-c1", vmeshnode.getHostname()]
-                execute(cmd, shell = False)
-                warn("%s seems to be already running." % vmeshnode.getHostname())
+                cmd = ["ping", "-c1", vm_hostname]
+                execute(cmd, shell=False)
+                warn("%s seems to be already running." %(vm_hostname))
                 continue
             except CommandFailed:
                 pass
 
             # create XEN config file
+            info("Creating config file for domU %s" %(vm_hostname))
+            first_byte = vm_id / 256
+            rest_2bytes = vm_id % 256
+            xen_config = textwrap.dedent("""\
+                    name    = '%s'
+                    ramdisk = '%s'
+                    kernel  = '%s'
+                    memory  = %s
+                    cpus    = '2-15'
+                    root    = '/dev/ram0 console=hvc0'
+                    vif     = ['mac=00:16:3E:00:%02x:%02x', 'bridge=br0']
+                    extra   = 'id=default image=%s"""
+                    %(vm_hostname, self.args.initrd, self.args.kernel,
+                        self.args.memory, first_byte, rest_2bytes,
+                        self.args.root))
+
+            # dry run - only print config file and continue
+            if self.args.dry_run:
+                print xen_config
+                if not index == len(self.__vm_ids) - 1:
+                    print ""
+                continue
+
+            # write config into a file
             cfg_fd, cfg_file = tempfile.mkstemp(suffix = "-%s.cfg"
-                                                % vmeshnode.getHostname())
-
-            info("Creating Domain config file %s" % cfg_file)
-            vmnode_number = vmeshnode.getNumber()
-            first_byte = vmnode_number/256
-            rest_2bytes = vmnode_number%256
-
-            f = os.fdopen(cfg_fd, "w+b")
-            f.write("name = '%s' \n"\
-                    "ramdisk = '%s' \n"\
-                    "kernel = '%s' \n"\
-                    "memory = %s \n"\
-                    "cpus = '2-15' \n"\
-                    "root = '/dev/ram0 console=hvc0' \n"\
-                    "vif = ['mac=00:16:3E:00:%02x:%02x', 'bridge=br0'] \n"\
-                    "extra = 'id=default image=%s hostname=%s "\
-                             "init=/linuxrc'\n"
-                    %(vmeshnode.getHostname(), self.options.ramdisk,
-                        self.options.kernel, self.options.memory, first_byte,
-                        rest_2bytes, self.options.image,
-                        vmeshnode.getHostname()))
+                    %(vm_hostname))
+            f = open(cfg_fd, "w")
+            f.write(xen_config)
             f.flush()
 
-            # if this is only a dry run, we do not have to start the XENs
-            if self.options.dry_run:
-                f.seek(0)
-                print f.read()
-
+            # create XEN command
+            if self.args.console:
+                cmd = "xm create -c -f %s" %(cfg_file)
             else:
-                # create XEN command
-                if self.options.console:
-                    cmd = "xm create -c %s" % cfg_file
-                else:
-                    cmd = "xm create %s" % cfg_file
+                cmd = "xm create -f %s" %(cfg_file)
 
-                # start vmeshnode
-                try:
-                    info("Starting %s" % vmeshnode.getHostname())
-                    call(cmd, shell = True)
-
-                except CommandFailed, exception:
-                    error("Error while starting %s" % vmeshnode.getHostname())
-                    error(exception)
+            # start VM
+            try:
+                info("Starting %s" %(vm_hostname))
+                call(cmd, shell=True)
+            except CommandFailed, exception:
+                error("Error while starting %s" %(vm_hostname))
+                error(exception)
 
             # close and remove config file
             f.close()
             os.remove(cfg_file)
 
             # write user to the database
-            if self.dbconn:
-                if os.environ.has_key("SUDO_USER"):
-                    user = os.environ["SUDO_USER"]
-                else:
-                    user = os.environ["USER"]
-                cursor = self.dbconn.cursor()
-                query = "INSERT IGNORE INTO nodes SET "\
-                        "name='%s',nodetype='vmeshrouter',hardware='XEN',nr=%u,"\
-                        "room='',box='',comment='';" %(vmeshnode.getHostname(),vmeshnode.getNumber())
-                cursor.execute(query)
-                query = "INSERT INTO nodes_vmesh (nodeID,created_by) "\
-                        "SELECT nodeID,'%s' FROM nodes WHERE nodes.name='%s' "\
-                        "ON DUPLICATE KEY UPDATE created_by='%s';" %(user,vmeshnode.getHostname(),user)
-                cursor.execute(query)
+            if self.args.database:
+                self.db_insert(vm_hostname)
 
-    def run_shutdown(self):
-        """Shutdown the desired number of vmeshnodes"""
+    def shutdown(self):
+        """Shutdown the desired number of domUs"""
+
+        #FIXME
+        if not self.args.host == "localhost":
+            raise NotImplementedError
 
         # must be root
         requireroot()
 
-        for number in self._range:
-            vmeshnode = Node(number, self.options.node_type)
+        # shudown the desired number of VMs
+        for vm_id in self.__vm_ids:
+
+            # build hostname
+            vm_hostname = "%s%i" %(self.args.prefix, vm_id)
 
             # create XEN command
-            cmd = "xm shutdown %s" % vmeshnode.getHostname()
+            cmd = "xm shutdown %s" %(vm_hostname)
 
-            # start vmeshnode
+            # shutdown vm
             try:
-                info("Shutting down %s" % vmeshnode.getHostname())
-                call(cmd, shell = True)
-
+                info("Shutting down %s" %(vm_hostname))
+                call(cmd, shell=True)
             except CommandFailed, exception:
-                error("Error while shutting down %s" % vmeshnode.getHostname())
+                error("Error while shutting down %s" %(vm_hostname))
                 error(exception)
 
-            # delete node entries from database
-            #if self.dbconn:
-            #    cursor = self.dbconn.cursor()
-            #    query = "DELETE FROM nodes_vmesh "\
-            #            "WHERE nodeID = (SELECT nodeID FROM nodes WHERE nodes.name='%s');" %vmeshnode.getHostname()
-            #    cursor.execute(query)
-            #    query = "DELETE FROM nodes "\
-            #            "WHERE name='%s';" %vmeshnode.getHostname()
-            #    cursor.execute(query)
+            # delete node entry from database
+            if self.args.database:
+                self.db_delete(vm_hostname)
 
-    def run_list(self):
+    def destroy(self):
+        """Destroy the desired number of domUs"""
+
+        #FIXME
+        if not self.args.host == "localhost":
+            raise NotImplementedError
+
+        # must be root
+        requireroot()
+
+        # destroy the desired number of VMs
+        for vm_id in self.__vm_ids:
+
+            # build hostname
+            vm_hostname = "%s%i" %(self.args.prefix, vm_id)
+
+            # create XEN command
+            cmd = "xm destroy %s" %(vm_hostname)
+
+            # shutdown vm
+            try:
+                info("Destroying down %s" %(vm_hostname))
+                call(cmd, shell=True)
+            except CommandFailed, exception:
+                error("Error while destroying %s" %(vm_hostname))
+                error(exception)
+
+            # delete node entry from database
+            if self.args.database:
+                self.db_delete(vm_hostname)
+
+    def list(self):
+        """Show information about domOs/domUs"""
+
+        # helper function
         def vmr_compare(x, y):
             # only compare numerical part, works for our purpose
             x_nr = int(filter(lambda c: c.isdigit(), x))
             y_nr = int(filter(lambda c: c.isdigit(), y))
             return cmp(x_nr, y_nr)
 
-        if self.options.hostinfo:
-            info("Collecting stats ..")
-            #print headline
+        # must be root
+        #requireroot()
+
+        # show information about all dom0s
+        if self.args.show_dom0s:
             print "Host           #Nodes     Mem   VCPUs"
             print "-------------------------------------"
-            for server in self.serverlist:
-                # connect to server
-                session = xmlrpclib.Server('http://%s:8006/' %server)
-                try:
-                    vm = session.xend.domains(True,False)
-                except socket.error, err:
-                    error("Server %s: %s" %(server, err))
-                    continue
 
-                # number of vmrouter running on this host
-                nr_router = len(vm)-1
+            info("Collecting stats...")
+            for host in self.args.host:
+                # connect to xen on 'host' and get domains
+                self.xen_connect(host, False)
+                domains = self.xen_getDomains(True, False, False)
 
-                # print infos
-                print "%s \t %s \t %s \t %s" %(server, nr_router, vm[0][11][1], vm[0][5][1])
-        else:
-            info("Collecting stats ..")
+                # in case of an error, skip this host
+                if not domains: continue
 
+                # print dom0 informations
+                print "%s \t %s \t %s \t %s" %(host, len(domains) - 1, \
+                        domains[0][11][1], domains[0][5][1])
+
+        # show information about all domUs
+        if self.args.show_domUs:
             vm_all = dict()
-            for server in self.serverlist:
-                # connect to server
-                session = xmlrpclib.Server('http://%s:8006/' %server)
-                try:
-                    vm = session.xend.domains(True,False)
-                except socket.error, err:
-                    error("Server %s: %s" %(server, err))
-                    continue
+
+            info("Collecting stats...")
+            for host in self.args.host:
+                # connect to xen on 'host' and get domains
+                self.xen_connect(host, False)
+                domains = self.xen_getDomains(True, False, False)
+
+                # in case of an error, skip this host
+                if not domains: continue
 
                 # extend list of all vmrouters by new ones
-                for entry in vm:
+                for entry in domains:
                     d = dict()
                     # skip first elem in entry
                     for elem in entry[1:]:
                         (key, value) = elem
                         d[key] = value
                     # add server name to entry
-                    d["server"] = server
+                    d["host"] = host
                     # skip dom0
-                    if d["domid"] == 0:
-                        continue
+                    if d["domid"] == 0: continue
                     # initialize user field
                     d["user"] = "None"
                     # use domain name as key
                     key = d["name"]
                     vm_all[key] = d
 
-            #sort by vmrouter name
+            #sort by hostname
             sorted_keyset = vm_all.keys()
             sorted_keyset.sort(vmr_compare)
 
-            # get vmrouter reservations:
-            if self.dbconn:
+            # get domU ownerships:
+            if self.args.database:
                 nodeset = ",".join(map(lambda s: "'"+s+"'", sorted_keyset))
                 if nodeset != "":
                     cursor = self.dbconn.cursor()
-                    cursor.execute("SELECT nodes.name,created_by FROM nodes,nodes_vmesh WHERE nodes.nodeID=nodes_vmesh.nodeID AND nodes.name IN (%s)" %nodeset)
+                    cursor.execute("SELECT nodes.name,created_by "\
+                            "FROM nodes,nodes_vmesh "\
+                            "WHERE nodes.nodeID=nodes_vmesh.nodeID "\
+                                "AND nodes.name IN (%s)" %(nodeset))
                     for row in cursor.fetchall():
                         (key, value) = row
-                        vm_all[key]['user'] = value
+                        vm_all[key]["user"] = value
 
-            # print infos
+            # print domU informations
             print "Name          Host      User                 Mem State  Time"
             print "------------------------------------------------------------------------------------"
             for key in sorted_keyset:
                 entry = vm_all[key]
-                print "%s %s %s %3s %6s %s" \
-                       %(entry["name"].ljust(13), entry["server"].ljust(9), entry["user"].ljust(20), entry["maxmem"], entry["state"], entry["cpu_time"])
+                print "%s %s %s %3s %6s %s" %(entry["name"].ljust(13),\
+                        entry["host"].ljust(9), entry["user"].ljust(20),\
+                        entry["maxmem"], entry["state"], entry["cpu_time"])
 
     def run(self):
-        self.db_connect()
-        if self.action == 'create':
-            self.run_create()
-        if self.action == 'shutdown':
-            self.run_shutdown()
-        if self.action == 'list':
-            self.run_list()
+        # establish database connection
+        if self.args.database:
+            dbconn = self.args.database
+            self.db_connect(host=dbconn[0], db=dbconn[1], user=dbconn[2],
+                    passwd=dbconn[3])
+
+        # run command (create,shutdown,destroy,list)
+        eval("self.%s()" %(self.args.action))
 
     def main(self):
-        self.parse_option()
-        self.set_option()
+        self.parse_options()
+        self.apply_options()
         self.run()
 
 if __name__ == "__main__":
-    Xen().main()
+    VMNode().main()
+
