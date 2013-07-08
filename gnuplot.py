@@ -26,7 +26,6 @@ from logging import info, debug, warn, error
 from functions import call
 from latex import UmLatex
 
-
 class UmGnuplot():
     """Module for gnuplot scripting."""
 
@@ -87,7 +86,7 @@ class UmGnuplot():
         """))
 
         # grid and other styles
-        self.gplot(textwrap.dedent"""
+        self.gplot(textwrap.dedent("""
         set border 31 front linetype -1 linewidth 1.000
         set grid noxtics ytics nopolar back
         set boxwidth 0.8 relative
