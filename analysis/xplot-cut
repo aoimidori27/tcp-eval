@@ -39,8 +39,8 @@ class XplotCut(Application):
                 and creates a new xpl-file with the given start and end
                 time""")
         Application.__init__(self, description=description)
-        self.parser.add_argument("xpl_file", metavar="xpl", nargs=1,
-                help="a xplot xpl file")
+        self.parser.add_argument("xpl_file", metavar="xpl", help="a xplot "\
+                "xpl file")
 
     def apply_options(self):
         """Configure XplotCut object based on the options form the argparser"""
