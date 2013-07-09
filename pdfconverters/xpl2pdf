@@ -93,35 +93,34 @@ class xpl2pdf(Application):
         self.parser.add_argument("-p", "--parser-output", action="store_true",
                 default=False, help="print parser output for debugging")
         self.parser.add_argument("--title", metavar="TXT", action="store",
-                nargs=1, help="gnuplot title (default: use xplot title)")
+                help="gnuplot title (default: use xplot title)")
         self.parser.add_argument("--xlabel", metavar="TXT", action="store",
-                nargs=1, help="gnuplot x label (default: use xplot xlabel)")
+                help="gnuplot x label (default: use xplot xlabel)")
         self.parser.add_argument("--ylabel", metavar="TXT", action="store",
-                nargs=1, help="gnuplot y label (default: use xplot ylabel)")
-        self.parser.add_argument("--ymax", metavar="NUM", type =int, nargs=1,
+                help="gnuplot y label (default: use xplot ylabel)")
+        self.parser.add_argument("--ymax", metavar="NUM", type =int,
                 action="store", help="gnuplot y range (default: let gnuplot "\
                         "decide)")
         self.parser.add_argument("--microview", action="store_true",
                 help="enable microview (use arrowheads etc.)")
-        self.parser.add_argument("--plotsize", metavar=("X", "Y"), nargs=2,
-                action="store", help="plot size in cm (default: 14.8 11.8), "\
-                        "alternative: 14.8 9")
+        self.parser.add_argument("--plotsize", metavar=("X", "Y"), type=float,
+                nargs=2, action="store", help="plot size in cm (default: "\
+                        "14.8 11.8), alternative: 14.8 9")
         self.parser.add_argument("--arrowsize", metavar="NUM", type=float,
-                nargs=1, action="store", help="arrow size (default: 0.004)")
+                action="store", help="arrow size (default: 0.004)")
         self.parser.add_argument("--fontsize", metavar="NUM", type=int,
-                nargs=1, action="store", help="target fontsize (default: 6)")
+                action="store", help="target fontsize (default: 6)")
         self.parser.add_argument("--rexmitpos", action="store",
                 choices=("left", "mid", "right"), help="position of the red "\
                         "retransmission R (default: mid)")
         self.parser.add_argument("--save", action="store_true", help="save "\
                         "gnuplot and tex files")
-        self.parser.add_argument("-o", "--output", metavar="DIR", nargs=1,
-                default="./", action="store", dest="outdir", help="Set "\
-                        "output directory (default: %(default)s)")
-        self.parser.add_argument("-c", "--cfg", metavar="FILE", nargs=1,
-                action="store", dest="cfgfile", help="use the file as config "\
-                        "file for LaTeX. No default packages will be loaded")
-
+        self.parser.add_argument("-o", "--output", metavar="DIR", default="./",
+                action="store", dest="outdir", help="Set output directory "\
+                        "(default: %(default)s)")
+        self.parser.add_argument("-c", "--cfg", metavar="FILE", action="store",
+                dest="cfgfile", help="use the file as config file for LaTeX. "\
+                        "No default packages will be loaded")
         self.parser.add_argument("-f", "--force", action="store_true",
                 help="overwrite existing output")
 
