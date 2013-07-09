@@ -89,7 +89,6 @@ class xpl2pdf(Application):
         Application.__init__(self, description=description)
         self.parser.add_argument("xpl_files", metavar="xpl", nargs="+",
                 help="a xplot xpl file")
-
         self.parser.add_argument("-p", "--parser-output", action="store_true",
                 default=False, help="print parser output for debugging")
         self.parser.add_argument("--title", metavar="TXT", action="store",
@@ -425,14 +424,14 @@ class xpl2pdf(Application):
     def run(self):
         self.prepare()
 
-        for arg in self.args:
-            if self.args.parseroutput:
+        for arg in self.args.xpl_files:
+            if self.args.parser_output:
                 self.debugparser(arg)
             else:
                 self.work(arg)
 
         if not self.args.debug and not self.args.save:
-            for arg in self.args:
+            for arg in self.args.xpl_files:
                 self.cleanup(arg)
             info("use --save to prevent this")
 
