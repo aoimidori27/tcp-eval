@@ -65,10 +65,10 @@ class VMNode(Application):
         shared_parser.add_argument("vm_ids", metavar="id", type=int, nargs="+",
                 help="execute command for domU with ID '%(metavar)s'. The ID "\
                         "will be used as a network-wide unique domU identifier")
-        shared_parser.add_argument("-s", "--host", metavar="HOST", nargs=1,
+        shared_parser.add_argument("-s", "--host", metavar="HOST",
                 action="store", default="localhost", help="execute command "\
                         "on dom0 '%(metavar)s' (default: %(default)s)")
-        shared_parser.add_argument("-p", "--prefix", metavar="PRE", nargs=1,
+        shared_parser.add_argument("-p", "--prefix", metavar="PRE",
                 action="store", default="vmnode", help="use '%(metavar)s' as "\
                         "prefix for domU's hostname (default: %(default)s). "\
                         "As suffix the domU ID will be used")
@@ -80,16 +80,16 @@ class VMNode(Application):
         parser_create = subparsers.add_parser("create",
                 parents=[shared_parser], help="create multiple XEN domUs "\
                         "simultaneously")
-        parser_create.add_argument("-o", "--root", metavar="PATH", nargs=1,
-                action="store", default="~/root", help = "root file system "\
+        parser_create.add_argument("-o", "--root", metavar="PATH",
+                action="store", default="./root", help = "root file system "\
                         "for domU (default: %(default)s)")
-        parser_create.add_argument("-k", "--kernel", metavar="FILE", nargs=1,
-                action="store",  default = "~/vmlinuz", help = "kernel for "\
+        parser_create.add_argument("-k", "--kernel", metavar="FILE",
+                action="store",  default = "./vmlinuz", help = "kernel for "\
                         "domU (default: %(default)s)")
-        parser_create.add_argument("-i", "--initrd", metavar="FILE", nargs=1,
-                action="store", default="~/initrd.img", help="initial "\
+        parser_create.add_argument("-i", "--initrd", metavar="FILE",
+                action="store", default="./initrd.img", help="initial "\
                         "ramdisk for domU (default: %(default)s)")
-        parser_create.add_argument("-m", "--memory", metavar="#", nargs=1,
+        parser_create.add_argument("-m", "--memory", metavar="#",
                 action="store", type=int, default=128, help="amount of RAM "\
                         "in MB to allocate to domU (default: %(default)s)")
         create_group = parser_create.add_mutually_exclusive_group()
@@ -111,15 +111,14 @@ class VMNode(Application):
 
         # create parser for "list" command
         parser_list = subparsers.add_parser("list", help="list XEN domOs/domUs")
+        parser_list.add_argument("listing", action="store", nargs="?",
+                choices=("dom0", "domU", "both"), default="dom0",
+                help="which node information will be show (default: "\
+                        "%(default)s)")
         parser_list.add_argument("-s", "--host", metavar="HOST", nargs="+",
-                action="store", default="localhost", help="dom0s on which "\
-                        "command will be executed (default: %(default)s)")
-        parser_list.add_argument("--domUs", action="store_true",
-                dest="show_domUs", default=True, help="show information "\
-                        "about domUs (default: %(default)s)")
-        parser_list.add_argument("--dom0s", action="store_false",
-                dest="show_dom0s", default=False, help="show information "\
-                        "about domOs")
+                action="store", default="localhost", help="hosts (dom0s) "\
+                        "on which the command will be executed "\
+                        "(default: %(default)s)")
 
     def apply_options(self):
         """Configure XEN object based on the options form the argparser.
@@ -158,6 +157,14 @@ class VMNode(Application):
                         "certainly not what you want. Console option is "\
                         "deactivated")
                 self.args.console = False
+
+        # for command "list" only
+        if self.args.action == "list":
+            # default values are strings, a command line option given by the
+            # user is a list. In oder to access the argument always in the same
+            # way, we convert the string into a list
+            if type(self.args.host) == str:
+                self.args.host = str(self.args.host).split()
 
     def db_connect(self, host, db, user, passwd, abort_on_failure=True):
         """Establish MySQL database connection to store domU ownerships"""
@@ -373,10 +380,10 @@ class VMNode(Application):
             return cmp(x_nr, y_nr)
 
         # must be root
-        #requireroot()
+        requireroot()
 
         # show information about all dom0s
-        if self.args.show_dom0s:
+        if self.args.listing == "dom0" or self.args.listing == "both":
             print "Host           #Nodes     Mem   VCPUs"
             print "-------------------------------------"
 
@@ -394,7 +401,7 @@ class VMNode(Application):
                         domains[0][11][1], domains[0][5][1])
 
         # show information about all domUs
-        if self.args.show_domUs:
+        if self.args.listing == "domU" or self.args.listing == "both":
             vm_all = dict()
 
             info("Collecting stats...")
