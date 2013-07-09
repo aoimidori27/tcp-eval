@@ -45,13 +45,13 @@ class XplotCut(Application):
     def apply_options(self):
         """Configure XplotCut object based on the options form the argparser"""
 
-        Application.set_option(self)
+        Application.apply_options(self)
 
     def cut(self, begin, end):
         """Write the current view to a new file"""
 
         infile = self.args.xpl_file
-        outfile = "%s-%s-%s.xpl" %(self.infile, begin, end)
+        outfile = "%s-%s-%s.xpl" %(self.args.xpl_file, begin, end)
 
         ifh = open(infile,  'r')
         ofh = open(outfile, 'w')
@@ -105,7 +105,7 @@ class XplotCut(Application):
         stdout). The modified version prints by pressing 'c' the begin and end
         time of the current view. This view is then written to a new file."""
 
-        xplot = Popen(["xplot", self.infile], bufsize=0, stdout=PIPE,
+        xplot = Popen(["xplot", self.args.xpl_file], bufsize=0, stdout=PIPE,
                 shell=False).stdout
         while True:
             line = xplot.readline()
