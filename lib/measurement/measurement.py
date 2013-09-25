@@ -1,5 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vi:et:sw=4 ts=4
+
+# Copyright (C) 2007 Arnd Hannemann <arnd@arndnet.de>
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
 
 # python imports
 import os.path
@@ -14,9 +27,9 @@ from twisted.internet import defer, reactor
 from twisted.python import log
 import twisted.names.client
 
-# umic-mesh imports
-from um_application import Application
-from um_measurement.sshexec import SSHConnectionFactory
+# tcp-eval imports
+from application import Application
+from measurement.sshexec import SSHConnectionFactory
 from um_twisted_meshdb import MeshDbPool
 from um_twisted_xmlrpc import xmlrpc_many, xmlrpc
 from um_twisted_functions import twisted_sleep
