@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # vim:softtabstop=4:shiftwidth=4:expandtab
 

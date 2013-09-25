@@ -19,7 +19,7 @@ from twisted.internet import defer, error, protocol
 from twisted.python import log, failure
 
 # umic-mesh imports
-from um_functions import StrictStruct
+from functions import StrictStruct
 from um_twisted_functions import twisted_sleep
 
 class SSHConnectionFactory:
