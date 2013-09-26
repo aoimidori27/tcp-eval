@@ -29,7 +29,7 @@ import twisted.names.client
 
 # tcp-eval imports
 from application import Application
-from measurement.sshexec import SSHConnectionFactory
+from sshexec import SSHConnectionFactory
 from um_twisted_meshdb import MeshDbPool
 from um_twisted_xmlrpc import xmlrpc_many, xmlrpc
 from um_twisted_functions import twisted_sleep
@@ -55,26 +55,21 @@ class Measurement(Application):
         self._dbpool = MeshDbPool(username = "measurement",
                                   password = "XaNU7X84BQJveYQX")
 
-
         # caches mac addresses
         self._maccache = dict()
 
         self._stats = dict()
-        p = self.parser
 
-        usage = "usage: %prog [options] -L outputdir\n"
-        p.set_usage(usage)
-        p.set_defaults(
-                log_dir = None,
-                )
-        p.add_option("-L", "--log-dir", metavar="NAME",
-                action = "store", dest = "log_dir",
+        #usage = "usage: %prog [options] -L outputdir\n"
+        #p.set_usage(usage)
+        self.parser.add_argument("-L", "--log-dir", metavar="NAME",
+                action = "store", default = None,dest = "log_dir",
                 help = "Where to store the log files.")
 
-    def set_option(self):
-        Application.set_option(self)
+    def apply_options(self):
+        Application.apply_options(self)
 
-        if not self.options.log_dir:
+        if not self.args.log_dir:
             self.parser.error("An output directory must be specified.")
 
     def _getNull(self):

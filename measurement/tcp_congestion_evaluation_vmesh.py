@@ -19,7 +19,7 @@ from logging import info, debug, warn, error
 from twisted.internet import defer, reactor
 
 # tcp-eval imports
-from measurement import measurement, tests
+from measurement import measurement#, tests
 
 class TcpEvaluationMeasurement(measurement.Measurement):
     """This Measurement has serveral scenarios to test:
@@ -32,10 +32,10 @@ class TcpEvaluationMeasurement(measurement.Measurement):
         self.logprefix=""
         measurement.Measurement.__init__(self)
 
-        self.parser.set_defaults(pairfile = "tcp_congestion_evaluation_vmesh_pairs.lst")
-        self.parser.add_option('-f', '--pairfile', metavar="PAIRFILE",
-                               action = 'store', type = 'string', dest = 'pairfile',
-                               help = 'Set file to load node pairs from [default: %default]')
+        self.parser.add_argument('-f', '--pairfile', metavar='PAIRFILE',
+                action = 'store', default='pairs.txt', type = str,
+                dest = 'pairfile', help = 'Set file to load node pairs fromi'\
+                    '(default: %(default)s)')
 
     def set_option(self):
         """Set options"""
@@ -56,7 +56,7 @@ class TcpEvaluationMeasurement(measurement.Measurement):
                      nodetype = node_type )
 
         # test nodes load from file
-        runs = self.load_pairs_from_file(self.options.pairfile)
+        runs = self.load_pairs_from_file(self.args.pairfile)
 
         # repeat loop
         iterations  = range(50)
@@ -99,8 +99,8 @@ class TcpEvaluationMeasurement(measurement.Measurement):
         reactor.stop()
 
     def main(self):
-        self.parse_option()
-        self.set_option()
+        self.parse_options()
+        self.apply_options()
         self.run()
         reactor.run()
 
