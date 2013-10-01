@@ -1,15 +1,30 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vi:et:sw=4 ts=4
+
+# Copyright (C) 2007 - 2011 Arnd Hannemann <arnd@arndnet.de>
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
 
 # python imports
 import socket
 import time
 from logging import info, debug, warn, error, critical
 
+# twisted imports
 from twisted.internet import defer, utils, reactor
 from twisted.enterprise import adbapi
 
-from um_twisted_functions import twisted_log_failure
+# tcp-eval import
+from network.functions import twisted_log_failure
 
 class MeshDbPool(adbapi.ConnectionPool):
     """This class handles the database connection pool, for the mesh database"""
@@ -35,11 +50,11 @@ class MeshDbPool(adbapi.ConnectionPool):
         self._conn_starttime = dict()
 
     def connect(self, *args, **kwargs):
-        """Overrides ConnectionPool.connect to avoid LostConnection errors
-           with MySQLdb, even with cp_reconnect=True"""
-        
+        """Overrides ConnectionPool.connect to avoid LostConnection errors with
+        MySQLdb, even with cp_reconnect=True"""
+
         conn = adbapi.ConnectionPool.connect(self, *args, **kwargs)
-    
+
         tid = self.threadID()
 
         start = self._conn_starttime.get(tid)
@@ -59,7 +74,7 @@ class MeshDbPool(adbapi.ConnectionPool):
 
     @staticmethod
     def _queryErrback(failure):
-        twisted_log_failure(failure, error) 
+        twisted_log_failure(failure, error)
         error("Query failed: %s" %failure.getErrorMessage())
         return failure
 
@@ -121,7 +136,7 @@ class MeshDbPool(adbapi.ConnectionPool):
         return res
 
     def fetchColumnAsList(self, query, column=0):
-        """ Fetches a column of a query as a list """
+        """Fetches a column of a query as a list """
         return self.runInteraction(self._fetchColumnAsList, query, column)
 
     @defer.inlineCallbacks
@@ -148,7 +163,6 @@ class MeshDbPool(adbapi.ConnectionPool):
                    AND servID=%d AND flavorID=%d;
                 """  % (hostname, config['servID'], config['flavorID'])
         result = yield self.runQuery(query)
-
 
     @defer.inlineCallbacks
     def getServiceInfo(self, servicename):
@@ -357,13 +371,12 @@ class MeshDbPool(adbapi.ConnectionPool):
             defer.returnValue(False)
 
         defer.returnValue(True)
-        
 
     @defer.inlineCallbacks
     def clearUpServiceStatus(self, hostname = socket.gethostname()):
         """Clears the service status table from entries of this host."""
 
-        query = """DELETE FROM current_service_status USING current_service_status, nodes 
+        query = """DELETE FROM current_service_status USING current_service_status, nodes
                    WHERE nodes.name='%s' AND nodes.nodeID=current_service_status.nodeID;
                 """  % hostname
         debug(query)
@@ -397,7 +410,7 @@ class MeshDbPool(adbapi.ConnectionPool):
         new_nodes = yield self.getProfileNodes(name)
         debug("New nodes: %s" %new_nodes)
         dirty_nodes.extend(new_nodes)
-        
+
         # compare current nodes with new nodes
         stop_profiles = list()
         for (profile, nodes) in current_nodes.iteritems():
@@ -405,9 +418,9 @@ class MeshDbPool(adbapi.ConnectionPool):
             if len(set(nodes) &  set(new_nodes)) > 0:
                 if profile not in stop_profiles:
                     stop_profiles.append(profile)
-                
+
         # stop conflicting profiles
-        info("Deactivating conflicting profiles: %s", stop_profiles)       
+        info("Deactivating conflicting profiles: %s", stop_profiles)
         for profile in stop_profiles:
             query = """DELETE FROM current_testbed_conf
                        WHERE current_testbed_profile = (SELECT id FROM testbed_profiles WHERE name = '%s')
@@ -415,7 +428,7 @@ class MeshDbPool(adbapi.ConnectionPool):
             yield self.runQuery(query)
 
         # insert new profile
-        query = """INSERT INTO current_testbed_conf (current_testbed_profile) 
+        query = """INSERT INTO current_testbed_conf (current_testbed_profile)
                    SELECT testbed_profiles.id FROM testbed_profiles WHERE testbed_profiles.name = '%s'
                 """ % name
         yield self.runQuery(query)

@@ -1,5 +1,18 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vi:et:sw=4 ts=4
+
+# Copyright (C) 2007 - 2011 Arnd Hannemann <arnd@arndnet.de>
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
 
 # python imports
 import os
@@ -9,10 +22,9 @@ from logging import info, debug, warn, error, critical
 from twisted.internet import defer, utils, reactor
 
 def twisted_sleep(timeout):
-    """Returns a deferred, which is fired after timeout seconds. The deferred gets
-       an additional "callLater" property, which contains a reference to an
-       IDelayedCall instance.
-    """
+    """Returns a deferred, which is fired after timeout seconds. The deferred
+    gets an additional "callLater" property, which contains a reference to an
+    IDelayedCall instance"""
 
     d = defer.Deferred()
     # FIXME!!!
@@ -22,9 +34,8 @@ def twisted_sleep(timeout):
 @defer.inlineCallbacks
 def twisted_execute(cmd, shell = True):
     """Executes the given command and returns a sequence (stdout, stderr,
-       returncode). The function mimics um_functions.execute() but without
-       exceptions. (Remember: the subprocess module won't work in twisted!!!)
-    """
+    returncode). The function mimics um_functions.execute() but without
+    exceptions. (Remember: the subprocess module won't work in twisted!!!)"""
 
     debug("Executing: %s" % cmd.__str__())
     if not shell:
@@ -40,8 +51,7 @@ def twisted_execute(cmd, shell = True):
 @defer.inlineCallbacks
 def twisted_call(cmd, shell=True):
     """Executes the given command and returns a returncode suppressing output.
-       Warning: is inefficient for commands with large std output!
-    """
+    Warning: is inefficient for commands with large std output!"""
 
     (stdout, stderr, rc) = yield twisted_execute(cmd, shell)
     defer.returnValue(rc)
@@ -53,8 +63,7 @@ def twisted_log_failure(failure, *args):
 
 class _ExecuteHelper(defer.Deferred):
     """This a wrapper around utils.getProcessOutputAndValue, which returns the
-       signal number as negative returncode in case of errback()
-    """
+    signal number as negative returncode in case of errback()"""
 
     def __init__(self, *args, **kwargs):
         defer.Deferred.__init__(self)
@@ -66,10 +75,10 @@ class _ExecuteHelper(defer.Deferred):
         self.callback((stdout, stderr, -signum))
 
 class _LogHelper():
-    """ This is a file object emulation for logging twisted failures """
+    """This is a file object emulation for logging twisted failures"""
 
     def __init__(self, log=warn):
-        """ Expects a function pointer as argument """
+        """Expects a function pointer as argument"""
         self._log = log
 
 
@@ -78,7 +87,7 @@ class _LogHelper():
 
     def seek(self):
         pass
-   
+
     def write(self, str):
         self._log(str.strip())
 
