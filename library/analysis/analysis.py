@@ -1,5 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vi:et:sw=4 ts=4
+
+# Copyright (C) 2007 - 2011 Arnd Hannemann <arnd@arndnet.de>
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
 
 # python imports
 import sys
@@ -8,11 +21,11 @@ import os.path
 import re
 from logging import info, debug, warn, error
 
-# umic-mesh imports
-from um_application import Application
-from um_config import *
-from um_functions import call
-from testrecordfactory import TestRecordFactory
+# tcp-eval imports
+from application import Application
+from config import *
+from functions import call
+from analysis.testrecordfactory import TestRecordFactory
 
 class Analysis(Application):
     """Framework for UMIC-Mesh analysis"""

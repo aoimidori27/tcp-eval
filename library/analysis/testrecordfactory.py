@@ -1,14 +1,27 @@
-#!/usr/bin/envpython
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vi:et:sw=4 ts=4
+
+# Copyright (C) 2007 - 2011 Arnd Hannemann <arnd@arndnet.de>
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
 
 # python imports
 from logging import info, debug, warn, error
 
-# umic-mesh imports
-from testrecords_ping import PingRecordFactory
-from testrecords_fping import FpingRecordFactory
-from testrecords_flowgrind import FlowgrindRecordFactory
-from testrecords_rate import RateRecordFactory
+# tcp-eval imports
+from analysis.testrecords_ping import PingRecordFactory
+from analysis.testrecords_fping import FpingRecordFactory
+from analysis.testrecords_flowgrind import FlowgrindRecordFactory
+from anaylsis.testrecords_rate import RateRecordFactory
 
 class TestRecordFactory:
     """A factory for test records."""
