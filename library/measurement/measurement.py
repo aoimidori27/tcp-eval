@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vi:et:sw=4 ts=4
 
-# Copyright (C) 2007 Arnd Hannemann <arnd@arndnet.de>
+# Copyright (C) 2007 - 2011 Arnd Hannemann <arnd@arndnet.de>
 # Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -28,11 +28,11 @@ from twisted.python import log
 import twisted.names.client
 
 # tcp-eval imports
-from application import Application
-from sshexec import SSHConnectionFactory
-from um_twisted_meshdb import MeshDbPool
-from um_twisted_xmlrpc import xmlrpc_many, xmlrpc
-from um_twisted_functions import twisted_sleep
+from measurement.application import Application
+from measurement.sshexec import SSHConnectionFactory
+from network.meshdb import MeshDbPool
+from network.xmlrpc import xmlrpc_many, xmlrpc
+from network.functions import twisted_sleep
 
 class Measurement(Application):
     """Framework for UMIC-Mesh measurement applications.
@@ -103,8 +103,8 @@ class Measurement(Application):
             d.callback(True)
         else:
             # schedule next poll in 5 seconds
-            reactor.callLater(5, self._pollNode, d, hostname) 
-            
+            reactor.callLater(5, self._pollNode, d, hostname)
+
 
     def _pollNode(self, d, hostname):
         """Performs a db query"""
@@ -117,15 +117,15 @@ class Measurement(Application):
         debug("Check if %s is ready now..." %hostname)
         poll = self._dbpool.isNodeClean(hostname)
         poll.addCallback(self._pollNodeCallback, d, hostname)
- 
+
     def _pollNodeTimeout(self, d, hostname):
         """If a waitForNode call times out this is called"""
-       
+
         # stop new polls
         d.polling = False
 
         debug("waitForNode(%s) timed out" %hostname)
-        
+
         # return false
         d.callback(False)
 
@@ -140,7 +140,7 @@ class Measurement(Application):
 
         # store boolean in deferred
         d.polling = True
-       
+
         # start polling
         self._pollNode(d, hostname)
 
@@ -196,7 +196,7 @@ class Measurement(Application):
                 else:
                     warn("Failed to setup %s: apply() returned: %s" %(dirty_nodes[i], rc))
                     failed = failed + 1
-        
+
         info("Succeeded: %d, Failed: %d, Reboot: %d" %(succeeded, failed, reboot))
 
         if reboot != 0:
@@ -206,7 +206,7 @@ class Measurement(Application):
             for i,result in results:
                 if not result:
                     warn("Node %s did not become ready after reboot (timeout)" %reboot_nodes[i])
-            
+
         info("Activated testbed profiles are now: %s" %current)
 
 
