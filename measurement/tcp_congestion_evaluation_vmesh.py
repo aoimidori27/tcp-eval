@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vi:et:sw=4 ts=4
 
-# Copyright (C) 2007 Arnd Hannemann <arnd@arndnet.de>
+# Copyright (C) 2007 - 2011 Arnd Hannemann <arnd@arndnet.de>
 # Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
 #
 # This program is free software; you can redistribute it and/or modify it
