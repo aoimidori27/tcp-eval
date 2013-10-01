@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# vim:softtabstop=4:shiftwidth=4:expandtab
+#vi:et:sw=4 ts=4
 
-# Script to plot a flowgrind log with gnuplot.
-#
 # Copyright (C) 2010 Carsten Wolff <carsten@wolffcarsten.de>
-# Copyright (C) 2009, 2010 Christian Samsel <christian.samsel@rwth-aachen.de>
-# Copyright (C) 2008 - 2010 Lennart Schulte <lennart.schulte@rwth-aachen.de>
-# 
+# Copyright (C) 2009 - 2010 Christian Samsel <christian.samsel@rwth-aachen.de>
+# Copyright (C) 2008 - 2011 Lennart Schulte <lennart.schulte@rwth-aachen.de>
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+#
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
@@ -23,10 +22,10 @@ import os.path
 import math
 from logging import info, debug, warn, error
 
-# umic-mesh imports
-from um_analysis.testrecords_flowgrind import FlowgrindRecordFactory
-from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmStepPlot, UmBoxPlot
-from um_application import Application
+# tcp-eval imports
+from common.application import Application
+from analysis.testrecords_flowgrind import FlowgrindRecordFactory
+from visualization.gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmStepPlot, UmBoxPlot
 
 class FlowPlotter(Application):
     def __init__(self):

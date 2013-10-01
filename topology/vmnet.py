@@ -25,9 +25,9 @@ import string
 from logging import info, debug, warn, error, critical
 
 # tcp-eval imports
-from application import Application
-from functions import *
-from node import Node, NodeException
+from common.application import Application
+from common.functions import *
+#from node import Node, NodeException
 
 class BuildVmesh(Application):
     """Setup GRE tunnels and iptables rules to simulate a mesh network with

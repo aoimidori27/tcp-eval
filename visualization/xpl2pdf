@@ -26,8 +26,8 @@ from simpleparse.parser import Parser
 from mx.TextTools import TextTools
 
 # tcp-eval imports
-from gnuplot import UmHistogram, UmGnuplot, UmXPlot
-from application import Application
+from common.application import Application
+from visualization.gnuplot import UmHistogram, UmGnuplot, UmXPlot
 
 class xpl2pdf(Application):
     """Class to convert xplot/tcptrace files to gnuplot files"""

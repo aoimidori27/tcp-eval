@@ -1,11 +1,9 @@
-#!/usr/bin/env python -W ignore::DeprecationWarning
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# vim:softtabstop=4:shiftwidth=4:expandtab
+# vi:et:sw=4 ts=4
 
-# Converts LaTeX figures to pdf graphics.
+# Copyright (C) 2010 - 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
 #
-# Copyright (C) 2010 Alexander Zimmermann <zimmermann@nets.rwth-aachen.de>
-# 
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
@@ -20,10 +18,9 @@ import os.path
 import shutil
 from logging import info, debug, warn, error
 
-# umic-mesh imports
-from um_application import Application
-from um_latex import UmLatex
-
+# tcp-eval imports
+from common.application import Application
+from visualization.latex import UmLatex
 
 class Texfig2Pdf(Application):
     """Class to convert LaTeX figures to pdf graphics"""
@@ -61,29 +58,29 @@ class Texfig2Pdf(Application):
 
         # correct numbers of arguments?
         if len(self.args) == 0:
-            self.parser.error("incorrect number of arguments.") 
-                
-        # latex object            
+            self.parser.error("incorrect number of arguments.")
+
+        # latex object
         self._latex = UmLatex(self.options.texfile, self.options.outdir,
-                              self.options.force, self.options.debug) 
+                              self.options.force, self.options.debug)
 
     def run(self):
         """Main method of the Texfig2Pdf object"""
-       
+
         # get all necessary directories
         srcdir = os.getcwd()
         destdir = self.options.outdir
-                       
+
 	    # add all figures into one latex document
         for index, figure in enumerate(self.args):
 
             # get the full path of the figure
             texfigSrc = os.path.join(srcdir, figure)
-                    
+
             if not os.path.isfile(texfigSrc):
                 warn("%s is not a regular file. Skipped." %figure)
                 continue
-            
+
             # get the basename (without extension)
             if self.options.basename:
                 basename = "%s_%s" %(self.options.basename, index)
@@ -98,11 +95,11 @@ class Texfig2Pdf(Application):
         if self.options.texfile:
            info("Save main LaTeX file...")
            self._latex.save()
-                    
+
         # build pdf graphics
         info("Generate PDF files...")
         self._latex.toPdf()
-   
+
 
     def main(self):
         self.parse_option()

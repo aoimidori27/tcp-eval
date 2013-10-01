@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Generates pdfs from gnuplot epslatex files.
-#
-# Copyright (C) 2009 - 2010 Alexander Zimmermann <zimmermann@nets.rwth-aachen.de>
+# Copyright (C) 2009 - 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
@@ -21,11 +19,10 @@ import tempfile
 import Gnuplot
 from logging import info, debug, warn, error
 
-# umic-mesh imports
-from um_application import Application
-from um_latex import UmLatex
-from um_functions import call
-
+# tcp-eval imports
+from common.application import Application
+from common.functions import call
+from visualization.latex import UmLatex
 
 class Gnuplot2PDF(Application):
     """Class to convert epslatex gnuplot to plain pdf"""

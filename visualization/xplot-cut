@@ -23,7 +23,7 @@ from subprocess import Popen, PIPE
 from logging import info, debug, warn, error
 
 # tcp-eval imports
-from application import Application
+from common.application import Application
 
 class XplotCut(Application):
     """xplot-cut generates a new xpl file based on the current view of xplot"""
