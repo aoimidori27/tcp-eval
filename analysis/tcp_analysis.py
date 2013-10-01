@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# vim:softtabstop=4:shiftwidth=4:expandtab
+# vi:et:sw=4 ts=4
 
-# Script to plot flowgrind results with gnuplot.
-#
 # Copyright (C) 2008 - 2010 Lennart Schulte <lennart.schulte@rwth-aachen.de>
-# 
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+#
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
@@ -23,10 +22,10 @@ from sqlite3 import dbapi2 as sqlite
 import numpy
 import scipy.stats
 
-# umic-mesh imports
-from um_functions import call
-from um_analysis.analysis import Analysis
-from um_gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot
+# tcp-eval imports
+from common.functions import call
+from analysis.analysis import Analysis
+from visualization.gnuplot import UmHistogram, UmGnuplot, UmLinePlot, UmBoxPlot
 
 class TcpAnalysis(Analysis):
     """Application for analysis of flowgrind results"""
@@ -98,7 +97,7 @@ class TcpAnalysis(Analysis):
                       """ % (iterationNo,scenarioNo,runNo,avg_rate))
 
     def generateTputOverTime(self, orderby="iterationNo, runNo, scenarioNo ASC"):
-        """Generates a line plot of the measured throughput regardless of 
+        """Generates a line plot of the measured throughput regardless of
            run or scenario.
         """
 
@@ -108,7 +107,7 @@ class TcpAnalysis(Analysis):
         times    = dict()
         dbcur.execute('''
         SELECT iterationNo, runNo, scenarioNo, thruput, start_time
-        FROM tests 
+        FROM tests
         ORDER by %s
         ''' %orderby )
 
@@ -182,9 +181,9 @@ class TcpAnalysis(Analysis):
         p.save()
 
     def generateTputOverTimePerRun(self):
-        """Generates a line plot where every run number gets a 
+        """Generates a line plot where every run number gets a
            dedicated line ignoring scenario.
-        """     
+        """
         dbcur = self.dbcon.cursor()
 
         # get runs
@@ -219,7 +218,7 @@ class TcpAnalysis(Analysis):
 
             dbcur.execute('''
             SELECT iterationNo, scenarioNo, thruput, start_time
-            FROM tests 
+            FROM tests
             WHERE runNo=%u
             ORDER by iterationNo, scenarioNo ASC
             ''' %(runNo))

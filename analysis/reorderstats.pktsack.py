@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 # vim:softtabstop=4:shiftwidth=4:expandtab
 
-# Script to plot ping output with gnuplot.
+# Copyright (C) 2007 - 2011 Arnd Hannemann <arnd@arndnet.de>
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
 #
-# Copyright (C) 2007 Arnd Hannemann <arnd@arndnet.de>
-# 
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
@@ -22,8 +21,8 @@ import socket
 from logging import info, debug, warn, error
 from collections import deque
 
-# umic-mesh imports
-from um_application import Application
+# tcp-eval imports
+from common.application import Application
 
 class Info:
     connections = list()

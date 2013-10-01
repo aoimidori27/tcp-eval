@@ -1,13 +1,25 @@
 #!/usr/bin/env python2.6
 # -*- coding: utf-8 -*-
 
+# Copyright (C) 2007 - 2011 Arnd Hannemann <arnd@arndnet.de>
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
+
 # python imports
 from logging import info, warn, debug
 from twisted.internet import defer, reactor
 
-#umic-mesh imports
-from um_twisted_functions import twisted_sleep
-from um_measurement import measurement, tests
+# tcp-eval imports
+from network.functions import twisted_sleep
+from measurement import measurement, tests
 
 class TcpMeasurement(measurement.Measurement):
     """This Measurement script resembles measurement for flowgrind globecom paper"""

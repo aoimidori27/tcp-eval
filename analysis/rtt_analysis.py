@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vi:et:sw=4 ts=4
 
-# Script to calculate TCP reordering statistics.
-#
 # Copyright (C) 2010 Lennart Schulte <lennart.schulte@rwth-aachen.de>
-# 
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
+#
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
 # version 2, as published by the Free Software Foundation.
@@ -19,10 +19,10 @@ import os
 import os.path
 from logging import info, debug, warn, error
 
-# umic-mesh imports
+# tcp-eval imports
 from um_config import *
-from um_analysis.analysis import Analysis
-from um_gnuplot import UmPointPlot
+from analysis.analysis import Analysis
+from visualization.gnuplot import UmPointPlot
 
 class RttAnalysis(Analysis):
     """Application for rtt analysis"""

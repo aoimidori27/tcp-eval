@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 # vim:softtabstop=4:shiftwidth=4:expandtab
 
-# Script to plot flowgrind reordering results with gnuplot.
-#
 # Copyright (C) 2010 Carsten Wolff <carsten@wolffcarsten.de>
-# modified by Andreas Seelinger <Andreas.Seelinger@rwth-aachen.de>
+# Copyright (C) 2010 Andreas Seelinger <Andreas.Seelinger@rwth-aachen.de>
+# Copyright (C) 2013 Alexander Zimmermann <alexander.zimmermann@netapp.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
@@ -25,10 +24,10 @@ import numpy
 import scipy.stats
 import sys
 
-# umic-mesh imports
-from um_functions import call
-from um_analysis.analysis import Analysis
-from um_gnuplot import UmGnuplot, UmLinePointPlot, UmLinePlot
+# tcp-eval imports
+from common.functions import call
+from analysis.analysis import Analysis
+from visualization.gnuplot import UmGnuplot, UmLinePointPlot, UmLinePlot
 
 class MultipathTCPAnalysis(Analysis):
     """Application for analysis of flowgrind results for multipath tcp."""
