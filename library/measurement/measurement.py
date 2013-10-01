@@ -28,8 +28,8 @@ from twisted.python import log
 import twisted.names.client
 
 # tcp-eval imports
-from measurement.application import Application
-from measurement.sshexec import SSHConnectionFactory
+from application import Application
+from sshexec import SSHConnectionFactory
 from network.meshdb import MeshDbPool
 from network.xmlrpc import xmlrpc_many, xmlrpc
 from network.functions import twisted_sleep
