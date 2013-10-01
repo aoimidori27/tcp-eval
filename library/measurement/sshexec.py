@@ -31,8 +31,8 @@ from twisted.conch.client import agent
 from twisted.internet import defer, error, protocol
 from twisted.python import log, failure
 
-# umic-mesh imports
-from functions import StrictStruct
+# tcp-eval imports
+from common.functions import StrictStruct
 from network.functions import twisted_sleep
 
 class SSHConnectionFactory:

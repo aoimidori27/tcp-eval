@@ -18,7 +18,7 @@ import re
 from logging import info, debug, warn, error
 
 # tcp-eval imports
-from analysis.testrecord import TestRecord
+from testrecord import TestRecord
 
 class FpingRecord(TestRecord):
     def __init__(self, filename, regexes, whats):

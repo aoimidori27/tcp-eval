@@ -22,10 +22,10 @@ import re
 from logging import info, debug, warn, error
 
 # tcp-eval imports
-from application import Application
+from common.application import Application
+from common.functions import call
+from testrecordfactory import TestRecordFactory
 from config import *
-from functions import call
-from analysis.testrecordfactory import TestRecordFactory
 
 class Analysis(Application):
     """Framework for UMIC-Mesh analysis"""

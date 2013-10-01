@@ -18,10 +18,10 @@
 from logging import info, debug, warn, error
 
 # tcp-eval imports
-from analysis.testrecords_ping import PingRecordFactory
-from analysis.testrecords_fping import FpingRecordFactory
-from analysis.testrecords_flowgrind import FlowgrindRecordFactory
-from anaylsis.testrecords_rate import RateRecordFactory
+from testrecords_ping import PingRecordFactory
+from testrecords_fping import FpingRecordFactory
+from testrecords_flowgrind import FlowgrindRecordFactory
+from testrecords_rate import RateRecordFactory
 
 class TestRecordFactory:
     """A factory for test records."""

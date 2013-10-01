@@ -23,7 +23,7 @@ import Gnuplot
 from logging import info, debug, warn, error
 
 # tcp-eval imports
-from functions import call
+from common.functions import call
 from latex import UmLatex
 
 class UmGnuplot():

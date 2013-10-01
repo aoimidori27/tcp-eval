@@ -22,7 +22,7 @@ from pyPdf import PdfFileWriter, PdfFileReader
 from logging import info, debug, warn, error
 
 # tcp-eval imports
-from functions import call
+from common.functions import call
 
 class UmLatex():
     """Class to convert latex figures (e.g. tikz) to pdf graphics"""

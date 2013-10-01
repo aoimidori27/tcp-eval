@@ -19,7 +19,7 @@ from logging import info, debug, warn, error
 from numpy import array
 
 # tcp-eval imports
-from analysis.testrecord import TestRecord
+from testrecord import TestRecord
 
 class PingRecord(TestRecord):
     def __init__(self, filename, regexes, whats):

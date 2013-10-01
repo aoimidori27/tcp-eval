@@ -21,7 +21,7 @@ from logging import info, warn, error, debug
 from twisted.internet import defer, error, reactor
 from twisted.python import failure
 
-# umic-mesh imports
+# tcp-eval imports
 #from um_node import Node
 from network.functions import twisted_call, twisted_execute
 

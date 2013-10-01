@@ -28,7 +28,7 @@ from twisted.python import log
 import twisted.names.client
 
 # tcp-eval imports
-from application import Application
+from common.application import Application
 from sshexec import SSHConnectionFactory
 from network.meshdb import MeshDbPool
 from network.xmlrpc import xmlrpc_many, xmlrpc

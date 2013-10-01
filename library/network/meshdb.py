@@ -24,7 +24,7 @@ from twisted.internet import defer, utils, reactor
 from twisted.enterprise import adbapi
 
 # tcp-eval import
-from network.functions import twisted_log_failure
+from functions import twisted_log_failure
 
 class MeshDbPool(adbapi.ConnectionPool):
     """This class handles the database connection pool, for the mesh database"""

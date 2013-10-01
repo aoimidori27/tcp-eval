@@ -19,8 +19,8 @@ import time
 from logging import info, debug, warn, error
 
 # tcp-eval imports
-from analysis.testrecord import TestRecord
-from functions import StrictStruct
+from common.functions import StrictStruct
+from testrecord import TestRecord
 
 class FlowgrindRecord(TestRecord):
     def __init__(self, filename, regexes, whats):
