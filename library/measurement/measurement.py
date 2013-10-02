@@ -35,57 +35,54 @@ from network.xmlrpc import xmlrpc_many, xmlrpc
 from network.functions import twisted_sleep
 
 class Measurement(Application):
-    """Framework for UMIC-Mesh measurement applications.
+    """Provides an Application wrapper for Measurement classes. Must be
+    subclassed to be used.
 
-       Provides an Application wrapper for Measurement classes. Must be
-       subclassed to be used.
+    As usual for Application subclassses, the subclass may add own parameters
+    to self.parser. It must call apply_optiosn() and Measurement2App.set_options
+    afterwards."""
 
-       As usual for Application subclassses, the subclass may add own parameters
-       to self.parser.
-       It must call parse_option() and Measurement2App.set_option afterwards.
-    """
+    def __init__(self, prog=None, usage=None, description=None, epilog=None):
 
-    def __init__(self):
-        Application.__init__(self)
-
+        # object variables
         self.node_list = None
         self.node_pairs = None
         self._scf = SSHConnectionFactory()
         self._null = None
-        self._dbpool = MeshDbPool(username = "measurement",
-                                  password = "XaNU7X84BQJveYQX")
-
-        # caches mac addresses
-        self._maccache = dict()
-
+        self._dbpool = MeshDbPool(username="measurement",
+                password="XaNU7X84BQJveYQX")
+        self._maccache = dict()     # caches mac addresses
         self._stats = dict()
 
-        #usage = "usage: %prog [options] -L outputdir\n"
-        #p.set_usage(usage)
-        self.parser.add_argument("-L", "--log-dir", metavar="NAME",
-                action = "store", default = None,dest = "log_dir",
-                help = "Where to store the log files.")
+        # create top-level parser and subparser
+        Application.__init__(self, prog=prog, usage=usage,
+                description=description, epilog=epilog)
+        self.parser.add_argument("-l", "--log-dir", metavar="DIR", default="./",
+                action="store", dest="log_dir", help="Where to store the log "\
+                        "files (default: %(default)s)")
 
     def apply_options(self):
+        """Configure object based on the options form the argparser"""
+
         Application.apply_options(self)
 
-        if not self.args.log_dir:
-            self.parser.error("An output directory must be specified.")
-
     def _getNull(self):
-        """Provides a null file descriptor."""
+        """Provides a null file descriptor"""
 
         if not self._null:
             self._null = open('/dev/null','w')
+
         return self._null
 
     def xmlrpc_many(self, hosts, cmd, *args):
         """Calls a remote procedure on hosts"""
+
         # for convenience only
         return xmlrpc_many(hosts, cmd, *args)
 
     def xmlrpc(self, host, cmd, *args):
         """Calls a remote procedure on a host"""
+
         # for convenience only
         return xmlrpc(host, cmd, *args)
 
@@ -274,12 +271,12 @@ class Measurement(Application):
     def run_test(self, test, append=False, **kwargs):
         """Runs a test method with arguments self, logfile, args"""
 
-        if not os.path.exists(self.options.log_dir):
-            info("%s does not exist, creating. " % self.options.log_dir)
-            os.mkdir(self.options.log_dir)
+        if not os.path.exists(self.args.log_dir):
+            info("%s does not exist, creating. " % self.args.log_dir)
+            os.mkdir(self.args.log_dir)
 
         log_name = "%s_%s" %(self.logprefix, test.func_name)
-        log_path = os.path.join(self.options.log_dir, log_name)
+        log_path = os.path.join(self.args.log_dir, log_name)
 
         if append:
             log_file = open(log_path, 'a')
