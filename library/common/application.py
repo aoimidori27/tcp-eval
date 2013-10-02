@@ -40,7 +40,7 @@ class Application(object):
                 nargs="?", const="localhost", help="log to syslog server "\
                         "'%(metavar)s' (default: %(const)s)")
 
-    def parse_options(self, args = None):
+    def parse_options(self, args=None):
         """Parse options for generic Application object"""
 
         # parse options
