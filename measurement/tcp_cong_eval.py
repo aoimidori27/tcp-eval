@@ -15,6 +15,7 @@
 # more details.
 
 # python imports
+import textwrap
 from logging import info, debug, warn, error
 from twisted.internet import defer, reactor
 
@@ -22,24 +23,28 @@ from twisted.internet import defer, reactor
 from measurement import measurement#, tests
 
 class TcpEvaluationMeasurement(measurement.Measurement):
-    """This Measurement has serveral scenarios to test:
-       one flow from each to each node with 4 different congestion
-       control algorithms: New Reno, Vegas, Westwood+ and Cubic
-    """
+    """Measurement class to test four different congestion control algorithms:
+    New Reno, SACK TCP, Westwood+ and Cubic """
 
     def __init__(self):
-        """Constructor of the object"""
+        """Creates a new TcpEvaluationMeasurement object"""
+
+        # object variables
         self.logprefix=""
-        measurement.Measurement.__init__(self)
 
-        self.parser.add_argument('-f', '--pairfile', metavar='PAIRFILE',
-                action = 'store', default='pairs.txt', type = str,
-                dest = 'pairfile', help = 'Set file to load node pairs fromi'\
-                    '(default: %(default)s)')
+        # create top-level parser
+        description = textwrap.dedent("""\
+                This program creates four TCP flows with four different TCP
+                congestion control algorithms: New Reno, SACK TCP, Westwood+ and
+                Cubic.""")
+        measurement.Measurement.__init__(self, description=description)
+        self.parser.add_argument("pairfile", metavar="FILE", type=str, #nargs=1,
+                help="Set file to load node pairs from")
 
-    def set_option(self):
-        """Set options"""
-        measurement.Measurement.set_option(self)
+    def apply_options(self):
+        """Configure object based on the options form the argparser"""
+
+        measurement.Measurement.apply_options(self)
 
     @defer.inlineCallbacks
     def run(self):
@@ -64,10 +69,10 @@ class TcpEvaluationMeasurement(measurement.Measurement):
         # inner loop with different scenario settings
         scenarios   = [ dict( scenario_label = "New Reno", flowgrind_cc="reno" ),
                         dict( scenario_label = "Westwood+", flowgrind_cc="westwood" ),
-                        dict( scenario_label = "Vegas", flowgrind_cc="vegas" ),
+                        dict( scenario_label = "TCP SACK", flowgrind_cc="vegas" ),
                         dict( scenario_label = "Cubic", flowgrind_cc="cubic" ) ]
 
-        yield self.switchTestbedProfile(testbed_profile)
+        #yield self.switchTestbedProfile(testbed_profile)
 
         for it in iterations:
             for run_no in range(len(runs)):
@@ -81,7 +86,7 @@ class TcpEvaluationMeasurement(measurement.Measurement):
 
                 for scenario_no in range(len(scenarios)):
                     # use a different port for every test
-                    kwargs['flowgrind_bport'] = int("%u%u%02u" %(scenario_no+1,it, run_no))
+                    kwargs['flowgrind_bport'] = int("%u%u%02u" %(scenario_no + 1, it, run_no))
 
                     # set logging prefix, tests append _testname
                     self.logprefix="i%03u_s%u_r%u" % (it, scenario_no, run_no)
