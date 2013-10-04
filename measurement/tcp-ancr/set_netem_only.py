@@ -11,7 +11,6 @@ import time
 
 # umic-mesh imports
 from um_measurement import measurement, tests
-from um_node import Node
 from um_functions import call
 from measurement_class import MeasurementClass
 from um_application import Application
