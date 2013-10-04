@@ -336,23 +336,22 @@ class Measurement(Application):
                                      dst=target, **kwargs))
         return res
 
-    def load_pairs_from_file(self, filename,
-                                   label_= lambda src, dst: r"%s\\sra%s" %(src,dst),
-                                   **kwargs):
-        """returns a list of dicts
+    def load_pairs_from_file(self, filename, label_= lambda src, dst:
+            r"%s\\sra%s" %(src, dst), **kwargs):
 
-           Loads pairs from the given filename. The dicts
-           generated have the keys src, dst, run_label and all keys out of kwargs.
+        """ Loads pairs from the given filename. The dicts generated have the
+        keys src, dst, run_label and all keys out of kwargs
+
+        Returns a list of dicts
         """
 
         fh = file(filename)
 
         res = list()
         for line in fh.readlines():
-            (source, target) = line.split()
-            res.append(dict( run_label=label_(source,target),
-                             src=int(source),
-                             dst=int(target), **kwargs))
+            (source, destination) = line.split()
+            res.append(dict(run_label=label_(source, destination),
+                            src=source, dst=destination, **kwargs))
         return res
 
     @defer.inlineCallbacks
@@ -390,7 +389,7 @@ class Measurement(Application):
         defer.returnValue(nexthop)
 
     @defer.inlineCallbacks
-    def get_mac(self, src, dst, interface):
+    def getMAC(self, src, dst, interface):
         """Returns the mac address for the destination address"""
 
         try:
@@ -429,7 +428,7 @@ class Measurement(Application):
 
         defer.returnValue(rc)
 
-    def getIp(self, hostname, interface = None):
+    def getIP(self, hostname, interface = None):
         if interface:
             name = "%s.%s" %(interface, hostname)
         else:
