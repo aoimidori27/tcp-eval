@@ -11,7 +11,6 @@ from twisted.web import xmlrpc
 # umic-mesh imports
 from um_rpcservice import RPCService
 from um_twisted_functions import twisted_execute, twisted_call
-from um_node import Node
 
 class Ipmasq(RPCService):
     """Class for configuring simple IP masquerading"""
