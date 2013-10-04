@@ -122,7 +122,8 @@ class VMNode(Application):
 
     def apply_options(self):
         """Configure XEN object based on the options form the argparser.
-        On the given options perform some sanity checks"""
+        On the given options perform some sanity checks
+        """
 
         # for all commands
         Application.apply_options(self)
