@@ -22,40 +22,9 @@ from twisted.internet import defer, error, reactor
 from twisted.python import failure
 
 # tcp-eval imports
-#from um_node import Node
 from network.functions import twisted_call, twisted_execute
 
 """This module should collect standard test methods."""
-
-@defer.inlineCallbacks
-def test_rate(mrs,
-              log_file,
-              rate_src,
-              rate_dst,
-              rate_iface = "ath0",
-              rate_size  = 1600,
-              **kwargs ):
-
-    # for convenience accept numbers as src and dst
-    src = Node(rate_src, node_type="meshrouter")
-    dst = Node(rate_dst, node_type="meshrouter")
-
-    dst_ip = yield mrs.getIp(dst.getHostname(), rate_iface)
-
-    nexthop = yield mrs.get_next_hop(src.getHostname(), dst_ip)
-    debug("nexthop: %s" %nexthop)
-    mac = yield mrs.get_mac(src.getHostname(), nexthop, rate_iface)
-    if not mac:
-        error("Failed to get mac for: %s" %nexthop)
-        defer.returnValue("-1")
-    debug("mac    : "+mac)
-
-    cmd = 'grep -A 13 "%s" /proc/net/madwifi/%s/ratestats_%u' %(mac, rate_iface, rate_size)
-
-    result = yield mrs.remote_execute(src.getHostname(),
-                                      cmd,
-                                      log_file,
-                                      timeout=2)
 
 @defer.inlineCallbacks
 def test_ping(mrs,
