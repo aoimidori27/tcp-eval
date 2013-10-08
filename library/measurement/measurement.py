@@ -224,7 +224,7 @@ class Measurement(Application):
 
     def local_execute(self, cmd, log_file, *args, **kwargs):
         """Execute command locally"""
-        return self.remote_execute("localhost", cmd, log_file, *args, **kwargs)
+        return self.remote_execute("127.0.0.1", cmd, log_file, *args, **kwargs)
 
 
     @defer.inlineCallbacks
