@@ -24,7 +24,9 @@ from measurement import measurement, tests
 
 class TcpEvaluationMeasurement(measurement.Measurement):
     """Measurement class to test four different congestion control algorithms:
-    New Reno, SACK TCP, Westwood+ and Cubic """
+    New Reno, Highspeed TCP, Westwood+ and Cubic. Ensure that an all TCP senders
+    all congestion control algorithms are available and allowed to be set:
+    sudo sysctl -a | grep congestion_control"""
 
     def __init__(self):
         """Creates a new TcpEvaluationMeasurement object"""
