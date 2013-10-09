@@ -29,9 +29,6 @@ class TcpEvaluationMeasurement(measurement.Measurement):
     def __init__(self):
         """Creates a new TcpEvaluationMeasurement object"""
 
-        # object variables
-        self.logprefix=""
-
         # create top-level parser
         description = textwrap.dedent("""\
                 This program creates four TCP flows with four different TCP
@@ -50,29 +47,22 @@ class TcpEvaluationMeasurement(measurement.Measurement):
     def run(self):
         """Main method"""
 
-        # this must be adjusted for the specific measurement
-        testbed_profile = "vmesh_flowgrind"
-        node_type = "vmeshrouter"
-
-        # common options used for all tests
-        opts = dict( flowgrind_duration = 20,
-                     flowgrind_dump   = False,
-                     tprofile = testbed_profile,
-                     nodetype = node_type )
+        # common options used for all ntests
+        opts = dict(fg_bin="~/bin/flowgrind", duration=10, dump=None)
 
         # test nodes load from file
         runs = self.load_pairs_from_file(self.args.pairfile)
 
         # repeat loop
-        iterations  = range(50)
+        iterations  = range(1)
 
         # inner loop with different scenario settings
-        scenarios   = [ dict( scenario_label = "New Reno", flowgrind_cc="reno" ),
-                        dict( scenario_label = "Westwood+", flowgrind_cc="westwood" ),
-                        dict( scenario_label = "TCP SACK", flowgrind_cc="sack" ),
-                        dict( scenario_label = "Cubic", flowgrind_cc="cubic" ) ]
+        scenarios   = [ dict(scenario_label="New Reno", cc="reno"),
+                        dict(scenario_label="Westwood+", cc="westwood"),
+                        dict(scenario_label="Highspeed TCP", cc="highspeed"),
+                        dict(scenario_label="Cubic", cc="cubic")]
 
-        #yield self.switchTestbedProfile(testbed_profile)
+        #yield self.switchTestbedProfile("vmesh_flowgrind")
 
         for it in iterations:
             for run_no in range(len(runs)):
@@ -81,12 +71,9 @@ class TcpEvaluationMeasurement(measurement.Measurement):
                 kwargs.update(opts)
                 kwargs.update(runs[run_no])
 
-                kwargs['flowgrind_src'] = kwargs['src']
-                kwargs['flowgrind_dst'] = kwargs['dst']
-
                 for scenario_no in range(len(scenarios)):
                     # use a different port for every test
-                    kwargs['flowgrind_bport'] = int("%u%u%02u" %(scenario_no + 1, it, run_no))
+                    kwargs['bport'] = int("%u%u%02u" %(scenario_no + 1, it, run_no))
 
                     # set logging prefix, tests append _testname
                     self.logprefix="i%03u_s%u_r%u" % (it, scenario_no, run_no)
@@ -94,12 +81,12 @@ class TcpEvaluationMeasurement(measurement.Measurement):
                     # merge parameter configuration for the tests
                     kwargs.update(scenarios[scenario_no])
 
-                    # set source and dest for tests
                     # actually run tests
                     yield self.run_test(tests.test_flowgrind, **kwargs)
 
         # switch back to minimum when done
         # yield self.switchTestbedProfile("minimum")
+
         yield self.tear_down()
         reactor.stop()
 
