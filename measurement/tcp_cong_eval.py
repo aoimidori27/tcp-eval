@@ -24,18 +24,18 @@ from measurement import measurement, tests
 
 class TcpEvaluationMeasurement(measurement.Measurement):
     """Measurement class to test four different congestion control algorithms:
-    New Reno, Highspeed TCP, Westwood+ and Cubic. Ensure that an all TCP senders
-    all congestion control algorithms are available and allowed to be set:
-    sudo sysctl -a | grep congestion_control"""
+    New Reno, Highspeed TCP, Westwood+ and Cubic"""
 
     def __init__(self):
         """Creates a new TcpEvaluationMeasurement object"""
 
         # create top-level parser
         description = textwrap.dedent("""\
-                This program creates four TCP flows with four different TCP
-                congestion control algorithms: New Reno, SACK TCP, Westwood+ and
-                Cubic.""")
+                Creates successively four TCP flows with four different TCP
+                congestion control algorithms: New Reno, SACK TCP, Westwood+
+                and Cubic. On all TCP senders all congestion control algorithms
+                must be available and be allowable to be set . Run 'sudo sysctl
+                -a | grep congestion_control' to check.""")
         measurement.Measurement.__init__(self, description=description)
         self.parser.add_argument("pairfile", metavar="FILE", type=str,
                 help="Set file to load node pairs from")
