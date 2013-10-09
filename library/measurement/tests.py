@@ -107,7 +107,7 @@ def test_thrulay(mrs, log_file, src, dst, dst_ctrl=None, duration=15,
 def test_flowgrind(mrs, log_file, src, dst, src_ctrl=None, dst_ctrl=None,
                    timeout=10, duration=15, warmup=0, cc=None, dump=None,
                    bport=5999, opts=[], fg_bin="flowgrind", gzip_dumps=True,
-                   **kwargs ):
+                   **kwargs):
     """This test performs a simple flowgrind (new, aka dd version) test with
     one tcp flow from src to dst.
 
