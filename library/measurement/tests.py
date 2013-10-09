@@ -185,8 +185,9 @@ def test_flowgrind(mrs, log_file, src, dst, src_ctrl=None, dst_ctrl=None,
                 dres[1].getErrorMessage()))
 
     # run flowgrind
-    result = yield mrs.local_execute(" ".join(cmd), log_file, timeout=(duration
-        + warmup + timeout))
+    rc = yield mrs.local_execute(" ".join(cmd), log_file, timeout=(duration +
+        warmup + timeout))
+    defer.returnValue(rc)
 
     # stop tcpdump
     if dump:
@@ -308,8 +309,7 @@ def test_multiflowgrind(mrs,
         cmd.extend(["-H", "s=%s/%s,d=%s/%s" % (src_ip, src.getHostname(),
                     dst_ip, dst.getHostname()) ])
 
-    result = yield mrs.local_execute(" ".join(cmd), log_file,
-            timeout=(max_duration + flowgrind_timeout) )
-
-    defer.returnValue(result)
+    rc = yield mrs.local_execute(" ".join(cmd), log_file, timeout=(max_duration
+        + flowgrind_timeout))
+    defer.returnValue(rc)
 
