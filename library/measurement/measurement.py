@@ -45,6 +45,7 @@ class Measurement(Application):
     def __init__(self, prog=None, usage=None, description=None, epilog=None):
 
         # object variables
+        self.logprefix=""
         self.node_list = None
         self.node_pairs = None
         self._scf = SSHConnectionFactory()
