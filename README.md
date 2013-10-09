@@ -12,5 +12,7 @@ The scripts are tested on Debian 7.0 (Wheezy) and Ubuntu 13.04.
 
 ## Install
 
-* **Python packages** `sudo apt-get install python-simpleparse python-egenix-mxtexttools python-gnuplot python-pypdf python-mysqldb python-twisted`
-* **texlive packages** `sudo apt-get install texlive-font-utils texlive-latex-base texlive-latex-recommended texlive-science texlive-latex-extra`
+* **Python packages** `sudo apt-get install python-simpleparse python-egenix-mxtexttools python-gnuplot \`
+                      `python-pypdf python-mysqldb python-twisted`
+* **texlive packages** `sudo apt-get install texlive-font-utils texlive-latex-base texlive-latex-recommended \`
+                       `texlive-science texlive-latex-extra`
