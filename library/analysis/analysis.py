@@ -25,52 +25,47 @@ from logging import info, debug, warn, error
 from common.application import Application
 from common.functions import call
 from testrecordfactory import TestRecordFactory
-from config import *
+#from config import *
 
 class Analysis(Application):
     """Framework for UMIC-Mesh analysis"""
 
     def __init__(self):
-        Application.__init__(self)
 
         # object variables
         self.action = ''
         self.analysis = 'none'
         self.factory = TestRecordFactory()
 
-        # initialization of the option parser
-        usage = "usage: %prog [options]"
-
-        self.parser.set_usage(usage)
-        self.parser.set_defaults(outdir = "./", indir = "./");
-
-        self.parser.add_option('-N', '--nodes', metavar="Nodes",
+        # create top-level parser
+        Application.__init__(self)
+        self.parser.add_argument('-N', '--nodes', metavar="Nodes",
                         action = 'store', type = 'int', dest = 'nodes',
                         help = 'Limit range of mrouters covered [default: unset]')
-        self.parser.add_option('-I', '--iterations', metavar="n",
+        self.parser.add_argument('-I', '--iterations', metavar="n",
                         action = 'store', type = 'int', dest = 'iterations',
                         help = 'Limit to the first n iterations that were run in a row [default: unset]')
-        self.parser.add_option('-R', '--runs', metavar="r",
+        self.parser.add_argument('-R', '--runs', metavar="r",
                         action = 'store', type = 'int', dest = 'runs',
                         help = 'Limit to the first r of test runs that were performed in a row [default: unset]')
-        self.parser.add_option('-D', '--input-directory', metavar="InDir",
+        self.parser.add_argument('-D', '--input-directory', metavar="InDir", default="./",
                         action = 'store', type = 'string', dest = 'indir',
                         help = 'Set directory which contains the measurement results [default: %default]')
-        self.parser.add_option('-O', '--output', metavar="OutDir",
+        self.parser.add_argument('-O', '--output', metavar="OutDir", default="./",
                         action = 'store', type = 'string', dest = 'outdir',
                         help = 'Set outputdirectory [default: %default]')
-        self.parser.add_option("-c", "--cfg", metavar = "FILE",
+        self.parser.add_argument("-c", "--cfg", metavar = "FILE",
                         action = "store", dest = "cfgfile",
                         help = "use the file as config file for LaTeX. "\
                                "No default packages will be loaded.")
-        self.parser.add_option("--save", action = "store_true", dest = "save",
+        self.parser.add_argument("--save", action = "store_true", dest = "save",
                         help = "save gnuplot and tex files [default: clean up]")
-        self.parser.add_option("-f", "--force",
+        self.parser.add_argument("-f", "--force",
                         action = "store_true", dest = "force",
                         help = "overwrite existing output")
 
-    def set_option(self):
-        """Set options"""
+    def apply_options(self):
+        """Configure object based on the options form the argparser"""
 
         Application.set_option(self)
 
@@ -91,10 +86,9 @@ class Analysis(Application):
 
     def loadRecords(self, onLoad = None, tests = None):
         """This function creates testrecords from test log files
-           the onLoad function is called with, TestRecord, testname
-           iterationNo and scenarioNo.
-           If tests is set only records for these tests are created.
-        """
+           the onLoad function is called with, TestRecord, testname iterationNo
+           and scenarioNo. If tests is set only records for these tests are
+           created.  """
 
         if not onLoad:
             onLoad = self.onLoad
