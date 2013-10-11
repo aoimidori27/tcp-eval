@@ -19,9 +19,11 @@
 import re
 import socket
 import sys
-import subprocess
 import os
+import argparse
 import string
+import subprocess
+import textwrap
 from logging import info, debug, warn, error, critical
 
 # tcp-eval imports
@@ -31,14 +33,11 @@ from common.functions import *
 
 class BuildVmesh(Application):
     """Setup GRE tunnels and iptables rules to simulate a mesh network with
-       vmeshrouters. This script has to be executed on each vmeshrouter, which
-       shall be part of the simulated network.
-    """
+    vmeshrouters. This script has to be executed on each vmeshrouter, which
+    shall be part of the simulated network"""
 
     def __init__(self):
         """Creates a new BuildVmesh object"""
-
-        Application.__init__(self)
 
         # object variables
         self.node = None
@@ -46,123 +45,95 @@ class BuildVmesh(Application):
         self.confstr = None
         self.linkinfo = dict()
         self.ipcount = dict()
-        self.shapecmd_multiple = """\
-tc class add dev %(iface)s parent 1: classid 1:%(parentNr)d%(nr)02d htb rate %(rate)smbit; \
-tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
-    match ip protocol 47 0xff flowid 1:%(parentNr)d%(nr)02d \
-    match ip dst %(dst)s"""
-
-        self.shapecmd = """\
-tc class add dev %(iface)s parent 1: classid 1:%(nr)d htb rate %(rate)smbit && \
-tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
-    match ip protocol 47 0xff flowid 1:%(nr)d \
-    match ip dst %(dst)s"""
+        self.shapecmd_multiple = textwrap.dedent("""\
+                tc class add dev %(iface)s parent 1: classid 1:%(parentNr)d%(nr)02d htb rate %(rate)smbit; \
+                tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
+                match ip protocol 47 0xff flowid 1:%(parentNr)d%(nr)02d \
+                match ip dst %(dst)s""")
+        self.shapecmd = textwrap.dedent("""\
+                tc class add dev %(iface)s parent 1: classid 1:%(nr)d htb rate %(rate)smbit && \
+                tc filter add dev %(iface)s parent 1: protocol ip prio 16 u32 \
+                match ip protocol 47 0xff flowid 1:%(nr)d \
+                match ip dst %(dst)s""")
         self._dnsttl = 300
         self._dnskey = "o2bpYQo1BCYLVGZiafJ4ig=="
         # used routing table ids for multipath
         self._rtoffset = 300
 
-        # initialization of the option parser
-        usage = """\
-usage:  %prog [options] [CONFIGFILE]
-        where the CONFIGFILE syntax looks like the following
-            1: 2[10,,100] 3 5-6[0.74,20,,10]
-            2: ...
+        # create top-level parser
+        description = textwrap.dedent("""\
+                This program creates a virtual network based netem and a GRE tunnel. The
+                topology of the virtual network is specified in a config file as an adjacency
+                matrix. The config file syntax looks like the following
+                    1: 2[10,,,100] 3 5-6[0.74,20,,10]
+                    2: ...
 
-Explanation:
-    vmrouter1 reaches all vmrouters listed after the colon,
-    every vmrouter listed after the colon reaches vmrouter1.
+                VM 1 reaches all VMs listed after the colon, every VM listed after the colon
+                reaches VM 1. Link information may be given in brackets after every entry with
+                the syntax [rate, limit, delay, loss], where:
+                    * Rate: in mbps as float
+                    * Queue limit: in packets as int
+                    * Delay: in ms as int
+                    * Loss: in percent as int
 
-    Link information may be given in brackets after every
-    entry, and the syntax [rate, limit, delay, loss], where:
-        * Rate: in mbps as float
-        * Queue limit: in packets as int
-        * Delay: in ms as int
-        * Loss: in percent as int
+                The link information given for an entry are just a limit for ONE direction, so
+                that it is possible to generate asynchronous lines. Empty lines and lines
+                starting with # are ignored.""")
+        Application.__init__(self,
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=description)
+        self.parser.add_argument("config_file", metavar="configfile",
+                help="Topology of the virtual network")
+        self._setting_group=self.parser.add_mutually_exclusive_group()
+        self._setting_group.add_argument("-r", "--remote", action="store_true",
+                default=True, help="Apply settings for all hosts in config "\
+                        "(default: %(default)s)")
+        self._setting_group.add_argument("-l", "--local", action="store_false",
+                help="Apply just the settings for localhost")
+        self.parser.add_argument("-i", "--interface", metavar="IFACE",
+                action="store", default="eth1", help="Interface to use for "\
+                        "the GRE tunnel (default: %(default)s)")
+        self.parser.add_argument("-m", "--mcast", metavar="IP",
+                action="store", default="224.66.66.66", help="Multicast IP to "\
+                        "use for GRE tunnel (default: %(default)s)")
+        self.parser.add_argument("-o", "--offset", metavar="NUM",
+                action="store", type=int, default=0, help="Add this offset "\
+                        "to all node IDs in the config file")
+        self.parser.add_argument("-u", "--user-scripts", metavar="PATH",
+                action="store", nargs="?", const="./config/vmnet-helper",
+                help="Execute user scripts for every node (default: %(const)s)")
+        self.parser.add_argument("-s", "--static-routes", action="store_true",
+                default=False, help="Setup static routing according to "\
+                        "topology")
+        self.parser.add_argument("-p", "--multipath", metavar="NUM",
+                action="store", nargs="?", type=int, const=2, default=False,
+                help="Set up equal cost multipath routes with maximal "\
+                        "'%(metavar)s' of parallel paths (default: %(const)s)")
+        self.parser.add_argument("-R", "--rate", metavar="RATE", action="store",
+                help="Rate limit in mbps")
+        self.parser.add_argument("-n", "--ip-prefix", metavar="PRE",
+                action="store", default="172.16", help="Use to select "\
+                        "different IP address ranges (default: %(default)s)")
+        self._topology_group=self.parser.add_mutually_exclusive_group()
+        self._topology_group.add_argument("-e", "--multiple-topology",
+                action="store_true", default=False, dest="multiple_topology",
+                help = "Activate multiple toplogy support. Is neccessary if "\
+                        "you want to deploy serveral topolgies at once")
+        self._topology_group.add_argument("-E", "--multiple-topology-reset",
+                action="store_true", default=False,
+                dest="multiple_topology_reset", help="Activate multiple "\
+                        "toplogy support. Is neccessary if you want to "\
+                        "deploy serveral topolgies at once and reset the "\
+                        "root node")
+        self.parser.add_argument("-y", "--dry-run", action="store_true",
+                default=False, help="Test the config only without setting it "\
+                        "up")
 
-Remarks:
-    The link information given for an entry are just
-    a limit for ONE direction, so that it is possible to
-    generate asynchronous lines.
-
-    Empty lines and lines starting with # are ignored."""
-
-        self.parser.set_usage(usage)
-        self.parser.set_defaults(remote = True, interface = "ath0",
-                                 multicast = "224.66.66.66", offset = 0, staticroutes=False,
-                                 multipath=False, maxpath=2, dry_run=False, ipprefix = "172.16",
-                                 userscriptspath="%s/config/vmesh-helper" %os.environ["HOME"],
-                                 multiple_topology=False, multiple_topology_reset=False)
-        self.parser.add_option("-r", "--remote",
-                               action = "store_true", dest = "remote",
-                               help = "Apply settings for all hosts in config")
-        self.parser.add_option("-l", "--local",
-                               action = "store_false", dest = "remote",
-                               help = "Apply just the settings for the local host")
-        self.parser.add_option("-i", "--interface",
-                               action = "store", dest = "interface", metavar = "IFACE",
-                               help = "Interface to use for the GRE tunnel "\
-                                      "(default: %default)")
-        self.parser.add_option("-m", "--multicast",
-                               action = "store", dest = "multicast", metavar = "IP",
-                               help = "Multicast IP to use for GRE tunnel "\
-                                      "(default: %default)")
-        self.parser.add_option("-o", "--offset",
-                               action = "store", dest = "offset", metavar = "OFFSET",
-                               type = int,
-                               help = "Add this offset to all hosts in the config "\
-                                      "(default: %default)")
-        self.parser.add_option("-u", "--userscripts",
-                               action = "store_true", dest = "userscripts",
-                               help = "Execute user scripts for every node if available "\
-                                      "(located in userscripts-path)")
-        self.parser.add_option("--userscripts-path",
-                               action = "store", dest = "userscriptspath", metavar = "PATH",
-                               help = "Path for the userscripts (default: %default)")
-        self.parser.add_option("-s", "--staticroutes",
-                               action = "store_true", dest = "staticroutes",
-                               help = "Setup static routing according to topology "\
-                                      "(default: %default)")
-        self.parser.add_option("-p", "--multipath",
-                               action = "store_true", dest = "multipath",
-                               help = "Setup equal cost multipath routes. For use with -s "\
-                                   "(default:%default)")
-        self.parser.add_option("-x", "--maxpath",
-                                action = "store", dest = "maxpath", type = int,
-                                help = "Maximum number of parallel paths to set up. \
-                                        Use only in connection with --multipath. "\
-                                        "(default:%default)")
-        self.parser.add_option("-R", "--rate",
-                               action = "store", dest = "rate", metavar = "RATE",
-                               help = "Rate limit in mbps")
-        self.parser.add_option("-d", "--dry-run",
-                               action = "store_true", dest = "dry_run",
-                               help = "Test the config only (default:%default)")
-        self.parser.add_option("-n", "--ipprefix",
-                              action = "store", dest = "ipprefix", metavar = "IPPREFIX",
-                              help = "Use to select different ip address ranges. "\
-                                     "(default.%default")
-        self.parser.add_option("-e", "--multipleTopology",
-                              action = "store_true", dest = "multiple_topology",
-                              help = "Activate multiple Toplogy support. \
-                                      Is neccessary if you want to deploy serveral \
-                                      topolgies at once. (default:%default)")
-        self.parser.add_option("-E", "--multipleTopologyReset",
-                               action = "store_true", dest = "multiple_topology_reset",
-                               help = "Activate multiple Toplogy support. \
-                                       Is neccessary if you want to deploy serveral \
-                                       topolgies at once and reset the root node. (default:%default)")
-
-    def set_option(self):
+    def apply_options(self):
         """Set the options for the BuildVmesh object"""
 
-        Application.set_option(self)
-
-        if len(self.args) == 0:
-            error("Config file must be given!")
-            sys.exit(1)
-        else:
-            self.conf = self.parse_config(self.args[0])
+        Application.apply_options(self)
+        self.conf = self.parse_config(self.args.config_file)
 
     def parse_config(self, file):
         """Returns an hash which maps host number -> set of reachable host numbers
@@ -715,8 +686,8 @@ Remarks:
             self.setup_user_helper()
 
     def main(self):
-        self.parse_option()
-        self.set_option()
+        self.parse_options()
+        self.apply_options()
         self.run()
 
 
