@@ -21,12 +21,12 @@ import argparse
 class Application(object):
     """Framework for generic Applications"""
 
-    def __init__(self, prog=None, usage=None, description=None, epilog=None):
+    def __init__(self, prog=None, usage=None, description=None, epilog=None, **kwargs):
         """Constructor for generic Application object"""
 
         # object variables
         self.parser = argparse.ArgumentParser(prog=prog, usage=usage,
-                description=description, epilog=epilog)
+                description=description, epilog=epilog, **kwargs)
         self._log_group = self.parser.add_mutually_exclusive_group()
 
         # initialization of the argument parser
