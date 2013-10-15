@@ -40,20 +40,20 @@ class Analysis(Application):
         # create top-level parser
         Application.__init__(self)
         self.parser.add_argument('-N', '--nodes', metavar="Nodes",
-                        action = 'store', type = 'int', dest = 'nodes',
+                        action = 'store', type=int, dest = 'nodes',
                         help = 'Limit range of mrouters covered [default: unset]')
         self.parser.add_argument('-I', '--iterations', metavar="n",
-                        action = 'store', type = 'int', dest = 'iterations',
+                        action = 'store', type=int, dest = 'iterations',
                         help = 'Limit to the first n iterations that were run in a row [default: unset]')
         self.parser.add_argument('-R', '--runs', metavar="r",
-                        action = 'store', type = 'int', dest = 'runs',
+                        action = 'store', type=int, dest = 'runs',
                         help = 'Limit to the first r of test runs that were performed in a row [default: unset]')
         self.parser.add_argument('-D', '--input-directory', metavar="InDir", default="./",
-                        action = 'store', type = 'string', dest = 'indir',
-                        help = 'Set directory which contains the measurement results [default: %default]')
+                        action = 'store', type=str, dest = 'indir',
+                        help = 'Set directory which contains the measurement results [default: %(default)s]')
         self.parser.add_argument('-O', '--output', metavar="OutDir", default="./",
-                        action = 'store', type = 'string', dest = 'outdir',
-                        help = 'Set outputdirectory [default: %default]')
+                        action = 'store', type=str, dest = 'outdir',
+                        help = 'Set outputdirectory [default: %(default)s]')
         self.parser.add_argument("-c", "--cfg", metavar = "FILE",
                         action = "store", dest = "cfgfile",
                         help = "use the file as config file for LaTeX. "\
@@ -67,15 +67,15 @@ class Analysis(Application):
     def apply_options(self):
         """Configure object based on the options form the argparser"""
 
-        Application.set_option(self)
+        Application.apply_options(self)
 
-        if not os.path.exists(self.options.indir):
-            error("%s does not exist, stop." %self.options.indir)
+        if not os.path.exists(self.args.indir):
+            error("%s does not exist, stop." %self.args.indir)
             sys.exit(1)
 
-        if not os.path.exists(self.options.outdir):
-            info("%s does not exist, creating. " % self.options.outdir)
-            os.mkdir(self.options.outdir)
+        if not os.path.exists(self.args.outdir):
+            info("%s does not exist, creating. " % self.args.outdir)
+            os.mkdir(self.args.outdir)
 
     def process(self):
         """Processing of the gathered data"""
@@ -100,7 +100,7 @@ class Analysis(Application):
         count = 0
         failed = []
 
-        for root, dirs, files in os.walk(self.options.indir):
+        for root, dirs, files in os.walk(self.args.indir):
             debug("Processing %s" %root)
             for name in files:
                 entry = os.path.join(root, name)
@@ -124,7 +124,7 @@ class Analysis(Application):
                     onLoad(record, iterationNo, scenarioNo, runNo, test)
 
         if (count == 0):
-            warn('Found no log records in "%s" Stop.' %self.options.indir)
+            warn('Found no log records in "%s" Stop.' %self.args.indir)
             sys.exit(0)
         else:
             info('Found %d test records.' %count)
@@ -138,8 +138,8 @@ class Analysis(Application):
     def main(self):
         """Main method of the ping stats object"""
 
-        self.parse_option()
-        self.set_option()
+        self.parse_options()
+        self.apply_options()
         Analysis.run(self)
 
 

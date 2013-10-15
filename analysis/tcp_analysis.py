@@ -33,10 +33,6 @@ class TcpAnalysis(Analysis):
     def __init__(self):
         Analysis.__init__(self)
 
-    def set_option(self):
-        "Set options"
-        Analysis.set_option(self)
-
     def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
         if test == "rate":
             return self.onLoadRate(record, iterationNo, scenarioNo, runNo, test)
@@ -44,8 +40,8 @@ class TcpAnalysis(Analysis):
         dbcur = self.dbcon.cursor()
 
         recordHeader = record.getHeader()
-        src = recordHeader["flowgrind_src"]
-        dst = recordHeader["flowgrind_dst"]
+        src = recordHeader["src"]
+        dst = recordHeader["dst"]
         run_label = recordHeader["run_label"]
         scenario_label = recordHeader["scenario_label"]
 
@@ -72,8 +68,13 @@ class TcpAnalysis(Analysis):
             thruput_0 = 0.0
             thruput_1 = 0.0
 
+	#print """
+        #      INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, %f, %f, %u, "$%s$", "%s", "%s")
+        #      """ % (iterationNo, scenarioNo, runNo, src, dst, thruput, thruput_0, thruput_1,
+        #             start_time, run_label, scenario_label, test)
+
         dbcur.execute("""
-                      INSERT INTO tests VALUES (%u, %u, %u, %s, %s, %f, %f, %f, %u, "$%s$", "%s", "%s")
+                      INSERT INTO tests VALUES (%u, %u, %u, "%s", "%s", %f, %f, %f, %u, "$%s$", "%s", "%s")
                       """ % (iterationNo, scenarioNo, runNo, src, dst, thruput, thruput_0, thruput_1,
                              start_time, run_label, scenario_label, test))
 
@@ -133,7 +134,7 @@ class TcpAnalysis(Analysis):
             rates[key] = val
 
         plotname = "tput_over_time"
-        outdir = self.options.outdir
+        outdir = self.args.outdir
         valfilename = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
@@ -207,7 +208,7 @@ class TcpAnalysis(Analysis):
             scenarios[key] = val
 
         plotname = "tput_over_time_per_run"
-        outdir = self.options.outdir
+        outdir = self.args.outdir
         p = UmLinePlot(plotname = plotname, outdir = outdir)
         p.setYLabel(r"\\si{\Mbps}")
 
@@ -309,7 +310,7 @@ class TcpAnalysis(Analysis):
         ''' %(sortby, limit) )
 
         # outfile
-        outdir = self.options.outdir
+        outdir = self.args.outdir
         plotname = "best_%d_pairs_acc" %limit
         bestfilename = os.path.join(outdir, plotname+".values")
 
@@ -387,7 +388,7 @@ class TcpAnalysis(Analysis):
         ''')
 
         # outfile
-        outdir        = self.options.outdir
+        outdir        = self.args.outdir
         plotname      = "scenario_compare_2flow"
         valfilename  = os.path.join(outdir, plotname+".values")
 
@@ -505,7 +506,7 @@ class TcpAnalysis(Analysis):
         ''')
 
         # outfile
-        outdir        = self.options.outdir
+        outdir        = self.args.outdir
         plotname      = "scenario_compare"
         valfilename  = os.path.join(outdir, plotname+".values")
 
@@ -595,7 +596,7 @@ class TcpAnalysis(Analysis):
         FROM tests GROUP BY src, dst ORDER BY avg_thruput ASC
         ''')
 
-        outdir = self.options.outdir
+        outdir = self.args.outdir
         plotname = "fraction_of_pairs"
         valfilename = os.path.join(outdir, plotname+".values")
 
@@ -732,7 +733,7 @@ class TcpAnalysis(Analysis):
 
         plotname = "tput_distribution_r%u_b%u" %(runNo, noBins)
 
-        outdir = self.options.outdir
+        outdir = self.args.outdir
         valfilename = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
@@ -771,7 +772,7 @@ class TcpAnalysis(Analysis):
 
         ary = numpy.array(dbcur.fetchall())
         plotname = "tput_distribution_acc_b%u" %(noBins)
-        outdir = self.options.outdir
+        outdir = self.args.outdir
         valfilename = os.path.join(outdir, plotname+".values")
 
         info("Generating %s..." % valfilename)
@@ -835,8 +836,8 @@ class TcpAnalysis(Analysis):
     def main(self):
         """Main method of the ping stats object"""
 
-        self.parse_option()
-        self.set_option()
+        self.parse_options()
+        self.apply_options()
         TcpAnalysis.run(self)
 
 # this only runs if the module was *not* imported
