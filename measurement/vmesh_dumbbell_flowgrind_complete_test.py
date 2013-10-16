@@ -9,8 +9,8 @@ import os
 import sys
 
 # umic-mesh imports
-from um_measurement import measurement, tests
-from um_functions import call
+from measurement import measurement, tests
+from common.functions import call
 
 class DumbbellEvaluationMeasurement(measurement.Measurement):
     """This Measurement will run tests of several scenarios:
@@ -29,14 +29,11 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         self.logprefix=""
         measurement.Measurement.__init__(self)
 
-        self.parser.set_defaults(pairfile = "vmesh_dumbbell_flowgrind_measurement_pairs.lst")
-        self.parser.add_option('-f', '--pairfile', metavar="PAIRFILE",
-                               action = 'store', type = 'string', dest = 'pairfile',
-                               help = 'Set file to load node pairs from [default: %default]')
-
-    def set_option(self):
-        """Set options"""
-        measurement.Measurement.set_option(self)
+        #self.parser.set_defaults(pairfile = )
+        self.parser.add_argument('-f', '--pairfile', metavar="PAIRFILE",
+                                 action = 'store', type = str, dest = 'pairfile',
+                                 default = "vmesh_dumbbell_flowgrind_measurement_pairs.lst",
+                                 help = 'Set file to load node pairs from [default: %(default)s]')
 
     @defer.inlineCallbacks
     def run_netem(self, reorder, rdelay, delay, limit, mode):
@@ -95,7 +92,7 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
                      nodetype = node_type )
 
         # test nodes load from file
-        #runs = self.load_pairs_from_file(self.options.pairfile)
+        #runs = self.load_pairs_from_file(self.args.pairfile)
         runs = [{'src': 201, 'dst': 208, 'run_label': '201\\\\sra208'}]
 
         # repeat loop
@@ -146,7 +143,7 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
 
                 # header for analyze script
                 for prefix in logs:
-                    logfile = open("%s/%s_test_flowgrind" %(self.options.log_dir, prefix), "r+")
+                    logfile = open("%s/%s_test_flowgrind" %(self.args.log_dir, prefix), "r+")
                     old = logfile.read() # read everything in the file
                     logfile.seek(0) # rewind
                     logfile.write("""testbed_param_qlimit=%u\n""" \
@@ -203,8 +200,8 @@ class DumbbellEvaluationMeasurement(measurement.Measurement):
         reactor.stop()
 
     def main(self):
-        self.parse_option()
-        self.set_option()
+        self.parse_options()
+        self.apply_options()
         self.run()
         reactor.run()
 
