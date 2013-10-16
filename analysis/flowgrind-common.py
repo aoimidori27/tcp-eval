@@ -108,34 +108,35 @@ class ReorderingAnalysis(Analysis):
         #except:
         #    return
 
+	null = None
         try:
             bnbw       = int(recordHeader["testbed_param_bottleneckbw"])
         except KeyError:
-            bnbw       = "NULL"
+            bnbw       = null
 
         try:
             delay      = int(recordHeader["testbed_param_delay"])
         except KeyError:
-            delay      = "NULL"
+            delay      = null
 
         try:
             ackreor    = int(recordHeader["testbed_param_ackreor"])
         except KeyError:
-            ackreor    = "NULL"
+            ackreor    = null
 
         try:
             ackloss    = int(recordHeader["testbed_param_ackloss"])
         except KeyError:
-            ackloss    = "NULL"
+            ackloss    = null
 
         # test_start_time was introduced later in the header, so its not in old test logs
         try:
             start_time = int(float(recordHeader["test_start_time"]))
         except KeyError:
             start_time = 0
+        thruput        = record.calculate("thruput")
         rtos           = record.calculate("total_rto_retransmits")
         frs            = record.calculate("total_fast_retransmits")
-        thruput        = record.calculate("thruput")
 
         if not thruput:
             if not self.failed.has_key(run_label):
@@ -149,27 +150,28 @@ class ReorderingAnalysis(Analysis):
         try:
             rtos = int(rtos)
         except TypeError, inst:
-            rtos = "NULL"
+            rtos = null
 
         try:
             frs = int(frs)
         except TypeError, inst:
-            frs = "NULL"
+            frs = null
 
         # check for lost SYN or long connection establishing
-        c = 0
-        flow_S = record.calculate("flows")[0]['S']
-        for tput in flow_S['tput']:
-            if tput == 0.000000:
-                c += 1
-            else: break
-        if flow_S['end'][c] > 1:
-            warn("Long connection establishment (%ss): %s" %(flow_S['end'][c], record.filename))
+        #c = 0
+        #flow_S = record.calculate("flows")[0]['S']
+        #for tput in flow_S['tput']:
+        #    if tput == 0.000000:
+        #        c += 1
+        #    else: break
+        #if flow_S['end'][c] > 1:
+        #    warn("Long connection establishment (%ss): %s" %(flow_S['end'][c], record.filename))
 
         dbcur.execute("""
-                      INSERT INTO tests VALUES ("%s", "%s", %s, %u, %u, %u, %u, %u, %u, %s, %s, %u, %u, %u, "%s", "%s", %f, %u, "$%s$", "%s", "%s")
-                      """ % (variable, reordering, bnbw, qlimit, delay, rrate, rdelay, ackreor, ackloss, rtos, frs, iterationNo, scenarioNo, runNo, src, dst, thruput,
-                             start_time, run_label, scenario_label, test))
+                      INSERT INTO tests VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                      """,  (variable, reordering, bnbw, qlimit, delay, rrate, rdelay, ackreor, ackloss, rtos, frs, iterationNo, scenarioNo, runNo, src, dst, thruput,
+                             start_time, "$"+run_label+"$", scenario_label, test))
+                      #INSERT INTO tests VALUES ("%s", "%s", %s, %u, %u, %u, %u, %u, %u, %s, %s, %u, %u, %u, "%s", "%s", %f, %u, "$%s$", "%s", "%s")
 
     def generateFairnessOverXLinePlot(self):
         """Generates a line plot of the DB column y over the DB column x
