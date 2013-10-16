@@ -200,7 +200,7 @@ class UmGnuplot():
         epsfilename   = os.path.join(self.outdir, plotname+"_eps.eps")
         epspdffilename = os.path.join(self.outdir, plotname+"_eps.pdf")
 
-        info("Generating %s" %texfilename)
+        info("Gnuplot: Generating %s" %texfilename)
         # always epslatex output
         self.gplot('set terminal epslatex input color colortext solid '\
                 '"default" size %s font %u' \
@@ -215,7 +215,7 @@ class UmGnuplot():
             error("Nothing to plot, maybe not a xplot-color file?")
             quit(1)
 
-        info("Generating %s" %gplotfilename)
+        info("Gnuplot: Generating %s" %gplotfilename)
         self.gplot.save(gplotfilename)
 
         # make sure gplot output is flushed
@@ -346,10 +346,10 @@ class UmHistogram(UmGnuplot):
         else:
             titlestr='title "%s"' %title
 
-	    if linestyle is None:
-	        linestr='lt rgb "black" lw 1 pt 1'
-	    else:
-	        linestr="linestyle %u" %linestyle
+	if linestyle is None:
+	    linestr='lt rgb "black" lw 1 pt 1'
+	else:
+            linestr="linestyle %u" %linestyle
 
         # calculate middle of cluster
         middle = self._barspercluster*self.getBarWidth()/2

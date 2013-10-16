@@ -37,27 +37,27 @@ class ReorderingAnalysis(Analysis):
     def __init__(self):
         Analysis.__init__(self)
 
-        self.parser.set_usage("Usage:  %prog [options]\n"\
-                              "Creates graphs showing thruput, frs and rtos over the "\
-                              "variable given by the option -V.\n"\
-                              "For this all flowgrind logs out of input folder are used "\
-                              "which have the type given by the parameter -T.")
+        #self.parser.set_usage("Usage:  %prog [options]\n"\
+        #                      "Creates graphs showing thruput, frs and rtos over the "\
+        #                      "variable given by the option -V.\n"\
+        #                      "For this all flowgrind logs out of input folder are used "\
+        #                      "which have the type given by the parameter -T.")
 
-        self.parser.add_option('-V', '--variable', metavar="Variable",
-                         action = 'store', type = 'string', dest = 'variable',
+        self.parser.add_argument('-V', '--variable', metavar="Variable",
+                         action = 'store', type = str, dest = 'variable',
                          help = 'The variable of the measurement [bnbw|qlimit|rrate|rdelay].')
-        self.parser.add_option('-T', '--type', metavar="Type",
-                         action = 'store', type = 'string', dest = 'rotype',
+        self.parser.add_argument('-T', '--type', metavar="Type",
+                         action = 'store', type = str, dest = 'rotype',
                          help = 'The type of the measurement [reordering|congestion|both].')
-        self.parser.add_option('-E', '--plot-error', metavar="PlotError",
+        self.parser.add_argument('-E', '--plot-error', #metavar="PlotError",
                          action = 'store_true', dest = 'plot_error',
                          help = "Plot error bars")
 
-        self.parser.add_option('-d', '--dry-run',
+        self.parser.add_argument('-d', '--dry-run',
                         action = "store_true", dest = "dry_run",
                         help = "Test the flowlogs only")
 
-        self.parser.add_option('-F', '--fairness',
+        self.parser.add_argument('-F', '--fairness',
                         action = "store_true", dest = "fairness",
                         help = "Plot fairness instead")
 
@@ -75,17 +75,17 @@ class ReorderingAnalysis(Analysis):
         self.plotlabels["ackloss"] = r"ACK Loss Rate [$\\si{\\percent}$]"
 
 
-    def set_option(self):
+    def apply_options(self):
         "Set options"
-        Analysis.set_option(self)
+        Analysis.apply_options(self)
 
-        if not self.options.variable:
+        if not self.args.variable:
             error("Please provide me with the variable and type of the measurement!")
             sys.exit(1)
-        if self.options.variable != "rrate" and self.options.variable != "rdelay" and self.options.variable != "qlimit" and self.options.variable != "bnbw" and self.options.variable != "delay" and self.options.variable != "ackreor" and self.options.variable != "ackloss":
+        if self.args.variable != "rrate" and self.args.variable != "rdelay" and self.args.variable != "qlimit" and self.args.variable != "bnbw" and self.args.variable != "delay" and self.args.variable != "ackreor" and self.args.variable != "ackloss":
             error("I did not recognize the variable you gave me!")
             sys.exit(1)
-        if self.options.rotype != "reordering" and self.options.rotype != "congestion" and self.options.rotype != "both":
+        if self.args.rotype != "reordering" and self.args.rotype != "congestion" and self.args.rotype != "both":
             error("I did not recognize the type you gave me!")
             sys.exit(1)
 
@@ -93,10 +93,11 @@ class ReorderingAnalysis(Analysis):
     def onLoad(self, record, iterationNo, scenarioNo, runNo, test):
         dbcur = self.dbcon.cursor()
 
-        try:
+        #try:
+        if True:
             recordHeader   = record.getHeader()
-            src            = recordHeader["flowgrind_src"]
-            dst            = recordHeader["flowgrind_dst"]
+            src            = recordHeader["src"]
+            dst            = recordHeader["dst"]
             run_label      = recordHeader["run_label"]
             scenario_label = recordHeader["scenario_label"]
             variable       = recordHeader["testbed_param_variable"]
@@ -104,8 +105,8 @@ class ReorderingAnalysis(Analysis):
             qlimit         = int(recordHeader["testbed_param_qlimit"])
             rrate          = int(recordHeader["testbed_param_rrate"])
             rdelay         = int(recordHeader["testbed_param_rdelay"])
-        except:
-            return
+        #except:
+        #    return
 
         try:
             bnbw       = int(recordHeader["testbed_param_bottleneckbw"])
@@ -175,8 +176,8 @@ class ReorderingAnalysis(Analysis):
            reordering rate. One line for each scenario.
         """
         y     = 'fairness'
-        x      = self.options.variable
-        rotype = self.options.rotype
+        x      = self.args.variable
+        rotype = self.args.rotype
 
         dbcur = self.dbcon.cursor()
 
@@ -190,8 +191,8 @@ class ReorderingAnalysis(Analysis):
             scen = row[0]
             scenarios.append(scen)
 
-        outdir = self.options.outdir
-        p = UmLinePointPlot("%s_%s_over_%s" % (rotype, y, x), outdir, debug = self.options.debug, force = True)
+        outdir = self.args.outdir
+        p = UmLinePointPlot("%s_%s_over_%s" % (rotype, y, x), outdir, debug = self.args.debug, force = True)
         p.setXLabel(self.plotlabels[x])
         p.setYLabel(self.plotlabels[y])
 
@@ -230,7 +231,9 @@ class ReorderingAnalysis(Analysis):
 
             fhv.close()
 
+            info("start plot")
             p.plot(valfilename, "%s - %s" %(fairness[0][2], fairness[1][2]), linestyle=scenarioNo, using="1:2")
+            info("end plot")
 
         # make room for the legend
         p.setYRange("[0.5:1.1]")
@@ -241,8 +244,8 @@ class ReorderingAnalysis(Analysis):
            reordering rate. One line for each scenario.
         """
 
-        x      = self.options.variable
-        rotype = self.options.rotype
+        x      = self.args.variable
+        rotype = self.args.rotype
 
         dbcur = self.dbcon.cursor()
 
@@ -256,8 +259,8 @@ class ReorderingAnalysis(Analysis):
             (key,val) = row
             scenarios[key] = val
 
-        outdir = self.options.outdir
-        p = UmLinePointPlot("%s_%s_over_%s" % (rotype, y, x), outdir, debug = self.options.debug, force = True)
+        outdir = self.args.outdir
+        p = UmLinePointPlot("%s_%s_over_%s" % (rotype, y, x), outdir, debug = self.args.debug, force = True)
         p.setXLabel(self.plotlabels[x])
         p.setYLabel(self.plotlabels[y])
 
@@ -297,7 +300,7 @@ class ReorderingAnalysis(Analysis):
             for row in dbcur:
                 (x_value, y_value) = row
                 try:
-                    if self.options.plot_error:
+                    if self.args.plot_error:
                         stddev = self.calculateStdDev(y, x_value, scenarioNo)
                         fhv.write("%u %f %f\n" %(x_value, y_value, stddev))
                     else:
@@ -312,7 +315,7 @@ class ReorderingAnalysis(Analysis):
                 return
 
             # plot
-            if self.options.plot_error:
+            if self.args.plot_error:
                 p.plotYerror(valfilename, scenarios[scenarioNo], linestyle=scenarioNo + 1, using="1:2:3")
                 p.plot(valfilename, title="", linestyle=scenarioNo + 1, using="1:2")
             else:
@@ -328,8 +331,8 @@ class ReorderingAnalysis(Analysis):
         """Calculates the standarddeviation for the values of the YoverXPlot
         """
 
-        x      = self.options.variable
-        rotype = self.options.rotype
+        x      = self.args.variable
+        rotype = self.args.rotype
         dbcur = self.dbcon.cursor()
 
         query = '''
@@ -385,11 +388,11 @@ class ReorderingAnalysis(Analysis):
         else:
             info("Database already exists, don't load records.")
 
-        if self.options.dry_run:
+        if self.args.dry_run:
             return
 
         # Do Plots
-        if self.options.fairness:
+        if self.args.fairness:
             self.generateFairnessOverXLinePlot()
         else:
             for y in ("thruput", "frs", "rtos"):
@@ -399,8 +402,8 @@ class ReorderingAnalysis(Analysis):
     def main(self):
         """Main method of the ping stats object"""
 
-        self.parse_option()
-        self.set_option()
+        self.parse_options()
+        self.apply_options()
         ReorderingAnalysis.run(self)
 
 # this only runs if the module was *not* imported
